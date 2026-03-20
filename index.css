@@ -1,18 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,slnt,wdth,wght,GRAD,XTRA,YOPQ,YTAS,YTDE,YTFI,YTLC,YTUC@8..144,-10..0,25..151,100..1000,-200..150,323..603,25..135,649..854,-305..-98,560..788,416..570,528..760&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@font-face {
-  font-family: "Royal Grande Variable";
-  src: url('./fonts/RoyalGrande/Royal Grande Variable.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: "Thanjavur Variable";
-  src: url('./fonts/Thanjavur/Thanjavur-Var.ttf') format('truetype');
-}
 
 /* Base Styles - PENTING: Warna dasar #EDEBE6 agar tidak putih */
 body {
