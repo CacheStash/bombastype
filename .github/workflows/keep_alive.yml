@@ -1,0 +1,16 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Berjalan setiap hari Senin dan Kamis jam 00:00 UTC (07:00 WIB)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Memungkinkan kamu menjalankan manual untuk test
+
+jobs:
+  ping_supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Database via REST API
+        run: |
+          curl -I "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"

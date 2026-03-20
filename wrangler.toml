@@ -1,0 +1,20 @@
+name = "font"
+main = "index.js"
+compatibility_date = "2024-09-23"
+
+# --- PERBAIKAN: GUNAKAN FORMAT TABEL & EKSPLISIT BINDING ---
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[vars]
+VITE_SUPABASE_URL = "https://ekyggonipxdjbzgkmxwr.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVreWdnb25pcHhkamJ6Z2tteHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTExMjUsImV4cCI6MjA4ODk2NzEyNX0.gdt9tT_ndtfUF38IY3FbkMsca4hpP4x0yv5uh1Ud2HY"
+SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVreWdnb25pcHhkamJ6Z2tteHdyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzM5MTEyNSwiZXhwIjoyMDg4OTY3MTI1fQ.49hp5l8WwNr2OQQ1sM5-7t_3hFu0HSmb49YupVrt74g"
+GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw9eibNs8cKKMiusDi8aKFp2t2xU_T0gDo_FFlBMM6jZWEiX5ERbR5vF-YlLTM9XlgI/exec, https://script.google.com/macros/s/AKfycbzO1E0IkuoZIdlaM4hRyz1y84VyObjRSJUUuSc2PjQxaTHcz-rJ82cKhUA4KUs3X9c/exec, https://script.google.com/macros/s/AKfycbzgr3nOGCM9QBnaP7BD1MDY-s3uDizcckwYlo2-CkkKo1OxHr_pIjdhvOdlaPOY2tE04Q/exec"
+GAS_DRIVE_SEARCH_URL = "https://script.google.com/macros/s/AKfycbxvOLmp3A8O2vlx_fE516rxy5MPy19Y1pseqagJlAVtRU2dYW-LGMd_BVKYSg6ZWOT8/exec"
+GAS_TOKEN = "$uperAm4n"
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "amirsubqi"

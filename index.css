@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,slnt,wdth,wght,GRAD,XTRA,YOPQ,YTAS,YTDE,YTFI,YTLC,YTUC@8..144,-10..0,25..151,100..1000,-200..150,323..603,25..135,649..854,-305..-98,560..788,416..570,528..760&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Royal Grande Variable";
+  src: url('./fonts/RoyalGrande/Royal Grande Variable.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: "Thanjavur Variable";
+  src: url('./fonts/Thanjavur/Thanjavur-Var.ttf') format('truetype');
+}
+
+/* Base Styles - PENTING: Warna dasar #EDEBE6 agar tidak putih */
+body {
+  background-color: #EDEBE6;
+  overflow-x: hidden;
+}
+
+.grain-orb-base {
+  position: fixed;
+  border-radius: 50%;
+  z-index: 0; /* Di belakang konten */
+  pointer-events: none;
+  /* Ukuran besar agar melebihi layar */
+  width: 80vw;
+  height: 80vw;
+  min-width: 600px; /* Minimum size agar tidak terlalu kecil di HP */
+  min-height: 600px;
+
+  /* Efek Noise + Gradasi Oranye (Sama seperti sebelumnya) */
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E"),
+    radial-gradient(circle, rgba(255, 100, 0, 0.3) 0%, rgba(255, 160, 0, 0.15) 50%, transparent 70%);
+  
+  background-blend-mode: overlay, normal;
+  filter: blur(60px); /* Blur lebih besar agar pinggiran makin halus di pojok */
+}
+
+/* Posisi Kanan Atas */
+.orb-top-right {
+  top: 0;
+  right: 0;
+  /* Geser titik tengahnya ke arah pojok kanan atas keluar layar (40% dari ukurannya sendiri) */
+  transform: translate(40%, -40%);
+}
+
+/* Posisi Kiri Bawah */
+.orb-bottom-left {
+  bottom: 0;
+  left: 0;
+  /* Geser titik tengahnya ke arah pojok kiri bawah keluar layar */
+  transform: translate(-40%, 40%);
+}

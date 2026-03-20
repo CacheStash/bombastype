@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "allowJs": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"] 
+    },
+    "types": [
+      "node",
+      "@cloudflare/workers-types",
+      "react",
+      "react-dom",
+      "vite/client"
+
+    ]
+  },
+  "include": [
+    "index.js",
+    "index.tsx",
+    "App.tsx",
+    "fonts.d.ts",
+    "pages/**/*",      // <--- Menghilangkan error font di Home.tsx
+    "components/**/*", // <--- Menghilangkan error di Admin components
+    "app/**/*",
+    "lib/**/*"
+  ],
+  "exclude": ["node_modules", "dist"]
+}
