@@ -1,43 +1,84 @@
+/* root/index.css */
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=UnifrakturMaguntia&display=swap');
+@import "tailwindcss";
 
-
-/* Base Styles - PENTING: Warna dasar #EDEBE6 agar tidak putih */
-body {
-  background-color: #EDEBE6;
-  overflow-x: hidden;
-}
-
-.grain-orb-base {
-  position: fixed;
-  border-radius: 50%;
-  z-index: 0; /* Di belakang konten */
-  pointer-events: none;
-  /* Ukuran besar agar melebihi layar */
-  width: 80vw;
-  height: 80vw;
-  min-width: 600px; /* Minimum size agar tidak terlalu kecil di HP */
-  min-height: 600px;
-
-  /* Efek Noise + Gradasi Oranye (Sama seperti sebelumnya) */
-  background-image: 
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E"),
-    radial-gradient(circle, rgba(255, 100, 0, 0.3) 0%, rgba(255, 160, 0, 0.15) 50%, transparent 70%);
+@theme {
+  --font-serif: "EB Garamond", serif;
+  --font-display: "Playfair Display", serif;
+  --font-blackletter: "UnifrakturMaguntia", cursive;
+  --font-script: "Pinyon Script", cursive;
+  --font-playfair: "Playfair Display", serif;
   
-  background-blend-mode: overlay, normal;
-  filter: blur(60px); /* Blur lebih besar agar pinggiran makin halus di pojok */
+  --color-vintage-paper: #fdf6e3; 
+  --color-vintage-background: #e8e2d0; 
+  --color-vintage-ink: #2c241a;
+  --color-vintage-accent: #8b6b4a;
+  --color-vintage-border: #4a3c2c;
 }
 
-/* Posisi Kanan Atas */
-.orb-top-right {
-  top: 0;
-  right: 0;
-  /* Geser titik tengahnya ke arah pojok kanan atas keluar layar (40% dari ukurannya sendiri) */
-  transform: translate(40%, -40%);
+@layer base {
+  body {
+    @apply bg-vintage-background text-vintage-ink font-serif;
+    background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+    background-attachment: scroll;
+  }
+
+  h1, h2, h3 {
+    @apply font-display;
+  }
 }
 
-/* Posisi Kiri Bawah */
-.orb-bottom-left {
-  bottom: 0;
-  left: 0;
-  /* Geser titik tengahnya ke arah pojok kiri bawah keluar layar */
-  transform: translate(-40%, 40%);
+@layer components {
+  /* FIX: Mengunci warna border navbar agar tidak abu-abu */
+  nav.border-y {
+    border-top: 1px solid var(--color-vintage-ink) !important;
+    border-bottom: 1px solid var(--color-vintage-ink) !important;
+  }
+
+  nav.border-b {
+    border-top: none !important;
+    border-bottom: 1px solid var(--color-vintage-ink) !important;
+  }
+
+  .ornate-border {
+    border-width: 4px !important;
+    border-style: double !important;
+    border-color: var(--color-vintage-ink) !important;
+    background-color: var(--color-vintage-paper);
+    @apply p-6 md:p-12 lg:p-20;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .vintage-card {
+    border-width: 4px !important;
+    border-style: double !important;
+    border-color: var(--color-vintage-ink) !important;
+    @apply p-6 bg-white/10 transition-all duration-300;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+
+  .vintage-card:hover {
+    border-color: var(--color-vintage-accent);
+    @apply shadow-xl;
+  }
+
+  .vintage-btn {
+    @apply px-6 py-2 border border-vintage-ink text-xs uppercase tracking-widest font-bold transition-colors duration-300 hover:bg-vintage-ink hover:text-vintage-paper;
+    font-family: var(--font-display);
+  }
+
+  .divider {
+    @apply flex items-center justify-center my-8 gap-4;
+  }
+
+  .divider::before, .divider::after {
+    content: "";
+    @apply flex-1 h-px bg-vintage-ink/30;
+  }
+
+  .divider-icon {
+    @apply text-vintage-accent text-xl;
+  }
 }
