@@ -185,10 +185,44 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
             </div>
 
             {/* Tombol Akun */}
-            <Link to={user ? "/user/dashboard" : "/user/auth"} className="flex-none flex items-center gap-2 hover:text-vintage-accent transition-colors">
-              <User size={18} />
-              <span className="hidden sm:inline text-[9px] font-bold tracking-[0.2em]">{user ? "ACCOUNT" : "LOGIN"}</span>
-            </Link>
+            <div 
+              className="relative flex items-center h-full"
+              onMouseEnter={() => user && setIsAccountDropdownOpen(true)}
+              onMouseLeave={() => setIsAccountDropdownOpen(false)}
+            >
+              <Link to={user ? "/user/dashboard" : "/user/auth"} className="flex-none flex items-center gap-2 hover:text-vintage-accent transition-colors">
+                <User size={18} />
+                <span className="hidden sm:inline text-[9px] font-bold tracking-[0.2em]">{user ? "ACCOUNT" : "LOGIN"}</span>
+              </Link>
+
+              <AnimatePresence>
+                {user && isAccountDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full right-0 mt-4 w-40 bg-vintage-paper border border-vintage-ink shadow-xl z-50 flex flex-col overflow-hidden"
+                  >
+                    <Link 
+                      to="/user/dashboard" 
+                      className="px-4 py-3 text-[10px] font-bold tracking-widest hover:bg-vintage-ink hover:text-vintage-paper transition-colors border-b border-vintage-ink/10"
+                      onClick={() => setIsAccountDropdownOpen(false)}
+                    >
+                      DASHBOARD
+                    </Link>
+                    <button 
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        setIsAccountDropdownOpen(false);
+                      }}
+                      className="px-4 py-3 text-[10px] font-bold tracking-widest hover:bg-vintage-ink hover:text-vintage-paper transition-colors text-left w-full"
+                    >
+                      LOGOUT
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Tombol Keranjang */}
             <Link to="/cart" className="flex-none relative hover:text-vintage-accent transition-colors">
