@@ -19,8 +19,6 @@
 @layer base {
   body {
     @apply bg-vintage-background text-vintage-ink font-serif;
-    background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
-    background-attachment: scroll;
   }
 
   h1, h2, h3 {
@@ -56,12 +54,10 @@
     border-style: double !important;
     border-color: var(--color-vintage-ink) !important;
     @apply p-6 bg-white/10 transition-all duration-300;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   }
 
   .vintage-card:hover {
     border-color: var(--color-vintage-accent);
-    @apply shadow-xl;
   }
 
   .vintage-btn {

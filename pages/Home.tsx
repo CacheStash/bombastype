@@ -93,7 +93,7 @@ export default function Home() {
             <motion.div 
               key={font.id}
               whileHover={{ scale: 1.02 }}
-              className="vintage-card flex flex-col border-double border-4 border-vintage-ink p-0 overflow-hidden shadow-lg h-full"
+              className="vintage-card flex flex-col border-double border-4 border-vintage-ink p-0 overflow-hidden h-full"
             >
               <div className="aspect-3/2 w-full bg-vintage-ink/5 border-b-2 border-vintage-ink/20 relative group overflow-hidden">
                 <img 
@@ -103,7 +103,7 @@ export default function Home() {
                   decoding="async"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                 />
-                <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[10px] font-bold tracking-widest border border-vintage-ink shadow-sm">
+                <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[10px] font-bold tracking-widest border border-vintage-ink">
                   {font.price}
                 </div>
               </div>
