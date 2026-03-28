@@ -50,8 +50,16 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
   };
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 120);
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => {
+      const scrollPos = window.scrollY;
+      // Menambahkan Hysteresis: Aktif di 120px, Non-aktif hanya jika scroll balik ke atas 50px
+      if (scrollPos > 120) {
+        setIsScrolled(true);
+      } else if (scrollPos < 50) {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -67,12 +75,13 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
   return (
     <>
       {/* 1. STATIC LOGO HEADER */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {!isScrolled && (
           <motion.header 
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="text-center pt-6 pb-12 relative z-50"
           >
             <Link to="/" className="inline-flex items-center justify-center gap-6 hover:opacity-70 transition-opacity">
@@ -99,9 +108,10 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
             <AnimatePresence mode="wait">
               {isScrolled && (
                 <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: -10, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, x: -10, filter: "blur(4px)" }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
                   className="mr-6 pr-6 border-r border-vintage-ink"
                 >
                   <Link to="/" className="text-xl font-blackletter tracking-tighter text-vintage-ink whitespace-nowrap">

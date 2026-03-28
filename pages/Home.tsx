@@ -28,7 +28,7 @@ const FontCard = ({ title, subtitle, fontClass, price }: { title: string, subtit
     <hr className="w-full border-vintage-ink/20 mt-4 mb-6" />
     <div className="mt-auto w-full">
       <div className="text-sm font-bold mb-4">{price}</div>
-      <button className="vintage-btn text-[10px] w-full">View Font</button>
+      <button className="vintage-btn py-3 text-[10px] w-full">VIEW FONTS</button>
     </div>
   </motion.div>
 );
@@ -72,8 +72,8 @@ export default function Home() {
           <button 
             onClick={() => navigate('/fonts')}
             className="vintage-btn bg-vintage-ink text-vintage-paper px-16 py-4 text-sm tracking-[0.3em]"
-          >
-            Explore Our Fonts
+          >
+            EXPLORE OUR FONTS
           </button>
         </div>
       </section>
@@ -110,7 +110,7 @@ export default function Home() {
 
               <div className="p-6 text-center grow flex flex-col justify-between gap-4">
                 <h3 className="text-2xl font-display leading-tight">{font.name}</h3>
-                <button className="vintage-btn text-[9px] px-4 w-full">View Details</button>
+                <button className="vintage-btn py-3 text-[10px] w-full">VIEW FONTS</button>
               </div>
             </motion.div>
           ))}
