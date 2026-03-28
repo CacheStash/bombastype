@@ -73,10 +73,24 @@
     border: 1px solid var(--color-vintage-ink) !important;
   }
 
-  .vintage-btn:hover {
+ .vintage-btn:hover {
     background-color: var(--color-vintage-ink) !important;
     color: var(--color-vintage-paper) !important;
     border-color: var(--color-vintage-ink) !important;
+  }
+
+  /* Efek Reverse khusus Footer - Tanpa paksaan Font Display */
+  .btn-reverse-footer {
+    background-color: var(--color-vintage-paper) !important;
+    color: var(--color-vintage-ink) !important;
+    border: 1px solid var(--color-vintage-paper) !important;
+    @apply transition-all duration-300 inline-flex items-center justify-center cursor-pointer;
+  }
+
+  .btn-reverse-footer:hover {
+    background-color: transparent !important;
+    color: var(--color-vintage-paper) !important;
+    border: 1px solid var(--color-vintage-paper) !important;
   }
 
   .divider {

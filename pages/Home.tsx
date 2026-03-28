@@ -15,7 +15,7 @@ const FontCard = ({ title, subtitle, fontClass, price }: { title: string, subtit
     className="vintage-card flex flex-col items-center text-center border-double border-4 border-vintage-ink h-full p-6 pt-10"
   >
     <div className="h-6 flex items-center justify-center">
-      <p className="text-[9px] uppercase tracking-widest text-vintage-accent font-bold">{subtitle}</p>
+      <p className="text-[12px] uppercase tracking-widest text-vintage-accent font-bold">{subtitle}</p>
     </div>
     <hr className="w-full border-vintage-ink/20 my-4" />
     <div className="h-32 flex items-center justify-center w-full px-4">
@@ -23,12 +23,12 @@ const FontCard = ({ title, subtitle, fontClass, price }: { title: string, subtit
     </div>
     <hr className="w-full border-vintage-ink/20 my-4" />
     <div className="h-10 flex items-center justify-center px-4">
-      <p className="text-[10px] italic opacity-70 leading-tight">Meticulously digitized for timeless design.</p>
+      <p className="text-sm italic opacity-70 leading-tight">Meticulously digitized for timeless design.</p>
     </div>
     <hr className="w-full border-vintage-ink/20 mt-4 mb-6" />
     <div className="mt-auto w-full">
       <div className="text-sm font-bold mb-4">{price}</div>
-      <button className="vintage-btn py-3 text-[10px] w-full">VIEW FONTS</button>
+      <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
     </div>
   </motion.div>
 );
@@ -71,8 +71,8 @@ export default function Home() {
         <div className="flex justify-center mt-12 w-full max-w-xl mx-auto relative z-30">
           <button 
             onClick={() => navigate('/fonts')}
-            className="vintage-btn bg-vintage-ink text-vintage-paper px-16 py-4 text-sm tracking-[0.3em]"
-          >
+            className="vintage-btn btn-reverse px-16 py-4 text-sm tracking-[0.3em]"
+          >
             EXPLORE OUR FONTS
           </button>
         </div>
@@ -103,14 +103,14 @@ export default function Home() {
                   decoding="async"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                 />
-                <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[10px] font-bold tracking-widest border border-vintage-ink">
+                <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink">
                   {font.price}
                 </div>
               </div>
 
               <div className="p-6 text-center grow flex flex-col justify-between gap-4">
                 <h3 className="text-2xl font-display leading-tight">{font.name}</h3>
-                <button className="vintage-btn py-3 text-[10px] w-full">VIEW FONTS</button>
+                <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
               </div>
             </motion.div>
           ))}

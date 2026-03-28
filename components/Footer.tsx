@@ -27,22 +27,22 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4">
         
         {/* BARIS ATAS: Subscribe Form (Full Width) */}
-        <div className="mb-16">
-          <form onSubmit={handleSubscribe} className="flex border border-vintage-paper/20 rounded-sm overflow-hidden bg-vintage-paper/5 w-full">
-          <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Stay updated with new historic font releases and insights."
-              className="flex-1 bg-transparent px-5 py-4 text-xs tracking-wider outline-none placeholder:text-vintage-paper/40 placeholder:uppercase"
+        <div className="mb-16">
+          <form onSubmit={handleSubscribe} className="flex border border-vintage-paper/10 rounded-sm overflow-hidden bg-vintage-paper/5 w-full">
+          <input 
+              type="email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Stay updated with new historic font releases and insights."
+              className="flex-1 bg-transparent px-5 py-4 text-xs tracking-wider outline-none placeholder:text-vintage-paper/20 placeholder:uppercase"
               required
             />
             <button 
-              type="submit"
-              className="bg-vintage-paper text-vintage-ink px-10 py-4 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-white transition-colors border-l border-vintage-ink"
-            >
-              Join
-            </button>
+              type="submit"
+              className="btn-reverse-footer px-9 py-4 text-[11px] uppercase tracking-[0.2em] font-bold whitespace-nowrap"
+            >
+              Join
+            </button>
           </form>
         </div>
 
