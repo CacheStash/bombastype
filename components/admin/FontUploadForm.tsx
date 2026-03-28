@@ -279,29 +279,37 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
   };
 
   return (
-    <form className="space-y-6" onSubmit={handleSaveProduct}>
-      <div className="grid grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <label className="block font-bold text-xs uppercase tracking-wider text-gray-500">Font Name</label>
-         <input 
+    <form className="space-y-12 max-w-4xl mx-auto py-12" onSubmit={handleSaveProduct}>
+      <div className="border-b border-vintage-ink/20 pb-8 mb-12">
+        <h2 className="text-4xl font-display uppercase tracking-widest text-vintage-ink">
+          {initialData ? "Update Typeface Archive" : "Register New Heritage"}
+        </h2>
+        <p className="text-sm italic opacity-60 font-serif mt-2">Meticulously documenting typographic history and provenance.</p>
+      </div>
+
+      <div className="space-y-10">
+        <div className="space-y-4">
+          <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">Font Identity</label>
+          <input 
             type="text" 
             value={fontName}
             onChange={(e) => setFontName(e.target.value.toUpperCase())}
-            className="w-full border border-black p-3 outline-none font-normal uppercase text-xl focus:bg-yellow-50 transition-colors" 
-            placeholder="E.G. ROYAL GRANDE"
+            className="w-full border-b border-vintage-ink/20 py-4 bg-transparent outline-none font-display text-4xl focus:border-vintage-ink transition-colors placeholder:opacity-20" 
+            placeholder="ENTER FONT NAME..."
             required
           />
           <button 
             type="button" 
             onClick={fetchFromDrive}
             disabled={isSearchingDrive}
-            className="text-[9px] bg-blue-600 text-white px-3 py-1 font-bold uppercase hover:bg-blue-700 disabled:bg-gray-400"
+            className="text-[9px] border border-vintage-ink/20 px-3 py-1 font-bold uppercase hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-50"
           >
-            {isSearchingDrive ? "Searching..." : "⚡ Sync Drive"}
+            {isSearchingDrive ? "Searching..." : "⚡ Sync Archive (Drive)"}
           </button>
         </div>
-        <div className="space-y-2">
-          <label className="block font-bold text-xs uppercase tracking-wider text-gray-500">Basic Price ($)</label>
+
+        <div className="space-y-4">
+          <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">Base Valuation ($)</label>
           <input 
             type="number" 
             required
@@ -310,112 +318,45 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
               const val = e.target.value;
               setPrice(val);
               const base = parseFloat(val) || 0;
-              // Fungsi pembulatan bawah untuk harga psikologis
               const calc = (m: number) => m > 0 ? (m === 1 ? base : Math.floor(base * m)) : 0;
               
               setLicensePrices({
-                // Desktop: 1x, 3x, 7x, 15x
                 desktop: { solo: calc(1), team: calc(3), studio: calc(7), enterprise: calc(15) },
-                // Social / Web: 1x, 3x, 7x, 15x
                 social_web: { small_50k: calc(1), medium_500k: calc(3), large_5m: calc(7), enterprise_unlimited: calc(15) },
-                // Logo & Branding: 2.5x, 5x, 10x, 20x, 30x
                 logo_branding: { personal: calc(2.5), solo: calc(5), team: calc(10), studio: calc(20), enterprise: calc(30) },
-                // App / Game: 5x, 12x, 25x, 55x
                 app: { solo: calc(5), team: calc(12), studio: calc(25), enterprise: calc(55) },
-                // Server: 5x, 25x, 50x (Mapping: Single, 50, Unlimited)
                 server: { solo: calc(5), team: 0, studio: calc(25), enterprise: calc(50) },
-                // Broadcast: 5x, 25x, 50x (Mapping: Regional, National, Worldwide)
                 broadcast: { solo: calc(5), team: 0, studio: calc(25), enterprise: calc(50) },
-                // Corporate: All-In-One (150x)
                 corporate_full_suite: calc(150.0)
               });
             }}
-            
-            className="w-full border border-black p-3 outline-none focus:bg-yellow-50" 
+            className="w-full border-b border-vintage-ink/20 py-4 bg-transparent outline-none font-display text-2xl focus:border-vintage-ink transition-colors" 
             placeholder="25" 
           />
         </div>
-      </div>
 
-      {/* PRICING PREVIEW & TAGS INPUT */}
-      <div className="grid grid-cols-2 gap-6">
-        <div className="p-4 bg-gray-50 border border-black text-[10px] space-y-1 leading-tight">
-          <p className="font-bold uppercase border-b border-black mb-2 text-black tracking-widest">License Preview (Solo/Base)</p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-bold uppercase text-gray-600">
-            <div className="flex items-center gap-1">
-              <span>Desktop: $</span>
-              <input 
-                type="number" 
-                value={licensePrices.desktop.solo} 
-                onChange={(e) => updatePrice('desktop', 'solo', e.target.value)}
-                className="bg-transparent border-none p-0 w-full font-bold focus:outline-none"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <span>Social/Web: $</span>
-              <input 
-                type="number" 
-                value={licensePrices.social_web.small_50k} 
-                onChange={(e) => updatePrice('social_web', 'small_50k', e.target.value)}
-                className="bg-transparent border-none p-0 w-full font-bold focus:outline-none"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <span>Logo: $</span>
-              <input 
-                type="number" 
-                value={licensePrices.logo_branding.solo} 
-                onChange={(e) => updatePrice('logo_branding', 'solo', e.target.value)}
-                className="bg-transparent border-none p-0 w-full font-bold focus:outline-none"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <span>App: $</span>
-              <input 
-                type="number" 
-                value={licensePrices.app.solo} 
-                onChange={(e) => updatePrice('app', 'solo', e.target.value)}
-                className="bg-transparent border-none p-0 w-full font-bold focus:outline-none"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <span>Broadcast: $</span>
-              <input 
-                type="number" 
-                value={licensePrices.broadcast.solo} 
-                onChange={(e) => updatePrice('broadcast', 'solo', e.target.value)}
-                className="bg-transparent border-none p-0 w-full font-bold focus:outline-none"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <span>Server: $</span>
-              <input 
-                type="number" 
-                value={licensePrices.server.solo} 
-                onChange={(e) => updatePrice('server', 'solo', e.target.value)}
-                className="bg-transparent border-none p-0 w-full font-bold focus:outline-none"
-              />
-            </div>
-          </div>
-          <div className="mt-1 pt-1 border-t border-black border-dotted flex items-center gap-1">
-            <span>Corporate (All-in): $</span>
-            <input 
-              type="number" 
-              value={licensePrices.corporate_full_suite} 
-              onChange={(e) => updatePrice('corporate_full_suite', null, e.target.value)}
-              className="bg-transparent border-none p-0 w-full font-bold focus:outline-none"
-            />
+        <div className="p-6 bg-vintage-ink/[0.02] border border-vintage-ink/10 text-[11px] space-y-3 font-serif italic">
+          <p className="font-bold uppercase not-italic border-b border-vintage-ink/10 pb-2 mb-2 text-vintage-ink tracking-widest text-[9px]">License Matrix Preview (Solo/Base)</p>
+          <div className="flex flex-wrap gap-x-8 gap-y-2 text-vintage-ink/60">
+            <div className="flex items-center gap-2"><span>Desktop:</span> <span className="font-bold not-italic">${licensePrices.desktop.solo}</span></div>
+            <div className="flex items-center gap-2"><span>Social/Web:</span> <span className="font-bold not-italic">${licensePrices.social_web.small_50k}</span></div>
+            <div className="flex items-center gap-2"><span>Logo:</span> <span className="font-bold not-italic">${licensePrices.logo_branding.solo}</span></div>
+            <div className="flex items-center gap-2"><span>App:</span> <span className="font-bold not-italic">${licensePrices.app.solo}</span></div>
+            <div className="flex items-center gap-2"><span>Broadcast:</span> <span className="font-bold not-italic">${licensePrices.broadcast.solo}</span></div>
+            <div className="flex items-center gap-2"><span>Server:</span> <span className="font-bold not-italic">${licensePrices.server.solo}</span></div>
+            <div className="flex items-center gap-2 border-l border-vintage-ink/10 pl-8"><span>Corporate:</span> <span className="font-bold not-italic">${licensePrices.corporate_full_suite}</span></div>
           </div>
         </div>
-        <div className="space-y-2">
-          <label className="block font-bold text-xs uppercase tracking-wider text-gray-500">Tags (Separated by Comma)</label>
+
+        <div className="space-y-4">
+          <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">Classification Tags</label>
           <input 
             type="text" 
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             list="font-tags-suggestions"
-            className="w-full border border-black p-3 outline-none focus:bg-yellow-50" 
-            placeholder="Variable, Serif, Display" 
+            className="w-full border-b border-vintage-ink/20 py-4 bg-transparent outline-none font-serif text-lg focus:border-vintage-ink transition-colors" 
+            placeholder="Variable, Serif, Display..." 
           />
           <datalist id="font-tags-suggestions">
             {FONT_TAGS_LIBRARY.map((tag) => (
@@ -425,12 +366,12 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="block font-bold text-xs uppercase tracking-wider text-gray-500">Font Binaries (Multiples .ttf, .otf)</label>
+      <div className="space-y-4">
+        <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">Typographic Artifacts (.otf, .ttf, .woff2)</label>
         <div 
           onDragOver={handleDragOver}
           onDrop={(e) => handleDropFiles(e, 'fonts')}
-          className="border-2 border-dashed border-black p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer group bg-white"
+          className="border-2 border-dashed border-vintage-ink/20 p-12 text-center hover:bg-vintage-ink/[0.02] transition-colors cursor-pointer group bg-transparent relative"
         >
           {/* Sinkronisasi Drive untuk font dihapus (Hanya upload lokal ke R2) */}
           <input
@@ -605,25 +546,29 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="block font-bold text-xs uppercase tracking-wider text-gray-500">Description</label>
+      <div className="space-y-4 pt-8">
+        <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">Historical Narrative</label>
         <textarea 
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full border border-black p-4 outline-none h-32 font-normal text-sm focus:bg-yellow-50" 
-          placeholder="Tell the story of this font..."
+          className="w-full border border-vintage-ink/20 p-6 bg-transparent outline-none h-48 font-serif text-lg focus:border-vintage-ink transition-colors placeholder:italic" 
+          placeholder="Narrate the provenance and design philosophy of this typeface..."
         />
       </div>
 
-      <button 
-        type="submit"
-        disabled={isUploading}
-        className="w-full bg-black text-white p-5 font-bold uppercase tracking-[0.2em] text-xs hover:translate-x-[2px] hover:translate-y-[2px] transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] disabled:bg-gray-400 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-      >
-        {isUploading ? (
-          <><Loader2 className="animate-spin" /> Processing...</>
-        ) : initialData ? "Update Typeface" : "Save & Publish Product"}
-      </button>
+      <div className="pt-12">
+        <button 
+          type="submit"
+          disabled={isUploading}
+          className="vintage-btn btn-reverse w-full py-6 text-sm tracking-[0.4em] flex justify-center items-center gap-4 group"
+        >
+          {isUploading ? (
+            <><Loader2 className="animate-spin" /> ARCHIVING...</>
+          ) : (
+            <>{initialData ? "UPDATE RECORD" : "COMMISSION TO HERITAGE"}</>
+          )}
+        </button>
+      </div>
     </form>
   );
 };
