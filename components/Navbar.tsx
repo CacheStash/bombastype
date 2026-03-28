@@ -22,6 +22,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   
   const location = useLocation();
   const { cartCount } = useCart();
