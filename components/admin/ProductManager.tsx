@@ -30,8 +30,9 @@ const ProductManager = () => {
   useEffect(() => { fetchFonts(); }, []);
 
   // Scroll Lock saat Modal Aktif
+  // Scroll Lock dihapus karena form sudah inline (bukan modal)
   useEffect(() => {
-    document.body.style.overflow = showForm ? 'hidden' : 'unset';
+    document.body.style.overflow = 'unset';
     return () => { document.body.style.overflow = 'unset'; };
   }, [showForm]);
 
@@ -157,7 +158,7 @@ const ProductManager = () => {
                   onDragStart={() => handleDragStart(globalIdx)}
                   onDragOver={handleDragOver}
                   onDrop={() => handleDrop(globalIdx)}
-                  className={`border-b border-vintage-ink/5 hover:bg-vintage-ink/[0.02] transition-colors cursor-move ${draggedIdx === globalIdx ? 'opacity-20' : ''}`}
+                  className={`border-b border-vintage-ink/5 hover:bg-vintage-ink/2 transition-colors cursor-move ${draggedIdx === globalIdx ? 'opacity-20' : ''}`}
                 >
                   <td className="p-4">
                     <span className="font-display text-2xl uppercase tracking-wider">{f.name}</span>
