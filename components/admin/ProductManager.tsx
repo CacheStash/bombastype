@@ -90,39 +90,61 @@ const ProductManager = () => {
     } catch (err: any) { alert("Error: " + err.message); }
   };
 
-  return (
-    <div className="space-y-8">
-      {/* HEADER SECTION */}
-      <div className="flex justify-between items-end">
-        <div>
-          <h2 className="text-4xl font-normal uppercase tracking-tight">Inventory</h2>
-          <p className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-wider">Manage Typefaces</p>
+  if (showForm) {
+    return (
+      <div className="space-y-12 animate-in fade-in duration-500">
+        <div className="flex items-center justify-between border-b border-vintage-ink/10 pb-8 mb-8">
+          <div>
+            <h2 className="text-4xl font-display uppercase tracking-widest text-vintage-ink">
+              {editingFont ? 'Refine Archive' : 'Register Heritage'}
+            </h2>
+            <p className="text-sm italic opacity-60 font-serif mt-2">Meticulously documenting typographic history and provenance.</p>
+          </div>
+          <button 
+            onClick={() => setShowForm(false)}
+            className="text-[10px] font-bold uppercase tracking-[0.2em] hover:text-vintage-accent transition-colors flex items-center gap-2"
+          >
+            ← Back to Inventory
+          </button>
         </div>
-        <div className="flex items-center gap-4">
+        <FontUploadForm initialData={editingFont} onSuccess={() => { setShowForm(false); fetchFonts(); }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-12 animate-in fade-in duration-500">
+      {/* HEADER SECTION */}
+      <div className="flex justify-between items-end border-b border-vintage-ink/10 pb-8">
+        <div>
+          <h2 className="text-4xl font-display uppercase tracking-widest text-vintage-ink">Inventory</h2>
+          <p className="text-sm italic opacity-60 font-serif mt-2 tracking-wide">Managing the collection of historic typefaces.</p>
+        </div>
+        <div className="flex items-center gap-8">
           {/* SEARCH BAR */}
           <input 
             type="text"
-            placeholder="Search fonts..."
+            placeholder="SEARCH ARCHIVE..."
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="bg-white border-2 border-black px-4 py-2 text-xs font-bold uppercase outline-none focus:bg-yellow-50 w-48 md:w-64"
+            className="bg-transparent border-b border-vintage-ink/20 px-0 py-2 text-[10px] font-bold uppercase outline-none focus:border-vintage-ink w-48 md:w-64 tracking-widest transition-colors placeholder:opacity-30"
           />
           <button 
             onClick={() => { setEditingFont(null); setShowForm(true); }}
-            className="bg-black text-white px-6 py-3 font-bold uppercase text-xs flex items-center gap-2 hover:bg-gray-800 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none"
+            className="vintage-btn btn-reverse px-10 py-4 text-[11px]"
           >
-            <Plus size={16} /> Add New Font
+            <Plus size={16} className="inline mr-2" /> New Entry
           </button>
         </div>
       </div>
 
       {/* TABLE SECTION */}
-      <div className="border-2 border-black bg-white overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b-2 border-black bg-gray-50">
-              <th className="p-4 text-xs uppercase font-bold tracking-widest text-gray-500">Name</th>
-              <th className="p-4 text-xs uppercase font-bold tracking-widest text-right text-gray-500">Actions</th>
+            <tr className="border-b border-vintage-ink/10">
+              <th className="p-4 text-[10px] uppercase font-bold tracking-[0.3em] text-vintage-ink/40">Designation</th>
+              <th className="p-4 text-[10px] uppercase font-bold tracking-[0.3em] text-right text-vintage-ink/40">Management</th>
             </tr>
           </thead>
           <tbody>
@@ -135,13 +157,17 @@ const ProductManager = () => {
                   onDragStart={() => handleDragStart(globalIdx)}
                   onDragOver={handleDragOver}
                   onDrop={() => handleDrop(globalIdx)}
-                  className={`border-b border-black hover:bg-yellow-50 transition-colors cursor-move ${draggedIdx === globalIdx ? 'opacity-20' : ''}`}
+                  className={`border-b border-vintage-ink/5 hover:bg-vintage-ink/[0.02] transition-colors cursor-move ${draggedIdx === globalIdx ? 'opacity-20' : ''}`}
                 >
-                  <td className="p-4 font-bold uppercase">{f.name}</td>
-                  <td className="p-4 text-right space-x-4">
-                    <button onClick={() => handleEdit(f)} className="text-blue-600 font-bold uppercase text-xs hover:underline inline-flex items-center gap-1"><Edit2 size={12} /> Edit</button>
-                    <button onClick={() => handleDuplicate(f)} className="text-green-600 font-bold uppercase text-xs hover:underline inline-flex items-center gap-1"><Copy size={12} /> Duplicate</button>
-                    <button onClick={() => handleDelete(f.id)} className="text-red-500 font-bold uppercase text-xs hover:underline inline-flex items-center gap-1"><Trash2 size={12} /> Delete</button>
+                  <td className="p-4">
+                    <span className="font-display text-2xl uppercase tracking-wider">{f.name}</span>
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex justify-end gap-6">
+                      <button onClick={() => handleEdit(f)} className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-1"><Edit2 size={12} /> Edit</button>
+                      <button onClick={() => handleDuplicate(f)} className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-1"><Copy size={12} /> Clone</button>
+                      <button onClick={() => handleDelete(f.id)} className="text-[10px] font-bold uppercase tracking-widest text-red-900/40 hover:text-red-600 transition-colors flex items-center gap-1"><Trash2 size={12} /> Remove</button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -152,23 +178,10 @@ const ProductManager = () => {
 
       {/* PAGINATION CONTROLS */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4 mt-6">
-          <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="border-2 border-black px-4 py-2 font-bold uppercase text-[10px] disabled:opacity-30 hover:bg-black hover:text-white transition-colors">Prev</button>
-          <span className="font-bold text-xs uppercase tracking-widest">Page {currentPage} / {totalPages}</span>
-          <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)} className="border-2 border-black px-4 py-2 font-bold uppercase text-[10px] disabled:opacity-30 hover:bg-black hover:text-white transition-all">Next</button>
-        </div>
-      )}
-
-      {/* MODAL FORM */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-2 border-black p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <div className="flex justify-between items-start mb-6">
-              <h3 className="text-2xl font-normal uppercase tracking-tight">{editingFont ? 'Edit Typeface' : 'Upload New Typeface'}</h3>
-              <button onClick={() => setShowForm(false)} className="text-xs font-bold hover:underline uppercase tracking-widest">Close [X]</button>
-            </div>
-            <FontUploadForm initialData={editingFont} onSuccess={() => { setShowForm(false); fetchFonts(); }} />
-          </div>
+        <div className="flex justify-center items-center gap-8 mt-12 border-t border-vintage-ink/10 pt-8">
+          <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="text-[10px] font-bold uppercase tracking-widest disabled:opacity-20 hover:text-vintage-accent transition-colors">Previous</button>
+          <span className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-40">{currentPage} / {totalPages}</span>
+          <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)} className="text-[10px] font-bold uppercase tracking-widest disabled:opacity-20 hover:text-vintage-accent transition-colors">Next</button>
         </div>
       )}
     </div>
