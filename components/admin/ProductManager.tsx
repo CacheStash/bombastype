@@ -60,10 +60,15 @@ const ProductManager = () => {
         <div className="flex items-center gap-8">
           <input 
             type="text"
-            placeholder="SEARCH ARCHIVE..."
+            placeholder="Search Archive..."
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="bg-transparent border-b border-vintage-ink px-0 py-2 text-[10px] font-bold uppercase outline-none focus:border-vintage-accent w-48 md:w-64 tracking-widest transition-colors placeholder:opacity-30"
+            onChange={(e) => { 
+              const val = e.target.value;
+              const titleCase = val.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+              setSearchTerm(titleCase); 
+              setCurrentPage(1); 
+            }}
+            className="bg-transparent border-b border-vintage-ink px-0 py-2 text-[10px] font-bold text-vintage-ink outline-none focus:border-vintage-accent w-48 md:w-64 tracking-widest transition-colors placeholder:text-vintage-ink/60"
           />
           <button onClick={() => { setEditingFont(null); setShowForm(true); }} className="vintage-btn btn-reverse px-10 py-4 text-[11px]">
             <Plus size={16} className="inline mr-2" /> New Entry
@@ -82,7 +87,9 @@ const ProductManager = () => {
           <tbody>
             {paginatedFonts.map((f) => (
               <tr key={f.id} className="border-b border-vintage-ink hover:bg-vintage-ink/2 transition-colors">
-                <td className="p-4"><span className="font-display text-2xl uppercase tracking-wider">{f.name}</span></td>
+                <td className="p-4">
+                  <span className="font-display text-2xl tracking-wider">{f.name}</span>
+                </td>
                 <td className="p-4 text-right">
                   <div className="flex justify-end gap-6">
                     <button onClick={() => handleEdit(f)} className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-1"><Edit2 size={12} /> Edit</button>

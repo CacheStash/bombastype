@@ -1,6 +1,11 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Plus, Trash2, Edit3, Save, X, ChevronUp, ChevronDown, FileText } from 'lucide-react';
+import { Plus, Trash2, Edit3, Save, X, FileText, Info } from 'lucide-react';
 
 interface ContentItem {
   id?: string;
@@ -18,8 +23,20 @@ const ContentManager = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
+  const [currentCategory, setCurrentCategory] = useState('faq');
 
-  // Fungsi untuk mengotomatisasi Section ID berdasarkan kategori
+  const categories = ['faq', 'license', 'policy', 'about', 'insights'];
+
+  const [formData, setFormData] = useState<ContentItem>({
+    title: '',
+    content: '',
+    page_path: '/faq',
+    section_id: '',
+    category: 'faq',
+    type: 'page',
+    sort_order: 0
+  });
+
   const generateSectionId = (category: string, index: number) => {
     const displayIndex = index + 1;
     if (category === 'faq') return `Q${displayIndex}`;
@@ -31,7 +48,7 @@ const ContentManager = () => {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Diperlukan agar drop bisa berfungsi
+    e.preventDefault();
   };
 
   const handleDrop = async (index: number) => {
@@ -41,7 +58,6 @@ const ContentManager = () => {
     const draggedItem = newItems.splice(draggedItemIndex, 1)[0];
     newItems.splice(index, 0, draggedItem);
 
-    // Update sort_order dan section_id secara otomatis berdasarkan urutan baru
     const updatedItems = newItems.map((item, idx) => ({
       ...item,
       sort_order: idx,
@@ -52,7 +68,6 @@ const ContentManager = () => {
     setItems(updatedItems);
     setDraggedItemIndex(null);
 
-    // Batch update ke Supabase
     try {
       const { error } = await supabase.from('site_content').upsert(updatedItems);
       if (error) throw error;
@@ -61,18 +76,6 @@ const ContentManager = () => {
       alert("SEQUENCE SYNC FAILED. PLEASE REFRESH.");
     }
   };
-  const [currentCategory, setCurrentCategory] = useState('faq');
-  const [formData, setFormData] = useState<ContentItem>({
-    title: '',
-    content: '',
-    page_path: '/faq',
-    section_id: '',
-    category: 'faq',
-    type: 'page',
-    sort_order: 0
-  });
-
-  const categories = ['faq', 'license', 'policy', 'about', 'insights'];
 
   useEffect(() => {
     fetchContent();
@@ -108,7 +111,7 @@ const ContentManager = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('DELETE THIS CONTENT PERMANENTLY?')) {
+    if (window.confirm('Discard this content record permanently?')) {
       await supabase.from('site_content').delete().eq('id', id);
       fetchContent();
     }
@@ -128,18 +131,26 @@ const ContentManager = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-4 border-black pb-6">
+    <div className="space-y-12 pb-20">
+      {/* HEADER & CATEGORIES */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-vintage-ink pb-8">
         <div>
-          <h2 className="text-4xl font-black uppercase italic tracking-tighter">Content_Vault</h2>
-          <p className="text-xs font-bold opacity-50 uppercase">Manage static pages & documentation</p>
+          {/* Ubah title jadi font-script sesuai product manager */}
+          <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Content Ledger</h2>
+          <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic">
+            Management of Static Documentation & Page Narratives
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        
+        <div className="flex flex-wrap gap-2 bg-vintage-paper/50 border border-vintage-ink p-1">
           {categories.map(cat => (
             <button
               key={cat}
-              onClick={() => setCurrentCategory(cat)}
-              className={`px-4 py-2 border border-black font-black text-[10px] uppercase tracking-widest transition-all ${currentCategory === cat ? 'bg-black text-white' : 'bg-white hover:bg-gray-100'}`}
+              onClick={() => {
+                setCurrentCategory(cat);
+                setFormData(prev => ({...prev, category: cat, page_path: `/${cat}`}));
+              }}
+              className={`px-4 py-2 font-bold text-[10px] uppercase tracking-widest transition-all ${currentCategory === cat ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
             >
               {cat}
             </button>
@@ -147,107 +158,152 @@ const ContentManager = () => {
         </div>
       </div>
 
-      {/* FORM SECTION */}
-      <form onSubmit={handleSubmit} className="border-2 border-black p-6 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-4">
-        <h3 className="font-black uppercase text-sm underline decoration-orange-500 decoration-2">
-          {isEditing ? 'EDIT_ENTRY' : 'CREATE_NEW_ENTRY'}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input 
-            type="text" placeholder="TITLE (e.g. Can I use for business?)" 
-            className="p-3 border border-black font-bold uppercase text-xs outline-none focus:bg-orange-50"
-            value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
-            required
-          />
-          <div className="grid grid-cols-3 gap-2">
-            <select 
-              className="p-3 border border-black font-bold uppercase text-[10px] outline-none bg-white cursor-pointer"
-              value={formData.type}
-              onChange={e => setFormData({...formData, type: e.target.value})}
-            >
-              <option value="page">STANDARD_CARD</option>
-              <option value="table">BRUTAL_TABLE</option>
-              <option value="special_footer">CLOSING_STATEMENT</option>
-              <option value="insight_summary">INSIGHT_SUMMARY</option>
-            </select>
-            <input 
-              type="text" placeholder="SECTION_ID" 
-              className="p-3 border border-black font-bold uppercase text-[10px] outline-none"
-              value={formData.section_id} onChange={e => setFormData({...formData, section_id: e.target.value})}
-              required
-            />
-            <input 
-              type="number" placeholder="ORDER" 
-              className="p-3 border border-black font-bold uppercase text-[10px] outline-none"
-              value={formData.sort_order} onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value)})}
-            />
+      {/* ENTRY FORM */}
+      <div className="vintage-card bg-white/40">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="flex items-center gap-3 border-b border-vintage-ink/10 pb-4">
+            <div className="p-2 bg-vintage-ink text-vintage-paper">
+              <FileText size={16} />
+            </div>
+            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-vintage-ink">
+              {isEditing ? 'Refine Existing Entry' : 'Register New Content Entry'}
+            </h3>
           </div>
-        </div>
-        <textarea 
-          placeholder="CONTENT (HTML ALLOWED: <b>, <br>, <ul>, etc)" 
-          className="w-full h-32 p-4 border border-black font-mono text-xs outline-none focus:bg-orange-50"
-          value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}
-          required
-        />
-        {formData.type === 'table' && (
-          <div className="p-4 bg-gray-100 border border-black text-[10px] font-mono leading-tight">
-            <p className="font-black mb-2 uppercase">Table JSON Format:</p>
-            <p className="text-gray-500">
-              {`{ "headers": ["COL1", "COL2"], "rows": [["DATA1", "DATA2"], ["DATA3", "DATA4"]] }`}
-            </p>
-          </div>
-        )}
-        {formData.type === 'special_footer' && (
-          <div className="p-4 bg-gray-100 border border-black text-[10px] font-mono leading-tight">
-            <p className="font-black mb-2 uppercase">Footer JSON Format:</p>
-            <p className="text-gray-500">
-              {`{ "italic_text": "Born in silence...", "location_info": "Sleman, Yogyakarta — 2026" }`}
-            </p>
-          </div>
-        )}
-        <div className="flex gap-2">
-          <button type="submit" className="flex items-center gap-2 bg-black text-white px-6 py-3 font-black text-xs uppercase hover:bg-orange-600 transition-all">
-            <Save size={16} /> {isEditing ? 'UPDATE_CONTENT' : 'PUBLISH_CONTENT'}
-          </button>
-          {isEditing && (
-            <button type="button" onClick={resetForm} className="flex items-center gap-2 border border-black px-6 py-3 font-black text-xs uppercase hover:bg-gray-100">
-              <X size={16} /> CANCEL
-            </button>
-          )}
-        </div>
-      </form>
 
-      {/* LIST SECTION */}
-      <div className="space-y-4 pb-20">
-        {loading ? (
-          <div className="font-black animate-pulse">SYNCING_DATA...</div>
-        ) : (
-          items.map((item, index) => (
-            <div key={item.id} draggable
-              onDragStart={() => handleDragStart(index)}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(index)}
-              className={`border border-black p-4 bg-white flex justify-between items-center group cursor-move transition-all ${
-                draggedItemIndex === index ? 'opacity-30 border-dashed bg-gray-50' : 'hover:border-orange-500'
-              }`}
-            >
-              <div className="flex items-center gap-6">
-                <span className="font-black text-2xl opacity-10 italic">#{item.sort_order}</span>
-                <div>
-                  <h4 className="font-black uppercase text-sm leading-none">{item.title}</h4>
-                  <p className="text-[10px] font-bold opacity-40 mt-1 uppercase">ID: {item.section_id} • PATH: {item.page_path}</p>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Entry Title</label>
+              <input 
+                type="text" 
+                placeholder="e.g. Licensing for Enterprise..." 
+              
+                className="w-full border-b border-vintage-ink/20 py-3 bg-transparent outline-none font-display text-xl focus:border-vintage-ink transition-colors placeholder:text-vintage-ink/60"
+                value={formData.title} 
+                onChange={e => setFormData({...formData, title: e.target.value})}
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Display Type</label>
+                <select 
+                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none cursor-pointer"
+                  value={formData.type}
+                  onChange={e => setFormData({...formData, type: e.target.value})}
+                >
+                  <option value="page">Standard Card</option>
+                  <option value="table">Data Table</option>
+                  <option value="special_footer">Closing Script</option>
+                  <option value="insight_summary">Insight Summary</option>
+                </select>
               </div>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => { setFormData(item); setIsEditing(true); window.scrollTo({top: 0, behavior: 'smooth'}); }} className="p-2 border border-black hover:bg-black hover:text-white">
-                  <Edit3 size={16} />
-                </button>
-                <button onClick={() => handleDelete(item.id!)} className="p-2 border border-black hover:bg-red-600 hover:text-white">
-                  <Trash2 size={16} />
-                </button>
+              <div className="space-y-2">
+                <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Section ID</label>
+                <input 
+                  type="text" 
+                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none"
+                  value={formData.section_id} 
+                  onChange={e => setFormData({...formData, section_id: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Sort Order</label>
+                <input 
+                  type="number" 
+                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none"
+                  value={formData.sort_order} 
+                  onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value)})}
+                />
               </div>
             </div>
-          ))
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Narrative Content (HTML Permitted)</label>
+            <textarea 
+              placeholder="Detailed content using standard markers..." 
+              className="w-full h-40 border border-vintage-ink/10 p-6 bg-vintage-paper/20 outline-none focus:border-vintage-ink font-serif text-lg italic transition-all placeholder:text-vintage-ink/60"
+              value={formData.content} 
+              onChange={e => setFormData({...formData, content: e.target.value})}
+              required
+            />
+          </div>
+
+          {/* Type-specific Helpers */}
+          {(formData.type === 'table' || formData.type === 'special_footer') && (
+            <div className="p-4 bg-vintage-ink/3 border border-vintage-ink/10 flex gap-4 items-start">
+              <Info size={16} className="text-vintage-accent mt-1 flex-none" />
+              <div className="text-[10px] font-mono leading-relaxed opacity-60">
+                <p className="font-bold uppercase mb-1">JSON Template Required:</p>
+                {formData.type === 'table' 
+                  ? `{ "headers": ["KEY", "VALUE"], "rows": [["Data A", "Data B"]] }`
+                  : `{ "italic_text": "Philosophy...", "location_info": "Studio Name — 2026" }`
+                }
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-4 pt-4">
+            <button type="submit" className="vintage-btn btn-reverse px-10 py-4 text-[10px]">
+              <Save size={14} className="mr-2 inline" /> {isEditing ? 'Commit Update' : 'Publish to Archive'}
+            </button>
+            {isEditing && (
+              <button type="button" onClick={resetForm} className="vintage-btn px-10 py-4 text-[10px] border-vintage-ink/20">
+                <X size={14} className="mr-2 inline" /> Discard Changes
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* ARCHIVE LIST */}
+      <div className="space-y-4">
+        {/* Active Ledger Entries dibuat lebih gelap */}
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Active Ledger Entries</h3>
+        {loading ? (
+          <div className="p-20 text-center italic opacity-40 font-serif">Syncing Ledger...</div>
+        ) : (
+          <div className="space-y-3">
+            {items.map((item, index) => (
+              <div 
+                key={item.id} 
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDrop(index)}
+                className={`vintage-card p-6 flex justify-between items-center group cursor-move transition-all hover:border-vintage-accent ${
+                  draggedItemIndex === index ? 'opacity-30 border-dashed bg-vintage-paper' : 'bg-white/40'
+                }`}
+              >
+                <div className="flex items-center gap-8">
+                  {/* Nomor sort_order dibuat lebih gelap */}
+                  <span className="font-display text-4xl text-vintage-ink/40 italic">#{item.sort_order}</span>
+                  <div>
+                    <h4 className="font-display text-2xl text-vintage-ink leading-none">{item.title}</h4>
+                    <p className="text-[9px] font-bold text-vintage-accent mt-2 uppercase tracking-widest">
+                      ID: {item.section_id} <span className="mx-2 opacity-30">|</span> PATH: {item.page_path} <span className="mx-2 opacity-30">|</span> TYPE: {item.type}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-6 opacity-0 group-hover:opacity-100 transition-all">
+                  <button 
+                    onClick={() => { setFormData(item); setIsEditing(true); window.scrollTo({top: 0, behavior: 'smooth'}); }} 
+                    className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-2"
+                  >
+                    <Edit3 size={14} /> Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(item.id!)} 
+                    className="text-[10px] font-bold uppercase tracking-widest text-red-900/40 hover:text-red-600 transition-colors flex items-center gap-2"
+                  >
+                    <Trash2 size={14} /> Discard
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

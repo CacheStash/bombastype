@@ -1,6 +1,14 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Send, Mail, User, Megaphone, Trash2, ArrowLeft, Calendar, AtSign, History, Inbox, CheckCheck, Check } from 'lucide-react';
+import { 
+  Send, Mail, User, Megaphone, Trash2, ArrowLeft, 
+  Calendar, AtSign, History, Inbox, CheckCircle2, AlertCircle 
+} from 'lucide-react';
 
 const PAGE_SIZE = 10;
 
@@ -42,13 +50,10 @@ const AdminMessages = () => {
       let query = supabase.from('admin_messages_view').select('*', { count: 'exact' });
 
       if (tab === 'inbox') {
-        // Tiket Support masuk atau Pesan yang ditujukan ke Admin
         query = query.or(`message_type.eq.support,recipient_id.eq.${user.id}`);
       } else if (tab === 'sent') {
-        // Balasan Admin (Reply)
         query = query.eq('sender_id', user.id).eq('message_type', 'reply');
       } else if (tab === 'broadcast') {
-        // Riwayat Broadcast
         query = query.eq('message_type', 'broadcast');
       }
 
@@ -85,7 +90,7 @@ const AdminMessages = () => {
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (!confirm("HAPUS_PERMANEN? Tindakan ini tidak bisa dibatalkan.")) return;
+    if (!confirm("Discard this correspondence permanently?")) return;
     
     const { error } = await supabase.from('font_messages').delete().eq('id', id);
     if (!error) {
@@ -109,10 +114,10 @@ const AdminMessages = () => {
       }]);
 
       if (error) throw error;
-      alert("BROADCAST_DISPATCHED");
+      alert("Broadcast Dispatched Successfully");
       setSubject(''); setContent(''); fetchMessages();
     } catch (err: any) {
-      alert("BROADCAST_ERROR: " + err.message);
+      alert("Broadcast Error: " + err.message);
     } finally {
       setSending(false);
     }
@@ -134,38 +139,50 @@ const AdminMessages = () => {
       }]);
 
       if (error) throw error;
-      alert("REPLY_SENT_SUCCESSFULLY");
+      alert("Reply Sent Successfully");
       setReplyContent(''); setSelectedMessage(null); fetchMessages();
     } catch (err: any) {
-      alert("REPLY_ERROR: " + err.message);
+      alert("Reply Error: " + err.message);
     } finally {
       setReplying(false);
     }
   };
 
   return (
-    <div className="space-y-8 font-mono uppercase text-black">
-      {/* Header & Tabs */}
-      <div className="border-b-2 border-black pb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+    <div className="space-y-10 pb-20">
+      {/* HEADER & NAVIGATION */}
+      <div className="border-b border-vintage-ink pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         {!selectedMessage && (
           <>
-            <div className="relative">
-              <h2 className="text-4xl font-black italic">MAIL_CENTER</h2>
-              <p className="text-[10px] opacity-40">Admin Message & Support Control</p>
+            <div>
+              <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Dispatch Hub</h2>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic flex items-center gap-2">
+                <Mail size={12} /> Archival Communications & Support
+              </p>
             </div>
-            <div className="flex border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white">
-              <button onClick={() => {setTab('inbox'); setCurrentPage(0);}} className={`px-4 py-2 text-[10px] font-black flex items-center gap-2 relative ${tab === 'inbox' ? 'bg-black text-white' : ''}`}>
+            
+            <div className="flex bg-vintage-paper/50 border border-vintage-ink p-1">
+              <button 
+                onClick={() => {setTab('inbox'); setCurrentPage(0);}} 
+                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 transition-all relative ${tab === 'inbox' ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
+              >
                 <Inbox size={14}/> INBOX
                 {unreadCount > 0 && (
-                  <span className="absolute -top-3 -right-2 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] animate-pulse">
+                  <span className="absolute -top-2 -right-1 bg-vintage-accent text-vintage-paper text-[8px] font-black px-1.5 py-0.5 border border-vintage-ink animate-pulse">
                     {unreadCount}
                   </span>
                 )}
               </button>
-              <button onClick={() => {setTab('sent'); setCurrentPage(0);}} className={`px-4 py-2 text-[10px] font-black flex items-center gap-2 border-l-2 border-black ${tab === 'sent' ? 'bg-black text-white' : ''}`}>
+              <button 
+                onClick={() => {setTab('sent'); setCurrentPage(0);}} 
+                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink transition-all ${tab === 'sent' ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
+              >
                 <History size={14}/> SENT
               </button>
-              <button onClick={() => {setTab('broadcast'); setCurrentPage(0);}} className={`px-4 py-2 text-[10px] font-black flex items-center gap-2 border-l-2 border-black ${tab === 'broadcast' ? 'bg-black text-white' : ''}`}>
+              <button 
+                onClick={() => {setTab('broadcast'); setCurrentPage(0);}} 
+                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink transition-all ${tab === 'broadcast' ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
+              >
                 <Megaphone size={14}/> HUB
               </button>
             </div>
@@ -174,89 +191,122 @@ const AdminMessages = () => {
       </div>
 
       {selectedMessage ? (
-        /* DETAIL VIEW */
-        <div className="border-2 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in zoom-in-95 duration-200">
-          <div className="p-4 border-b-2 border-black bg-gray-50 flex justify-between items-center text-[10px] font-black">
-            <button onClick={() => setSelectedMessage(null)} className="flex items-center gap-2 hover:underline cursor-pointer">
-              <ArrowLeft size={14} /> BACK_TO_LIST
+        /* DETAIL VIEW: ARCHIVAL PAPER STYLE */
+        <div className="vintage-card bg-white p-0 overflow-hidden max-w-4xl mx-auto border-double border-4 border-vintage-ink">
+          <div className="p-4 border-b border-vintage-ink bg-vintage-ink/5 flex justify-between items-center text-[10px] font-bold tracking-widest">
+            <button onClick={() => setSelectedMessage(null)} className="flex items-center gap-2 hover:text-vintage-accent transition-colors">
+              <ArrowLeft size={14} /> BACK TO DISPATCH
             </button>
-            <button onClick={() => handleDelete(selectedMessage.id)} className="text-red-600 p-2 flex items-center gap-2 border border-transparent hover:border-red-600 transition-all">
-              <Trash2 size={14} /> DELETE_PERMANENTLY
+            <button onClick={() => handleDelete(selectedMessage.id)} className="text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-2 uppercase">
+              <Trash2 size={14} /> Discard Letter
             </button>
           </div>
-          <div className="p-8 space-y-6">
-            <div className="space-y-2 border-b border-black pb-6">
-              <div className="flex items-center gap-2 text-[10px] font-black opacity-40">
-                <User size={12}/> FROM: {selectedMessage.sender_name || 'SYSTEM'}
+          
+          <div className="p-10 md:p-16 space-y-10">
+            <div className="space-y-4 border-b border-vintage-ink pb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] font-bold tracking-[0.2em] text-vintage-ink/50 uppercase">
+                <div className="flex items-center gap-3"><User size={14} className="text-vintage-accent"/> FROM: <span className="text-vintage-ink">{selectedMessage.sender_name || 'STUDIO SYSTEM'}</span></div>
+                <div className="flex items-center gap-3"><AtSign size={14} className="text-vintage-accent"/> MAIL: <span className="text-vintage-ink">{selectedMessage.sender_email || 'OFFICIAL'}</span></div>
+                <div className="flex items-center gap-3"><Calendar size={14} className="text-vintage-accent"/> DATE: <span className="text-vintage-ink">{new Date(selectedMessage.created_at).toLocaleString()}</span></div>
               </div>
-              <div className="flex items-center gap-2 text-[10px] font-black opacity-40">
-                <AtSign size={12}/> MAIL: {selectedMessage.sender_email || 'OFFICIAL'}
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-black opacity-40">
-                <Calendar size={12}/> DATE: {new Date(selectedMessage.created_at).toLocaleString()}
-              </div>
-              <h3 className="text-3xl font-black italic break-words mt-4">{selectedMessage.subject}</h3>
+              <h3 className="text-4xl md:text-5xl font-display leading-tight text-vintage-ink pt-4">{selectedMessage.subject}</h3>
             </div>
-            <p className="text-sm font-bold leading-relaxed whitespace-pre-wrap py-4">{selectedMessage.content}</p>
+            
+            <div className="font-serif text-lg leading-relaxed text-vintage-ink/80 whitespace-pre-wrap italic">
+              {selectedMessage.content}
+            </div>
             
             {/* REPLY AREA */}
             {tab === 'inbox' && selectedMessage.message_type === 'support' && (
-              <form onSubmit={handleReply} className="mt-8 pt-8 border-t-2 border-black space-y-4">
-                <div className="flex items-center gap-2 text-[10px] font-black italic text-blue-600">
-                  <Send size={12} /> QUICK_REPLY_TO_{selectedMessage.sender_name?.split(' ')[0] || 'BUYER'}
+              <form onSubmit={handleReply} className="mt-12 pt-12 border-t border-vintage-ink space-y-6">
+                <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest text-vintage-accent uppercase">
+                  <Send size={14} /> Draft a Response to {selectedMessage.sender_name?.split(' ')[0] || 'Buyer'}
                 </div>
-                <textarea rows={4} placeholder="RESPONSE..." value={replyContent} onChange={e => setReplyContent(e.target.value)} className="w-full border-2 border-black p-4 outline-none focus:bg-blue-50 font-bold text-xs resize-none" required />
-                <button disabled={replying} className="bg-black text-white px-8 py-3 font-black text-xs shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none translate-y-0 active:translate-y-[2px] transition-all">
-                  {replying ? 'SENDING...' : 'DISPATCH_REPLY'}
+                <textarea 
+                  rows={6} 
+                  placeholder="Your archival response..." 
+                  value={replyContent} 
+                  onChange={e => setReplyContent(e.target.value)} 
+                  className="w-full border border-vintage-ink/20 p-6 bg-vintage-paper/20 outline-none focus:border-vintage-ink font-serif text-lg transition-all italic" 
+                  required 
+                />
+                <button disabled={replying} className="vintage-btn btn-reverse px-12 py-4">
+                  {replying ? 'SENDING...' : 'DISPATCH REPLY'}
                 </button>
               </form>
             )}
           </div>
         </div>
       ) : tab === 'broadcast' && messages.length === 0 && !loading ? (
-        /* BROADCAST HUB (IF EMPTY HISTORY) - SHOW FORM */
-        <div className="max-w-2xl border-2 border-black p-8 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-           <form onSubmit={handleBroadcast} className="space-y-6">
-              <h3 className="text-2xl font-black italic flex items-center gap-3 border-b-2 border-black pb-4"><Megaphone /> DISPATCH_NEWSLETTER</h3>
-              <input type="text" value={subject} onChange={e => setSubject(e.target.value)} className="w-full border-2 border-black p-3 outline-none focus:bg-yellow-50 font-bold" placeholder="SUBJECT" required />
-              <textarea rows={6} value={content} onChange={e => setContent(e.target.value)} className="w-full border-2 border-black p-3 outline-none focus:bg-yellow-50 font-bold resize-none" placeholder="CONTENT..." required />
-              <button disabled={sending} className="w-full bg-black text-white p-4 font-black flex justify-center items-center gap-2 uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]">
-                {sending ? 'SENDING...' : <><Send size={18} /> BROADCAST_NOW</>}
+        /* BROADCAST FORM (EMPTY HISTORY) */
+        <div className="max-w-2xl mx-auto vintage-card p-12">
+           <form onSubmit={handleBroadcast} className="space-y-8 text-center">
+              <div className="space-y-2">
+                <h3 className="text-3xl font-display uppercase tracking-widest">Dispatch Newsletter</h3>
+                <p className="text-[10px] font-bold tracking-[0.2em] text-vintage-accent italic uppercase">Global Broadcast to All Subscribers</p>
+              </div>
+              <input 
+                type="text" 
+                value={subject} 
+                onChange={e => setSubject(e.target.value)} 
+                className="w-full border-b border-vintage-ink py-4 bg-transparent outline-none font-display text-2xl focus:border-vintage-accent transition-all text-center placeholder:opacity-20" 
+                placeholder="SUBJECT OF DISPATCH" 
+                required 
+              />
+              <textarea 
+                rows={8} 
+                value={content} 
+                onChange={e => setContent(e.target.value)} 
+                className="w-full border border-vintage-ink/20 p-6 bg-vintage-paper/20 outline-none focus:border-vintage-ink font-serif text-lg italic transition-all" 
+                placeholder="COMMUNICATION CONTENT..." 
+                required 
+              />
+              <button disabled={sending} className="vintage-btn btn-reverse w-full py-5 text-xs">
+                {sending ? 'DISPATCHING...' : <span className="flex items-center justify-center gap-4"><Send size={16} /> BROADCAST NOW</span>}
               </button>
            </form>
         </div>
       ) : (
-        /* LIST VIEW (INBOX / SENT / BROADCAST HISTORY) */
-        <div className="space-y-4">
+        /* LIST VIEW */
+        <div className="space-y-6">
           {tab === 'broadcast' && (
-             <div className="border-2 border-black p-6 bg-yellow-400 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-8">
-                <form onSubmit={handleBroadcast} className="flex flex-col md:flex-row gap-4">
-                  <input type="text" placeholder="QUICK_BROADCAST_SUBJECT" value={subject} onChange={e => setSubject(e.target.value)} className="flex-1 border-2 border-black p-2 font-black text-xs outline-none" required />
-                  <textarea placeholder="CONTENT..." value={content} onChange={e => setContent(e.target.value)} className="flex-1 border-2 border-black p-2 font-black text-xs outline-none resize-none h-10" required />
-                  <button disabled={sending} className="bg-black text-white px-6 py-2 text-[10px] font-black border-2 border-black hover:bg-white hover:text-black transition-all">
-                    {sending ? 'SENDING...' : 'DISPATCH'}
+             <div className="vintage-card bg-vintage-accent/5 border-dashed border-vintage-ink/30 mb-10">
+                <form onSubmit={handleBroadcast} className="flex flex-col md:flex-row gap-6 items-end">
+                  <div className="flex-1 space-y-4 w-full">
+                    <input type="text" placeholder="Quick Subject..." value={subject} onChange={e => setSubject(e.target.value)} className="w-full bg-transparent border-b border-vintage-ink py-2 text-xs font-bold outline-none" required />
+                    <textarea placeholder="Write broadcast message..." value={content} onChange={e => setContent(e.target.value)} className="w-full bg-transparent border-b border-vintage-ink/20 text-xs font-serif italic outline-none resize-none h-10" required />
+                  </div>
+                  <button disabled={sending} className="vintage-btn px-10 py-3 text-[9px] h-fit">
+                    {sending ? 'SENDING' : 'DISPATCH'}
                   </button>
                 </form>
              </div>
           )}
 
-          <div className="space-y-2">
-            {loading ? <div className="animate-pulse font-black text-xs italic">SCANNING_DATABASE...</div> : 
-             messages.length === 0 ? <div className="p-20 border-2 border-dashed border-black text-center opacity-20 font-bold italic">NO_DATA_FOUND</div> : (
+          <div className="space-y-3">
+            {loading ? (
+              <div className="p-20 text-center animate-pulse italic opacity-40 font-serif">Scanning Archive...</div>
+            ) : messages.length === 0 ? (
+              <div className="p-20 border border-dashed border-vintage-ink/30 text-center opacity-40 font-serif italic uppercase tracking-widest text-[10px]">No correspondences found in this folio</div>
+            ) : (
               messages.map(m => (
-                <div key={m.id} onClick={() => markAsRead(m)} className={`border-2 border-black p-4 flex items-center justify-between group cursor-pointer transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none active:translate-y-1 ${!m.is_read && tab === 'inbox' ? 'bg-blue-50 ring-2 ring-black' : 'bg-white hover:bg-black hover:text-white'}`}>
-                  <div className="flex flex-col gap-1 overflow-hidden">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[9px] font-black bg-black text-white px-2 py-0.5 group-hover:bg-white group-hover:text-black">
-                        {tab === 'sent' ? `TO: ${m.recipient_id ? 'BUYER' : 'ALL'}` : (m.sender_name?.split(' ')[0] || 'BUYER')}
+                <div 
+                  key={m.id} 
+                  onClick={() => markAsRead(m)} 
+                  className={`vintage-card p-6 flex items-center justify-between group cursor-pointer transition-all hover:border-vintage-accent ${!m.is_read && tab === 'inbox' ? 'bg-vintage-paper border-l-4 border-l-vintage-accent' : 'bg-white/40'}`}
+                >
+                  <div className="flex flex-col gap-2 overflow-hidden flex-1">
+                    <div className="flex items-center gap-4">
+                      <span className="text-[8px] font-black bg-vintage-ink text-vintage-paper px-2 py-0.5 tracking-widest uppercase">
+                        {tab === 'sent' ? `TO: ${m.recipient_id ? 'CLIENT' : 'GLOBAL'}` : (m.sender_name || 'BUYER')}
                       </span>
-                      <span className="text-[9px] font-bold opacity-40 group-hover:text-white/40">{new Date(m.created_at).toLocaleDateString()}</span>
-                      {!m.is_read && tab === 'inbox' && <span className="bg-red-600 text-white text-[8px] px-1 animate-pulse">NEW</span>}
+                      <span className="text-[9px] font-bold opacity-40 uppercase tracking-tighter italic">{new Date(m.created_at).toLocaleDateString()}</span>
+                      {!m.is_read && tab === 'inbox' && <span className="flex items-center gap-1 text-vintage-accent text-[8px] font-bold animate-pulse uppercase"><AlertCircle size={10}/> Unread Letter</span>}
                     </div>
-                    <h4 className="text-sm font-black truncate">{m.subject}</h4>
-                    <p className="text-[10px] font-bold opacity-40 truncate group-hover:text-white/60">{m.content.substring(0, 80)}...</p>
+                    <h4 className={`text-xl font-display leading-tight truncate ${!m.is_read && tab === 'inbox' ? 'text-vintage-ink' : 'text-vintage-ink/70'}`}>{m.subject}</h4>
+                    <p className="text-[11px] font-serif italic opacity-50 truncate">{m.content.substring(0, 120)}...</p>
                   </div>
-                  <button onClick={(e) => handleDelete(m.id, e)} className="p-2 opacity-0 group-hover:opacity-100 text-red-500 hover:scale-110 transition-all"><Trash2 size={16} /></button>
+                  <button onClick={(e) => handleDelete(m.id, e)} className="p-3 opacity-0 group-hover:opacity-100 text-red-900/40 hover:text-red-600 transition-all"><Trash2 size={18} /></button>
                 </div>
               ))
             )}
@@ -264,10 +314,22 @@ const AdminMessages = () => {
 
           {/* PAGINATION */}
           {totalCount > PAGE_SIZE && (
-            <div className="flex justify-center items-center gap-4 pt-4">
-              <button disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)} className="border-2 border-black p-2 disabled:opacity-30 active:bg-black active:text-white"><ArrowLeft size={16}/></button>
-              <span className="text-[10px] font-black">PAGE {currentPage + 1} / {Math.ceil(totalCount / PAGE_SIZE)}</span>
-              <button disabled={(currentPage + 1) * PAGE_SIZE >= totalCount} onClick={() => setCurrentPage(p => p + 1)} className="border-2 border-black p-2 disabled:opacity-30 active:bg-black active:text-white rotate-180"><ArrowLeft size={16}/></button>
+            <div className="flex justify-center items-center gap-6 pt-10">
+              <button 
+                disabled={currentPage === 0} 
+                onClick={() => setCurrentPage(p => p - 1)} 
+                className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-20"
+              >
+                <ArrowLeft size={18}/>
+              </button>
+              <span className="text-[10px] font-bold tracking-[0.3em] text-vintage-ink/60 uppercase">Folio {currentPage + 1} / {Math.ceil(totalCount / PAGE_SIZE)}</span>
+              <button 
+                disabled={(currentPage + 1) * PAGE_SIZE >= totalCount} 
+                onClick={() => setCurrentPage(p => p + 1)} 
+                className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-20"
+              >
+                <ArrowLeft size={18} className="rotate-180"/>
+              </button>
             </div>
           )}
         </div>

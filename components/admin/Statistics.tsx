@@ -1,10 +1,15 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell 
 } from 'recharts';
-import { Download, ChevronLeft, ChevronRight, Filter, Calendar, Users } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Filter, Calendar, Users, TrendingUp } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
 interface OrderData {
@@ -42,7 +47,8 @@ interface StatsResult {
   totalRevenue: number;
 }
 
-const COLORS = ['#000000', '#FF5C00', '#FFD600', '#00E0FF', '#7000FF', '#00FF47'];
+// Vintage Palette for Charts
+const COLORS = ['#2c241a', '#8b6b4a', '#4a3c2c', '#c2b280', '#5c4d3c', '#a69076'];
 
 const Statistics: React.FC = () => {
   const [salesData, setSalesData] = useState<OrderData[]>([]);
@@ -53,7 +59,7 @@ const Statistics: React.FC = () => {
   const itemsPerPage = 10;
 
   // Filters State
-  const [dateRange, setDateRange] = useState('monthly'); // weekly, monthly, yearly, custom
+  const [dateRange, setDateRange] = useState('monthly');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [fontFilter, setFontFilter] = useState('all');
@@ -61,7 +67,6 @@ const Statistics: React.FC = () => {
 
   useEffect(() => {
     fetchSalesData();
-    fetchSubscribers();
   }, [dateRange, customStart, customEnd, fontFilter, typeFilter]);
 
   useEffect(() => {
@@ -109,7 +114,6 @@ const Statistics: React.FC = () => {
     }
   };
 
-  // --- DATA PROCESSING (FIXED TYPES) ---
   const stats: StatsResult = useMemo(() => {
     const initialAccumulator = {
       revenueOverTime: {} as Record<string, number>,
@@ -119,7 +123,7 @@ const Statistics: React.FC = () => {
     };
 
     const processed = salesData.reduce((acc, curr) => {
-      const date = new Date(curr.download_date).toLocaleDateString();
+      const date = new Date(curr.download_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const price = curr.metadata?.price_at_purchase || 0;
       
       acc.revenueOverTime[date] = (acc.revenueOverTime[date] || 0) + price;
@@ -162,139 +166,174 @@ const Statistics: React.FC = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `SUBSCRIBERS_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `ARCHIVE_SUBSCRIBERS_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
   return (
-    <div className="space-y-10 font-mono uppercase">
+    <div className="space-y-12 pb-20">
       {/* HEADER & FILTERS */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b-2 border-black pb-6">
-        <div>
-          <h2 className="text-4xl font-black italic">ANALYTICS_CORE</h2>
-          <p className="text-xs font-bold text-gray-400 mt-1">Total Revenue: <span className="text-black">${stats.totalRevenue}</span></p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-vintage-ink pb-8">
+        <div className="space-y-1">
+          <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Archive Insight</h2>
+          <div className="flex items-center gap-2 text-vintage-accent">
+            <TrendingUp size={16} />
+            <p className="text-[11px] font-bold tracking-[0.2em] uppercase">
+              Valuation: <span className="text-vintage-ink">${stats.totalRevenue.toLocaleString()}</span>
+            </p>
+          </div>
         </div>
         
-        <div className="flex flex-wrap gap-4">
-
-            {/* Date Range Selector */}
-          <div className="flex gap-2">
+        <div className="flex flex-wrap gap-3">
+          <div className="flex gap-1 border border-vintage-ink p-1 bg-vintage-paper/50">
             <select 
               value={dateRange} 
               onChange={(e) => setDateRange(e.target.value)} 
-              className="border-2 border-black p-2 text-[10px] font-black outline-none bg-white"
+              className="bg-transparent text-[10px] font-bold p-2 outline-none uppercase tracking-wider"
             >
-              <option value="weekly">LAST_7_DAYS</option>
-              <option value="monthly">LAST_30_DAYS</option>
-              <option value="yearly">LAST_YEAR</option>
-              <option value="custom">CUSTOM_RANGE</option>
+              <option value="weekly">7 Days</option>
+              <option value="monthly">30 Days</option>
+              <option value="yearly">1 Year</option>
+              <option value="custom">Custom</option>
             </select>
 
             {dateRange === 'custom' && (
-              <div className="flex gap-2 animate-in fade-in slide-in-from-right-2">
+              <div className="flex gap-1 border-l border-vintage-ink/20 pl-1">
                 <input 
                   type="date" 
                   value={customStart} 
                   onChange={(e) => setCustomStart(e.target.value)}
-                  className="border-2 border-black p-1 text-[10px] font-black outline-none"
+                  className="bg-transparent text-[9px] p-1 outline-none"
                 />
                 <input 
                   type="date" 
                   value={customEnd} 
                   onChange={(e) => setCustomEnd(e.target.value)}
-                  className="border-2 border-black p-1 text-[10px] font-black outline-none"
+                  className="bg-transparent text-[9px] p-1 outline-none"
                 />
               </div>
             )}
           </div>
 
-          <select value={fontFilter} onChange={(e) => setFontFilter(e.target.value)} className="border-2 border-black p-2 text-[10px] font-black outline-none bg-white">
-            <option value="all">ALL_FONTS</option>
+          <select value={fontFilter} onChange={(e) => setFontFilter(e.target.value)} className="border border-vintage-ink p-2 text-[10px] font-bold outline-none bg-transparent uppercase tracking-wider">
+            <option value="all">All Fonts</option>
             {Array.from(new Set(salesData.map(d => d.font_name))).map(f => <option key={f} value={f}>{f}</option>)}
           </select>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="border-2 border-black p-2 text-[10px] font-black outline-none bg-white">
-            <option value="all">ALL_TYPES</option>
-            <option value="full">FULL_LICENSE</option>
-            <option value="trial">DEMO_TRIAL</option>
+
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="border border-vintage-ink p-2 text-[10px] font-bold outline-none bg-transparent uppercase tracking-wider">
+            <option value="all">All Access</option>
+            <option value="full">Full Archive</option>
+            <option value="trial">Demo/Trial</option>
           </select>
         </div>
       </div>
 
       {/* CHARTS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="border-2 border-black p-6 bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-          <h3 className="text-sm font-black mb-6 flex items-center gap-2"><Calendar size={14}/> REVENUE_STREAM</h3>
-          <div className="h-64 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="vintage-card bg-white/40">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] mb-8 flex items-center gap-3 text-vintage-accent">
+            <Calendar size={14}/> Revenue Provenance
+          </h3>
+          <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={stats.lineData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                <XAxis dataKey="date" hide />
-                <YAxis fontSize={10} fontStyle="bold" />
-                <Tooltip contentStyle={{ borderRadius: '0', border: '2px solid black' }} />
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e8e2d0" />
+                <XAxis dataKey="date" fontSize={9} fontStyle="italic" axisLine={false} tickLine={false} />
+                <YAxis fontSize={9} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#fdf6e3', border: '1px solid #2c241a', borderRadius: '0', fontSize: '10px' }}
+                  itemStyle={{ color: '#2c241a', fontWeight: 'bold' }}
+                />
                 <Line 
                   type="monotone" 
                   dataKey="amount" 
-                  stroke="#000" 
-                  strokeWidth={3} 
-                  dot={{ r: 4, fill: '#fff', stroke: '#000', strokeWidth: 2 }} 
-                  activeDot={{ r: 6, fill: '#FF5C00', stroke: '#000', strokeWidth: 2 }}
+                  stroke="#2c241a" 
+                  strokeWidth={2} 
+                  dot={{ r: 3, fill: '#fdf6e3', stroke: '#2c241a', strokeWidth: 1 }} 
+                  activeDot={{ r: 5, fill: '#8b6b4a', stroke: '#2c241a', strokeWidth: 1 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="border-2 border-black p-6 bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-          <h3 className="text-sm font-black mb-6 flex items-center gap-2"><Filter size={14}/> USAGE_DYNAMICS</h3>
-          <div className="h-64 w-full">
+        <div className="vintage-card bg-white/40">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] mb-8 flex items-center gap-3 text-vintage-accent">
+            <Filter size={14}/> License Distribution
+          </h3>
+          <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={stats.pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                <Pie data={stats.pieData} innerRadius={60} outerRadius={90} paddingAngle={4} dataKey="value" stroke="none">
                   {stats.pieData.map((_entry: ChartPoint, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
-                <Legend iconType="rect" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                <Tooltip 
+                   contentStyle={{ backgroundColor: '#fdf6e3', border: '1px solid #2c241a', borderRadius: '0', fontSize: '10px' }}
+                />
+                <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingTop: '20px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* SUBSCRIBERS TABLE */}
-      <div className="space-y-4 pt-10">
-        <div className="flex justify-between items-center">
-          <h3 className="text-2xl font-black italic flex items-center gap-3"><Users size={24}/> EMAIL_SUBSCRIBERS</h3>
-          <button onClick={exportSubscribersCSV} className="bg-black text-white px-4 py-2 text-[10px] font-black flex items-center gap-2 hover:bg-gray-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]">
-            <Download size={14}/> EXPORT_LIST
+      {/* SUBSCRIBERS SECTION */}
+      <div className="space-y-8 pt-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <h3 className="text-3xl font-script capitalize flex items-center gap-4">
+            <Users size={24} className="text-vintage-accent"/> Correspondence List
+          </h3>
+          <button onClick={exportSubscribersCSV} className="vintage-btn text-[9px] px-6 flex items-center gap-3">
+            <Download size={14}/> Export Archive
           </button>
         </div>
-        <div className="border-2 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-x-auto">
+
+        <div className="overflow-x-auto border border-vintage-ink">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b-2 border-black text-[10px] font-black text-gray-400">
-                <th className="p-4">EMAIL_ADDRESS</th>
-                <th className="p-4">ENTRY_SOURCE</th>
-                <th className="p-4">STATUS</th>
+              <tr className="bg-vintage-ink/5 border-b border-vintage-ink text-[10px] font-bold text-vintage-ink/60 uppercase tracking-widest">
+                <th className="p-5">Subscriber Identity</th>
+                <th className="p-5 text-center">Provenance</th>
+                <th className="p-5 text-right">Registry Status</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] font-bold">
+            <tbody className="text-[11px] font-serif">
               {subscribers.map((s, i) => (
-                <tr key={i} className="border-b border-black hover:bg-yellow-50">
-                  <td className="p-4 lowercase">{s.email}</td>
-                  <td className="p-4 uppercase">{s.source}</td>
-                  <td className="p-4"><span className="px-2 py-0.5 border border-black bg-green-400 text-black">{s.status}</span></td>
+                <tr key={i} className="border-b border-vintage-ink/10 hover:bg-vintage-ink/2 transition-colors">
+                  <td className="p-5 text-vintage-ink font-bold">{s.email}</td>
+                  <td className="p-5 text-center italic opacity-60">{s.source}</td>
+                  <td className="p-5 text-right">
+                    <span className="text-[9px] uppercase tracking-widest font-bold px-3 py-1 border border-vintage-ink/20 text-vintage-accent">
+                      {s.status}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         
-        <div className="flex justify-center items-center gap-4 pt-4">
-          <button onClick={() => setSubPage(p => Math.max(1, p - 1))} className="p-2 border-2 border-black disabled:opacity-20"><ChevronLeft size={16}/></button>
-          <span className="text-[10px] font-black">PAGE {subPage} OF {Math.ceil(subCount/itemsPerPage)}</span>
-          <button onClick={() => setSubPage(p => p + 1)} disabled={subPage >= Math.ceil(subCount/itemsPerPage)} className="p-2 border-2 border-black disabled:opacity-20"><ChevronRight size={16}/></button>
+        {/* PAGINATION */}
+        <div className="flex justify-center items-center gap-6 pt-6">
+          <button 
+            onClick={() => setSubPage(p => Math.max(1, p - 1))} 
+            disabled={subPage === 1}
+            className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper disabled:opacity-20 transition-all"
+          >
+            <ChevronLeft size={16}/>
+          </button>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-vintage-ink/60">
+            Folio {subPage} <span className="mx-2">/</span> {Math.ceil(subCount/itemsPerPage)}
+          </span>
+          <button 
+            onClick={() => setSubPage(p => p + 1)} 
+            disabled={subPage >= Math.ceil(subCount/itemsPerPage)} 
+            className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper disabled:opacity-20 transition-all"
+          >
+            <ChevronRight size={16}/>
+          </button>
         </div>
       </div>
     </div>

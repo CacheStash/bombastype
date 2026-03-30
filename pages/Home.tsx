@@ -12,12 +12,12 @@ import { useNavigate } from 'react-router-dom';
 const FontCard = ({ title, subtitle, fontClass, price }: { title: string, subtitle: string, fontClass: string, price: string }) => (
   <motion.div 
     whileHover={{ scale: 1.02 }}
-    className="vintage-card flex flex-col items-center text-center border-double border-4 border-vintage-ink h-full p-6 pt-10"
+    className="vintage-card flex flex-col items-center text-center h-full p-6 pt-10"
   >
     <div className="h-6 flex items-center justify-center">
       <p className="text-[12px] uppercase tracking-widest text-vintage-accent font-bold">{subtitle}</p>
     </div>
-    <hr className="w-full border-vintage-ink/20 my-4" />
+    <hr className="w-full border-vintage-ink my-4" />
     <div className="h-32 flex items-center justify-center w-full px-4">
       <h3 className={`text-3xl leading-tight ${fontClass}`}>{title}</h3>
     </div>
@@ -93,9 +93,9 @@ export default function Home() {
             <motion.div 
               key={font.id}
               whileHover={{ scale: 1.02 }}
-              className="vintage-card flex flex-col border-double border-4 border-vintage-ink p-0 overflow-hidden h-full"
+              className="vintage-card flex flex-col p-0 overflow-hidden h-full"
             >
-              <div className="aspect-3/2 w-full bg-vintage-ink/5 border-b-2 border-vintage-ink/20 relative group overflow-hidden">
+              <div className="aspect-3/2 w-full bg-vintage-ink/5 border-b border-vintage-ink relative group overflow-hidden">
                 <img 
                   src={font.img} 
                   alt={font.name} 
