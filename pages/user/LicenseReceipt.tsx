@@ -1,22 +1,25 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Printer, ArrowLeft } from 'lucide-react';
+import { Printer, ArrowLeft, ShieldCheck, Award, MapPin, Calendar } from 'lucide-react';
 
 const LicenseReceipt = () => {
   const { orderId } = useParams();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-const [userEmail, setUserEmail] = useState('');
-const [buyerInfo, setBuyerInfo] = useState<{name: string, address: string}>({ name: 'N/A', address: 'N/A' });
+  const [userEmail, setUserEmail] = useState('');
+  const [buyerInfo, setBuyerInfo] = useState<{name: string, address: string}>({ name: 'N/A', address: 'N/A' });
 
   useEffect(() => {
     const fetchReceipt = async () => {
-      // 1. Ambil email user aktif
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) setUserEmail(user.email);
 
-      // 2. Ambil detail transaksi + Data Pembeli (Join fontbuyer)
       const { data, error } = await supabase
         .from('font_history')
         .select(`
@@ -28,7 +31,6 @@ const [buyerInfo, setBuyerInfo] = useState<{name: string, address: string}>({ na
       
       if (!error && data && data.length > 0) {
         setData(data);
-        // Ambil info pembeli dari baris pertama (fontbuyer adalah relasi object)
         const buyer = data[0].fontbuyer;
         if (buyer) {
           setBuyerInfo({
@@ -42,9 +44,8 @@ const [buyerInfo, setBuyerInfo] = useState<{name: string, address: string}>({ na
     fetchReceipt();
   }, [orderId]);
 
-  if (loading) return <div className="p-10 font-mono">LOADING_RECEIPT...</div>;
+  if (loading) return <div className="p-20 text-center italic opacity-40 font-serif">Consulting Archival Registry...</div>;
 
-  // DATABASE TEKS LISENSI STATIS
   const LICENSE_DB: any = {
     trial: {
       title: 'PERSONAL USE (DEMO)',
@@ -61,7 +62,6 @@ const [buyerInfo, setBuyerInfo] = useState<{name: string, address: string}>({ na
     corporate: 'CORPORATE ALL-IN-ONE: A comprehensive license covering all categories for an entire organization with no limits on seats or impressions.'
   };
 
-  // FIXED: Master Tier Labels disesuaikan dengan index.js terbaru
   const MASTER_TIER_LABELS: any = {
     desktop: { solo: '1 USER ONLY', team: 'UP TO 30 USER', studio: 'UP TO 100 USER', enterprise: 'UNLIMITED USER' },
     social_web: { small_50k: '50K VIEWS', medium_500k: '500K VIEWS', large_5m: '2M VIEWS', enterprise_unlimited: 'UNLIMITED VIEWS' },
@@ -70,109 +70,151 @@ const [buyerInfo, setBuyerInfo] = useState<{name: string, address: string}>({ na
     server: { solo: 'SINGLE', studio: 'UP TO 50 SERVERS', enterprise: 'UNLIMITED' },
     broadcast: { solo: 'REGIONAL', studio: 'NATIONAL', enterprise: 'WORLDWIDE' }
   };
-// --- END FIX ---
 
-// --- Context Anchor (Below) --- 
   return (
-    <div className="min-h-screen bg-[#EDEBE6] py-12 px-4 font-mono uppercase text-black">
-     
+    <div className="min-h-screen bg-vintage-background py-12 px-4 font-serif text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper">
+      
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          nav, footer, header:not(.receipt-header), .print\\:hidden { display: none !important; }
+          nav, footer, .print-hidden { display: none !important; }
           body { background: white !important; }
           .min-h-screen { min-height: 0 !important; padding: 0 !important; }
-          .shadow-\\[12px_12px_0px_0px_rgba\\(0\\,0\\,0\\,1\\)\\] { shadow: none !important; border: 1px solid black !important; }
+          .certificate-container { border: 2px solid #2c241a !important; shadow: none !important; margin: 0 !important; }
         }
       `}} />
 
       {/* TOOLBAR */}
-      <div className="max-w-2xl mx-auto mb-8 flex justify-between items-center print:hidden">
-        <Link to="/user/dashboard" className="flex items-center gap-2 text-[10px] font-bold">
-          <ArrowLeft size={14} /> BACK_TO_DASHBOARD
+      <div className="max-w-3xl mx-auto mb-10 flex justify-between items-center print-hidden">
+        <Link to="/user/dashboard" className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-vintage-accent hover:text-vintage-ink transition-colors">
+          <ArrowLeft size={14} /> Back to Dashboard
         </Link>
         <button 
           onClick={() => window.print()}
-          className="flex items-center gap-2 bg-black text-white px-4 py-2 text-[10px] font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+          className="vintage-btn btn-reverse px-6 py-2 text-[10px] flex items-center gap-2"
         >
-          <Printer size={14} /> PRINT_LICENSE_PDF
+          <Printer size={14} /> PRINT LICENSE PDF
         </button>
       </div>
 
-      <div className="max-w-2xl mx-auto bg-white border border-black p-8 md:p-16 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] print:shadow-none">
-        <header className="receipt-header text-center border-b border-black border-dashed pb-8 mb-8">
-          <h1 className="text-4xl font-black italic">SUBQI STUDIO</h1>
-          <p className="text-[10px] tracking-widest mt-2">OFFICIAL_LICENSE_CERTIFICATE</p>
-        </header>
-
-        <div className="space-y-4 mb-10 text-xs">
-          <div className="flex justify-between"><span>ORDER_ID</span> <span>{orderId}</span></div>
-          <div className="flex justify-between"><span>LICENSE_HOLDER</span> <span>{userEmail || 'N/A'}</span></div>
-          <div className="flex justify-between"><span>LICENSEE_NAME</span> <span className="font-black underline">{buyerInfo.name}</span></div>
-          <div className="flex justify-between gap-8"><span className="shrink-0">LICENSEE_ADDRESS</span> <span className="text-right italic">{buyerInfo.address}</span></div>
-          <div className="flex justify-between"><span>ISSUE_DATE</span> <span>{new Date(data[0]?.download_date).toLocaleDateString()}</span></div>
+      {/* CERTIFICATE CONTAINER */}
+      <div className="certificate-container max-w-3xl mx-auto bg-vintage-paper border-double border-4 border-vintage-ink p-8 md:p-20 relative overflow-hidden shadow-2xl">
+        
+        {/* WATERMARK DECOR */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none">
+          <Award size={500} />
         </div>
 
-        <div className="border-y border-black py-8 mb-10 space-y-12">
+        {/* HEADER */}
+        <header className="text-center border-b border-vintage-ink/20 pb-10 mb-12 relative z-10">
+          <h1 className="text-5xl md:text-6xl font-display italic leading-none mb-2">Subqi Studio</h1>
+          <p className="text-[10px] font-bold tracking-[0.5em] uppercase text-vintage-accent">Official License Certificate</p>
+        </header>
+
+        {/* METADATA GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-16 text-[11px] uppercase tracking-wider relative z-10">
+          <div className="space-y-4">
+            <div className="flex justify-between border-b border-vintage-ink/10 pb-1">
+              <span className="font-bold text-vintage-accent">Registry ID</span>
+              <span className="font-mono text-[10px]">{orderId?.slice(0,18)}...</span>
+            </div>
+            <div className="flex justify-between border-b border-vintage-ink/10 pb-1">
+              <span className="font-bold text-vintage-accent">License Holder</span>
+              <span className="lowercase">{userEmail || 'N/A'}</span>
+            </div>
+            <div className="flex justify-between border-b border-vintage-ink/10 pb-1">
+              <span className="font-bold text-vintage-accent">Issue Date</span>
+              <span>{new Date(data[0]?.download_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <span className="font-bold text-vintage-accent block">Licensee Designation</span>
+              <span className="font-display text-xl normal-case italic border-b border-vintage-ink/10 block pb-1">{buyerInfo.name}</span>
+            </div>
+            <div className="space-y-1">
+              <span className="font-bold text-vintage-accent block">Postal Provenance</span>
+              <span className="text-[10px] leading-relaxed italic opacity-70 block">{buyerInfo.address}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* LICENSED ASSETS */}
+        <div className="space-y-16 relative z-10">
           {data.map((item: any) => {
             const isTrial = item.download_type === 'trial';
             const usages = isTrial ? ['trial'] : (item.usages || ['desktop']);
             const currentTier = isTrial ? 'SOLO' : (item.tier || 'SOLO');
 
             return (
-              <div key={item.id} className="space-y-8">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-3xl md:text-5xl font-black italic tracking-tighter leading-none">{item.fonts.name}</span>
-                  <span className={`text-[10px] font-bold border border-black px-2 py-1 ${isTrial ? 'bg-yellow-400 text-black' : 'bg-black text-white'}`}>
-                    {isTrial ? 'DEMO' : 'COMMERCIAL'}
+              <div key={item.id} className="space-y-10">
+                <div className="flex justify-between items-end border-b border-vintage-ink pb-4">
+                  <h2 className="text-4xl md:text-5xl font-display leading-none">{item.fonts.name}</h2>
+                  <span className={`text-[9px] font-bold tracking-[0.2em] border border-vintage-ink px-4 py-1 uppercase ${isTrial ? 'bg-vintage-accent text-vintage-paper' : 'bg-vintage-ink text-vintage-paper'}`}>
+                    {isTrial ? 'Trial / Demo' : 'Commercial Release'}
                   </span>
                 </div>
                 
-                {/* FIXED: Logika penamaan Tier & Usage disesuaikan dengan format baru index.js */}
-                <div className="space-y-6">
-                  <span className="text-[10px] font-black opacity-40 block uppercase">01. Licensed Usage Terms:</span>
+                <div className="space-y-8">
+                  <p className="text-[10px] font-bold text-vintage-accent uppercase tracking-[0.3em] flex items-center gap-2">
+                    <ShieldCheck size={14} /> Licensed Grant & Provisions
+                  </p>
+                  
                   {usages.map((u: string, idx: number) => {
-                    // Ambil label spesifik (misal: 1 USER ONLY) berdasarkan kategori penggunaan dan tier
                     const specificLabel = isTrial ? 'PERSONAL USE ONLY' : (MASTER_TIER_LABELS[u]?.[currentTier.toLowerCase()] || currentTier.toUpperCase());
                     
                     return (
-                      <div key={idx} className="space-y-4">
-                        <div className="text-[13px] md:text-base normal-case space-y-3 leading-relaxed">
-                          <p className="font-black text-xs md:text-sm underline uppercase italic">
-                            {isTrial ? LICENSE_DB.trial.title : `${u.replace('_', ' & ').toUpperCase()} LICENSE: ( ${specificLabel} )`}
-                          </p>
-                          {isTrial ? (
-                            <>
-                              <p>{LICENSE_DB.trial.grant}</p>
-                              <p><span className="font-black underline uppercase">Character Set:</span> {LICENSE_DB.trial.charSet}</p>
-                              <p><span className="font-black underline uppercase">Restrictions:</span> {LICENSE_DB.trial.restrictions}</p>
-                            </>
-                          ) : (
-                            <p>{LICENSE_DB[u] || LICENSE_DB.desktop}</p>
-                          )}
+                      <div key={idx} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="bg-vintage-ink/[0.02] p-6 border-l-2 border-vintage-accent">
+                          <h3 className="font-display text-lg italic mb-3">
+                            {isTrial ? LICENSE_DB.trial.title : `${u.replace('_', ' & ').toUpperCase()} LICENSE`}
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent ml-3 not-italic">
+                              — {specificLabel}
+                            </span>
+                          </h3>
+                          <div className="text-[13px] leading-relaxed italic opacity-80 space-y-3">
+                            {isTrial ? (
+                              <>
+                                <p>{LICENSE_DB.trial.grant}</p>
+                                <p><span className="font-bold underline uppercase text-[10px] not-italic mr-2">Character Set:</span> {LICENSE_DB.trial.charSet}</p>
+                                <p><span className="font-bold underline uppercase text-[10px] not-italic mr-2">Restrictions:</span> {LICENSE_DB.trial.restrictions}</p>
+                              </>
+                            ) : (
+                              <p>{LICENSE_DB[u] || LICENSE_DB.desktop}</p>
+                            )}
+                          </div>
                         </div>
-                        {idx < usages.length - 1 && <div className="h-2 bg-black w-full" />}
                       </div>
                     );
                   })}
                 </div>
-                <div className="h-2 bg-black w-full" />
               </div>
             );
           })}
         </div>
 
-        <div className="space-y-6 text-[11px] md:text-[13px] normal-case leading-snug">
-          <p className="font-black uppercase italic text-sm border-b border-black pb-2">GENERAL_RULES:</p>
-          <div className="space-y-4 opacity-80">
-            <p>1. You may not sell, rent, sublicense, or redistribute the font files to any third party.</p>
-            <p>2. You may not modify, adapt, or decompile the font software.</p>
-            <p>3. The font software and its intellectual property remain the sole property of Subqi Studio.</p>
+        {/* GENERAL TERMS */}
+        <div className="mt-20 pt-10 border-t border-vintage-ink/20 relative z-10">
+          <h4 className="text-[10px] font-bold uppercase tracking-[0.4em] mb-6 text-center text-vintage-accent">General Terms of Use</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-[10px] leading-relaxed italic opacity-60 text-center px-4">
+            <p>1. Unauthorized distribution, reselling, or sub-licensing of font software to third parties is strictly prohibited.</p>
+            <p>2. Modification, adaptation, or decompilation of the original font software is forbidden under copyright law.</p>
+            <p>3. Intellectual property and font software remain the exclusive property of Subqi Studio at all times.</p>
           </div>
         </div>
 
-        <div className="mt-16 text-center border-t border-black border-dashed pt-8">
-          <p className="text-[10px] font-black">SUBQI-STUDIO</p>
-        </div>
+        {/* FOOTER SIGNATURE */}
+        <footer className="mt-20 text-center relative z-10">
+          <div className="inline-block border-t border-vintage-ink px-12 pt-4">
+            <p className="font-script text-3xl mb-1">Subqi Studio</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.5em] opacity-40">Archival Registry Division</p>
+          </div>
+        </footer>
+
+        {/* CORNER DECORATIONS */}
+        <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-vintage-ink/20 m-4"></div>
+        <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-vintage-ink/20 m-4"></div>
+        <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-vintage-ink/20 m-4"></div>
+        <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-vintage-ink/20 m-4"></div>
       </div>
     </div>
   );

@@ -1,8 +1,12 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Link } from 'react-router-dom';
-import { Download, Info } from 'lucide-react';
-
+import { Download, FileText, History, ShieldCheck, Clock } from 'lucide-react';
 
 const MyFontsHistory = () => {
   const [history, setHistory] = useState<any[]>([]);
@@ -16,7 +20,6 @@ const MyFontsHistory = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Join tabel font_history dengan fonts untuk ambil nama dan link
     const { data, error } = await supabase
       .from('font_history')
       .select(`
@@ -39,11 +42,9 @@ const MyFontsHistory = () => {
 
   const handleSecureDownload = async (fileName: string, orderId: string, downloadType: string) => { 
     const { data: { session } } = await supabase.auth.getSession();
-    
     if (!session) return alert("Session expired. Please login again.");
 
     try {
-      // FIXED: Masukkan &type=${downloadType} ke URL agar Worker langsung tau status filenya
       const res = await fetch(`/api/download-zip?file=${encodeURIComponent(fileName)}&order=${orderId}&type=${downloadType}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -53,21 +54,17 @@ const MyFontsHistory = () => {
       if (!res.ok) throw new Error("Unauthorized or File not found.");
 
       const blob = await res.blob();
-
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       const contentDisposition = res.headers.get('Content-Disposition');
 
-      let downloadName = `DEBUG_FALLBACK_NAME.zip`; // Ubah fallback agar ketahuan jika gagal
-      
+      let downloadName = `SubqiStudio_Archive.zip`; 
       if (contentDisposition && contentDisposition.includes('filename=')) {
         downloadName = contentDisposition.split('filename=')[1].split(';')[0].replace(/["']/g, '').trim();
       }
 
-      
       a.download = downloadName;
-    
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -77,68 +74,91 @@ const MyFontsHistory = () => {
     }
   };
 
-  if (loading) return <div className="text-[10px] font-bold animate-pulse">LOADING_DATABASE...</div>;
+  if (loading) return <div className="p-10 text-center italic opacity-40 font-serif">Consulting Archival Registry...</div>;
 
   return (
-    <div className="space-y-8 font-mono">
-      <div className="border-b-2 border-black pb-4">
-        <h2 className="text-4xl font-black italic">MY_LIBRARY</h2>
-        <p className="text-[10px] opacity-40">All your fonts / Trial & Full version</p>
+    <div className="space-y-12 pb-20">
+      {/* HEADER */}
+      <div className="border-b border-vintage-ink pb-8">
+        <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Acquisition Library</h2>
+        <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic flex items-center gap-2">
+          <History size={12} /> Registry of Licensed Heritage Artifacts
+        </p>
       </div>
 
       {history.length === 0 ? (
-        <div className="border-2 border-dashed border-black p-20 text-center">
-          <p className="opacity-30 font-bold">YOUR LIBRARY IS EMPTY.</p>
+        <div className="border border-dashed border-vintage-ink/20 p-24 text-center bg-vintage-ink/[0.01]">
+          <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">Your personal archive is currently empty.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-6">
           {history.map((item) => (
-            <div key={item.id} className="border border-black p-6 bg-white flex flex-col md:flex-row md:justify-between md:items-center gap-6 group hover:bg-black hover:text-white transition-all">
-              <div className="flex flex-col gap-2">
-                {/* 1. Font Name (Top) */}
-                <h3 className="text-2xl font-black italic">{item.fonts.name}</h3>
-                
-                {/* 2. Info Labels (Below Name) */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-[10px] font-black bg-black text-white px-2 py-1 border border-black group-hover:bg-white group-hover:text-black transition-all">
-                    {item.transaction_id}
+            <div key={item.id} className="vintage-card p-0 overflow-hidden bg-white/40 flex flex-col md:flex-row group hover:border-vintage-accent transition-all duration-500">
+              
+              {/* ASSET INFO */}
+              <div className="p-8 flex-grow space-y-4">
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold text-vintage-accent uppercase tracking-widest flex items-center gap-2">
+                    <Clock size={10} /> Registered on {new Date(item.download_date).toLocaleDateString()}
                   </span>
-                  <div className={`px-3 py-1 text-[10px] font-black border border-black ${item.download_type === 'trial' ? 'bg-yellow-400 text-black' : 'bg-green-500 text-white'}`}>
-                    {item.download_type === 'trial' ? 'DEMO' : 'FULL'}
+                  <h3 className="text-3xl md:text-4xl font-display text-vintage-ink leading-none">{item.fonts.name}</h3>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[8px] font-bold bg-vintage-ink text-vintage-paper px-2 py-0.5 tracking-tighter uppercase font-mono">
+                      #{item.transaction_id.slice(0, 12)}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-black opacity-40 group-hover:text-white/50">
-                    {new Date(item.download_date).toLocaleDateString()} — {item.download_type}
-                  </span>
+                  <div className={`px-3 py-0.5 text-[9px] font-bold border tracking-[0.2em] uppercase ${
+                    item.download_type === 'trial' 
+                    ? 'border-vintage-accent text-vintage-accent bg-vintage-accent/5' 
+                    : 'border-vintage-ink bg-vintage-ink text-vintage-paper'
+                  }`}>
+                    {item.download_type === 'trial' ? 'Demo Archive' : 'Full Commercial'}
+                  </div>
                 </div>
               </div>
               
-              {/* 3. Action Buttons (Bottom on Mobile) */}
-              <div className="flex flex-wrap items-center gap-3 md:gap-4">
+              {/* ACTIONS */}
+              <div className="bg-vintage-ink/[0.03] border-t md:border-t-0 md:border-l border-vintage-ink/10 p-6 md:w-80 flex flex-col justify-center gap-3">
                 <button 
                   onClick={() => handleSecureDownload(
                     item.download_type === 'trial' ? item.fonts.trial_file_url : item.fonts.font_files[0],
                     item.transaction_id,
                     item.download_type
                   )}
-                  className="bg-black text-white py-2 px-4 border border-white group-hover:bg-white group-hover:text-black transition-all flex items-center gap-2"
+                  className="vintage-btn btn-reverse w-full py-4 text-[10px] flex items-center justify-center gap-3 group/btn"
                 >
-                  <Download size={18} />
-                  <span className="text-[10px] font-black uppercase">Download</span>
+                  <Download size={16} className="group-hover/btn:translate-y-0.5 transition-transform" />
+                  ACQUIRE FILES
                 </button>
 
                 <Link 
                   to={`/user/receipt/${item.transaction_id}`}
-                  className="bg-white text-black py-2 px-4 border border-black hover:bg-yellow-400 transition-all flex items-center gap-2"
-                  title="View Official License"
+                  className="vintage-btn w-full py-4 text-[10px] border-vintage-ink/20 flex items-center justify-center gap-3 hover:bg-vintage-paper transition-all"
                 >
-                  <Info size={18} />
-                  <span className="text-[10px] font-black uppercase">License Details</span>
+                  <ShieldCheck size={16} />
+                  LICENSE RECORD
                 </Link>
               </div>
+
             </div>
           ))}
         </div>
       )}
+
+      {/* FOOTER NOTE */}
+      <div className="pt-10 flex items-start gap-4 p-6 bg-vintage-ink/[0.03] border border-vintage-ink/10">
+        <FileText size={20} className="text-vintage-accent flex-none mt-1" />
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-vintage-ink">Registry Provision</p>
+          <p className="text-[11px] font-serif italic text-vintage-ink/60 leading-relaxed">
+            All downloaded assets are bound by the terms of the acquisition license. 
+            The Demo version is for personal testing only, while the Full version provides commercial authority as per your certificate.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,6 +1,15 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Send, Megaphone, ShieldCheck, Trash2, ArrowLeft, Calendar, History, Inbox, CheckCheck } from 'lucide-react';
+import { 
+  Send, Megaphone, ShieldCheck, Trash2, ArrowLeft, 
+  Calendar, History, Inbox, CheckCircle2, MessageSquare, 
+  Plus, AlertCircle, Clock
+} from 'lucide-react';
 
 const PAGE_SIZE = 10;
 
@@ -32,7 +41,7 @@ const UserMessages = () => {
     try {
       const userJoinedAt = user.created_at;
 
-      // 1. Ambil ID Pesan yang SUDAH DIBACA (untuk Broadcast)
+      // 1. Ambil ID Pesan yang SUDAH DIBACA
       const { data: readData } = await supabase
         .from('font_message_reads')
         .select('message_id')
@@ -46,7 +55,7 @@ const UserMessages = () => {
         .eq('user_id', user.id);
       const hiddenIds = hiddenData?.map(h => h.message_id) || [];
 
-      // 3. Hitung Unread Count (Direct + Broadcast Filtered by Date)
+      // 3. Hitung Unread Count
       const { data: unreadData } = await supabase
         .from('font_messages')
         .select('id, recipient_id, is_read, created_at')
@@ -63,7 +72,7 @@ const UserMessages = () => {
       
       setUnreadCount(actualUnread);
 
-      // 4. Main Query Data dengan filter tanggal untuk Broadcast
+      // 4. Main Query Data
       let query = supabase.from('font_messages').select('*', { count: 'exact' });
       if (tab === 'inbox') {
         query = query.or(`recipient_id.eq.${user.id},and(recipient_id.is.null,created_at.gte.${userJoinedAt})`);
@@ -117,8 +126,6 @@ const UserMessages = () => {
       if (!user) throw new Error("AUTH_SESSION_MISSING");
 
       const { data: admin } = await supabase.from('fontadmin').select('id').limit(1).single();
-      
-      // FIX TS18047: Pengecekan null guard untuk admin
       if (!admin) throw new Error("ADMIN_NOT_FOUND");
 
       const payload = isReply ? {
@@ -137,7 +144,7 @@ const UserMessages = () => {
 
       const { error } = await supabase.from('font_messages').insert([payload]);
       if (error) throw error;
-      alert("MESSAGE_SENT");
+      alert("Communication Dispatched Successfully");
       setSubject(''); setContent(''); setReplyContent(''); 
       setShowForm(false); setSelectedMessage(null); fetchMessages();
     } catch (err: any) {
@@ -149,7 +156,7 @@ const UserMessages = () => {
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (!confirm("Hapus dari inbox?")) return;
+    if (!confirm("Discard this correspondence from your folio?")) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -160,34 +167,44 @@ const UserMessages = () => {
   };
 
   return (
-    <div className="space-y-8 font-mono uppercase text-black">
-      <div className="border-b-2 border-black pb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+    <div className="space-y-10 pb-20 selection:bg-vintage-ink selection:text-vintage-paper">
+      {/* HEADER & TABS */}
+      <div className="border-b border-vintage-ink pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         {!selectedMessage && (
           <>
             <div>
-              <h2 className="text-4xl font-black italic">MAILBOX</h2>
-              <p className="text-[10px] opacity-40">COMMUNICATION_CENTER</p>
+              <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Communication Folio</h2>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic flex items-center gap-2">
+                <MessageSquare size={12} /> Archival Dispatch & Studio Support
+              </p>
             </div>
-            <div className="flex gap-2 w-full md:w-auto">
-              <div className="flex border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                {/* TAB INBOX DENGAN FLOATING BADGE */}
+            
+            <div className="flex flex-wrap gap-4 w-full md:w-auto">
+              <div className="flex bg-vintage-paper/50 border border-vintage-ink p-1">
                 <button 
                   onClick={() => {setTab('inbox'); setCurrentPage(0);}} 
-                  className={`px-6 py-2 text-[10px] font-black flex items-center gap-2 relative transition-all ${tab === 'inbox' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+                  className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 transition-all relative ${tab === 'inbox' ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
                 >
                   <Inbox size={14}/> INBOX
                   {unreadCount > 0 && (
-                    <span className="absolute -top-3 -right-2 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] animate-pulse">
+                    <span className="absolute -top-2 -right-1 bg-vintage-accent text-vintage-paper text-[8px] font-black px-1.5 py-0.5 border border-vintage-ink animate-pulse">
                       {unreadCount}
                     </span>
                   )}
                 </button>
-                <button onClick={() => {setTab('sent'); setCurrentPage(0);}} className={`px-6 py-2 text-[10px] font-black border-l-2 border-black flex items-center gap-2 transition-all ${tab === 'sent' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}>
+                <button 
+                  onClick={() => {setTab('sent'); setCurrentPage(0);}} 
+                  className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink transition-all ${tab === 'sent' ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
+                >
                   <History size={14}/> SENT
                 </button>
               </div>
-              <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-6 py-2 text-[10px] font-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ml-auto">
-                {showForm ? 'CLOSE' : 'NEW_TICKET'}
+
+              <button 
+                onClick={() => setShowForm(!showForm)} 
+                className="vintage-btn btn-reverse px-8 py-3 text-[10px]"
+              >
+                {showForm ? 'CLOSE FORM' : <span className="flex items-center gap-2"><Plus size={14} /> NEW DISPATCH</span>}
               </button>
             </div>
           </>
@@ -195,73 +212,159 @@ const UserMessages = () => {
       </div>
 
       {selectedMessage ? (
-        /* DETAIL VIEW */
-        <div className="border-2 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in slide-in-from-bottom-2">
-          <div className="p-4 border-b-2 border-black flex justify-between items-center bg-gray-50">
-            <button onClick={() => setSelectedMessage(null)} className="flex items-center gap-2 font-black text-[10px] hover:underline cursor-pointer">
-              <ArrowLeft size={14} /> BACK_TO_LIST
+        /* DETAIL VIEW: ARCHIVAL PAPER STYLE */
+        <div className="vintage-card bg-white p-0 overflow-hidden max-w-4xl mx-auto border-double border-4 border-vintage-ink animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="p-4 border-b border-vintage-ink bg-vintage-ink/5 flex justify-between items-center text-[10px] font-bold tracking-widest uppercase">
+            <button onClick={() => setSelectedMessage(null)} className="flex items-center gap-2 hover:text-vintage-accent transition-colors">
+              <ArrowLeft size={14} /> Back to Folio
             </button>
-            {tab === 'inbox' && <button onClick={() => handleDelete(selectedMessage.id)} className="text-red-500 p-2 hover:bg-red-50 transition-all"><Trash2 size={18} /></button>}
+            {tab === 'inbox' && (
+              <button onClick={() => handleDelete(selectedMessage.id)} className="text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-2">
+                <Trash2 size={16} /> Discard Letter
+              </button>
+            )}
           </div>
-          <div className="p-8 space-y-6">
-            <div className="space-y-1">
-              <span className="text-[10px] font-black opacity-40 flex items-center gap-2 italic"><Calendar size={12}/> {new Date(selectedMessage.created_at).toLocaleString()}</span>
-              <h3 className="text-2xl font-black italic break-words">{selectedMessage.subject}</h3>
+          
+          <div className="p-10 md:p-16 space-y-10">
+            <div className="space-y-4 border-b border-vintage-ink/10 pb-8">
+              <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.2em] text-vintage-accent uppercase italic">
+                <Clock size={12}/> Received: {new Date(selectedMessage.created_at).toLocaleString()}
+              </div>
+              <h3 className="text-4xl md:text-5xl font-display leading-tight text-vintage-ink">{selectedMessage.subject}</h3>
             </div>
-            <p className="text-sm font-bold leading-relaxed pt-6 border-t border-black/10 whitespace-pre-wrap">{selectedMessage.content}</p>
+            
+            <div className="font-serif text-lg leading-relaxed text-vintage-ink/80 whitespace-pre-wrap italic">
+              {selectedMessage.content}
+            </div>
+            
+            {/* REPLY AREA */}
             {tab === 'inbox' && selectedMessage.recipient_id && (
-              <form onSubmit={(e) => handleSend(e, true)} className="mt-8 pt-8 border-t-2 border-black space-y-4">
-                <p className="text-[10px] font-black italic text-blue-600 flex items-center gap-2"><Send size={12}/> QUICK_REPLY_TO_OFFICIAL</p>
-                <textarea placeholder="TYPE RESPONSE..." rows={4} value={replyContent} onChange={e => setReplyContent(e.target.value)} className="w-full border-2 border-black p-3 text-xs font-bold outline-none focus:bg-blue-50 resize-none" required />
-                <button disabled={sending} className="bg-black text-white px-8 py-3 font-black text-[10px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
-                  {sending ? 'SENDING...' : 'SEND_REPLY'}
+              <form onSubmit={(e) => handleSend(e, true)} className="mt-12 pt-12 border-t border-vintage-ink space-y-6">
+                <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest text-vintage-accent uppercase">
+                  <Send size={14} /> Draft a Response to Official
+                </div>
+                <textarea 
+                  rows={6} 
+                  placeholder="Your response to the studio..." 
+                  value={replyContent} 
+                  onChange={e => setReplyContent(e.target.value)} 
+                  className="w-full border border-vintage-ink/20 p-6 bg-vintage-paper/20 outline-none focus:border-vintage-ink font-serif text-lg italic transition-all placeholder:text-vintage-ink/60" 
+                  required 
+                />
+                <button disabled={sending} className="vintage-btn btn-reverse px-12 py-4">
+                  {sending ? 'DISPATCHING...' : 'SEND RESPONSE'}
                 </button>
               </form>
             )}
           </div>
         </div>
       ) : showForm ? (
-        /* CREATE FORM */
-        <form onSubmit={(e) => handleSend(e)} className="border-2 border-black p-6 bg-white space-y-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-          <input type="text" placeholder="SUBJECT" value={subject} onChange={e => setSubject(e.target.value)} className="w-full border-2 border-black p-3 text-xs font-bold outline-none focus:bg-yellow-50" required />
-          <textarea placeholder="MESSAGE..." rows={5} value={content} onChange={e => setContent(e.target.value)} className="w-full border-2 border-black p-3 text-xs font-bold outline-none focus:bg-yellow-50 resize-none" required />
-          <button disabled={sending} className="w-full bg-black text-white p-4 font-black text-xs shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none translate-y-0 active:translate-y-[2px] transition-all">
-            {sending ? 'DISPATCHING...' : 'DISPATCH_TICKET'}
-          </button>
-        </form>
+        /* CREATE FORM: REGISTER NEW TICKET */
+        <div className="max-w-2xl mx-auto vintage-card p-12 bg-white/40 animate-in fade-in zoom-in-95 duration-200">
+          <form onSubmit={(e) => handleSend(e)} className="space-y-8">
+            <div className="text-center space-y-2 mb-4">
+              <h3 className="text-3xl font-display uppercase tracking-widest">New Dispatch</h3>
+              <p className="text-[10px] font-bold tracking-[0.2em] text-vintage-accent italic uppercase">Studio Support Inquiry</p>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Communication Subject</label>
+              <input 
+                type="text" 
+                placeholder="e.g. License clarification..." 
+                value={subject} 
+                onChange={e => setSubject(e.target.value)} 
+                className="w-full border-b border-vintage-ink/20 py-3 bg-transparent outline-none font-display text-xl focus:border-vintage-ink transition-colors placeholder:text-vintage-ink/60 uppercase" 
+                required 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Detailed Narrative</label>
+              <textarea 
+                placeholder="Compose your inquiry..." 
+                rows={6} 
+                value={content} 
+                onChange={e => setContent(e.target.value)} 
+                className="w-full border border-vintage-ink/10 p-6 bg-vintage-paper/20 outline-none focus:border-vintage-ink font-serif text-lg italic transition-all placeholder:text-vintage-ink/60" 
+                required 
+              />
+            </div>
+
+            <button disabled={sending} className="vintage-btn btn-reverse w-full py-5 text-xs">
+              {sending ? 'COMMITTING TO LEDGER...' : <span className="flex items-center justify-center gap-4"><Send size={16} /> DISPATCH TICKET</span>}
+            </button>
+          </form>
+        </div>
       ) : (
         /* LIST VIEW */
-        <div className="space-y-4">
-          <div className="space-y-2">
-            {loading ? <div className="animate-pulse font-black text-xs italic">SYNCING_STREAMS...</div> : 
-             messages.length === 0 ? <div className="p-20 border-2 border-dashed border-black text-center opacity-20 font-bold italic">NO_MESSAGES_FOUND</div> : (
+        <div className="space-y-6">
+          <div className="space-y-3">
+            {loading ? (
+              <div className="p-20 text-center animate-pulse italic opacity-40 font-serif">Syncing communication streams...</div>
+            ) : messages.length === 0 ? (
+              <div className="p-20 border border-dashed border-vintage-ink/30 text-center opacity-40 font-serif italic uppercase tracking-widest text-[10px]">No correspondences found in this folio</div>
+            ) : (
               messages.map(m => (
                 <div 
                   key={m.id} 
                   onClick={() => markAsRead(m)}
-                  className={`border-2 border-black p-5 flex items-center justify-between group cursor-pointer transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none active:translate-y-1 
-                    ${!m.is_actually_read && tab === 'inbox' ? 'bg-blue-50 ring-2 ring-black' : 'bg-white hover:bg-black hover:text-white'}
-                    ${m.message_type === 'broadcast' ? 'bg-yellow-400 text-black hover:bg-yellow-500' : ''}`}
+                  className={`vintage-card p-6 flex items-center justify-between group cursor-pointer transition-all hover:border-vintage-accent ${
+                    !m.is_actually_read && tab === 'inbox' ? 'bg-vintage-paper border-l-4 border-l-vintage-accent shadow-md' : 'bg-white/40'
+                  } ${m.message_type === 'broadcast' ? 'border-vintage-accent/30 bg-vintage-accent/3' : ''}`}
                 >
-                  <div className="overflow-hidden space-y-1">
-                    <span className="text-[9px] font-black uppercase flex items-center gap-1">
-                      {m.message_type === 'broadcast' ? <Megaphone size={10}/> : <ShieldCheck size={10}/>} {m.message_type}
-                      {!m.is_actually_read && tab === 'inbox' && <span className="bg-red-600 text-white px-1 ml-2 animate-pulse">NEW</span>}
-                      {m.is_actually_read && tab === 'inbox' && <CheckCheck size={12} className="text-green-600 ml-1"/>}
-                    </span>
-                    <h4 className={`text-sm font-black truncate ${!m.is_actually_read && tab === 'inbox' ? 'underline' : ''}`}>{m.subject}</h4>
-                    <p className="text-[10px] font-bold opacity-50 truncate group-hover:text-white/60">{m.content.substring(0, 80)}...</p>
+                  <div className="overflow-hidden flex-1 space-y-1">
+                    <div className="flex items-center gap-4 text-[9px] font-bold uppercase tracking-widest">
+                      <span className={`flex items-center gap-1.5 ${m.message_type === 'broadcast' ? 'text-vintage-accent' : 'text-vintage-ink/50'}`}>
+                        {m.message_type === 'broadcast' ? <Megaphone size={12}/> : <ShieldCheck size={12}/>} 
+                        {m.message_type}
+                      </span>
+                      {!m.is_actually_read && tab === 'inbox' && (
+                        <span className="flex items-center gap-1 text-vintage-accent animate-pulse font-black italic">
+                          <AlertCircle size={10}/> Unread
+                        </span>
+                      )}
+                      {m.is_actually_read && tab === 'inbox' && <CheckCircle2 size={12} className="text-vintage-accent/40"/>}
+                      <span className="text-vintage-ink/30 font-serif lowercase italic tracking-normal">{new Date(m.created_at).toLocaleDateString()}</span>
+                    </div>
+                    
+                    <h4 className={`text-xl font-display leading-tight truncate mt-1 ${!m.is_actually_read && tab === 'inbox' ? 'text-vintage-ink' : 'text-vintage-ink/70'}`}>
+                      {m.subject}
+                    </h4>
+                    <p className="text-[11px] font-serif italic opacity-50 truncate">{m.content.substring(0, 100)}...</p>
                   </div>
-                  {tab === 'inbox' && <button onClick={(e) => handleDelete(m.id, e)} className="p-2 opacity-0 group-hover:opacity-100 text-red-500 transition-all hover:scale-110"><Trash2 size={16} /></button>}
+                  
+                  {tab === 'inbox' && (
+                    <button 
+                      onClick={(e) => handleDelete(m.id, e)} 
+                      className="p-3 opacity-0 group-hover:opacity-100 text-red-900/40 hover:text-red-600 transition-all"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
                 </div>
               ))
             )}
           </div>
+
+          {/* PAGINATION */}
           {totalCount > PAGE_SIZE && (
-            <div className="flex justify-center items-center gap-4 pt-4 font-black text-[10px]">
-              <button disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)} className="border-2 border-black p-2 disabled:opacity-30 active:bg-black active:text-white transition-all">PREV</button>
-              <span>{currentPage + 1} / {Math.ceil(totalCount / PAGE_SIZE)}</span>
-              <button disabled={(currentPage + 1) * PAGE_SIZE >= totalCount} onClick={() => setCurrentPage(p => p + 1)} className="border-2 border-black p-2 disabled:opacity-30 active:bg-black active:text-white transition-all">NEXT</button>
+            <div className="flex justify-center items-center gap-6 pt-10">
+              <button 
+                disabled={currentPage === 0} 
+                onClick={() => setCurrentPage(p => p - 1)} 
+                className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-20"
+              >
+                <ArrowLeft size={18}/>
+              </button>
+              <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-vintage-ink/60">Folio {currentPage + 1} / {Math.ceil(totalCount / PAGE_SIZE)}</span>
+              <button 
+                disabled={(currentPage + 1) * PAGE_SIZE >= totalCount} 
+                onClick={() => setCurrentPage(p => p + 1)} 
+                className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-20"
+              >
+                <ArrowLeft size={18} className="rotate-180"/>
+              </button>
             </div>
           )}
         </div>
