@@ -17,7 +17,7 @@ export const BrutalistToggle: React.FC<ToggleProps> = ({
       <div className={`relative w-10 h-5 border border-black transition-colors ${isActive ? 'bg-black' : 'bg-white'}`}>
         <div 
           className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-black transition-all duration-200 transform ${
-            isActive ? 'translate-x-[20px] bg-white' : 'translate-x-0 bg-black'
+            isActive ? 'translate-x-5 bg-white' : 'translate-x-0 bg-black'
           }`} 
         />
       </div>

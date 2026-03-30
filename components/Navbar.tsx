@@ -99,8 +99,8 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
       {/* 2. NAVIGATION BAR */}
       <nav className={`w-full sticky top-0 z-100 transition-all duration-300 py-2 ${
         isScrolled 
-          ? "bg-vintage-paper/95 backdrop-blur-md border-b" 
-          : "relative bg-transparent mb-16 border-y"
+          ? "bg-vintage-paper/95 backdrop-blur-md border-b border-vintage-ink" 
+          : "bg-vintage-paper border-y border-vintage-ink"
       }`}>
         <div className="flex items-center px-4 md:px-8 max-w-7xl mx-auto h-8">
           

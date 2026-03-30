@@ -93,7 +93,7 @@ const AdminDashboard = () => {
       <aside className={`
         fixed md:sticky md:top-0 w-full md:w-72 border-r-0 md:border-r border-vintage-ink bg-vintage-paper flex flex-col transition-all duration-300 z-40
         ${isMenuOpen 
-          ? 'top-16.25 h-[calc(100vh-65px)] border-b border-vintage-ink' 
+          ? 'top-[60px] h-[calc(100vh-60px)] border-b border-vintage-ink'
           : '-top-full md:top-0 h-0 md:h-screen overflow-hidden md:overflow-visible'}
       `}>
         {/* Desktop Branding */}
@@ -142,7 +142,7 @@ const AdminDashboard = () => {
       </aside>
 
       {/* MAIN VIEWPORT */}
-      <main className="grow p-8 md:p-16 w-full max-h-screen overflow-y-auto bg-vintage-paper">
+      <main className="grow p-8 md:p-16 w-full bg-vintage-paper min-h-screen">
         {renderActiveContent()}
       </main>
     </div>
