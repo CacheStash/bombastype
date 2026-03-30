@@ -76,13 +76,13 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
   return (
     <>
       {/* 1. STATIC LOGO HEADER */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {!isScrolled && (
           <motion.header 
-            initial={{ opacity: 0, y: -15 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="text-center pt-6 pb-12 relative z-50"
           >
             <Link to="/" className="inline-flex items-center justify-center gap-6 hover:opacity-70 transition-opacity">
@@ -106,13 +106,13 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
           
           {/* SISI KIRI: LOGO (Mode Floating) & Menu Mobile */}
           <div className="flex-none flex items-center">
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {isScrolled && (
                 <motion.div
                   initial={{ opacity: 0, x: -10, filter: "blur(4px)" }}
                   animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                   exit={{ opacity: 0, x: -10, filter: "blur(4px)" }}
-                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   className="mr-6 pr-6 border-r border-vintage-ink"
                 >
                   <Link to="/" className="text-xl font-blackletter tracking-tighter text-vintage-ink whitespace-nowrap">

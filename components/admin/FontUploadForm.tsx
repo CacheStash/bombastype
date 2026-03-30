@@ -335,7 +335,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
           />
         </div>
 
-        <div className="p-6 bg-vintage-ink/[0.02] border border-vintage-ink/10 text-[11px] space-y-3 font-serif italic">
+        <div className="p-6 bg-vintage-ink/2 border border-vintage-ink/10 text-[11px] space-y-3 font-serif italic">
           <p className="font-bold uppercase not-italic border-b border-vintage-ink/10 pb-2 mb-2 text-vintage-ink tracking-widest text-[9px]">License Matrix Preview (Solo/Base)</p>
           <div className="flex flex-wrap gap-x-8 gap-y-2 text-vintage-ink/60">
             <div className="flex items-center gap-2"><span>Desktop:</span> <span className="font-bold not-italic">${licensePrices.desktop.solo}</span></div>
@@ -371,7 +371,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         <div 
           onDragOver={handleDragOver}
           onDrop={(e) => handleDropFiles(e, 'fonts')}
-          className="border-2 border-dashed border-vintage-ink/20 p-12 text-center hover:bg-vintage-ink/[0.02] transition-colors cursor-pointer group bg-transparent relative"
+          className="border-2 border-dashed border-vintage-ink/20 p-12 text-center hover:bg-vintage-ink/2 transition-colors cursor-pointer group bg-transparent relative"
         >
           {/* Sinkronisasi Drive untuk font dihapus (Hanya upload lokal ke R2) */}
           <input

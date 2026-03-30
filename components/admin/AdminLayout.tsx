@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Type, ShoppingCart, LogOut, Tag, Menu, X, Mail, FileText } from 'lucide-react';
+import { 
+  LayoutDashboard, Type, ShoppingCart, LogOut, 
+  Tag, Menu, X, Mail, FileText 
+} from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+
+// Content Components
 import ProductManager from './ProductManager';
 import ContentManager from './ContentManager';
 import PromotionsManager from './PromotionsManager'; 
 import Orders from './Orders';
 import Statistics from './Statistics';
 import AdminMessages from './AdminMessages';
-import { supabase } from '../../lib/supabase';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('products');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // --- LOGIC ---
 
   useEffect(() => {
     fetchUnreadCount();
@@ -53,29 +60,48 @@ const AdminDashboard = () => {
     { id: 'content', label: 'Site Content', icon: FileText },
   ];
 
+  // --- RENDER HELPERS ---
+
+  const renderActiveContent = () => {
+    switch (activeTab) {
+      case 'stats': return <Statistics />;
+      case 'inbox': return <AdminMessages />;
+      case 'products': return <ProductManager />;
+      case 'promotions': return <PromotionsManager />;
+      case 'orders': return <Orders />;
+      case 'content': return <ContentManager />;
+      default: return <ProductManager />;
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-vintage-paper text-vintage-ink font-serif selection:bg-vintage-ink selection:text-vintage-paper transition-colors duration-500">
       
-      {/* MOBILE ADMIN NAV */}
-      <div className="md:hidden flex items-center justify-between px-6 py-4 border-b border-vintage-ink bg-vintage-paper sticky top-0 z-50">
+      {/* MOBILE HEADER */}
+      <header className="md:hidden flex items-center justify-between px-6 py-4 border-b border-vintage-ink bg-vintage-paper sticky top-0 z-50">
         <h1 className="font-blackletter text-2xl tracking-tight leading-none">Studio Admin</h1>
         <button 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label="Toggle Menu"
           className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all"
         >
           {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
-      </div>
+      </header>
 
-      {/* SIDEBAR */}
+      {/* NAVIGATION SIDEBAR */}
       <aside className={`
-       fixed md:sticky md:top-0 w-full md:w-72 border-r-0 md:border-r border-vintage-ink bg-vintage-paper flex flex-col transition-all duration-300 z-40
-        ${isMenuOpen ? 'top-16.25 h-[calc(100vh-(--spacing(16)))] border-b border-vintage-ink' : '-top-full md:top-0 h-0 md:h-screen overflow-hidden md:overflow-visible'}
+        fixed md:sticky md:top-0 w-full md:w-72 border-r-0 md:border-r border-vintage-ink bg-vintage-paper flex flex-col transition-all duration-300 z-40
+        ${isMenuOpen 
+          ? 'top-16.25 h-[calc(100vh-65px)] border-b border-vintage-ink' 
+          : '-top-full md:top-0 h-0 md:h-screen overflow-hidden md:overflow-visible'}
       `}>
+        {/* Desktop Branding */}
         <div className="p-10 border-b border-vintage-ink hidden md:block">
           <h1 className="font-blackletter text-5xl tracking-tight leading-none">Studio Admin</h1>
         </div>
         
+        {/* Nav Links */}
         <nav className="grow p-6 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -84,16 +110,17 @@ const AdminDashboard = () => {
               <button 
                 key={item.id}
                 onClick={() => handleTabChange(item.id)} 
-                className={`w-full flex items-center gap-4 px-4 py-3 text-[11px] font-bold tracking-wider transition-all text-left group border ${
-                  isActive ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' : 'bg-transparent border-transparent hover:bg-vintage-ink/5'
+                className={`w-full flex items-center gap-4 px-4 py-3 text-[11px] font-bold tracking-wider transition-all text-left group ${
+                  isActive ? 'bg-vintage-ink text-vintage-paper border border-vintage-ink' : 'bg-transparent hover:bg-vintage-ink/5'
                 }`}
               >
                 <Icon size={16} className={isActive ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'} />
                 <span className="grow">{item.label}</span>
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-black ${
-                    isActive ? 'bg-vintage-paper text-vintage-ink' : 'bg-vintage-ink text-vintage-paper'
-                  }`}>
+                  <span className={`
+                    text-[8px] px-1.5 py-0.5 rounded-full font-black 
+                    ${isActive ? 'bg-vintage-paper text-vintage-ink' : 'bg-vintage-ink text-vintage-paper'}
+                  `}>
                     {item.badge}
                   </span>
                 )}
@@ -102,6 +129,7 @@ const AdminDashboard = () => {
           })}
         </nav>
 
+        {/* Footer / Logout */}
         <div className="p-6 border-t border-vintage-ink">
           <button 
             onClick={handleLogout} 
@@ -113,14 +141,9 @@ const AdminDashboard = () => {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN VIEWPORT */}
       <main className="grow p-8 md:p-16 w-full max-h-screen overflow-y-auto bg-vintage-paper">
-        {activeTab === 'stats' && <Statistics />}
-        {activeTab === 'inbox' && <AdminMessages />}
-        {activeTab === 'products' && <ProductManager />}
-        {activeTab === 'promotions' && <PromotionsManager />}
-        {activeTab === 'orders' && <Orders />}
-        {activeTab === 'content' && <ContentManager />}
+        {renderActiveContent()}
       </main>
     </div>
   );
