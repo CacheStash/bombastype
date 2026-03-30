@@ -55,7 +55,7 @@ const ProductManager = () => {
     <div className="space-y-12">
       <div className="flex justify-between items-end border-b border-vintage-ink pb-8">
         <div>
-          <h2 className="text-4xl font-display uppercase tracking-widest text-vintage-ink">Inventory</h2>
+          <h2 className="text-3xl md:text-5xl font-script capitalize">Inventory</h2>
         </div>
         <div className="flex items-center gap-8">
           <input 

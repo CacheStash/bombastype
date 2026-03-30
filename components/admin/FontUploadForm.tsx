@@ -293,9 +293,13 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
           <input 
             type="text" 
             value={fontName}
-            onChange={(e) => setFontName(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              const val = e.target.value;
+              const titleCase = val.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+              setFontName(titleCase);
+            }}
             className="w-full border-b border-vintage-ink/20 py-4 bg-transparent outline-none font-display text-4xl focus:border-vintage-ink transition-colors placeholder:opacity-20" 
-            placeholder="ENTER FONT NAME..."
+            placeholder="Enter Font Name..."
             required
           />
           <button 
