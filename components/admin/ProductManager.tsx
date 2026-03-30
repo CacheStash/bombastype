@@ -81,7 +81,7 @@ const ProductManager = () => {
           </thead>
           <tbody>
             {paginatedFonts.map((f) => (
-              <tr key={f.id} className="border-b border-vintage-ink/10 hover:bg-vintage-ink/2 transition-colors">
+              <tr key={f.id} className="border-b border-vintage-ink hover:bg-vintage-ink/2 transition-colors">
                 <td className="p-4"><span className="font-display text-2xl uppercase tracking-wider">{f.name}</span></td>
                 <td className="p-4 text-right">
                   <div className="flex justify-end gap-6">

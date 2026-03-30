@@ -155,7 +155,7 @@ const fetchOrders = async () => {
 
       {/* TABLE */}
       <div className="border-2 border-black bg-white overflow-x-auto shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-        <table className="w-full text-left border-collapse min-w-[1000px]">
+        <table className="w-full text-left border-collapse min-w-250">
           <thead>
             <tr className="border-b-2 border-black bg-gray-50 text-[10px] font-black tracking-widest text-gray-500">
               <th className="p-4">Date</th>

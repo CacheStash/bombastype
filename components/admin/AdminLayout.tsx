@@ -57,11 +57,11 @@ const AdminDashboard = () => {
     <div className="flex flex-col md:flex-row min-h-screen bg-vintage-paper text-vintage-ink font-serif selection:bg-vintage-ink selection:text-vintage-paper transition-colors duration-500">
       
       {/* MOBILE ADMIN NAV */}
-      <div className="md:hidden flex items-center justify-between px-6 py-4 border-b border-vintage-ink/10 bg-vintage-paper sticky top-0 z-50">
+      <div className="md:hidden flex items-center justify-between px-6 py-4 border-b border-vintage-ink bg-vintage-paper sticky top-0 z-50">
         <h1 className="font-blackletter text-2xl tracking-tight leading-none">Studio Admin</h1>
         <button 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="p-2 border border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper transition-all"
+          className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all"
         >
           {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -69,10 +69,10 @@ const AdminDashboard = () => {
 
       {/* SIDEBAR */}
       <aside className={`
-        fixed md:sticky md:top-0 w-full md:w-72 border-r-0 md:border-r border-vintage-ink/10 bg-vintage-paper flex flex-col transition-all duration-300 z-40
-        ${isMenuOpen ? 'top-16.25 h-[calc(100vh-(--spacing(16)))] border-b border-vintage-ink/10' : '-top-full md:top-0 h-0 md:h-screen overflow-hidden md:overflow-visible'}
+       fixed md:sticky md:top-0 w-full md:w-72 border-r-0 md:border-r border-vintage-ink bg-vintage-paper flex flex-col transition-all duration-300 z-40
+        ${isMenuOpen ? 'top-16.25 h-[calc(100vh-(--spacing(16)))] border-b border-vintage-ink' : '-top-full md:top-0 h-0 md:h-screen overflow-hidden md:overflow-visible'}
       `}>
-        <div className="p-10 border-b border-vintage-ink/10 hidden md:block">
+        <div className="p-10 border-b border-vintage-ink hidden md:block">
           <h1 className="font-blackletter text-5xl tracking-tight leading-none">Studio Admin</h1>
         </div>
         
@@ -102,7 +102,7 @@ const AdminDashboard = () => {
           })}
         </nav>
 
-        <div className="p-6 border-t border-vintage-ink/10">
+        <div className="p-6 border-t border-vintage-ink">
           <button 
             onClick={handleLogout} 
             className="w-full flex items-center gap-4 px-4 py-3 text-[11px] font-bold tracking-wider text-left hover:bg-red-900/10 text-red-900/60 transition-all group"
