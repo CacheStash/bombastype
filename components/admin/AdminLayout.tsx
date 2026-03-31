@@ -78,7 +78,7 @@ const AdminDashboard = () => {
     <div className="flex flex-col md:flex-row min-h-screen bg-vintage-paper text-vintage-ink font-serif selection:bg-vintage-ink selection:text-vintage-paper transition-colors duration-500">
       
       {/* MOBILE HEADER */}
-      <header className="md:hidden flex items-center justify-between px-6 py-4 border-b border-vintage-ink bg-vintage-paper sticky top-[49px] z-50">
+      <header className="md:hidden flex items-center justify-between px-6 py-4 border-b border-vintage-ink bg-vintage-paper sticky top-12.25 z-50">
         <h1 className="font-blackletter text-2xl tracking-tight leading-none">Studio Admin</h1>
         <button 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -91,9 +91,9 @@ const AdminDashboard = () => {
 
       {/* NAVIGATION SIDEBAR */}
       <aside className={`
-        fixed md:sticky md:top-[49px] w-full md:w-72 border-r-0 md:border-r border-vintage-ink bg-vintage-paper flex flex-col transition-all duration-300 z-40
+        fixed md:sticky md:top-12.25 w-full md:w-72 border-r-0 md:border-r border-vintage-ink bg-vintage-paper flex flex-col transition-all duration-300 z-40
         ${isMenuOpen 
-          ? 'top-[109px] h-[calc(100vh-109px)] border-b border-vintage-ink'
+          ? 'top-27.25 h-[calc(100vh-109px)] border-b border-vintage-ink'
           : '-top-full md:top-0 h-0 md:h-screen overflow-hidden md:overflow-visible'}
       `}>
         {/* Desktop Branding */}
