@@ -169,8 +169,11 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
       const filtered = files.filter(f => f.name.endsWith('.ttf') || f.name.endsWith('.otf') || f.name.endsWith('.woff2'));
       setFontFiles(prev => [...prev, ...filtered]);
     } else {
-      if (previewImages.length + files.length > 20) return alert("Maksimal 20 gambar!");
-      setPreviewImages(prev => [...prev, ...files]);
+      const filtered = files.filter(f => 
+        f.type.startsWith('image/') || f.name.toLowerCase().endsWith('.gif')
+      );
+      if (previewImages.length + filtered.length > 20) return alert("Maksimal 20 gambar!");
+      setPreviewImages(prev => [...prev, ...filtered]);
     }
   };
 
