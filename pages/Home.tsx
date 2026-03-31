@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
-import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase'; // Pastikan path import benar
 
 // Komponen Kartu dipertahankan untuk fleksibilitas konten halaman Home
 const FontCard = ({ title, subtitle, fontClass, price }: { title: string, subtitle: string, fontClass: string, price: string }) => (
@@ -35,13 +35,33 @@ const FontCard = ({ title, subtitle, fontClass, price }: { title: string, subtit
 
 export default function Home() {
   const navigate = useNavigate();
+  const [featuredFonts, setFeaturedFonts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchFeatured();
+  }, []);
+
+  const fetchFeatured = async () => {
+    try {
+      // Mengambil 3 font dengan flag is_featured di metadata
+      const { data, error } = await supabase
+        .from('fonts')
+        .select('*')
+        .filter('metadata->is_featured', 'eq', true)
+        .limit(3);
+
+      if (error) throw error;
+      if (data) setFeaturedFonts(data);
+    } catch (err) {
+      console.error("Error fetching featured fonts:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="pb-12">
-      {/* NOTE: Header Logo (Type & Heritage) telah dihapus dari sini 
-         karena sudah dikelola secara global oleh Navbar 
-      */}
-
       {/* Hero Section */}
       <section className="text-center mb-16 max-w-3xl mx-auto relative z-10 px-4 pt-12">
         <motion.p 
@@ -73,7 +93,7 @@ export default function Home() {
             onClick={() => navigate('/fonts')}
             className="vintage-btn btn-reverse px-16 py-4 text-sm tracking-[0.3em]"
           >
-            EXPLORE OUR FONTS
+            EXPLORE OUR FONTS
           </button>
         </div>
       </section>
@@ -84,37 +104,46 @@ export default function Home() {
           <h2 className="text-3xl md:text-5xl font-script capitalize">Featured Fonts</h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
-          {[
-            { id: 1, name: "The Grand Heritage", price: "$59", img: "https://images.unsplash.com/photo-1544077960-604201fe74bc?q=80&w=1440" },
-            { id: 2, name: "Midnight Signage", price: "$45", img: "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?q=80&w=1440" },
-            { id: 3, name: "Artisan Black", price: "$39", img: "https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=1440" }
-          ].map((font) => (
-            <motion.div 
-              key={font.id}
-              whileHover={{ scale: 1.02 }}
-              className="vintage-card flex flex-col p-0 overflow-hidden h-full"
-            >
-              <div className="aspect-3/2 w-full bg-vintage-ink/5 border-b border-vintage-ink relative group overflow-hidden">
-                <img 
-                  src={font.img} 
-                  alt={font.name} 
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                />
-                <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink">
-                  {font.price}
+        {loading ? (
+          <div className="text-center py-20 italic opacity-40 font-serif">
+            Consulting Heritage Archive...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
+            {featuredFonts.map((font) => (
+              <motion.div 
+                key={font.id}
+                whileHover={{ scale: 1.02 }}
+                className="vintage-card flex flex-col p-0 overflow-hidden h-full cursor-pointer"
+                onClick={() => navigate(`/font/${font.id}`)}
+              >
+                <div className="aspect-3/2 w-full bg-vintage-ink/5 border-b border-vintage-ink relative group overflow-hidden">
+                  {/* Mengambil preview_images nomor 1 (index 0) */}
+                  {font.preview_images && font.preview_images.length > 0 ? (
+                    <img 
+                      src={`/api/images/${font.preview_images[0]}`} 
+                      alt={font.name} 
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center opacity-20">
+                      NO PREVIEW
+                    </div>
+                  )}
+                  <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink">
+                    ${font.price}
+                  </div>
                 </div>
-              </div>
 
-              <div className="p-6 text-center grow flex flex-col justify-between gap-4">
-                <h3 className="text-2xl font-display leading-tight">{font.name}</h3>
-                <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                <div className="p-6 text-center grow flex flex-col justify-between gap-4">
+                  <h3 className="text-2xl font-display leading-tight">{font.name}</h3>
+                  <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Recent Fonts Section */}
