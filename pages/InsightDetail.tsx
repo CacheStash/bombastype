@@ -59,9 +59,9 @@ const InsightDetail: React.FC = () => {
   return (
     <div className="relative z-10 text-black font-sans selection:bg-black selection:text-white min-h-screen bg-transparent overflow-x-hidden uppercase">
       {/* VIBRANT BACKGROUND ORBS - Fixed Back-Layering & Pointer-Events */}
-      <div className="grain-orb-base orb-top-right !-z-10 pointer-events-none" />
-      <div className="grain-orb-base orb-bottom-left !-z-10 pointer-events-none" />
-      <div className="grain-orb-base orb-top-right !top-auto !bottom-0 !-right-[10%] !bg-red-600/20 !-z-10 pointer-events-none" />
+      <div className="grain-orb-base orb-top-right -z-10! pointer-events-none" />
+      <div className="grain-orb-base orb-bottom-left -z-10! pointer-events-none" />
+      <div className="grain-orb-base orb-top-right top-auto! bottom-0! -right-[10%]! bg-red-600/20! -z-10! pointer-events-none" />
       <div className="w-full relative z-10">
         <header className="px-6 py-16 md:px-8 border-b border-black mb-12 bg-transparent">
           <Link to="/insights" className="inline-flex items-center gap-2 text-[10px] font-normal hover:underline mb-12">

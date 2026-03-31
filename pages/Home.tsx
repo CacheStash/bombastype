@@ -9,24 +9,24 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 // FontCard yang telah dimodifikasi sesuai instruksi
-const FontCard = ({ fontName, price, onClick }: { fontName: string, price: number, onClick: () => void }) => (
+const FontCard = ({ fontName, price, onClick, primaryIndex = 0 }: { fontName: string, price: number, onClick: () => void, primaryIndex?: number }) => (
   <motion.div 
     whileHover={{ scale: 1.02 }}
     onClick={onClick}
     className="vintage-card flex flex-col items-center text-center h-full p-6 pt-10 cursor-pointer"
   >
-    {/* Atas: Nama Font saja */}
+    {/* Atas: Nama Font */}
     <div className="h-6 flex items-center justify-center">
       <p className="text-[12px] uppercase tracking-widest text-vintage-accent font-bold">{fontName}</p>
     </div>
     
     <hr className="w-full border-vintage-ink my-4" />
     
-    {/* Tengah: Preview ABC-Z - Menggunakan konvensi penamaan TypeTester */}
-    <div className="h-32 flex items-center justify-center w-full px-2 overflow-hidden">
+    {/* Tengah: Preview ABC-Z - Diperluas ke h-44 dan padding ditingkatkan untuk mencegah clipping */}
+    <div className="h-44 flex items-center justify-center w-full px-2 overflow-hidden bg-vintage-ink/2">
       <h3 
-        className="text-3xl md:text-5xl leading-tight break-all tracking-tight"
-        style={{ fontFamily: `"${fontName}-0"` }} 
+        className="text-4xl md:text-5xl leading-[1.4] break-all tracking-tight py-4"
+        style={{ fontFamily: `"${fontName}-${primaryIndex}"` }} 
       >
         ABCDEFGHIJKLMNOPQRSTUVWXYZ
       </h3>
@@ -34,11 +34,11 @@ const FontCard = ({ fontName, price, onClick }: { fontName: string, price: numbe
     
     <hr className="w-full border-vintage-ink/20 my-4" />
     
-    {/* Bawah Tengah: Angka 0-9 */}
+    {/* Bawah Tengah: Angka 0-9 - Warna Solid (Tanpa Opacity) */}
     <div className="h-10 flex items-center justify-center px-4">
       <p 
-        className="text-2xl font-bold opacity-70 leading-tight tracking-[0.3em]"
-        style={{ fontFamily: `"${fontName}-0"` }}
+        className="text-2xl font-bold text-vintage-ink tracking-[0.3em]"
+        style={{ fontFamily: `"${fontName}-${primaryIndex}"` }}
       >
         0123456789
       </p>
@@ -78,7 +78,10 @@ export default function Home() {
     }
 
     const fontFaces = recentFonts.map(f => {
-      const file = f.font_files?.[0]; // Ambil file pertama
+      const pIdx = f.metadata?.primary_font_index || 0;
+      const files = Array.isArray(f.font_files) ? f.font_files : [];
+      const file = files[pIdx]; 
+      
       if (!file) return '';
       
       const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
@@ -88,7 +91,7 @@ export default function Home() {
 
       return `
         @font-face {
-          font-family: "${f.name}-0";
+          font-family: "${f.name}-${pIdx}";
           src: url("${url}");
           font-display: swap;
         }
