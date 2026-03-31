@@ -6,28 +6,41 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase'; // Pastikan path import benar
+import { supabase } from '../lib/supabase';
 
-// Komponen Kartu dipertahankan untuk fleksibilitas konten halaman Home
-const FontCard = ({ title, subtitle, fontClass, price }: { title: string, subtitle: string, fontClass: string, price: string }) => (
+// FontCard yang telah dimodifikasi sesuai instruksi
+const FontCard = ({ fontName, price, onClick }: { fontName: string, price: number, onClick: () => void }) => (
   <motion.div 
     whileHover={{ scale: 1.02 }}
-    className="vintage-card flex flex-col items-center text-center h-full p-6 pt-10"
+    onClick={onClick}
+    className="vintage-card flex flex-col items-center text-center h-full p-6 pt-10 cursor-pointer"
   >
+    {/* Atas: Nama Font saja */}
     <div className="h-6 flex items-center justify-center">
-      <p className="text-[12px] uppercase tracking-widest text-vintage-accent font-bold">{subtitle}</p>
+      <p className="text-[12px] uppercase tracking-widest text-vintage-accent font-bold">{fontName}</p>
     </div>
+    
     <hr className="w-full border-vintage-ink my-4" />
-    <div className="h-32 flex items-center justify-center w-full px-4">
-      <h3 className={`text-3xl leading-tight ${fontClass}`}>{title}</h3>
+    
+    {/* Tengah: Preview ABC-Z (Gunakan break-all agar tidak keluar card) */}
+    <div className="h-32 flex items-center justify-center w-full px-2 overflow-hidden">
+      <h3 className="text-xl md:text-2xl leading-tight font-display break-all tracking-tight">
+        ABCDEFGHIJKLMNOPQRSTUVWXYZ
+      </h3>
     </div>
+    
     <hr className="w-full border-vintage-ink/20 my-4" />
+    
+    {/* Bawah Tengah: Angka 0-9 */}
     <div className="h-10 flex items-center justify-center px-4">
-      <p className="text-sm italic opacity-70 leading-tight">Meticulously digitized for timeless design.</p>
+      <p className="text-sm font-bold opacity-70 leading-tight tracking-[0.3em]">0123456789</p>
     </div>
+    
     <hr className="w-full border-vintage-ink/20 mt-4 mb-6" />
+    
+    {/* Footer: Harga & Button */}
     <div className="mt-auto w-full">
-      <div className="text-sm font-bold mb-4">{price}</div>
+      <div className="text-[11px] font-bold mb-4 uppercase tracking-tighter">Starting at ${price}</div>
       <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
     </div>
   </motion.div>
@@ -36,25 +49,36 @@ const FontCard = ({ title, subtitle, fontClass, price }: { title: string, subtit
 export default function Home() {
   const navigate = useNavigate();
   const [featuredFonts, setFeaturedFonts] = useState<any[]>([]);
+  const [recentFonts, setRecentFonts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchFeatured();
+    fetchData();
   }, []);
 
-  const fetchFeatured = async () => {
+  const fetchData = async () => {
     try {
-      // Mengambil 3 font dengan flag is_featured di metadata
-      const { data, error } = await supabase
+      setLoading(true);
+      
+      // 1. Fetch 3 Featured Fonts
+      const { data: featured } = await supabase
         .from('fonts')
         .select('*')
         .filter('metadata->is_featured', 'eq', true)
         .limit(3);
 
-      if (error) throw error;
-      if (data) setFeaturedFonts(data);
+      // 2. Fetch 4 Recent Fonts (Berdasarkan created_at terbaru)
+      const { data: recent } = await supabase
+        .from('fonts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(4);
+
+      if (featured) setFeaturedFonts(featured);
+      if (recent) setRecentFonts(recent);
+      
     } catch (err) {
-      console.error("Error fetching featured fonts:", err);
+      console.error("Data retrieval failed:", err);
     } finally {
       setLoading(false);
     }
@@ -104,13 +128,11 @@ export default function Home() {
           <h2 className="text-3xl md:text-5xl font-script capitalize">Featured Fonts</h2>
         </div>
         
-        {loading ? (
-          <div className="text-center py-20 italic opacity-40 font-serif">
-            Consulting Heritage Archive...
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
-            {featuredFonts.map((font) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
+          {loading ? (
+             [1,2,3].map(i => <div key={i} className="h-80 bg-vintage-ink/5 animate-pulse" />)
+          ) : (
+            featuredFonts.map((font) => (
               <motion.div 
                 key={font.id}
                 whileHover={{ scale: 1.02 }}
@@ -118,32 +140,25 @@ export default function Home() {
                 onClick={() => navigate(`/font/${font.id}`)}
               >
                 <div className="aspect-3/2 w-full bg-vintage-ink/5 border-b border-vintage-ink relative group overflow-hidden">
-                  {/* Mengambil preview_images nomor 1 (index 0) */}
-                  {font.preview_images && font.preview_images.length > 0 ? (
+                  {font.preview_images?.[0] && (
                     <img 
                       src={`/api/images/${font.preview_images[0]}`} 
                       alt={font.name} 
-                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center opacity-20">
-                      NO PREVIEW
-                    </div>
                   )}
                   <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink">
                     ${font.price}
                   </div>
                 </div>
-
                 <div className="p-6 text-center grow flex flex-col justify-between gap-4">
                   <h3 className="text-2xl font-display leading-tight">{font.name}</h3>
                   <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
                 </div>
               </motion.div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </section>
 
       {/* Recent Fonts Section */}
@@ -151,11 +166,19 @@ export default function Home() {
         <div className="divider">
           <h2 className="text-3xl md:text-5xl font-script capitalize">Recent Fonts</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <FontCard subtitle="An Ornate Serif" title="The Victoria" fontClass="font-display" price="$39 - $49" />
-          <FontCard subtitle="Rough & Textured" title="Old Market" fontClass="font-playfair italic" price="$39 - $49" />
-          <FontCard subtitle="Classic Script" title="Retro Signage" fontClass="font-script text-5xl" price="$39 - $49" />
-          <FontCard subtitle="Traditional Gothic" title="Artisan Black" fontClass="font-blackletter" price="$39 - $49" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10">
+          {loading ? (
+             [1,2,3,4].map(i => <div key={i} className="h-64 bg-vintage-ink/5 animate-pulse" />)
+          ) : (
+            recentFonts.map((font) => (
+              <FontCard 
+                key={font.id}
+                fontName={font.name} 
+                price={font.price} 
+                onClick={() => navigate(`/font/${font.id}`)}
+              />
+            ))
+          )}
         </div>
       </section>
     </div>
