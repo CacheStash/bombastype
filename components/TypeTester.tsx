@@ -227,10 +227,10 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           <div className="col-span-2 lg:col-span-1 lg:ml-auto flex items-center gap-6 px-4 lg:px-8 py-4 lg:py-8 border-b lg:border-b-0 lg:border-l border-black justify-between lg:justify-end lg:order-last">
               <div className="flex items-center gap-2 w-full lg:w-auto justify-between lg:justify-start">
                 <span className="font-bold text-xs text-gray-400 uppercase lg:hidden">Style</span>
-                <div className="relative z-[100]">
+                <div className="relative z-100">
                    <button 
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="flex items-center gap-2 appearance-none font-bold text-xs uppercase outline-none cursor-pointer py-1 pl-0 pr-2 bg-transparent hover:text-gray-600 transition-colors border-b border-transparent hover:border-black min-w-[80px] justify-between relative z-10"
+                      className="flex items-center gap-2 appearance-none font-bold text-xs uppercase outline-none cursor-pointer py-1 pl-0 pr-2 bg-transparent hover:text-gray-600 transition-colors border-b border-transparent hover:border-black min-w-20 justify-between relative z-10"
                    >
                       <span>
                         {/* FIXED: Gunakan nama yang dideteksi, jika belum ada gunakan fallback angka */}
@@ -285,10 +285,10 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   <div className="flex items-center gap-2">
                     {/* Label "Size" disembunyikan di desktop (lg:hidden) */}
                     <span className="font-bold text-xs text-gray-400 uppercase lg:hidden">Size</span>
-                    <div className="relative z-[110]">
+                    <div className="relative z-110">
                        <button 
                           onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)}
-                          className="flex items-center gap-2 appearance-none font-bold text-xs uppercase outline-none cursor-pointer py-1 pl-0 pr-2 bg-transparent hover:text-gray-600 transition-colors border-b border-transparent hover:border-black min-w-[65px] justify-between relative z-10"
+                          className="flex items-center gap-2 appearance-none font-bold text-xs uppercase outline-none cursor-pointer py-1 pl-0 pr-2 bg-transparent hover:text-gray-600 transition-colors border-b border-transparent hover:border-black min-w-16.25 justify-between relative z-10"
                        >
                           <span>{fontSize} PX</span>
                           <ChevronDown size={14} className={`transition-transform duration-200 ${isSizeDropdownOpen ? 'rotate-180' : ''}`} />
@@ -297,7 +297,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                        {isSizeDropdownOpen && (
                          <>
                           <div className="fixed inset-0 z-40" onClick={() => setIsSizeDropdownOpen(false)} />
-                          <div className="absolute left-0 top-full mt-2 w-32 bg-white/95 backdrop-blur-xl border border-black z-50 overflow-y-auto max-h-[300px] shadow-none custom-scrollbar">
+                          <div className="absolute left-0 top-full mt-2 w-32 bg-white/95 backdrop-blur-xl border border-black z-50 overflow-y-auto max-h-75 shadow-none custom-scrollbar">
                               {PRESET_SIZES.map((size) => (
                                 <button
                                   key={size}
@@ -358,12 +358,12 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
         </div>
 
-        <div className="min-h-[300px] mb-8 relative">
+        <div className="min-h-75 mb-8 relative">
           {viewMode === 'type' ? (
               <textarea 
                 value={text} 
                 onChange={(e) => setText(e.target.value)} 
-                className="w-full min-h-[300px] bg-transparent outline-none resize-none pt-4 pr-4 pb-4 pl-6 md:pl-8 relative z-10" 
+                className="w-full min-h-75 bg-transparent outline-none resize-none pt-4 pr-4 pb-4 pl-6 md:pl-8 relative z-10" 
                 style={{ 
                     ...commonFontStyle,
                     fontSize: `${fontSize}px`, 
@@ -394,12 +394,12 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           <div className={`grid grid-cols-1 md:grid-cols-2 ${(hasAxes || hasFeatures) ? 'border-b border-black' : ''}`}>
               <div className="flex items-center gap-4 px-4 md:px-8 py-6 md:py-8 border-b md:border-b-0 md:border-r border-black">
                <label className="w-24 font-bold text-xs uppercase">Leading</label>
-                  <input type="range" min="0.8" max="2.0" step="0.1" value={lineHeight} onChange={(e) => setLineHeight(parseFloat(e.target.value))} className="flex-grow h-px bg-black appearance-none cursor-pointer accent-black"/>
+                  <input type="range" min="0.8" max="2.0" step="0.1" value={lineHeight} onChange={(e) => setLineHeight(parseFloat(e.target.value))} className="grow h-px bg-black appearance-none cursor-pointer accent-black"/>
                   <span className="w-12 text-right font-bold text-xs">{lineHeight.toFixed(1)}</span>
               </div>
               <div className="flex items-center gap-4 px-4 md:px-8 py-6 md:py-8">
                   <label className="w-24 font-bold text-xs uppercase">Tracking</label>
-                  <input type="range" min="-0.1" max="0.5" step="0.01" value={letterSpacing} onChange={(e) => setLetterSpacing(parseFloat(e.target.value))} className="flex-grow h-px bg-black appearance-none cursor-pointer accent-black"/>
+                  <input type="range" min="-0.1" max="0.5" step="0.01" value={letterSpacing} onChange={(e) => setLetterSpacing(parseFloat(e.target.value))} className="grow h-px bg-black appearance-none cursor-pointer accent-black"/>
                   <span className="w-12 text-right font-bold text-xs">{letterSpacing.toFixed(2)}</span>
                   </div>
           </div>
@@ -412,7 +412,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     {activeAxes.map((axis: any) => (
                       <div key={axis.tag} className="flex items-center gap-4">
                         <label className="w-16 font-bold text-xs uppercase truncate">{axis.name}</label>
-                        <input type="range" min={axis.min} max={axis.max} step={1} value={axesValues[axis.tag] ?? axis.default} onChange={(e) => setAxesValues(p => ({...p, [axis.tag]: parseFloat(e.target.value)}))} className="flex-grow h-px bg-black appearance-none cursor-pointer accent-black"/>
+                        <input type="range" min={axis.min} max={axis.max} step={1} value={axesValues[axis.tag] ?? axis.default} onChange={(e) => setAxesValues(p => ({...p, [axis.tag]: parseFloat(e.target.value)}))} className="grow h-px bg-black appearance-none cursor-pointer accent-black"/>
                         <span className="w-12 text-right font-bold text-xs">{Math.round(axesValues[axis.tag] ?? axis.default)}</span>
                       </div>
                     ))}
@@ -422,7 +422,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                 {hasFeatures && (
                   <div className={`${hasAxes ? 'md:col-span-1 md:border-l' : 'md:col-span-1'} border-black px-4 md:px-8 py-6 md:py-8`}>
                     <h4 className="font-bold text-xs uppercase text-gray-400 mb-4 tracking-widest">Features</h4>
-                    <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                    <div className="flex flex-col gap-2 max-h-50 overflow-y-auto custom-scrollbar">
                       {dynamicFeatures.map((feat) => (
                         <label key={feat.tag} className="flex items-center justify-between cursor-pointer group select-none">
                           <span className="text-sm font-bold uppercase group-hover:text-gray-600 transition-colors">
@@ -430,7 +430,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                           </span>
                           <div className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" className="sr-only peer" checked={activeFeatures[feat.tag] || false} onChange={() => toggleFeature(feat.tag)} />
-                            <div className="w-9 h-5 rounded-full bg-transparent border border-black peer-checked:bg-black peer-checked:border-black after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-black after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-white"></div>
+                            <div className="w-9 h-5 rounded-full bg-transparent border border-black peer-checked:bg-black peer-checked:border-black after:content-[''] after:absolute after:top-0.75 after:left-0.75 after:bg-black after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-white"></div>
                           </div>
                         </label>
                       ))}

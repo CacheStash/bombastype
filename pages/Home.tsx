@@ -22,9 +22,12 @@ const FontCard = ({ fontName, price, onClick }: { fontName: string, price: numbe
     
     <hr className="w-full border-vintage-ink my-4" />
     
-    {/* Tengah: Preview ABC-Z (Gunakan break-all agar tidak keluar card) */}
+    {/* Tengah: Preview ABC-Z - Menggunakan konvensi penamaan TypeTester */}
     <div className="h-32 flex items-center justify-center w-full px-2 overflow-hidden">
-      <h3 className="text-xl md:text-2xl leading-tight font-display break-all tracking-tight">
+      <h3 
+        className="text-3xl md:text-5xl leading-tight break-all tracking-tight"
+        style={{ fontFamily: `"${fontName}-0"` }} 
+      >
         ABCDEFGHIJKLMNOPQRSTUVWXYZ
       </h3>
     </div>
@@ -33,7 +36,12 @@ const FontCard = ({ fontName, price, onClick }: { fontName: string, price: numbe
     
     {/* Bawah Tengah: Angka 0-9 */}
     <div className="h-10 flex items-center justify-center px-4">
-      <p className="text-sm font-bold opacity-70 leading-tight tracking-[0.3em]">0123456789</p>
+      <p 
+        className="text-2xl font-bold opacity-70 leading-tight tracking-[0.3em]"
+        style={{ fontFamily: `"${fontName}-0"` }}
+      >
+        0123456789
+      </p>
     </div>
     
     <hr className="w-full border-vintage-ink/20 mt-4 mb-6" />
@@ -55,6 +63,40 @@ export default function Home() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Logic Font Loader sesuai standar TypeTester
+  useEffect(() => {
+    if (recentFonts.length === 0) return;
+
+    const styleId = "dynamic-fonts-home";
+    let styleTag = document.getElementById(styleId) as HTMLStyleElement;
+    
+    if (!styleTag) {
+      styleTag = document.createElement("style");
+      styleTag.id = styleId;
+      document.head.appendChild(styleTag);
+    }
+
+    const fontFaces = recentFonts.map(f => {
+      const file = f.font_files?.[0]; // Ambil file pertama
+      if (!file) return '';
+      
+      const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
+      const url = file.startsWith('http') || file.startsWith('/') 
+        ? file 
+        : `/api/fonts/${file}?v=${version}`;
+
+      return `
+        @font-face {
+          font-family: "${f.name}-0";
+          src: url("${url}");
+          font-display: swap;
+        }
+      `;
+    }).join("\n");
+
+    styleTag.innerHTML = fontFaces;
+  }, [recentFonts]);
 
   const fetchData = async () => {
     try {
