@@ -56,20 +56,23 @@ const FontCard = ({
       </h3>
     </div>
     
-    <hr className="w-full border-vintage-ink/20 my-4 shrink-0" />
+    <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
     
-    {/* 3. Tengah Bawah: Angka 0-9 (Ukuran Besar & Center) */}
-    <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 flex items-center justify-center shrink-0">
+    {/* 3. Tengah Bawah: Angka 0-9 (Presisi Centering) */}
+    <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 flex items-center justify-center shrink-0 py-2 md:py-4">
       <h3 
-        className="text-4xl md:text-6xl leading-[1.4] break-all tracking-tight py-6 text-vintage-ink"
-        style={{ fontFamily: `"${fontName}-${primaryIndex}"` }}
+        className="text-4xl md:text-6xl leading-none break-all tracking-tight text-vintage-ink"
+        style={{ 
+          fontFamily: `"${fontName}-${primaryIndex}"`,
+          transform: 'translateY(0.05em)' // Fine-tuning manual jika baseline font agak turun
+        }}
       >
         0123456789
       </h3>
     </div>
 
-    {/* 4. GARIS DI BAWAH NOMOR */}
-    <hr className="w-full border-vintage-ink/20 my-4 shrink-0" />
+    {/* Garis Bawah Nomor */}
+    <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
 
     {/* 5. BARCODE SPACER (Terletak di bawah garis nomor, mengisi gap kosong) */}
     <BarcodeSpacer />
