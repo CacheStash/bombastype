@@ -8,7 +8,17 @@ import { motion } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
-// FontCard dengan perbaikan Clipping & Style
+// Komponen Barcode Spacer untuk mengisi gap kosong
+const BarcodeSpacer = () => (
+  <div 
+    className="grow w-full opacity-[0.15] min-h-5" 
+    style={{
+      backgroundImage: `repeating-linear-gradient(90deg, currentColor, currentColor 1px, transparent 1px, transparent 6px)`,
+    }}
+  />
+);
+
+// FontCard dengan Barcode Filler & Number Enhancement
 const FontCard = ({ 
   fontName, 
   price, 
@@ -25,46 +35,54 @@ const FontCard = ({
     onClick={onClick}
     className="vintage-card flex flex-col items-center text-center h-full p-6 pt-10 cursor-pointer"
   >
-    {/* Atas: Nama Font */}
-    <div className="h-6 flex items-center justify-center">
+    {/* 1. Header: Nama Font */}
+    <div className="h-6 flex items-center justify-center shrink-0">
       <p className="text-[12px] uppercase tracking-widest text-vintage-accent font-bold">{fontName}</p>
     </div>
     
-    <hr className="w-full border-vintage-ink my-4" />
+    <hr className="w-full border-vintage-ink my-4 shrink-0" />
     
-    {/* Tengah: Preview ABC-Z - Menggunakan min-h & leading lebar agar tidak terpotong */}
-    <div className="min-h-56 flex items-center justify-center w-full px-2 overflow-hidden bg-vintage-ink/1">
+    {/* 2. Tengah Atas: Preview Huruf A-Z */}
+    <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 shrink-0">
       <h3 
-        className="text-4xl md:text-6xl leading-[1.6] break-all tracking-tight py-8"
+        className="text-4xl md:text-6xl leading-[1.6] break-all tracking-tight py-6"
         style={{ 
           fontFamily: `"${fontName}-${primaryIndex}"`,
           fontVariantLigatures: "none" 
         }} 
       >
-        ABCDEFGHIJKLMNOPQRSTUVWXYZ
+        ABCDEFGHIJKLMNOPQRSTUVWXYZ?@&
       </h3>
     </div>
+
+    {/* 3. Barcode Spacer Pertama (Menyeimbangkan gap atas) */}
+    <BarcodeSpacer />
     
-    <hr className="w-full border-vintage-ink/20 my-4" />
+    <hr className="w-full border-vintage-ink/20 my-4 shrink-0" />
     
-    {/* Bawah Tengah: Angka 0-9 - Warna Solid (Sesuai warna huruf) */}
-    <div className="h-12 flex items-center justify-center px-4">
-      <p 
-        className="text-2xl md:text-3xl font-bold text-vintage-ink leading-none tracking-[0.3em]"
+    {/* 4. Tengah Bawah: Angka 0-9 (Ukuran besar, Center) */}
+    <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 flex items-center justify-center shrink-0">
+      <h3 
+        className="text-4xl md:text-6xl leading-[1.4] break-all tracking-tight py-6 text-vintage-ink"
         style={{ fontFamily: `"${fontName}-${primaryIndex}"` }}
       >
         0123456789
-      </p>
+      </h3>
     </div>
+
+    {/* 5. Barcode Spacer Kedua (Menyeimbangkan gap bawah) */}
+    <BarcodeSpacer />
     
-    <hr className="w-full border-vintage-ink/20 mt-4 mb-6" />
+    <hr className="w-full border-vintage-ink/20 mt-4 mb-6 shrink-0" />
     
-    {/* Footer: Harga (Title Case & Ukuran Lebih Besar) */}
-    <div className="mt-auto w-full">
+    {/* 6. Footer: Harga & Button */}
+    <div className="mt-auto w-full shrink-0">
       <div className="text-base md:text-lg font-bold mb-4 text-vintage-ink tracking-tight">
         Starting at ${price}
       </div>
-      <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
+      <button className="vintage-btn py-3 text-[12px] w-full uppercase tracking-widest">
+        VIEW FONTS
+      </button>
     </div>
   </motion.div>
 );
@@ -79,7 +97,7 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // Logic Font Loader - Memastikan semua 4 font terload dengan benar
+  // Logic Font Loader
   useEffect(() => {
     if (recentFonts.length === 0) return;
 
@@ -120,14 +138,14 @@ export default function Home() {
     try {
       setLoading(true);
       
-      // 1. Fetch 3 Featured Fonts
+      // Fetch 3 Featured Fonts
       const { data: featured } = await supabase
         .from('fonts')
         .select('*')
         .filter('metadata->is_featured', 'eq', true)
         .limit(3);
 
-      // 2. Fetch MAKSIMAL 4 Recent Fonts
+      // Fetch 4 Recent Fonts
       const { data: recent } = await supabase
         .from('fonts')
         .select('*')
@@ -182,7 +200,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Fonts Section (Max 3) */}
+      {/* Featured Fonts Section */}
       <section className="mb-16 md:mb-24 relative z-10 px-4">
         <div className="divider">
           <h2 className="text-3xl md:text-5xl font-script capitalize">Featured Fonts</h2>
@@ -204,7 +222,7 @@ export default function Home() {
                     <img 
                       src={`/api/images/${font.preview_images[0]}`} 
                       alt={font.name} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                      className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" 
                     />
                   )}
                   <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink">
@@ -212,7 +230,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="p-6 text-center grow flex flex-col justify-between gap-4">
-                  <h3 className="text-2xl font-display leading-tight">{font.name}</h3>
+                  <h3 className="text-2xl font-display leading-tight uppercase">{font.name}</h3>
                   <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
                 </div>
               </motion.div>
@@ -221,14 +239,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recent Fonts Section (STRICT Max 4) */}
+      {/* Recent Fonts Section */}
       <section className="mb-16 md:mb-24 relative z-10 px-4">
         <div className="divider">
           <h2 className="text-3xl md:text-5xl font-script capitalize">Recent Fonts</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10 items-stretch">
           {loading ? (
-             [1,2,3,4].map(i => <div key={i} className="h-64 bg-vintage-ink/5 animate-pulse" />)
+             [1,2,3,4].map(i => <div key={i} className="h-96 bg-vintage-ink/5 animate-pulse" />)
           ) : (
             recentFonts.map((font) => (
               <FontCard 
