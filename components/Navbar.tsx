@@ -46,9 +46,25 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.length < 2) { setSuggestions([]); return; }
-    const { data } = await supabase.from('v_global_search').select('*').ilike('search_text', `%${query}%`).limit(8);
-    setSuggestions(data || []);
+    const { data } = await supabase
+      .from('v_global_search')
+      .select('*')
+      .ilike('search_text', `%${query}%`)
+      .limit(15);
+    
+    if (data) {
+      // Mengurutkan: Font selalu di atas (type === 'font')
+      const prioritized = [...data].sort((a, b) => {
+        if (a.type === 'font' && b.type !== 'font') return -1;
+        if (a.type !== 'font' && b.type === 'font') return 1;
+        return 0;
+      });
+      setSuggestions(prioritized);
+    } else {
+      setSuggestions([]);
+    }
   };
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -170,16 +186,58 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
               </button>
               
               {isSearchOpen && suggestions.length > 0 && (
-                <div className="absolute top-full right-0 mt-4 w-64 bg-vintage-paper border border-vintage-ink shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
-                  {suggestions.map((item, idx) => (
-                    <Link 
-                      key={idx} 
-                      to={item.path} 
-                      className="block p-2 hover:bg-vintage-ink hover:text-vintage-paper text-[10px] uppercase tracking-wider transition-colors"
-                    >
-                      {item.title}
-                    </Link>
-                  ))}
+                <div className="absolute top-full right-0 mt-4 w-72 md:w-100 bg-vintage-paper border border-vintage-ink shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                  {['font', 'page'].map((groupType) => {
+                    const groupItems = suggestions.filter(item => item.type === groupType);
+                    if (groupItems.length === 0) return null;
+
+                    return (
+                      <div key={groupType} className="mb-6 last:mb-0">
+                        <h5 className="text-[8px] font-bold tracking-[0.4em] text-vintage-accent uppercase mb-3 border-b border-vintage-ink/10 pb-1">
+                          {groupType === 'font' ? 'Heritage Fonts' : 'Studio Pages'}
+                        </h5>
+                        <div className="space-y-4">
+                          {groupItems.map((item, idx) => (
+                            <Link 
+                              key={idx} 
+                              to={item.path} 
+                              className="group/item block"
+                              onClick={() => setIsSearchOpen(false)}
+                            >
+                              <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[11px] font-bold uppercase tracking-widest group-hover/item:text-vintage-accent transition-colors">
+                                    {item.title}
+                                  </span>
+                                  <ArrowRight size={12} className="opacity-0 group-hover/item:opacity-100 -translate-x-2 group-hover/item:translate-x-0 transition-all text-vintage-accent" />
+                                </div>
+                                
+                                {/* 3 Thumbnail Preview khusus Font */}
+                                {groupType === 'font' && item.metadata?.preview_images && (
+                                  <div className="flex gap-1.5 h-12">
+                                    {item.metadata.preview_images.slice(0, 3).map((imgId: string, i: number) => (
+                                      <div key={i} className="flex-1 bg-vintage-ink/5 border border-vintage-ink/10 overflow-hidden">
+                                        <img 
+                                          src={`/api/images/${imgId}`} 
+                                          className="w-full h-full object-cover grayscale group-hover/item:grayscale-0 transition-all duration-500 scale-110 group-hover/item:scale-100" 
+                                          alt="preview" 
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {groupType === 'page' && (
+                                  <p className="text-[10px] italic opacity-50 line-clamp-1 font-serif">
+                                    View details and archival information...
+                                  </p>
+                                )}
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
