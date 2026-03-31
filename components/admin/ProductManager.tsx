@@ -29,6 +29,29 @@ const ProductManager = () => {
     setShowForm(true);
   };
 
+  const handleDuplicate = async (font: any) => {
+    // Menghapus ID dan Timestamp agar Supabase menganggap ini entri baru
+    const { id, created_at, ...rest } = font;
+    const duplicateData = {
+      ...rest,
+      name: `${font.name} (Copy)`,
+      // Opsional: set display_order ke urutan terakhir jika diperlukan
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('fonts')
+        .insert([duplicateData])
+        .select();
+
+      if (error) throw error;
+      alert(`Asset "${duplicateData.name}" duplicated successfully.`);
+      fetchFonts();
+    } catch (err: any) {
+      alert("Duplication Error: " + err.message);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus font ini selamanya?")) return;
     try {
@@ -93,6 +116,7 @@ const ProductManager = () => {
                 <td className="p-4 text-right">
                   <div className="flex justify-end gap-6">
                     <button onClick={() => handleEdit(f)} className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-1"><Edit2 size={12} /> Edit</button>
+                    <button onClick={() => handleDuplicate(f)} className="text-[10px] font-bold uppercase tracking-widest text-vintage-ink/60 hover:text-vintage-accent transition-colors flex items-center gap-1"><Copy size={12} /> Duplicate</button>
                     <button onClick={() => handleDelete(f.id)} className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-1"><Trash2 size={12} /> Remove</button>
                   </div>
                 </td>

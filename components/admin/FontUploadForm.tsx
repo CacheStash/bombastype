@@ -334,8 +334,9 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
                 corporate_full_suite: calc(150.0)
               });
             }}
-            className="w-full border-b border-vintage-ink/20 py-4 bg-transparent outline-none font-display text-2xl focus:border-vintage-ink transition-colors" 
+            className="w-full border-b border-vintage-ink/20 py-4 bg-transparent outline-none font-display text-2xl focus:border-vintage-ink transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
             placeholder="25" 
+            onWheel={(e) => e.currentTarget.blur()}
           />
         </div>
 
