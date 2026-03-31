@@ -8,8 +8,18 @@ import { motion } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
-// FontCard yang telah dimodifikasi sesuai instruksi
-const FontCard = ({ fontName, price, onClick, primaryIndex = 0 }: { fontName: string, price: number, onClick: () => void, primaryIndex?: number }) => (
+// FontCard dengan perbaikan Clipping & Style
+const FontCard = ({ 
+  fontName, 
+  price, 
+  onClick, 
+  primaryIndex = 0 
+}: { 
+  fontName: string, 
+  price: number, 
+  onClick: () => void, 
+  primaryIndex?: number 
+}) => (
   <motion.div 
     whileHover={{ scale: 1.02 }}
     onClick={onClick}
@@ -22,11 +32,14 @@ const FontCard = ({ fontName, price, onClick, primaryIndex = 0 }: { fontName: st
     
     <hr className="w-full border-vintage-ink my-4" />
     
-    {/* Tengah: Preview ABC-Z - Diperluas ke h-44 dan padding ditingkatkan untuk mencegah clipping */}
-    <div className="h-44 flex items-center justify-center w-full px-2 overflow-hidden bg-vintage-ink/2">
+    {/* Tengah: Preview ABC-Z - Menggunakan min-h & leading lebar agar tidak terpotong */}
+    <div className="min-h-56 flex items-center justify-center w-full px-2 overflow-hidden bg-vintage-ink/1">
       <h3 
-        className="text-4xl md:text-5xl leading-[1.4] break-all tracking-tight py-4"
-        style={{ fontFamily: `"${fontName}-${primaryIndex}"` }} 
+        className="text-4xl md:text-6xl leading-[1.6] break-all tracking-tight py-8"
+        style={{ 
+          fontFamily: `"${fontName}-${primaryIndex}"`,
+          fontVariantLigatures: "none" 
+        }} 
       >
         ABCDEFGHIJKLMNOPQRSTUVWXYZ
       </h3>
@@ -34,10 +47,10 @@ const FontCard = ({ fontName, price, onClick, primaryIndex = 0 }: { fontName: st
     
     <hr className="w-full border-vintage-ink/20 my-4" />
     
-    {/* Bawah Tengah: Angka 0-9 - Warna Solid (Tanpa Opacity) */}
-    <div className="h-10 flex items-center justify-center px-4">
+    {/* Bawah Tengah: Angka 0-9 - Warna Solid (Sesuai warna huruf) */}
+    <div className="h-12 flex items-center justify-center px-4">
       <p 
-        className="text-2xl font-bold text-vintage-ink tracking-[0.3em]"
+        className="text-2xl md:text-3xl font-bold text-vintage-ink leading-none tracking-[0.3em]"
         style={{ fontFamily: `"${fontName}-${primaryIndex}"` }}
       >
         0123456789
@@ -46,9 +59,11 @@ const FontCard = ({ fontName, price, onClick, primaryIndex = 0 }: { fontName: st
     
     <hr className="w-full border-vintage-ink/20 mt-4 mb-6" />
     
-    {/* Footer: Harga & Button */}
+    {/* Footer: Harga (Title Case & Ukuran Lebih Besar) */}
     <div className="mt-auto w-full">
-      <div className="text-[11px] font-bold mb-4 uppercase tracking-tighter">Starting at ${price}</div>
+      <div className="text-base md:text-lg font-bold mb-4 text-vintage-ink tracking-tight">
+        Starting at ${price}
+      </div>
       <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
     </div>
   </motion.div>
@@ -64,11 +79,11 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // Logic Font Loader sesuai standar TypeTester
+  // Logic Font Loader - Memastikan semua 4 font terload dengan benar
   useEffect(() => {
     if (recentFonts.length === 0) return;
 
-    const styleId = "dynamic-fonts-home";
+    const styleId = "dynamic-fonts-home-registry";
     let styleTag = document.getElementById(styleId) as HTMLStyleElement;
     
     if (!styleTag) {
@@ -93,12 +108,12 @@ export default function Home() {
         @font-face {
           font-family: "${f.name}-${pIdx}";
           src: url("${url}");
-          font-display: swap;
+          font-display: block;
         }
       `;
     }).join("\n");
 
-    styleTag.innerHTML = fontFaces;
+    styleTag.textContent = fontFaces;
   }, [recentFonts]);
 
   const fetchData = async () => {
@@ -112,7 +127,7 @@ export default function Home() {
         .filter('metadata->is_featured', 'eq', true)
         .limit(3);
 
-      // 2. Fetch 4 Recent Fonts (Berdasarkan created_at terbaru)
+      // 2. Fetch MAKSIMAL 4 Recent Fonts
       const { data: recent } = await supabase
         .from('fonts')
         .select('*')
@@ -167,7 +182,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Fonts Section */}
+      {/* Featured Fonts Section (Max 3) */}
       <section className="mb-16 md:mb-24 relative z-10 px-4">
         <div className="divider">
           <h2 className="text-3xl md:text-5xl font-script capitalize">Featured Fonts</h2>
@@ -206,7 +221,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recent Fonts Section */}
+      {/* Recent Fonts Section (STRICT Max 4) */}
       <section className="mb-16 md:mb-24 relative z-10 px-4">
         <div className="divider">
           <h2 className="text-3xl md:text-5xl font-script capitalize">Recent Fonts</h2>
@@ -220,6 +235,7 @@ export default function Home() {
                 key={font.id}
                 fontName={font.name} 
                 price={font.price} 
+                primaryIndex={font.metadata?.primary_font_index || 0}
                 onClick={() => navigate(`/font/${font.id}`)}
               />
             ))
