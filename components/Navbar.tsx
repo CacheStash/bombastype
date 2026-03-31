@@ -15,6 +15,12 @@ interface NavbarProps {
   onStateChange?: (isActive: boolean) => void;
 }
 
+const resolvePreviewUrl = (filename: string) => {
+  if (!filename) return null;
+  if (filename.startsWith('http')) return filename;
+  return `/api/images/${filename}`; 
+};
+
 const Navbar = ({ onStateChange }: NavbarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -186,58 +192,75 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
               </button>
               
               {isSearchOpen && suggestions.length > 0 && (
-                <div className="absolute top-full right-0 mt-4 w-72 md:w-100 bg-vintage-paper border border-vintage-ink shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                  {['font', 'page'].map((groupType) => {
-                    const groupItems = suggestions.filter(item => item.type === groupType);
-                    if (groupItems.length === 0) return null;
+                <div className="absolute top-full right-0 mt-4 w-80 md:w-112.5 bg-vintage-paper border border-vintage-ink shadow-2xl p-0 z-50 animate-in fade-in slide-in-from-top-2 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                  {(() => {
+                    // 1. Logika Grouping Dinamis berdasarkan Path
+                    const groups: Record<string, any[]> = {};
+                    suggestions.forEach(item => {
+                      let category = 'Archive';
+                      if (item.type === 'font') {
+                        category = 'Fonts';
+                      } else {
+                        const pathName = item.path.replace(/^\//, '').split('/')[0];
+                        category = pathName ? pathName.charAt(0).toUpperCase() + pathName.slice(1) : 'Studio';
+                      }
+                      if (!groups[category]) groups[category] = [];
+                      groups[category].push(item);
+                    });
 
-                    return (
-                      <div key={groupType} className="mb-6 last:mb-0">
-                        <h5 className="text-[8px] font-bold tracking-[0.4em] text-vintage-accent uppercase mb-3 border-b border-vintage-ink/10 pb-1">
-                          {groupType === 'font' ? 'Heritage Fonts' : 'Studio Pages'}
-                        </h5>
-                        <div className="space-y-4">
-                          {groupItems.map((item, idx) => (
-                            <Link 
-                              key={idx} 
-                              to={item.path} 
-                              className="group/item block"
-                              onClick={() => setIsSearchOpen(false)}
-                            >
-                              <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-[11px] font-bold uppercase tracking-widest group-hover/item:text-vintage-accent transition-colors">
-                                    {item.title}
-                                  </span>
-                                  <ArrowRight size={12} className="opacity-0 group-hover/item:opacity-100 -translate-x-2 group-hover/item:translate-x-0 transition-all text-vintage-accent" />
-                                </div>
-                                
-                                {/* 3 Thumbnail Preview khusus Font */}
-                                {groupType === 'font' && item.metadata?.preview_images && (
-                                  <div className="flex gap-1.5 h-12">
-                                    {item.metadata.preview_images.slice(0, 3).map((imgId: string, i: number) => (
-                                      <div key={i} className="flex-1 bg-vintage-ink/5 border border-vintage-ink/10 overflow-hidden">
-                                        <img 
-                                          src={`/api/images/${imgId}`} 
-                                          className="w-full h-full object-cover grayscale group-hover/item:grayscale-0 transition-all duration-500 scale-110 group-hover/item:scale-100" 
-                                          alt="preview" 
-                                        />
-                                      </div>
-                                    ))}
+                    // 2. Render Groups (Fonts Selalu Pertama)
+                    return Object.keys(groups)
+                      .sort((a,b) => a === 'Fonts' ? -1 : b === 'Fonts' ? 1 : a.localeCompare(b))
+                      .map(groupName => (
+                        <div key={groupName} className="flex flex-col border-b border-vintage-ink/10 last:border-b-0">
+                          {/* Label Kategori - Heritage Style */}
+                          <div className="bg-vintage-ink/3 px-6 py-2 border-b border-vintage-ink/5">
+                            <span className="text-[9px] font-bold tracking-[0.4em] text-vintage-accent uppercase italic">{groupName}</span>
+                          </div>
+
+                          <div className="divide-y divide-vintage-ink/5">
+                            {groups[groupName].map((item, idx) => (
+                              <Link 
+                                key={idx} 
+                                to={item.path} 
+                                className="group/item block p-6 hover:bg-vintage-ink/5 transition-all"
+                                onClick={() => setIsSearchOpen(false)}
+                              >
+                                <div className="flex flex-col gap-4">
+                                  <div className="flex justify-between items-center">
+                                    {/* Judul tidak lagi uppercase, menggunakan font-display */}
+                                    <span className="text-lg md:text-xl font-display leading-none text-vintage-ink group-hover/item:text-vintage-accent transition-colors">
+                                      {item.title}
+                                    </span>
+                                    <ArrowRight size={16} className="opacity-0 group-hover/item:opacity-100 -translate-x-4 group-hover/item:translate-x-0 transition-all text-vintage-accent" />
                                   </div>
-                                )}
-                                {groupType === 'page' && (
-                                  <p className="text-[10px] italic opacity-50 line-clamp-1 font-serif">
-                                    View details and archival information...
-                                  </p>
-                                )}
-                              </div>
-                            </Link>
-                          ))}
+                                  
+                                  {/* 3 Thumbnail Heritage Style */}
+                                  {item.type === 'font' && (
+                                    <div className="flex gap-2 h-16">
+                                      {(() => {
+                                        const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+                                        const images = item.font_images || meta?.preview_images || [];
+                                        
+                                        return images.slice(0, 3).map((img: string, i: number) => (
+                                          <div key={i} className="flex-1 bg-white/20 border border-vintage-ink/10 p-1.5 overflow-hidden group-hover/item:border-vintage-accent/20 transition-colors">
+                                            <img 
+                                              src={resolvePreviewUrl(img) || ''} 
+                                              className="w-full h-full object-contain grayscale group-hover/item:grayscale-0 transition-all duration-700 opacity-70 group-hover/item:opacity-100 scale-105 group-hover/item:scale-100" 
+                                              alt="preview" 
+                                            />
+                                          </div>
+                                        ));
+                                      })()}
+                                    </div>
+                                  )}
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      ));
+                  })()}
                 </div>
               )}
             </div>
