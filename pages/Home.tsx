@@ -9,11 +9,19 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 // Komponen Barcode Spacer: Menggunakan warna vintage-ink dan ketebalan garis yang sama
-const BarcodeSpacer = () => (
+
+
+const SlantedSpacer = () => (
   <div 
-    className="grow w-full text-vintage-ink min-h-10" 
+    className="grow w-full text-vintage-ink min-h-10 shrink-0" 
     style={{
-      backgroundImage: `repeating-linear-gradient(90deg, currentColor, currentColor 1px, transparent 1px, transparent 7px)`,
+      backgroundImage: `repeating-linear-gradient(
+        120deg, 
+        currentColor, 
+        currentColor 1px, 
+        transparent 1px, 
+        transparent 7px
+      )`,
       backgroundSize: '100% 100%'
     }}
   />
@@ -87,17 +95,17 @@ const FontCard = ({
       </h3>
     </div>
 
-    {/* Garis Bawah Lowercase */}
+    {/* Garis Pembatas Atas Spacer - Nempel (my-0) */}
     <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
 
-    {/* 5. BARCODE SPACER (Mengisi sisa ruang) */}
-    <BarcodeSpacer />
+    {/* 5. SLANTED SPACER - 30 Degree Arsir */}
+    <SlantedSpacer />
     
-    {/* Garis Bawah Barcode - Menempel ke Barcode (my-0) */}
+    {/* Garis Pembatas Bawah Spacer - Nempel (my-0) */}
     <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
-    
-    {/* 6. Footer: Harga & Button - Jarak diatur di sini (mt-6) */}
-    <div className="mt-6 w-full shrink-0">
+
+    {/* 6. Footer: Jarak mt-8 untuk memisahkan teks harga dari garis spacer */}
+    <div className="mt-8 w-full shrink-0">
       <div className="text-base md:text-lg font-bold mb-4 text-vintage-ink tracking-tight">
         Starting at ${price}
       </div>
