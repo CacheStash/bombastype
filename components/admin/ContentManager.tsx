@@ -170,17 +170,19 @@ const ContentManager = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
-              <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Entry Title</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Licensing for Enterprise..." 
-              
-                className="w-full border-b border-vintage-ink/20 py-3 bg-transparent outline-none font-display text-xl focus:border-vintage-ink transition-colors placeholder:text-vintage-ink/60"
-                value={formData.title} 
-                onChange={e => setFormData({...formData, title: e.target.value})}
-                required
-              />
-            </div>
+  <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Display Type</label>
+  <select 
+    className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none cursor-pointer"
+    value={formData.type}
+    onChange={e => setFormData({...formData, type: e.target.value})}
+  >
+    <option value="page">Page</option>
+    <option value="auto">Auto (Text + Table)</option> {/* TAMBAHKAN INI */}
+    <option value="table">Table</option>
+    <option value="special_footer">Special Footer</option>
+    <option value="insight_summary">Insight Summary</option>
+  </select>
+</div>
             
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -230,19 +232,23 @@ const ContentManager = () => {
           </div>
 
           {/* Type-specific Helpers */}
-          {(formData.type === 'table' || formData.type === 'special_footer') && (
-            <div className="p-4 bg-vintage-ink/3 border border-vintage-ink/10 flex gap-4 items-start">
-              <Info size={16} className="text-vintage-accent mt-1 flex-none" />
-              <div className="text-[10px] font-mono leading-relaxed opacity-60">
-                <p className="font-bold uppercase mb-1">JSON Template Required:</p>
-                {formData.type === 'table' 
-                  ? `{ "headers": ["KEY", "VALUE"], "rows": [["Data A", "Data B"]] }`
-                  : `{ "italic_text": "Philosophy...", "location_info": "Studio Name — 2026" }`
-                }
-              </div>
-            </div>
-          )}
-
+          {(formData.type === 'table' || formData.type === 'special_footer' || formData.type === 'auto') && (
+  <div className="p-4 bg-vintage-ink/3 border border-vintage-ink/10 flex gap-4 items-start">
+    <Info size={16} className="text-vintage-accent mt-1 flex-none" />
+    <div className="text-[10px] font-mono leading-relaxed opacity-60">
+      <p className="font-bold uppercase mb-1">Configuration Helper:</p>
+      {formData.type === 'auto' && (
+        <p className="mb-2">
+          <span className="text-vintage-ink font-bold">FORMAT:</span> Tulis HTML narasi, lalu tutup dengan 1 objek JSON Tabel di baris terakhir.
+          <br />
+          <span className="opacity-50 italic">Contoh: {"<p>Text...</p> { \"headers\": [...], \"rows\": [...] }"}</span>
+        </p>
+      )}
+      {formData.type === 'table' && <p>{"{ \"headers\": [\"KEY\", \"VALUE\"], \"rows\": [[\"Data A\", \"Data B\"]] }"}</p>}
+      {formData.type === 'special_footer' && <p>{"{ \"italic_text\": \"...\", \"location_info\": \"...\" }"}</p>}
+    </div>
+  </div>
+)}
           <div className="flex gap-4 pt-4">
             <button type="submit" className="vintage-btn btn-reverse px-10 py-4 text-[10px]">
               <Save size={14} className="mr-2 inline" /> {isEditing ? 'Commit Update' : 'Publish to Archive'}

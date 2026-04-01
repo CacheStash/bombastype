@@ -1,0 +1,42 @@
+Site Manager Content - Policy Page
+---------------------------------
+
+Section 01: DIGITAL NATURE OF PRODUCTS
+Title: Digital Nature Of Products
+Content:
+<p>Due to the nature of digital software, all sales of font licenses from Bombastype are considered final and non-refundable. Once a font file has been downloaded, we cannot "reclaim" the software, and therefore cannot offer a refund or credit.</p>
+
+Section 02: THE DELIVERY PROTOCOL (EMAIL & VAULT)
+Title: The Delivery Protocol (Email & Vault)
+Content:
+<p>To ensure maximum reliability and bypass strict corporate spam filters, Bombastype provides automated backup delivery via email for all paid font purchases. While email serves as a convenient instant delivery method, it is not the only way to access your assets.</p>
+<p>All purchased licenses and files are stored permanently in your User Dashboard (Vault). This remains your primary, un-expiring fortress to access, manage, and re-download your assets 24/7, ensuring your collection is safe forever, even if you lose access to your email.</p>
+{"headers": ["NOTE", "DESCRIPTION"], "rows": [["TRIAL ASSETS", "Trial/Demo fonts are primarily distributed via the User Dashboard. They do not trigger automated email delivery unless they are part of a \"Mixed Cart\" alongside a Paid Font purchase."]]}
+
+Section 03: TRY BEFORE YOU BUY REQUIREMENT
+Title: Try Before You Buy Requirement
+Content:
+<p>To ensure the font meets your technical and aesthetic requirements, we strongly encourage all customers to download our Free for Personal Use (Demo Version) before making a purchase.</p>
+<p>Use the Demo version to test software compatibility and glyph availability.</p>
+<p>By purchasing a commercial license, you acknowledge that you have tested the font and found it suitable.</p>
+
+Section 04: TECHNICAL ISSUES & REPLACEMENTS
+Title: Technical Issues & Replacements
+Content:
+<p>If you experience a technical problem with the font file (e.g., corruption), please contact us within 7 days. We will first attempt to provide a fixed version. If the file is proven defective and unrepairable, a refund or exchange may be issued at our sole discretion.</p>
+
+Section 05: LIMITED EXCEPTIONS
+Title: Limited Exceptions
+Content:
+<p>Refunds or exchanges are generally not granted for accidental purchases, compatibility issues with specific software, or change of mind after the download has been initiated.</p>
+
+Section 06: LICENSE UPGRADES
+Title: License Upgrades
+Content:
+<p>If you realize you need a higher tier (e.g., from Individual to Corporate), please reach out. We can often provide a "credit" for your initial purchase toward the cost of the upgraded license.</p>
+
+Section 07: CONTACT INFORMATION
+Title: Contact Information
+Content:
+<p>BOMBASTYPE@GMAIL.COM</p>
+<p>Please include your order number and a detailed description of the issue.</p>
