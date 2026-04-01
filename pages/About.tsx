@@ -1,6 +1,10 @@
-import React from 'react';
-import { Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 
 interface ContentItem {
@@ -10,155 +14,208 @@ interface ContentItem {
   section_id: string;
   category: string;
   type: string;
-updated_at?: string;
+  updated_at?: string;
 }
-// Shared Bullet Style
-const PlusBullet = () => (
-  <Plus size={14} className="shrink-0 mt-[0.4em] text-black" strokeWidth={3} />
-);
 
-// Shared Box Style
-const BrutalBox: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className = "" }) => (
-  <div className={`border border-black p-8 md:p-10 bg-white ${className}`}>
-    {children}
-  </div>
-);
+const transformHTMLContent = (html: string): React.ReactNode => {
+  // Replace old Tailwind classes with vintage color scheme
+  let transformed = html
+    // Colors
+    .replace(/text-black/g, 'text-vintage-ink')
+    .replace(/text-gray-600/g, 'text-vintage-ink/70')
+    .replace(/text-gray-400/g, 'text-vintage-ink/50')
+    // Font sizes - normalize to design system
+    .replace(/text-\d+xl/g, 'text-lg md:text-xl')
+    .replace(/class="([^"]*)"/g, (match, classes) => {
+      const classList = classes
+        .split(/\s+/)
+        .filter((cls: string) => !cls.startsWith('mb-') && !cls.startsWith('mt-'))
+        .join(' ');
+      return `class="${classList}"`;
+    });
+
+  return (
+    <div
+      dangerouslySetInnerHTML={{ __html: transformed }}
+      className="space-y-6 [&_p]:text-base [&_p]:md:text-lg [&_p]:leading-relaxed [&_div]:flex [&_div]:gap-6 [&_div]:items-start [&_span]:font-bold"
+    />
+  );
+};
 
 const About: React.FC = () => {
-
   const [aboutSections, setAboutSections] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
-const [lastUpdated, setLastUpdated] = useState<string>('');
-
+  const [lastUpdated, setLastUpdated] = useState<string>('');
   const formatLastUpdated = (items: ContentItem[]) => {
-    const dates = items.map(i => i.updated_at ? new Date(i.updated_at).getTime() : 0).filter(d => d > 0);
+    const dates = items
+      .map((i) => (i.updated_at ? new Date(i.updated_at).getTime() : 0))
+      .filter((d) => d > 0);
     if (!dates.length) return '';
     return new Date(Math.max(...dates)).toLocaleDateString('en-US', {
-      month: 'long', day: 'numeric', year: 'numeric'
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
     }).toUpperCase();
   };
+
   useEffect(() => {
     const fetchAbout = async () => {
-      const { data } = await supabase
-        .from('site_content')
-        .select('*')
-        .eq('category', 'about')
-        .order('sort_order', { ascending: true });
-      
-      if (data) {
-        setAboutSections(data);
-        setLastUpdated(formatLastUpdated(data));
+      try {
+        const { data } = await supabase
+          .from('site_content')
+          .select('*')
+          .eq('category', 'about')
+          .order('sort_order', { ascending: true });
+
+        if (data) {
+          setAboutSections(data);
+          setLastUpdated(formatLastUpdated(data));
+        }
+      } catch (err) {
+        console.error('Failed to fetch about content:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchAbout();
   }, []);
-  // Component AboutCard - Consistent with License.tsx style
-  const AboutCard: React.FC<{ 
-    number: string, 
-    title: string, 
-    category: string, 
-    children: React.ReactNode 
+
+  const AboutCard: React.FC<{
+    number: string;
+    title: string;
+    category: string;
+    children: React.ReactNode;
   }> = ({ number, title, category, children }) => (
-    <div id={number} className="mb-12 w-full border border-black bg-white relative z-10 scroll-mt-24">
-      {/* Title Section: Number on the left with identical font style */}
-      <div className="border-b border-black p-6 md:p-10 bg-white">
-        <span className="text-[10px] font-black tracking-[0.3em] text-orange-600 block mb-4 uppercase">
-          {category}
-        </span>
-        <h3 className="text-3xl md:text-6xl font-normal tracking-tighter uppercase leading-none">
-          <span className="opacity-20 mr-4 md:mr-8">{number}</span>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-100px' }}
+      transition={{ duration: 0.6 }}
+      className="mb-12 md:mb-16 w-full relative z-10"
+    >
+      {/* Title with Number */}
+      <div className="mb-4">
+        <h3 className="text-2xl md:text-5xl font-display leading-tight tracking-tight mb-4">
+          <span className="opacity-40 mr-3 md:mr-6">{number}</span>
           {title}
         </h3>
       </div>
 
+      {/* HR Line */}
+      <hr className="w-full border-vintage-ink/30 mb-6 md:mb-8" />
+
       {/* Content Section */}
-      <div className="p-6 md:p-14 space-y-10 normal-case text-gray-800 leading-relaxed text-base md:text-xl">
+      <div className="space-y-6 text-base md:text-lg leading-relaxed text-vintage-ink">
         {children}
       </div>
-    </div>
+    </motion.div>
   );
 
   return (
-    <div className="relative z-10 text-black font-sans selection:bg-black selection:text-white min-h-screen bg-transparent overflow-x-hidden uppercase">
-      
-      {/* VIBRANT BACKGROUND ORBS - Fixed Back-Layering & Pointer-Events */}
-      <div className="grain-orb-base orb-top-right !-z-10 pointer-events-none" />
-      <div className="grain-orb-base orb-bottom-left !-z-10 pointer-events-none" />
-      <div className="grain-orb-base orb-top-right !top-auto !bottom-0 !-right-[10%] !bg-red-600/20 !-z-10 pointer-events-none" />
+    <div className="pb-12 relative z-10">
+      {/* Hero Section */}
+      <section className="text-center mb-16 md:mb-24 max-w-3xl mx-auto relative z-10 px-4 pt-12">
+        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
+          Our Story & Mission
+        </motion.p>
+        <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight">
+          About BombasType
+        </motion.h2>
+        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 mb-6 leading-relaxed">
+          Authentic vintage typefaces crafted for timeless design and letterpress tradition.
+        </motion.p>
+      </section>
 
-      <div className="max-w-full mx-auto relative z-10">
-        {/* HEADER SECTION - Theme Updated to $0 Dollar Cost */}
-        <header className="px-6 py-16 md:px-8 border-b border-black mb-12 bg-transparent text-left">
-          <h2 className="text-5xl md:text-8xl font-normal uppercase tracking-tighter leading-[0.85] mb-6">
-            The Zero-Dollar <br className="hidden md:block" /> Architecture
-          </h2>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <p className="text-xs md:text-sm font-semibold text-gray-600 uppercase tracking-widest">
-              100% Indie. Built Natively. No CMS.
-            </p>
-            <p className="text-[10px] md:text-xs font-semibold text-black/40 uppercase tracking-widest">
-              — LAST UPDATED: {lastUpdated || 'FEBRUARY 21, 2026'}
-            </p>
-          </div>
-        </header>
-
-        {/* CONTENT MAIN */}
-        <main className="px-3 md:px-8 max-w-full mx-auto text-left">
-          
+      {/* Content Section */}
+      <section className="mb-16 md:mb-24 relative z-10 px-4">
+        <div>
           {loading ? (
-            <div className="animate-pulse font-bold">LOADING_MANIFESTO...</div>
-          ) : (
-            aboutSections.map((item) => {
-              // TEMPLATE: Special Footer dengan Orb Dekoratif
+            <div className="space-y-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-40 bg-vintage-ink/5 animate-pulse border border-vintage-ink/20" />
+              ))}
+            </div>
+          ) : aboutSections.length > 0 ? (
+            aboutSections.map((item, index) => {
               if (item.type === 'special_footer') {
                 try {
                   const data = JSON.parse(item.content);
                   return (
-                    <section key={item.id} className="mt-12 w-full border border-black bg-black text-white p-10 md:p-20 relative z-10 overflow-hidden">
-                       <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/20 blur-[80px] rounded-full -mr-20 -mt-20 pointer-events-none" />
-                       <div className="relative z-10 space-y-10">
-                          <h3 
-                            className="text-4xl md:text-7xl font-normal tracking-tighter uppercase italic leading-[0.9]"
-                            dangerouslySetInnerHTML={{ __html: data.italic_text }}
-                          />
-                          <p className="text-lg md:text-2xl normal-case text-gray-400 font-normal leading-relaxed max-w-4xl">
+                    <motion.section
+                      key={item.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '-100px' }}
+                      transition={{ duration: 0.6 }}
+                      className="mt-16 md:mt-24 w-full border border-vintage-ink bg-vintage-ink text-vintage-paper p-10 md:p-16 relative z-10 overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-vintage-accent/10 blur-[80px] rounded-full -mr-20 -mt-20 pointer-events-none" />
+                      <div className="relative z-10 space-y-8">
+                        {data.italic_text && (
+                          <h3 className="text-4xl md:text-6xl font-display tracking-tight uppercase italic leading-tight">
+                            {data.italic_text}
+                          </h3>
+                        )}
+                        {data.body_text && (
+                          <p className="text-base md:text-lg normal-case text-vintage-paper/90 font-normal leading-relaxed max-w-3xl">
                             {data.body_text}
                           </p>
+                        )}
+                        {data.location && (
                           <div className="pt-6">
-                             <p className="text-base md:text-lg font-bold uppercase tracking-[0.3em] text-orange-600">
-                               {data.location}
-                             </p>
+                            <p className="text-sm md:text-base font-bold uppercase tracking-[0.3em] text-vintage-accent">
+                              {data.location}
+                            </p>
                           </div>
-                       </div>
-                    </section>
+                        )}
+                      </div>
+                    </motion.section>
                   );
-                } catch (e) { return null; }
+                } catch (e) {
+                  console.error('Failed to parse special footer:', e);
+                  return null;
+                }
               }
 
-              // TEMPLATE: Kartu About Standar
               return (
-                <AboutCard 
-                  key={item.id} 
-                  number={item.section_id || ''} 
-                  category={item.title.includes('?') ? 'The Core Hypothesis' : 'Technical Identity'} 
+                <AboutCard
+                  key={item.id}
+                  number={String(index + 1).padStart(2, '0')}
+                  category={item.category || 'About'}
                   title={item.title}
                 >
-                  <div 
-                    className="prose max-w-none prose-p:leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: item.content }} 
-                  />
+                  {item.content && (
+                    item.content.includes('<') ? (
+                      transformHTMLContent(item.content)
+                    ) : (
+                      <div className="space-y-4">
+                        {item.content.split('\n').map((paragraph, i) => (
+                          paragraph.trim() && (
+                            <p key={i} className="text-base md:text-lg leading-relaxed">
+                              {paragraph.trim()}
+                            </p>
+                          )
+                        ))}
+                      </div>
+                    )
+                  )}
                 </AboutCard>
               );
             })
-
+          ) : (
+            <div className="text-center py-12 text-vintage-ink/60">
+              No content available
+            </div>
           )}
+        </div>
+      </section>
 
-        </main>
-
-        {/* Footer Spacer */}
-        <div className="h-40 md:h-60 bg-transparent" />
-      </div>
+      {/* Last Updated Footer */}
+      <section className="text-center py-12 px-4 border-t border-vintage-ink/20 relative z-10">
+        <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-vintage-ink/60">
+          Last Updated: {lastUpdated || 'N/A'}
+        </p>
+      </section>
     </div>
   );
 };

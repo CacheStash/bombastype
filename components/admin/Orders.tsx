@@ -112,46 +112,45 @@ const Orders = () => {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   return (
-    <div className="space-y-12 pb-20">
-      {/* HEADER & SEARCH CONTROL */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-vintage-ink pb-8">
-        <div>
-          <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Sales Folio</h2>
-          <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic flex items-center gap-2">
-            <ShoppingBag size={12} /> Registry of Acquisitions & Licensing
-          </p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-          <button 
-            onClick={handleExportCSV}
-            disabled={isExporting || loading}
-            className="vintage-btn btn-reverse px-8 py-3 text-[10px] flex items-center gap-2"
-          >
-            <Download size={14} />
-            {isExporting ? 'EXPORTING...' : 'EXPORT LEDGER'}
-          </button>
+    <div className="space-y-8 pb-20">
+      {/* HEADER */}
+      <div className="border-b border-vintage-ink pb-6">
+        <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Sales Folio</h2>
+        <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic flex items-center gap-2">
+          <ShoppingBag size={12} /> Registry of Acquisitions & Licensing
+        </p>
+      </div>
 
-          <form onSubmit={handleSearchSubmit} className="relative flex-1 md:flex-none">
-            <input 
-              type="text" 
-              placeholder="SEARCH ID/EMAIL/FONT..." 
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="bg-transparent border-b border-vintage-ink/30 px-10 py-3 text-[10px] font-bold tracking-widest outline-none focus:border-vintage-ink transition-all w-full md:w-72 placeholder:opacity-30"
-            />
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-vintage-ink/40" size={16} />
-            {searchInput && (
-              <button 
-                type="button" 
-                onClick={() => { setSearchInput(''); setSearchTerm(''); }} 
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-[8px] font-bold tracking-widest hover:text-red-600 uppercase"
-              >
-                Clear
-              </button>
-            )}
-          </form>
-        </div>
+      {/* SEARCH & EXPORT CONTROLS - Above Table */}
+      <div className="flex flex-col md:flex-row justify-end gap-4 mb-6">
+        <button 
+          onClick={handleExportCSV}
+          disabled={isExporting || loading}
+          className="vintage-btn btn-reverse px-6 py-2 text-[10px] flex items-center gap-2 whitespace-nowrap"
+        >
+          <Download size={14} />
+          {isExporting ? 'EXPORTING...' : 'CSV'}
+        </button>
+
+        <form onSubmit={handleSearchSubmit} className="relative">
+          <input 
+            type="text" 
+            placeholder="SEARCH ID/EMAIL/FONT..." 
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="bg-transparent border-b border-vintage-ink/30 px-10 py-2 text-[10px] font-bold tracking-widest outline-none focus:border-vintage-ink transition-all w-full md:w-80 placeholder:opacity-30"
+          />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-vintage-ink/40" size={16} />
+          {searchInput && (
+            <button 
+              type="button" 
+              onClick={() => { setSearchInput(''); setSearchTerm(''); }} 
+              className="absolute right-0 top-1/2 -translate-y-1/2 text-[8px] font-bold tracking-widest hover:text-red-600 uppercase"
+            >
+              Clear
+            </button>
+          )}
+        </form>
       </div>
 
       {/* ORDERS DATA TABLE */}

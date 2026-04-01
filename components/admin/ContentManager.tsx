@@ -131,18 +131,16 @@ const ContentManager = () => {
   };
 
   return (
-    <div className="space-y-12 pb-20">
-      {/* HEADER & CATEGORIES */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-vintage-ink pb-8">
-        <div>
-          {/* Ubah title jadi font-script sesuai product manager */}
-          <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Content Ledger</h2>
-          <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic">
-            Management of Static Documentation & Page Narratives
-          </p>
-        </div>
+    <div className="space-y-8 pb-20">
+      {/* HEADER */}
+      <div className="border-b border-vintage-ink pb-6">
+        <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink mb-6">Content Ledger</h2>
+        <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mb-6 italic">
+          Management of Static Documentation & Page Narratives
+        </p>
         
-        <div className="flex flex-wrap gap-2 bg-vintage-paper/50 border border-vintage-ink p-1">
+        {/* CATEGORIES - Below Title */}
+        <div className="flex flex-wrap gap-2 bg-vintage-paper/50 border border-vintage-ink p-1 w-fit">
           {categories.map(cat => (
             <button
               key={cat}
@@ -192,9 +190,9 @@ const ContentManager = () => {
                   value={formData.type}
                   onChange={e => setFormData({...formData, type: e.target.value})}
                 >
-                  <option value="page">Standard Card</option>
-                  <option value="table">Data Table</option>
-                  <option value="special_footer">Closing Script</option>
+                  <option value="page">Page</option>
+                  <option value="table">Table</option>
+                  <option value="special_footer">Special Footer</option>
                   <option value="insight_summary">Insight Summary</option>
                 </select>
               </div>
