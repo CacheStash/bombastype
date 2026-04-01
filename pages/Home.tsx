@@ -74,7 +74,23 @@ const FontCard = ({
     {/* Garis Pemisah Nomor & Barcode - Tanpa Margin */}
     <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
 
-    {/* 5. BARCODE SPACER - Mengisi ruang sisa dan nempel atas-bawah */}
+    {/* 4. NEW SECTION: Lowercase a-z */}
+    <div className="w-full px-2 overflow-hidden bg-vintage-ink/2 flex items-center justify-center shrink-0">
+      <h3 
+        className="text-3xl md:text-5xl leading-[1.6] break-all tracking-tight py-4 text-vintage-ink"
+        style={{ 
+          fontFamily: `"${fontName}-${primaryIndex}"`,
+          fontVariantLigatures: "none" 
+        }} 
+      >
+        abcdefghijklmnopqrstuvwxyz
+      </h3>
+    </div>
+
+    {/* Garis Bawah Lowercase */}
+    <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
+
+    {/* 5. BARCODE SPACER (Mengisi sisa ruang) */}
     <BarcodeSpacer />
     
     {/* Garis Bawah Barcode - Menempel ke Barcode (my-0) */}
