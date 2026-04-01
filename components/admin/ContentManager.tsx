@@ -169,56 +169,54 @@ const ContentManager = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-  <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Display Type</label>
-  <select 
-    className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none cursor-pointer"
-    value={formData.type}
-    onChange={e => setFormData({...formData, type: e.target.value})}
-  >
-    <option value="page">Page</option>
-    <option value="auto">Auto (Text + Table)</option> {/* TAMBAHKAN INI */}
-    <option value="table">Table</option>
-    <option value="special_footer">Special Footer</option>
-    <option value="insight_summary">Insight Summary</option>
-  </select>
-</div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Display Type</label>
-                <select 
-                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none cursor-pointer"
-                  value={formData.type}
-                  onChange={e => setFormData({...formData, type: e.target.value})}
-                >
-                  <option value="page">Page</option>
-                  <option value="table">Table</option>
-                  <option value="special_footer">Special Footer</option>
-                  <option value="insight_summary">Insight Summary</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Section ID</label>
-                <input 
-                  type="text" 
-                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none"
-                  value={formData.section_id} 
-                  onChange={e => setFormData({...formData, section_id: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Sort Order</label>
-                <input 
-                  type="number" 
-                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none"
-                  value={formData.sort_order} 
-                  onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value)})}
-                />
-              </div>
-            </div>
-          </div>
+            <div className="space-y-2">
+              <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Entry Title</label>
+              <input 
+                type="text" 
+                placeholder="e.g. Licensing for Enterprise..." 
+                className="w-full border-b border-vintage-ink/20 py-3 bg-transparent outline-none font-display text-xl focus:border-vintage-ink transition-colors placeholder:text-vintage-ink/60"
+                value={formData.title} 
+                onChange={e => setFormData({...formData, title: e.target.value})}
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Display Type</label>
+                <select 
+                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none cursor-pointer"
+                  value={formData.type}
+                  onChange={e => setFormData({...formData, type: e.target.value})}
+                >
+                  <option value="page">Page</option>
+                  <option value="auto">Auto (Text + Table)</option>
+                  <option value="table">Table</option>
+                  <option value="special_footer">Special Footer</option>
+                  <option value="insight_summary">Insight Summary</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Section ID</label>
+                <input 
+                  type="text" 
+                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none"
+                  value={formData.section_id} 
+                  onChange={e => setFormData({...formData, section_id: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Sort Order</label>
+                <input 
+                  type="number" 
+                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold uppercase text-[10px] outline-none"
+                  value={formData.sort_order} 
+                  onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value)})}
+                />
+              </div>
+            </div>
+          </div>
 
           <div className="space-y-2">
             <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Narrative Content (HTML Permitted)</label>
