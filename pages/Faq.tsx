@@ -132,6 +132,33 @@ const [lastUpdated, setLastUpdated] = useState<string>('');
             <div className="animate-pulse font-bold">LOADING_CONTENT...</div>
           ) : (
             faqs.map((item) => {
+              // Logika penanganan Tipe AUTO (Text + Table)
+              if (item.type === 'auto') {
+                const jsonStartIndex = item.content.indexOf('{');
+                if (jsonStartIndex !== -1) {
+                  const textPart = item.content.substring(0, jsonStartIndex).trim();
+                  const jsonPart = item.content.substring(jsonStartIndex).trim();
+                  try {
+                    const tableData = JSON.parse(jsonPart);
+                    return (
+                      <TermCard key={item.id} number={item.section_id || ''} title={item.title}>
+                        {textPart && (
+                          <div 
+                            className="prose max-w-none prose-p:leading-relaxed mb-10"
+                            dangerouslySetInnerHTML={{ __html: textPart }} 
+                          />
+                        )}
+                        <BrutalTable 
+                          headers={tableData.headers} 
+                          rows={tableData.rows} 
+                        />
+                      </TermCard>
+                    );
+                  } catch (e) {
+                    console.error("Auto format parsing error:", e);
+                  }
+                }
+              }
               // Deteksi jika item adalah tabel brutalist
               if (item.type === 'table') {
                 try {

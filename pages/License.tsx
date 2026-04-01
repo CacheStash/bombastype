@@ -170,28 +170,55 @@ const License: React.FC = () => {
               title={item.title}
             >
               {item.content && (
-                item.type === 'table' ? (
-                  (() => {
+                (() => {
+                  // Logika untuk tipe AUTO (HTML/Text + JSON Table)
+                  if (item.type === 'auto') {
+                    const jsonStartIndex = item.content.indexOf('{');
+                    if (jsonStartIndex !== -1) {
+                      const textPart = item.content.substring(0, jsonStartIndex).trim();
+                      const jsonPart = item.content.substring(jsonStartIndex).trim();
+                      try {
+                        const tableData = JSON.parse(jsonPart);
+                        return (
+                          <div className="space-y-8">
+                            {textPart && (
+                              textPart.includes('<') ? transformHTMLContent(textPart) : 
+                              <p className="text-base md:text-lg leading-relaxed">{textPart}</p>
+                            )}
+                            <LicenseTable headers={tableData.headers} rows={tableData.rows} />
+                          </div>
+                        );
+                      } catch (e) {
+                        console.error("License auto-type parsing error:", e);
+                      }
+                    }
+                  }
+
+                  // Logika untuk tipe TABLE murni
+                  if (item.type === 'table') {
                     try {
                       const tableData = JSON.parse(item.content);
                       return <LicenseTable headers={tableData.headers} rows={tableData.rows} />;
                     } catch (e) {
                       return <div className="text-red-500 font-bold text-sm">Error rendering table</div>;
                     }
-                  })()
-                ) : item.content.includes('<') ? (
-                  transformHTMLContent(item.content)
-                ) : (
-                  <div className="space-y-4">
-                    {item.content.split('\n').map((paragraph, i) => (
-                      paragraph.trim() && (
-                        <p key={i} className="text-base md:text-lg leading-relaxed">
-                          {paragraph.trim()}
-                        </p>
-                      )
-                    ))}
-                  </div>
-                )
+                  }
+
+                  // Render Default (PAGE/HTML)
+                  return item.content.includes('<') ? (
+                    transformHTMLContent(item.content)
+                  ) : (
+                    <div className="space-y-4">
+                      {item.content.split('\n').map((paragraph, i) => (
+                        paragraph.trim() && (
+                          <p key={i} className="text-base md:text-lg leading-relaxed">
+                            {paragraph.trim()}
+                          </p>
+                        )
+                      ))}
+                    </div>
+                  );
+                })()
               )}
             </LicenseCard>
           ))

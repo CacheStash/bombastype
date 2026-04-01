@@ -37,6 +37,35 @@ const transformHTMLContent = (html: string): React.ReactNode => {
   );
 };
 
+const PolicyTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ headers, rows }) => (
+  <div className="w-full border border-vintage-ink/30 mb-8 overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-vintage-ink/30 bg-vintage-ink/5">
+            {headers.map((h, i) => (
+              <th key={i} className="p-3 border-r border-vintage-ink/20 last:border-0 font-bold text-xs uppercase tracking-wider text-vintage-ink/70">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="border-b border-vintage-ink/10 last:border-0 hover:bg-vintage-ink/5">
+              {row.map((cell, j) => (
+                <td key={j} className="p-3 border-r border-vintage-ink/10 last:border-0 text-sm text-vintage-ink/80 leading-relaxed">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
 const Policy: React.FC = () => {
   const [policies, setPolicies] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,19 +176,52 @@ const Policy: React.FC = () => {
                 title={item.title}
               >
                 {item.content && (
-                  item.content.includes('<') ? (
-                    transformHTMLContent(item.content)
-                  ) : (
-                    <div className="space-y-4">
-                      {item.content.split('\n').map((paragraph, i) => (
-                        paragraph.trim() && (
-                          <p key={i} className="text-base md:text-lg leading-relaxed">
-                            {paragraph.trim()}
-                          </p>
-                        )
-                      ))}
-                    </div>
-                  )
+                  (() => {
+                    // Logika untuk tipe AUTO (HTML + JSON Table)
+                    if (item.type === 'auto') {
+                      const jsonStartIndex = item.content.indexOf('{');
+                      if (jsonStartIndex !== -1) {
+                        const htmlPart = item.content.substring(0, jsonStartIndex).trim();
+                        const jsonPart = item.content.substring(jsonStartIndex).trim();
+                        try {
+                          const tableData = JSON.parse(jsonPart);
+                          return (
+                            <div className="space-y-8">
+                              {htmlPart && transformHTMLContent(htmlPart)}
+                              <PolicyTable headers={tableData.headers} rows={tableData.rows} />
+                            </div>
+                          );
+                        } catch (e) {
+                          console.error("JSON parse failed for auto type:", e);
+                        }
+                      }
+                    }
+
+                    // Logika untuk tipe TABLE murni
+                    if (item.type === 'table') {
+                      try {
+                        const tableData = JSON.parse(item.content);
+                        return <PolicyTable headers={tableData.headers} rows={tableData.rows} />;
+                      } catch (e) {
+                        return <div className="text-red-500 text-xs">Error rendering table data</div>;
+                      }
+                    }
+
+                    // Default render (Tipe PAGE atau HTML biasa)
+                    return item.content.includes('<') ? (
+                      transformHTMLContent(item.content)
+                    ) : (
+                      <div className="space-y-4">
+                        {item.content.split('\n').map((paragraph, i) => (
+                          paragraph.trim() && (
+                            <p key={i} className="text-base md:text-lg leading-relaxed">
+                              {paragraph.trim()}
+                            </p>
+                          )
+                        ))}
+                      </div>
+                    );
+                  })()
                 )}
               </PolicyCard>
             ))
