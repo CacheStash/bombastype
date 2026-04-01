@@ -267,7 +267,7 @@ const handleAdd = (redirect: boolean = false) => {
   );
 
   return (
-    <div className="w-[95vw] max-w-[850px] bg-white border-x border-black relative font-sans text-black overflow-hidden uppercase shadow-2xl">
+    <div className="w-[95vw] max-w-212.5 bg-white border-x border-black relative font-sans text-black overflow-hidden uppercase shadow-2xl">
       <div className="absolute top-0 left-0 w-full z-20"><TicketEdges /></div>
       
       <button onClick={closeConfigurator} className="absolute top-6 right-6 z-30 p-1 hover:bg-black hover:text-white transition-colors border border-black">
@@ -321,7 +321,7 @@ const handleAdd = (redirect: boolean = false) => {
                       <div className="flex flex-wrap md:flex-nowrap gap-1 pl-4 border-l-2 border-black/10 animate-in fade-in slide-in-from-top-1">
                         {tierMap[u.id].map((t: {key: string, label: string}) => (
                           <button key={t.key} onClick={() => setSelectedTiers(prev => ({...prev, [u.id]: t.key}))}
-                            className={`flex-1 min-w-[120px] md:min-w-0 py-3 px-2 border border-black text-[9px] font-black text-center transition-all ${
+                            className={`flex-1 min-w-30in-w-0 py-3 px-2 border border-black text-[9px] font-black text-center transition-all ${
                               selectedTiers[u.id] === t.key ? 'bg-orange-600 text-white border-orange-600' : 'bg-white hover:bg-gray-50'
                             }`}>
                             {t.label}
@@ -401,7 +401,7 @@ const handleAdd = (redirect: boolean = false) => {
                   <button 
                     onClick={() => handleAdd(false)} 
                     disabled={!isValidSelection}
-                    className="flex-1 md:w-[180px] bg-white text-black border border-black py-5 px-4 flex items-center justify-center gap-3 hover:bg-black hover:text-white transition-all group font-black text-[10px] tracking-widest uppercase disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black"
+                    className="flex-1 md:w-45 bg-white text-black border border-black py-5 px-4 flex items-center justify-center gap-3 hover:bg-black hover:text-white transition-all group font-black text-[10px] tracking-widest uppercase disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black"
                   >
                     ADD TO CART
                   </button>
@@ -411,14 +411,14 @@ const handleAdd = (redirect: boolean = false) => {
                 <button 
                   onClick={() => handleAdd(true)} 
                   disabled={!isValidSelection}
-                  className={`flex-1 ${directCheckout ? 'md:w-[280px]' : 'md:w-[180px]'} bg-black text-white py-5 px-4 flex items-center justify-center gap-3 hover:bg-gray-800 transition-all group font-black text-[10px] tracking-widest uppercase disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-black`}
+                  className={`flex-1 ${directCheckout ? 'md:w-70' : 'md:w-45'} bg-black text-white py-5 px-4 flex items-center justify-center gap-3 hover:bg-gray-800 transition-all group font-black text-[10px] tracking-widest uppercase disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-black`}
                 >
                   CHECKOUT
                   <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 w-full md:w-[280px] animate-in fade-in zoom-in-95 duration-300">
+              <div className="flex flex-col gap-2 w-full md:w-70 animate-in fade-in zoom-in-95 duration-300">
                 <Link to="/cart" onClick={closeConfigurator} className="w-full bg-black text-white py-5 px-8 flex items-center justify-center gap-4 hover:invert transition-all">
                   <ShoppingCart size={18} /> <span className="text-sm font-black tracking-[0.3em]">CHECKOUT</span>
                 </Link>

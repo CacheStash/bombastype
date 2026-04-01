@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React from 'react';
 
 interface BrutalistSliderProps {
@@ -9,6 +14,7 @@ interface BrutalistSliderProps {
   onChange: (value: number) => void;
 }
 
+// Nama tetap BrutalistSlider agar koneksi file aman
 const BrutalistSlider: React.FC<BrutalistSliderProps> = ({ 
   label, 
   value, 
@@ -18,28 +24,44 @@ const BrutalistSlider: React.FC<BrutalistSliderProps> = ({
   onChange 
 }) => {
   return (
-    <div className="flex flex-col gap-2 font-mono uppercase">
-      <div className="flex justify-between text-xs font-bold tracking-wider">
-        <label>{label}</label>
-        <span>{value}</span>
+    <div className="flex flex-col gap-3 w-full group select-none py-2">
+      <div className="flex justify-between items-end">
+        <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] text-vintage-ink/50 group-hover:text-vintage-accent transition-colors duration-300">
+          {label}
+        </label>
+        <span className="text-[10px] md:text-xs font-bold text-vintage-ink tracking-widest">
+          {value}
+        </span>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-4 bg-white border-2 border-black appearance-none cursor-pointer
-          [&::-webkit-slider-thumb]:appearance-none
-          [&::-webkit-slider-thumb]:w-4
-          [&::-webkit-slider-thumb]:h-4
-          [&::-webkit-slider-thumb]:bg-black
-          [&::-webkit-slider-thumb]:border-2
-          [&::-webkit-slider-thumb]:border-black
-          [&::-webkit-slider-thumb]:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]
-          hover:[&::-webkit-slider-thumb]:bg-gray-800"
-      />
+
+      <div className="relative flex items-center h-4">
+        <div className="absolute w-full h-[1px] bg-vintage-ink/20" />
+        
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          className="
+            absolute w-full appearance-none bg-transparent cursor-pointer z-10
+            [&::-webkit-slider-thumb]:appearance-none
+            [&::-webkit-slider-thumb]:w-3
+            [&::-webkit-slider-thumb]:h-3
+            [&::-webkit-slider-thumb]:bg-vintage-ink
+            [&::-webkit-slider-thumb]:hover:bg-vintage-accent
+            [&::-webkit-slider-thumb]:transition-colors
+            [&::-webkit-slider-thumb]:duration-300
+            
+            [&::-moz-range-thumb]:w-3
+            [&::-moz-range-thumb]:h-3
+            [&::-moz-range-thumb]:border-0
+            [&::-moz-range-thumb]:bg-vintage-ink
+            [&::-moz-range-thumb]:hover:bg-vintage-accent
+          "
+        />
+      </div>
     </div>
   );
 };
