@@ -164,7 +164,7 @@ const LicenseReceipt = () => {
                     
                     return (
                       <div key={idx} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        <div className="bg-vintage-ink/[0.02] p-6 border-l-2 border-vintage-accent">
+                        <div className="bg-vintage-ink/2 p-6 border-l-2 border-vintage-accent">
                           <h3 className="font-display text-lg italic mb-3">
                             {isTrial ? LICENSE_DB.trial.title : `${u.replace('_', ' & ').toUpperCase()} LICENSE`}
                             <span className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent ml-3 not-italic">

@@ -87,7 +87,7 @@ const MyFontsHistory = () => {
       </div>
 
       {history.length === 0 ? (
-        <div className="border border-dashed border-vintage-ink/20 p-24 text-center bg-vintage-ink/[0.01]">
+        <div className="border border-dashed border-vintage-ink/20 p-24 text-center bg-vintage-ink/1">
           <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">Your personal archive is currently empty.</p>
         </div>
       ) : (
@@ -96,7 +96,7 @@ const MyFontsHistory = () => {
             <div key={item.id} className="vintage-card p-0 overflow-hidden bg-white/40 flex flex-col md:flex-row group hover:border-vintage-accent transition-all duration-500">
               
               {/* ASSET INFO */}
-              <div className="p-8 flex-grow space-y-4">
+              <div className="p-8 grow space-y-4">
                 <div className="space-y-1">
                   <span className="text-[9px] font-bold text-vintage-accent uppercase tracking-widest flex items-center gap-2">
                     <Clock size={10} /> Registered on {new Date(item.download_date).toLocaleDateString()}
@@ -121,7 +121,7 @@ const MyFontsHistory = () => {
               </div>
               
               {/* ACTIONS */}
-              <div className="bg-vintage-ink/[0.03] border-t md:border-t-0 md:border-l border-vintage-ink/10 p-6 md:w-80 flex flex-col justify-center gap-3">
+              <div className="bg-vintage-ink/3 border-t md:border-t-0 md:border-l border-vintage-ink/10 p-6 md:w-80 flex flex-col justify-center gap-3">
                 <button 
                   onClick={() => handleSecureDownload(
                     item.download_type === 'trial' ? item.fonts.trial_file_url : item.fonts.font_files[0],
@@ -149,7 +149,7 @@ const MyFontsHistory = () => {
       )}
 
       {/* FOOTER NOTE */}
-      <div className="pt-10 flex items-start gap-4 p-6 bg-vintage-ink/[0.03] border border-vintage-ink/10">
+      <div className="pt-10 flex items-start gap-4 p-6 bg-vintage-ink/3 border border-vintage-ink/10">
         <FileText size={20} className="text-vintage-accent flex-none mt-1" />
         <div className="space-y-2">
           <p className="text-[10px] font-bold uppercase tracking-widest text-vintage-ink">Registry Provision</p>

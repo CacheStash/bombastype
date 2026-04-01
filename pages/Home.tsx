@@ -38,7 +38,7 @@ const FontCard = ({
   >
     {/* 1. Header: Nama Font */}
     <div className="h-6 flex items-center justify-center shrink-0">
-      <p className="text-[12px] uppercase tracking-widest text-vintage-accent font-bold">{fontName}</p>
+      <p className="text-[15px] capitalize tracking-widest text-vintage-accent font-bold">{fontName}</p>
     </div>
     
     <hr className="w-full border-vintage-ink my-4 shrink-0" />
@@ -71,16 +71,17 @@ const FontCard = ({
       </h3>
     </div>
 
-    {/* Garis Bawah Nomor */}
+    {/* Garis Pemisah Nomor & Barcode - Tanpa Margin */}
     <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
 
-    {/* 5. BARCODE SPACER (Terletak di bawah garis nomor, mengisi gap kosong) */}
+    {/* 5. BARCODE SPACER - Mengisi ruang sisa dan nempel atas-bawah */}
     <BarcodeSpacer />
     
-    <hr className="w-full border-vintage-ink/20 mt-4 mb-6 shrink-0" />
+    {/* Garis Bawah Barcode - Menempel ke Barcode (my-0) */}
+    <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
     
-    {/* 6. Footer: Harga & Button */}
-    <div className="mt-auto w-full shrink-0">
+    {/* 6. Footer: Harga & Button - Jarak diatur di sini (mt-6) */}
+    <div className="mt-6 w-full shrink-0">
       <div className="text-base md:text-lg font-bold mb-4 text-vintage-ink tracking-tight">
         Starting at ${price}
       </div>
@@ -200,7 +201,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="p-6 text-center grow flex flex-col justify-between gap-4">
-                  <h3 className="text-2xl font-display leading-tight uppercase">{font.name}</h3>
+                  <h3 className="text-2xl font-display leading-tight capitalize">{font.name}</h3>
                   <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
                 </div>
               </motion.div>

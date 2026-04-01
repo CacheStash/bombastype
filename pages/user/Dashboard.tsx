@@ -88,7 +88,7 @@ const UserDashboard = () => {
       {/* SIDEBAR NAVIGATION - HERITAGE STYLE */}
       <aside className={`
         fixed md:sticky md:top-0 w-full md:w-72 border-r-0 md:border-r border-vintage-ink bg-vintage-background flex flex-col transition-all duration-300 z-40
-        ${isMenuOpen ? 'top-[61px] h-[calc(100vh-61px)] border-b border-vintage-ink' : 'top-[-100%] md:top-0 h-0 md:h-screen overflow-hidden md:overflow-visible'}
+        ${isMenuOpen ? 'top-15.25 h-[calc(100vh-61px)] border-b border-vintage-ink' : '-top-full md:top-0 h-0 md:h-screen overflow-hidden md:overflow-visible'}
       `}>
         <div className="p-10 border-b border-vintage-ink flex flex-col gap-4">
           <Link to="/" className="flex items-center gap-2 text-[9px] font-bold text-vintage-accent hover:text-vintage-ink transition-colors tracking-widest uppercase">
@@ -102,7 +102,7 @@ const UserDashboard = () => {
           </div>
         </div>
         
-        <nav className="flex-grow p-6 space-y-3">
+        <nav className="grow p-6 space-y-3">
           {[
             { id: 'library', label: 'My Library', icon: Library },
             { id: 'inbox', label: 'Inbox & Support', icon: Mail, badge: unreadCount },
@@ -153,7 +153,7 @@ const UserDashboard = () => {
       )}
 
       {/* MAIN CONTENT AREA - THE FOLIO */}
-      <main className="flex-grow p-8 md:p-16 overflow-y-auto w-full">
+      <main className="grow p-8 md:p-16 overflow-y-auto w-full">
         <div className="max-w-5xl mx-auto animate-in fade-in duration-700">
           {activeTab === 'library' && <MyFontsHistory />}
           {activeTab === 'inbox' && <UserMessages />}

@@ -74,7 +74,7 @@ const AccountSettings = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-grow">
+          <div className="relative grow">
             <select 
               value={selectedCode}
               onChange={(e) => setSelectedCode(e.target.value)}
@@ -102,7 +102,7 @@ const AccountSettings = () => {
           </button>
         </div>
 
-        <div className="p-4 bg-vintage-ink/[0.03] border-l-2 border-vintage-accent text-[10px] font-serif italic text-vintage-ink/60 leading-relaxed">
+        <div className="p-4 bg-vintage-ink/3 border-l-2 border-vintage-accent text-[10px] font-serif italic text-vintage-ink/60 leading-relaxed">
           <p>* All accession keys listed are valid as master resetter identifiers.</p>
           <p>* Should you lose your primary access key, use any transaction identifier to regain entry via the portal.</p>
         </div>
