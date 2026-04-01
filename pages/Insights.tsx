@@ -10,8 +10,44 @@ interface ContentItem {
   content: string;
   section_id: string;
   category: string;
-updated_at?: string;
+  type: string; // Tambahkan properti type
+  updated_at?: string;
 }
+
+// Brutalist Table Component (Konsisten dengan FAQ)
+const BrutalTable: React.FC<{ headers: string[], rows: string[][], title?: string }> = ({ headers, rows, title }) => (
+  <div className="w-full border border-black mb-10 overflow-hidden text-left">
+    {title && (
+      <div className="bg-black text-white p-4 font-bold text-xs md:text-sm tracking-[0.2em] uppercase">
+        {title}
+      </div>
+    )}
+    <div className="overflow-x-auto">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-black bg-[#f9f9f9]">
+            {headers.map((h, i) => (
+              <th key={i} className="p-4 border-r border-black last:border-0 font-bold text-[10px] md:text-xs uppercase tracking-widest text-gray-500">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="border-b border-black last:border-0">
+              {row.map((cell, j) => (
+                <td key={j} className={`p-4 border-r border-black last:border-0 font-normal text-xs md:text-sm normal-case leading-tight ${cell === '❌' ? 'text-red-500 font-bold' : cell === '✅' ? 'text-green-600 font-bold' : 'text-black'}`}>
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
 
 // Shared Bullet Style
 const PlusBullet = () => (
@@ -128,6 +164,36 @@ const [lastUpdated, setLastUpdated] = useState<string>('');
             <div className="animate-pulse font-bold">SYNCING_LAB_RECORDS...</div>
           ) : (
             insights.map((item) => {
+              // Penanganan Tipe AUTO (Text + Table)
+              if (item.type === 'auto') {
+                const jsonStartIndex = item.content.indexOf('{');
+                if (jsonStartIndex !== -1) {
+                  const textPart = item.content.substring(0, jsonStartIndex).trim();
+                  const jsonPart = item.content.substring(jsonStartIndex).trim();
+                  try {
+                    const tableData = JSON.parse(jsonPart);
+                    return (
+                      <InsightCard 
+                        key={item.id} 
+                        number={item.section_id || ''} 
+                        category={item.category || 'Typographic Insight'} 
+                        title={item.title}
+                        linkText="VIEW_DETAILS"
+                      >
+                        <div className="space-y-6">
+                          <div 
+                            className="text-lg md:text-2xl"
+                            dangerouslySetInnerHTML={{ __html: textPart }} 
+                          />
+                          <BrutalTable headers={tableData.headers} rows={tableData.rows} />
+                        </div>
+                      </InsightCard>
+                    );
+                  } catch (e) { console.error("Insight auto-parse error", e); }
+                }
+              }
+
+              // Logika JSON Original (summary, date, dll)
               try {
                 const data = JSON.parse(item.content);
                 return (
