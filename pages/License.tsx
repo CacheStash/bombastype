@@ -12,6 +12,7 @@ interface ContentItem {
   title: string;
   content: string;
   section_id: string;
+  type?: string;
   updated_at?: string;
 }
 
@@ -36,6 +37,41 @@ const transformHTMLContent = (html: string): React.ReactNode => {
     />
   );
 };
+
+const LicenseTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ headers, rows }) => (
+  <div className="w-full border border-vintage-ink mb-8 overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-vintage-ink bg-vintage-ink/5">
+            {headers.map((h, i) => (
+              <th
+                key={i}
+                className="p-3 border-r border-vintage-ink last:border-0 font-bold text-xs uppercase tracking-wider text-vintage-ink/70"
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="border-b border-vintage-ink/30 last:border-0 hover:bg-vintage-ink/5">
+              {row.map((cell, j) => (
+                <td
+                  key={j}
+                  className="p-3 border-r border-vintage-ink/30 last:border-0 text-sm text-vintage-ink leading-relaxed"
+                >
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
 
 const License: React.FC = () => {
   const [licenses, setLicenses] = useState<ContentItem[]>([]);
@@ -134,7 +170,16 @@ const License: React.FC = () => {
               title={item.title}
             >
               {item.content && (
-                item.content.includes('<') ? (
+                item.type === 'table' ? (
+                  (() => {
+                    try {
+                      const tableData = JSON.parse(item.content);
+                      return <LicenseTable headers={tableData.headers} rows={tableData.rows} />;
+                    } catch (e) {
+                      return <div className="text-red-500 font-bold text-sm">Error rendering table</div>;
+                    }
+                  })()
+                ) : item.content.includes('<') ? (
                   transformHTMLContent(item.content)
                 ) : (
                   <div className="space-y-4">
