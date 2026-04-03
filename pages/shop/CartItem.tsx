@@ -22,8 +22,6 @@ const CartItem: React.FC<Props> = ({ item, onRemove }) => {
         
         {/* Detail Lisensi: Small Bold Caps with Wide Tracking */}
         <div className="text-[9px] md:text-[10px] font-bold tracking-[0.3em] text-vintage-ink/50 mt-2 uppercase flex flex-wrap gap-x-4 gap-y-1">
-          <span className="text-vintage-accent">{item.tier} TIER</span>
-          <span>—</span>
           <span>{item.usages.join(', ')}</span>
           {item.webTierLabel && (
             <>
