@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler", // Changed from 'node' to 'bundler'
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "strict": true,
@@ -11,9 +11,10 @@
     "isolatedModules": true,
     "allowJs": true,
     "noEmit": true,
-    "baseUrl": ".",
+    "allowImportingTsExtensions": true, // Recommended for 'bundler' resolution
+    "resolveJsonModule": true,
     "paths": {
-      "@/*": ["./*"] 
+      "@/*": ["./*"] // Works without baseUrl in modern TypeScript
     },
     "types": [
       "node",
@@ -21,7 +22,6 @@
       "react",
       "react-dom",
       "vite/client"
-
     ]
   },
   "include": [
@@ -29,11 +29,10 @@
     "index.tsx",
     "App.tsx",
     "fonts.d.ts",
-    "pages/**/*",      // <--- Menghilangkan error font di Home.tsx
-    "components/**/*", // <--- Menghilangkan error di Admin components
+    "pages/**/*",
+    "components/**/*",
     "app/**/*",
     "lib/**/*"
   ],
   "exclude": ["node_modules", "dist"]
-  
 }

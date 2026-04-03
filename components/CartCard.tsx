@@ -171,7 +171,7 @@ const CartCard: React.FC<CartCardProps> = ({
                 <button onClick={handleTrialToggle} 
                   className={`vintage-btn flex items-center justify-between py-5 px-6 transition-all duration-300 ${
                     isTrial 
-                    ? '!bg-vintage-ink !text-vintage-background' 
+                    ? 'bg-vintage-ink! text-vintage-background!' 
                     : 'bg-transparent border-vintage-ink/20'
                   }`}>
                   <span className="text-[11px] font-bold tracking-[0.2em]">TRY IT FIRST (FREE DEMO VERSION)</span>
@@ -195,7 +195,7 @@ const CartCard: React.FC<CartCardProps> = ({
                       <button onClick={() => toggleUsage(u.id)} disabled={isDisabled} 
                         className={`vintage-btn w-full flex items-center justify-between py-5 px-6 transition-all duration-300 ${
                           isDisabled ? 'opacity-10 cursor-not-allowed' : 
-                          isActive ? '!bg-vintage-ink !text-vintage-background' : 'bg-transparent border-vintage-ink/20'
+                          isActive ? 'bg-vintage-ink! text-vintage-background!' : 'bg-transparent border-vintage-ink/20'
                         }`}>
                         <span className="text-[11px] font-bold tracking-[0.2em]">{u.label}</span>
                         <Plus size={16} className={`transition-transform duration-500 ${isActive ? 'rotate-45' : 'opacity-40'}`} />
@@ -211,7 +211,7 @@ const CartCard: React.FC<CartCardProps> = ({
                               <button key={t.key} onClick={() => setSelectedTiers(prev => ({...prev, [u.id]: t.key}))}
                                 className={`vintage-btn flex-1 min-w-35 py-3 px-2 text-[9px] font-bold tracking-widest transition-all duration-300 ${
                                   selectedTiers[u.id] === t.key 
-                                  ? '!bg-vintage-ink !text-vintage-background' 
+                                  ? 'bg-vintage-ink! text-vintage-background!' 
                                   : 'bg-transparent border-vintage-ink/10 text-vintage-ink/60'
                                 }`}>
                                 {t.label}
@@ -228,7 +228,7 @@ const CartCard: React.FC<CartCardProps> = ({
                 <button onClick={handleCorporateToggle} 
                   className={`vintage-btn flex items-center justify-between py-5 px-6 border-2 mt-4 transition-all duration-300 ${
                     isCorporate 
-                    ? '!bg-vintage-ink !text-vintage-background shadow-lg' 
+                    ? 'bg-vintage-ink! text-vintage-background! shadow-lg' 
                     : 'bg-transparent border-vintage-accent/30 text-vintage-accent'
                   }`}>
                   <span className="text-[11px] font-bold tracking-[0.2em]">CORPORATE (ALL-IN-ONE PACKAGE)</span>
@@ -296,14 +296,14 @@ const CartCard: React.FC<CartCardProps> = ({
                     </button>
                   )}
                   <button onClick={() => handleAdd(true)} disabled={!isValidSelection}
-                    className={`vintage-btn flex-1 ${directCheckout ? 'md:w-72' : 'md:w-48'} !bg-vintage-ink !text-vintage-background py-5 px-4 flex items-center justify-center gap-3 transition-all duration-500 hover:opacity-90 font-bold text-[10px] tracking-[0.3em] disabled:opacity-10 group uppercase`}>
+                    className={`vintage-btn flex-1 ${directCheckout ? 'md:w-72' : 'md:w-48'} bg-vintage-ink! text-vintage-background! py-5 px-4 flex items-center justify-center gap-3 transition-all duration-500 hover:opacity-90 font-bold text-[10px] tracking-[0.3em] disabled:opacity-10 group uppercase`}>
                     Checkout
                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
               ) : (
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col gap-2 w-full md:w-72">
-                  <Link to="/cart" onClick={closeConfigurator} className="vintage-btn !bg-vintage-ink !text-vintage-background w-full py-5 px-8 flex items-center justify-center gap-4 hover:opacity-90 transition-all">
+                  <Link to="/cart" onClick={closeConfigurator} className="vintage-btn bg-vintage-ink! text-vintage-background! w-full py-5 px-8 flex items-center justify-center gap-4 hover:opacity-90 transition-all">
                     <ShoppingCart size={18} /> <span className="text-[11px] font-bold tracking-[0.3em]">VIEW CART</span>
                   </Link>
                   <button onClick={closeConfigurator} className="vintage-btn w-full py-3 text-[9px] font-bold border border-vintage-ink/20 text-vintage-ink/40 hover:text-vintage-ink transition-colors uppercase">
