@@ -6,60 +6,52 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
+import { Plus, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useCart } from '../context/CartContext';
 
-// Komponen Barcode Spacer: Menggunakan warna vintage-ink dan ketebalan garis yang sama
-
-
+// --- SUB-COMPONENTS: STYLING ELEMENTS ---
 const SlantedSpacer = () => (
   <div 
     className="grow w-full text-vintage-ink min-h-10 shrink-0" 
     style={{
-      backgroundImage: `repeating-linear-gradient(
-        120deg, 
-        currentColor, 
-        currentColor 1px, 
-        transparent 1px, 
-        transparent 7px
-      )`,
+      backgroundImage: `repeating-linear-gradient(120deg, currentColor, currentColor 1px, transparent 1px, transparent 7px)`,
       backgroundSize: '100% 100%'
     }}
   />
 );
 
-
-// FontCard dengan Barcode Filler & Number Enhancement
+// --- COMPONENT: RECENT FONT CARD (Text View Style) ---
 const FontCard = ({ 
   fontName, 
   price, 
   onClick, 
+  onAdd,
   primaryIndex = 0 
 }: { 
   fontName: string, 
   price: number, 
   onClick: () => void, 
+  onAdd: () => void,
   primaryIndex?: number 
 }) => (
   <motion.div 
     whileHover={{ scale: 1.02 }}
     onClick={onClick}
-    className="vintage-card flex flex-col items-center text-center h-full p-6 pt-10 cursor-pointer"
+    className="vintage-card flex flex-col items-center text-center h-full p-6 pt-10 cursor-pointer group/card"
   >
     {/* 1. Header: Nama Font */}
-    <div className="h-6 flex items-center justify-center shrink-0">
+    <div className="h-6 flex items-center justify-center shrink-0 mb-4">
       <p className="text-[15px] capitalize tracking-widest text-vintage-accent font-bold">{fontName}</p>
     </div>
     
-    <hr className="w-full border-vintage-ink my-4 shrink-0" />
+    <hr className="w-full border-vintage-ink mb-4 shrink-0" />
     
-    {/* 2. Tengah Atas: Preview Huruf A-Z */}
+    {/* 2. Character Previews */}
     <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 shrink-0">
       <h3 
         className="text-4xl md:text-6xl leading-[1.6] break-all tracking-tight py-6"
-        style={{ 
-          fontFamily: `"${fontName}-${primaryIndex}"`,
-          fontVariantLigatures: "none" 
-        }} 
+        style={{ fontFamily: `"${fontName}-${primaryIndex}"`, fontVariantLigatures: "none" }} 
       >
         ABCDEFGHIJKLMNOPQRSTUVWXYZ
       </h3>
@@ -67,99 +59,78 @@ const FontCard = ({
     
     <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
     
-    {/* 3. Tengah Bawah: Angka 0-9 (Presisi Centering) */}
     <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 flex items-center justify-center shrink-0 py-2 md:py-4">
       <h3 
         className="text-4xl md:text-6xl leading-none break-all tracking-tight text-vintage-ink"
-        style={{ 
-          fontFamily: `"${fontName}-${primaryIndex}"`,
-          transform: 'translateY(0.05em)' // Fine-tuning manual jika baseline font agak turun
-        }}
+        style={{ fontFamily: `"${fontName}-${primaryIndex}"`, transform: 'translateY(0.05em)' }}
       >
         0123456789
       </h3>
     </div>
 
-    {/* Garis Pemisah Nomor & Barcode - Tanpa Margin */}
     <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
 
-    {/* 4. NEW SECTION: Lowercase a-z */}
     <div className="w-full px-2 overflow-hidden bg-vintage-ink/2 flex items-center justify-center shrink-0">
       <h3 
         className="text-3xl md:text-5xl leading-[1.6] break-all tracking-tight py-4 text-vintage-ink"
-        style={{ 
-          fontFamily: `"${fontName}-${primaryIndex}"`,
-          fontVariantLigatures: "none" 
-        }} 
+        style={{ fontFamily: `"${fontName}-${primaryIndex}"`, fontVariantLigatures: "none" }} 
       >
         abcdefghijklmnopqrstuvwxyz
       </h3>
     </div>
 
-    {/* Garis Pembatas Atas Spacer - Nempel (my-0) */}
     <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
-
-    {/* 5. SLANTED SPACER - 30 Degree Arsir */}
     <SlantedSpacer />
-    
-    {/* Garis Pembatas Bawah Spacer - Nempel (my-0) */}
     <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
 
-    {/* 6. Footer: Jarak mt-8 untuk memisahkan teks harga dari garis spacer */}
-    <div className="mt-8 w-full shrink-0">
-      <div className="text-base md:text-lg font-bold mb-4 text-vintage-ink tracking-tight">
-        Starting at ${price}
+    {/* 3. Footer: Harga & Buttons */}
+    <div className="mt-8 w-full shrink-0 flex flex-col gap-3">
+      <div className="text-base md:text-lg font-bold text-vintage-ink tracking-tight flex items-center justify-center mb-2">
+        <span className="opacity-60 mr-1.5 font-bold">Starting at</span>
+        <span className="text-vintage-accent mr-0.5">$</span>{price}
       </div>
-      <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
+      
+      <button 
+        onClick={(e) => { e.stopPropagation(); onAdd(); }}
+        className="vintage-btn py-3 text-[12px] w-full flex items-center justify-center gap-2 group/btn"
+      >
+        <Plus size={16} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
+        ADD TO CART
+      </button>
+
+      <button className="vintage-btn btn-reverse py-3 text-[12px] w-full flex items-center justify-center gap-2 group/btn">
+        <Eye size={16} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
+        VIEW FONTS
+      </button>
     </div>
   </motion.div>
 );
 
+// --- MAIN HOME COMPONENT ---
 export default function Home() {
   const navigate = useNavigate();
+  const { openConfigurator } = useCart();
   const [featuredFonts, setFeaturedFonts] = useState<any[]>([]);
   const [recentFonts, setRecentFonts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  // Logic Font Loader
+  // Dynamic Font Face Injection
   useEffect(() => {
     if (recentFonts.length === 0) return;
-
     const styleId = "dynamic-fonts-home-registry";
-    let styleTag = document.getElementById(styleId) as HTMLStyleElement;
-    
-    if (!styleTag) {
-      styleTag = document.createElement("style");
-      styleTag.id = styleId;
-      document.head.appendChild(styleTag);
-    }
+    let styleTag = document.getElementById(styleId) as HTMLStyleElement || document.createElement("style");
+    styleTag.id = styleId;
+    if (!styleTag.parentElement) document.head.appendChild(styleTag);
 
-    const fontFaces = recentFonts.map(f => {
+    styleTag.textContent = recentFonts.map(f => {
       const pIdx = f.metadata?.primary_font_index || 0;
-      const files = Array.isArray(f.font_files) ? f.font_files : [];
-      const file = files[pIdx]; 
-      
+      const file = Array.isArray(f.font_files) ? f.font_files[pIdx] : f.file_url;
       if (!file) return '';
-      
       const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
-      const url = file.startsWith('http') || file.startsWith('/') 
-        ? file 
-        : `/api/fonts/${file}?v=${version}`;
-
-      return `
-        @font-face {
-          font-family: "${f.name}-${pIdx}";
-          src: url("${url}");
-          font-display: block;
-        }
-      `;
+      return `@font-face { font-family: "${f.name}-${pIdx}"; src: url("/api/fonts/${file}?v=${version}"); font-display: block; }`;
     }).join("\n");
-
-    styleTag.textContent = fontFaces;
   }, [recentFonts]);
 
   const fetchData = async () => {
@@ -167,7 +138,6 @@ export default function Home() {
       setLoading(true);
       const { data: featured } = await supabase.from('fonts').select('*').filter('metadata->is_featured', 'eq', true).limit(3);
       const { data: recent } = await supabase.from('fonts').select('*').order('created_at', { ascending: false }).limit(4);
-
       if (featured) setFeaturedFonts(featured);
       if (recent) setRecentFonts(recent);
     } catch (err) {
@@ -178,7 +148,7 @@ export default function Home() {
   };
 
   return (
-    <div className="pb-12">
+    <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
       {/* Hero Section */}
       <section className="text-center mb-16 max-w-3xl mx-auto relative z-10 px-4 pt-12">
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
@@ -197,37 +167,55 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Fonts Section - FIX: Image No Grayscale */}
+      {/* Featured Fonts Section */}
       <section className="mb-16 md:mb-24 relative z-10 px-4">
         <div className="divider">
           <h2 className="text-3xl md:text-5xl font-script capitalize">Featured Fonts</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
           {loading ? (
-             [1,2,3].map(i => <div key={i} className="h-80 bg-vintage-ink/5 animate-pulse" />)
+             [1,2,3].map(i => <div key={i} className="h-80 bg-vintage-ink/5 animate-pulse border border-vintage-ink/10" />)
           ) : (
             featuredFonts.map((font) => (
               <motion.div 
                 key={font.id}
                 whileHover={{ scale: 1.02 }}
-                className="vintage-card flex flex-col p-0 overflow-hidden h-full cursor-pointer"
+                className="vintage-card flex flex-col p-0 overflow-hidden h-full cursor-pointer group/card"
                 onClick={() => navigate(`/font/${font.id}`)}
               >
-                <div className="aspect-3/2 w-full bg-vintage-ink/5 border-b border-vintage-ink relative group overflow-hidden">
+                <div className="aspect-3/2 w-full bg-vintage-ink/5 border-b border-vintage-ink relative overflow-hidden">
                   {font.preview_images?.[0] && (
                     <img 
                       src={`/api/images/${font.preview_images[0]}`} 
                       alt={font.name} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105" 
                     />
                   )}
                   <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink">
-                    ${font.price}
+                    <span className="text-vintage-accent mr-0.5">$</span>{font.price}
                   </div>
                 </div>
                 <div className="p-6 text-center grow flex flex-col justify-between gap-4">
-                  <h3 className="text-2xl font-display leading-tight capitalize">{font.name}</h3>
-                  <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
+                  <div>
+                    <h3 className="text-2xl font-display leading-tight capitalize truncate">{font.name}</h3>
+                    <hr className="w-full border-vintage-ink/20 my-4" />
+                    <p className="text-[10px] font-bold text-vintage-ink/70 uppercase tracking-widest">
+                      {Array.isArray(font.font_files) ? font.font_files.length : 1} Styles Available
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); openConfigurator({ ...font, trialFileUrl: font.trial_file_url }); }}
+                      className="vintage-btn py-2 text-[10px] flex items-center justify-center gap-1 group/btn"
+                    >
+                      <Plus size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
+                      ADD
+                    </button>
+                    <button className="vintage-btn btn-reverse py-2 text-[10px] flex items-center justify-center gap-1 group/btn">
+                      <Eye size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
+                      VIEW
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))
@@ -247,6 +235,7 @@ export default function Home() {
               fontName={font.name} 
               price={font.price} 
               primaryIndex={font.metadata?.primary_font_index || 0}
+              onAdd={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url })}
               onClick={() => navigate(`/font/${font.id}`)}
             />
           ))}
