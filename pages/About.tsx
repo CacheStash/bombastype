@@ -121,7 +121,7 @@ const About: React.FC = () => {
         <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight">
           About BombasType
         </motion.h2>
-        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 mb-6 leading-relaxed">
+        <motion.p className="text-base md:text-lg lg:text-xl italic text-vintage-ink/60 leading-relaxed">
           Authentic vintage typefaces crafted for timeless design and letterpress tradition.
         </motion.p>
       </section>

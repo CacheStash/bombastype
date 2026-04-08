@@ -58,7 +58,7 @@ const mailtoUrl = `mailto:bombastype@gmail.com?subject=${encodeURIComponent(`[BO
         <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight">
           Let's Keep It Human
         </motion.h2>
-        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 mb-6 leading-relaxed">
+        <motion.p className="text-base md:text-lg lg:text-xl italic text-vintage-ink/60 leading-relaxed">
           Direct communication for typeface inquiries and collaborations.
         </motion.p>
       </section>

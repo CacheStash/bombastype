@@ -141,7 +141,7 @@ const FAQ: React.FC = () => {
         <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight">
           Frequently Asked Questions
         </motion.h2>
-        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 mb-6 leading-relaxed">
+        <motion.p className="text-base md:text-lg lg:text-xl italic text-vintage-ink/60 leading-relaxed">
           Clarity for Your Creative Workflow & Technical Requirements.
         </motion.p>
       </section>
