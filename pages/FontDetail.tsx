@@ -1,15 +1,21 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom'; // FIXED: Tambah useNavigate
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import TypeTester from '../components/TypeTester';
 import { useCart } from '../context/CartContext';
-import { ChevronLeft, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Circle, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
 const resolvePreviewUrl = (filename: string) => {
   if (!filename) return null;
   if (filename.startsWith('http')) return filename;
   return `/api/images/${filename}`; 
 };
-
 
 const FontDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,12 +24,16 @@ const FontDetail: React.FC = () => {
   const { openConfigurator } = useCart(); 
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Slider State
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     fetchData();
   }, [id]);
 
   const fetchData = async () => {
+    setLoading(true);
     const [fontRes, promosRes] = await Promise.all([
       supabase.from('fonts').select('*').eq('id', id).single(),
       supabase.from('promotions').select('*').eq('is_active', true)
@@ -45,194 +55,160 @@ const FontDetail: React.FC = () => {
     });
   }, [font, promos]);
 
-  const calculateDaysLeft = (endDate: string) => {
-    const diff = new Date(endDate).getTime() - new Date().getTime();
-    const days = Math.ceil(diff / (1000 * 3600 * 24));
-    return days <= 0 ? "Ends today" : `${days} day${days > 1 ? 's' : ''} left`;
-  };
+  if (loading) return <div className="p-20 text-center uppercase font-bold animate-pulse tracking-widest text-vintage-ink">Loading Font Details...</div>;
+  if (!font) return <div className="p-20 text-center uppercase font-bold text-vintage-ink">Font not found.</div>;
 
-  if (loading) return <div className="p-20 text-center uppercase font-bold animate-pulse tracking-widest">Loading Font Details...</div>;
-  if (!font) return <div className="p-20 text-center uppercase font-bold">Font not found.</div>;
-
+  const fontPreviews = Array.isArray(font.preview_images) ? font.preview_images : [];
   const basePrice = font.price || 25;
   const styleCount = Array.isArray(font.font_files) ? font.font_files.length : 1;
-  const tags = Array.isArray(font.tags) ? font.tags : (typeof font.tags === 'string' ? font.tags.split(',') : []);
-  const fontPreviews = Array.isArray(font.preview_images) ? font.preview_images : [];
+  const discountPrice = activePromo ? (basePrice * (1 - (activePromo.discount_percent / 100))).toFixed(0) : basePrice;
+
+  // Slider Logic (2 images per slide)
+  const totalSlides = Math.ceil(fontPreviews.length / 2);
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
 
   return (
-    <div className="relative z-10 text-black font-sans selection:bg-black selection:text-white min-h-screen bg-transparent overflow-x-hidden">
-      {/* BACKGROUND ORBS - Selaras dengan Home */}
-      <div className="grain-orb-base orb-top-right" />
-      <div className="grain-orb-base orb-bottom-left" />
-
-      {/* 1. HEADER: CLEAN SECTION (No Images) */}
-      <header className="relative w-full border-b border-black bg-transparent overflow-hidden">
-        {/* HEADER ORB EFFECT (Atas Kanan) - Identik dengan Home */}
-        <div className="absolute -top-20 -right-20 w-[600px] h-[400px] pointer-events-none z-0">
-           <div 
-              className="w-full h-full mix-blend-multiply blur-[60px]"
-              style={{ background: 'radial-gradient(closest-side, rgba(255, 80, 80, 0.8) 0%, rgba(253, 186, 116, 0.5) 50%, rgba(253, 186, 116, 0) 100%)' }}
-           />
-        </div>
-        {/* FIXED: Mengubah breakpoint dari 'md' ke 'lg' agar header bertumpuk pada tablet portrait, selaras dengan TypeTester */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_450px] relative z-10">
-          {/* FIXED: Border bawah aktif di resolusi < 1024px (lg:border-b-0) dan border kanan aktif di >= 1024px (lg:border-r) */}
-          <div className="p-6 md:p-8 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-black bg-white/10 backdrop-blur-md text-left">
-            <span className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-[0.3em] block mb-4">Specimen Details</span>
-            <h1 className="text-6xl md:text-9xl font-normal uppercase tracking-tighter leading-[0.8] break-words">
-              {font.name}
-            </h1>
-            <span className="block text-sm md:text-base font-bold uppercase tracking-widest mt-4 text-black/50">
-              {styleCount} STYLES AVAILABLE
-              {activePromo && ` | ${activePromo.name} - ${activePromo.discount_percent}% OFF`}
-            </span>
-          </div>
-          
-          {/* FIXED: Alignment tombol menyesuaikan breakpoint (lg:justify-end) */}
-          <div className="flex flex-col justify-center lg:justify-end p-6 md:p-8 items-end bg-white/10 backdrop-blur-md gap-3">
-            {/* FIXED: Efek hover diubah menjadi outline mode (bg-white & text-black saat hover) */}
-            <button 
-              onClick={() => {
-                const discountPercent = activePromo ? activePromo.discount_percent : 0;
-                openConfigurator({ 
-                  ...font, 
-                  trialFileUrl: font.trial_file_url,
-                  activeDiscount: discountPercent,
-                  directCheckout: true 
-                });
-              }}
-              className="w-full md:w-64 bg-black text-white px-8 py-6 text-xs font-black uppercase border border-black hover:bg-white hover:text-black transition-all flex items-center justify-center"
+    <div className="relative z-10 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper min-h-screen bg-transparent overflow-x-hidden pb-20">
+      
+      {/* 1. TOP SLIDER SECTION */}
+      <section className="relative w-full bg-vintage-paper border-b border-vintage-ink/20 group">
+        <div className="flex overflow-hidden aspect-[21/9] md:aspect-[21/7]">
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={currentSlide}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.5 }}
+              className="grid grid-cols-2 w-full h-full"
             >
-              BUY LICENSE
-            </button>
-            <button 
-          onClick={() => {
-            const discountPercent = activePromo ? activePromo.discount_percent : 0;
-            openConfigurator({ 
-              ...font, 
-              trialFileUrl: font.trial_file_url,
-              activeDiscount: discountPercent,
-              initialOption: 'trial' // Mengaktifkan opsi trial/demo secara otomatis
-            });
-          }}
-          className="w-full md:w-64 border border-black px-8 py-4 text-xs font-black uppercase hover:bg-black hover:text-white transition-all flex items-center justify-center"
-        >
-          Free Trial
-        </button>
-
-            <button 
-              onClick={() => navigate(-1)} 
-              className="w-full md:w-64 border border-black px-8 py-4 text-xs font-black uppercase hover:bg-black hover:text-white transition-all flex items-center justify-center gap-3"
-            >
-              <ChevronLeft size={16} /> Back to Collection
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* 2. MAIN CONTENT GRID */}
-      <main className="w-full">
-        {/* FIXED: Mengubah grid menjadi 2 kolom (450px untuk info dan sisa untuk tester) */}
-        <section className="relative border-b border-black grid grid-cols-1 lg:grid-cols-[450px_1fr]">
-          
-          {/* CONTENT ORB EFFECT (Tengah Kiri) - Identik dengan posisi ganjil di Home */}
-          <div className="absolute z-0 pointer-events-none overflow-visible hidden md:block" 
-               style={{ 
-                 width: '1000px', 
-                 height: '600px',
-                 top: '50%',
-                 left: '22%', 
-                 transform: 'translate(-50%, -50%)',
-                 opacity: 0.8
-               }}>
-               <div className="w-full h-full mix-blend-multiply blur-[60px]" 
-                    style={{ background: 'radial-gradient(closest-side, rgba(255, 80, 80, 0.8) 0%, rgba(253, 186, 116, 0.5) 50%, rgba(253, 186, 116, 0) 100%)' }} />
-          </div>
-
-          {/* COLUMN A: INFO */}
-          {/* FIXED: Menambahkan 'relative z-10' agar konten berada di atas orb */}
-          <div className="relative z-10 p-6 lg:p-8 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-black bg-transparent">
-            <div>
-              {/* FIXED: Nama font dan Style info dihapus dari sini karena sudah ada di header */}
-
-              <div className="mb-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="inline-block border border-black rounded-full px-3 py-1 font-regular italic text-[11px] md:text-[14px] lowercase leading-none">starting at</span>
-                  {activePromo && (
-                    <span className="inline-block border border-orange-600 rounded-full px-3 py-1 font-bold text-[11px] md:text-[14px] uppercase text-red-600 leading-none">
-                      {activePromo.discount_percent}% OFF
-                    </span>
-                  )}
-                </div>
-                
-                {activePromo ? (
-                  <div className="flex flex-col items-start gap-2">
-                    <span className="text-8xl md:text-9xl font-light tracking-tighter leading-[0.8]">
-                      ${(basePrice * (1 - (activePromo.discount_percent / 100))).toFixed(0)}
-                    </span>
-                    <div className="flex items-center gap-4 mt-2">
-                      <div className="relative w-fit text-center">
-                        <span className="text-3xl md:text-4xl font-bold text-red-600 leading-none">${basePrice}</span>
-                        <div className="absolute top-[50%] left-[-5%] w-[110%] h-[2px] bg-orange-600"></div>
-                      </div>
-                      <span className="inline-block border border-orange-600 rounded-full px-2 md:px-3 py-1 font-bold text-[9px] md:text-[10px] uppercase text-red-600 whitespace-nowrap">
-                        {calculateDaysLeft(activePromo.end_date)}
-                      </span>
-                    </div>
+              {[0, 1].map((offset) => {
+                const imgIdx = currentSlide * 2 + offset;
+                const img = fontPreviews[imgIdx];
+                return img ? (
+                  <div key={imgIdx} className={`relative h-full overflow-hidden ${offset === 0 ? 'border-r border-vintage-ink/10' : ''}`}>
+                    <img 
+                      src={resolvePreviewUrl(img)!} 
+                      className="w-full h-full object-cover" 
+                      alt={`Preview ${imgIdx}`} 
+                    />
                   </div>
                 ) : (
-                  <div className="text-8xl md:text-9xl font-light tracking-tighter leading-[0.8]">${basePrice}</div>
-                )}
-              </div>
-            </div>
+                  <div key={imgIdx} className="bg-vintage-ink/5" />
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-            <div className="pb-10 lg:pb-0">
-               <div className="flex flex-wrap gap-2 text-[10px] uppercase mb-6">
-                {tags.map((tag: string) => (
-                  <span key={tag} className="border border-black px-3 py-1 rounded-full font-bold uppercase bg-transparent">
-                    {tag.trim()}
-                  </span>
-                ))}
-              </div>
-              <p className="text-gray-600 text-sm leading-relaxed normal-case italic">{font.description}</p>
+        {/* Slider Controls */}
+        {totalSlides > 1 && (
+          <>
+            <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 p-4 bg-vintage-paper/80 border border-vintage-ink/20 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
+              <ChevronLeft size={24} />
+            </button>
+            <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 p-4 bg-vintage-paper/80 border border-vintage-ink/20 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
+              <ChevronRight size={24} />
+            </button>
+            
+            {/* Dots Navigation */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+              {Array.from({ length: totalSlides }).map((_, i) => (
+                <button key={i} onClick={() => setCurrentSlide(i)} className="transition-all duration-300">
+                  <Circle size={8} fill={currentSlide === i ? "currentColor" : "none"} className={currentSlide === i ? "text-vintage-accent" : "text-vintage-ink/30"} />
+                </button>
+              ))}
             </div>
+          </>
+        )}
+      </section>
+
+      {/* 2. FONT INFO SECTION */}
+      <section className="max-w-7xl mx-auto px-6 py-16 md:py-24">
+        <div className="max-w-4xl">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-6xl md:text-8xl lg:text-9xl font-display capitalize leading-none tracking-tighter"
+          >
+            {font.name}
+          </motion.h1>
+          
+          <div className="flex items-center gap-6 mt-8 border-y border-vintage-ink/10 py-6">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-vintage-accent mb-1">Architecture</span>
+              <span className="text-sm font-bold opacity-60 uppercase tracking-widest">{styleCount} Styles Available</span>
+            </div>
+            {activePromo && (
+              <div className="flex flex-col border-l border-vintage-ink/10 pl-6">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-600 mb-1">Limited Offer</span>
+                <span className="text-sm font-bold text-orange-600 uppercase tracking-widest">{activePromo.name} (-{activePromo.discount_percent}%)</span>
+              </div>
+            )}
           </div>
 
-                {/* COLUMN C: FULL TYPE TESTER */}
-         <div className="relative flex items-stretch bg-transparent overflow-hidden">
-            <TypeTester 
-              config={{
-                ...font,
-                family: `"${font.name}"`,
-                styleCount: styleCount,
-                randomText: font.random_text || "One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin."
-              }} 
-              isEven={true} // isEven true untuk menjaga konsistensi Align Left
-            />
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-10 text-lg md:text-xl italic text-vintage-ink/70 leading-relaxed font-serif"
+          >
+            {font.description}
+          </motion.p>
+        </div>
+      </section>
+
+      {/* 3. FULL FUNCTION TYPETESTER */}
+      <section className="w-full border-y border-vintage-ink/20 bg-vintage-ink/[0.01]">
+        <div className="max-w-full">
+          <TypeTester 
+            config={{
+              ...font,
+              family: `"${font.name}"`,
+              styleCount: styleCount,
+              randomText: font.random_text
+            }} 
+          />
+        </div>
+      </section>
+
+      {/* 4. PRICING & ACTIONS SECTION */}
+      <section className="max-w-7xl mx-auto px-6 py-16 flex flex-col md:flex-row justify-between items-center gap-12">
+        <div className="flex flex-col items-center md:items-start">
+          <span className="text-[11px] font-black uppercase tracking-[0.4em] text-vintage-ink/40 mb-4 italic">Investment starting at</span>
+          <div className="flex items-baseline gap-4">
+            <span className="text-7xl md:text-9xl font-display leading-none tracking-tighter">${discountPrice}</span>
+            {activePromo && (
+              <span className="text-2xl md:text-3xl line-through opacity-20 decoration-vintage-accent decoration-2">${basePrice}</span>
+            )}
           </div>
-        </section>
+        </div>
 
-        {/* 3. SPACER: Muncul di semua ukuran layar (Mobile, Tablet, & Desktop) */}
-        <div className="h-12 border-b border-black w-full bg-orange-500/10" />
+        <div className="flex flex-col gap-4 w-full md:w-auto">
+          <button 
+            onClick={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url, activeDiscount: activePromo?.discount_percent || 0, directCheckout: true })}
+            className="vintage-btn btn-reverse px-16 py-6 text-sm tracking-[0.3em] w-full md:w-80 flex items-center justify-center gap-3 group"
+          >
+            BUY FULL LICENSE <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+          
+          <button 
+            onClick={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url, initialOption: 'trial' })}
+            className="vintage-btn px-16 py-4 text-[10px] tracking-[0.3em] w-full md:w-80 border-vintage-ink/20"
+          >
+            DOWNLOAD FREE TRIAL
+          </button>
+          
+          <button 
+            onClick={() => navigate('/fonts')}
+            className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity mt-2"
+          >
+            ← Back to Archive
+          </button>
+        </div>
+      </section>
 
-        {/* 4. PREVIEW IMAGES GALLERY */}
-        {/* FIXED: Grid full width tanpa padding. 1 kolom di < 1024px (lg), 2 kolom di >= 1024px */}
-        <section className="w-full grid grid-cols-1 lg:grid-cols-2 border-black border-t-0">
-          {fontPreviews.map((img: string, idx: number) => {
-            const imageUrl = resolvePreviewUrl(img);
-            if (!imageUrl) return null;
-            return (
-              <div key={idx} className="w-full border-b lg:even:border-l border-black overflow-hidden bg-white">
-                <img 
-                  src={imageUrl} 
-                  alt={`${font.name} Preview ${idx + 1}`} 
-                  className="w-full h-auto block object-cover"
-                />
-              </div>
-            );
-          })}
-        </section>
-      </main>
     </div>
   );
 };
