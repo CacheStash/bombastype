@@ -11,6 +11,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Plus, 
+  Eye, // Tambah Eye Icon
   LayoutGrid,
   Type
 } from 'lucide-react';
@@ -37,7 +38,6 @@ const SlantedSpacer = () => (
 );
 
 // --- COMPONENT: THUMBNAIL CARD (3x4 Style) ---
-// Samakan dengan Featured Fonts di Home
 const ThumbnailCard = ({ font, promo, onAdd, onView }: any) => {
   const basePrice = font.price || 25;
   const displayPrice = promo ? (basePrice * (1 - (promo.discount_percent / 100))).toFixed(0) : basePrice;
@@ -70,20 +70,24 @@ const ThumbnailCard = ({ font, promo, onAdd, onView }: any) => {
       </div>
       <div className="p-6 text-center grow flex flex-col justify-between gap-4">
         <div>
-          {/* Menggunakan capitalize & font-display sesuai Home */}
           <h3 className="text-2xl font-display leading-tight capitalize truncate">{font.name}</h3>
-          <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-1">
+          
+          {/* Divider & Darker Style Info */}
+          <hr className="w-full border-vintage-ink/20 my-4" />
+          <p className="text-[10px] font-bold text-vintage-ink/70 uppercase tracking-widest">
             {Array.isArray(font.font_files) ? font.font_files.length : 1} Styles Available
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2">
            <button 
             onClick={(e) => { e.stopPropagation(); onAdd(); }}
-            className="vintage-btn py-2 text-[10px] flex items-center justify-center gap-1"
+            className="vintage-btn py-2 text-[10px] flex items-center justify-center gap-1 group/btn"
           >
-            <Plus size={14} /> ADD
+            <Plus size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> ADD
           </button>
-          <button className="vintage-btn btn-reverse py-2 text-[10px]">VIEW</button>
+          <button className="vintage-btn btn-reverse py-2 text-[10px] flex items-center justify-center gap-1 group/btn">
+            <Eye size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> VIEW
+          </button>
         </div>
       </div>
     </motion.div>
@@ -91,7 +95,6 @@ const ThumbnailCard = ({ font, promo, onAdd, onView }: any) => {
 };
 
 // --- COMPONENT: CHARACTER CARD (4x3 Style / Text View) ---
-// Samakan dengan FontCard (Recent Fonts) di Home
 const CharacterCard = ({ font, promo, onAdd, onView }: any) => {
   const primaryIdx = font.metadata?.primary_font_index || 0;
   const basePrice = font.price || 25;
@@ -106,39 +109,80 @@ const CharacterCard = ({ font, promo, onAdd, onView }: any) => {
       onClick={onView}
       className="vintage-card flex flex-col items-center text-center h-full p-6 pt-10 cursor-pointer group bg-transparent"
     >
-      {/* Header Samakan: text-[15px] capitalize tracking-widest font-bold */}
+      {/* 1. Header: Nama Font */}
       <div className="h-6 flex items-center justify-center shrink-0 mb-4">
         <p className="text-[15px] capitalize tracking-widest text-vintage-accent font-bold">{font.name}</p>
       </div>
-      <hr className="w-full border-vintage-ink mb-4" />
-      <div className="w-full overflow-hidden shrink-0">
-        <h3 className="text-4xl md:text-6xl leading-[1.6] break-all tracking-tight py-4" style={{ fontFamily: `"${font.name}-${primaryIdx}"` }}>
+      
+      <hr className="w-full border-vintage-ink mb-4 shrink-0" />
+      
+      {/* 2. Tengah Atas: Preview Huruf A-Z */}
+      <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 shrink-0">
+        <h3 
+          className="text-4xl md:text-6xl leading-[1.6] break-all tracking-tight py-6"
+          style={{ 
+            fontFamily: `"${font.name}-${primaryIdx}"`,
+            fontVariantLigatures: "none" 
+          }} 
+        >
           ABCDEFGHIJKLMNOPQRSTUVWXYZ
         </h3>
       </div>
-      <hr className="w-full border-vintage-ink/20 my-0" />
-      <div className="w-full overflow-hidden flex items-center justify-center py-2 md:py-4">
-        <h3 className="text-4xl md:text-6xl leading-none" style={{ fontFamily: `"${font.name}-${primaryIdx}"` }}>
+      
+      <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
+      
+      {/* 3. Tengah Bawah: Angka 0-9 (Fix Terpotong dengan transform) */}
+      <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 flex items-center justify-center shrink-0 py-2 md:py-4">
+        <h3 
+          className="text-4xl md:text-6xl leading-none break-all tracking-tight text-vintage-ink"
+          style={{ 
+            fontFamily: `"${font.name}-${primaryIdx}"`,
+            transform: 'translateY(0.05em)' 
+          }}
+        >
           0123456789
         </h3>
       </div>
-      <hr className="w-full border-vintage-ink/20 my-0" />
-      <div className="w-full overflow-hidden py-4">
-        <h3 className="text-3xl md:text-5xl leading-[1.6] break-all tracking-tight" style={{ fontFamily: `"${font.name}-${primaryIdx}"` }}>
+
+      <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
+
+      {/* 4. Lowercase a-z */}
+      <div className="w-full px-2 overflow-hidden bg-vintage-ink/2 flex items-center justify-center shrink-0">
+        <h3 
+          className="text-3xl md:text-5xl leading-[1.6] break-all tracking-tight py-4 text-vintage-ink"
+          style={{ 
+            fontFamily: `"${font.name}-${primaryIdx}"`,
+            fontVariantLigatures: "none" 
+          }} 
+        >
           abcdefghijklmnopqrstuvwxyz
         </h3>
       </div>
-      <hr className="w-full border-vintage-ink/20 my-0" />
+
+      <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
       <SlantedSpacer />
-      <hr className="w-full border-vintage-ink/20 my-0" />
+      <hr className="w-full border-vintage-ink/20 shrink-0 my-0" />
+
+      {/* 5. Footer: Harga & Buttons */}
       <div className="mt-8 w-full flex flex-col gap-3">
-        {/* Harga Samakan: text-base md:text-lg font-bold tracking-tight */}
-        <div className="text-base md:text-lg font-bold text-vintage-ink tracking-tight flex items-center justify-center">
+        <div className="text-base md:text-lg font-bold text-vintage-ink tracking-tight flex items-center justify-center mb-2">
           <span className="opacity-60 mr-1.5">Starting at</span>
           <span className="text-vintage-accent mr-0.5">$</span>{displayPrice}
           {promo && <span className="ml-2 text-xs line-through opacity-30 decoration-vintage-accent">${basePrice}</span>}
         </div>
-        <button className="vintage-btn py-3 text-[12px] w-full">VIEW FONTS</button>
+        
+        <button 
+          onClick={(e) => { e.stopPropagation(); onAdd(); }} 
+          className="vintage-btn py-3 text-[12px] w-full flex items-center justify-center gap-2 group/btn"
+        >
+          <Plus size={16} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
+          ADD TO CART
+        </button>
+
+        <button className="vintage-btn btn-reverse py-3 text-[12px] w-full flex items-center justify-center gap-2 group/btn">
+          <Eye size={16} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
+          VIEW FONTS
+        </button>
       </div>
     </motion.div>
   );
@@ -244,19 +288,30 @@ const Fonts: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 px-6 py-4 bg-transparent">
-              <span className="text-[10px] font-black uppercase tracking-widest mr-2">View:</span>
+            {/* View Toggle - Enhanced Active & Hover Effects */}
+            <div className="flex items-center gap-3 px-6 py-4 bg-transparent">
+              <span className="text-[10px] font-black uppercase tracking-widest mr-1 opacity-50">View:</span>
               <button 
                 onClick={() => setViewMode('thumbnail')}
-                className={`p-2 border border-vintage-ink transition-all ${viewMode === 'thumbnail' ? 'bg-vintage-ink text-vintage-paper' : 'bg-transparent text-vintage-ink hover:bg-vintage-ink/10'}`}
+                className={`p-2.5 border transition-all duration-300 group ${
+                  viewMode === 'thumbnail' 
+                  ? 'bg-vintage-ink! text-vintage-background! border-vintage-ink' 
+                  : 'bg-transparent border-vintage-ink/20 text-vintage-ink/40 hover:text-vintage-ink'
+                }`}
+                title="Thumbnail View"
               >
-                <LayoutGrid size={18} />
+                <LayoutGrid size={18} className={`transition-transform duration-500 ${viewMode === 'thumbnail' ? 'opacity-100' : 'opacity-40 group-hover:rotate-90 group-hover:opacity-100'}`} />
               </button>
               <button 
                 onClick={() => setViewMode('character')}
-                className={`p-2 border border-vintage-ink transition-all ${viewMode === 'character' ? 'bg-vintage-ink text-vintage-paper' : 'bg-transparent text-vintage-ink hover:bg-vintage-ink/10'}`}
+                className={`p-2.5 border transition-all duration-300 group ${
+                  viewMode === 'character' 
+                  ? 'bg-vintage-ink! text-vintage-background! border-vintage-ink' 
+                  : 'bg-transparent border-vintage-ink/20 text-vintage-ink/40 hover:text-vintage-ink'
+                }`}
+                title="Character Preview"
               >
-                <Type size={18} />
+                <Type size={18} className={`transition-transform duration-500 ${viewMode === 'character' ? 'opacity-100' : 'opacity-40 group-hover:rotate-90 group-hover:opacity-100'}`} />
               </button>
             </div>
           </div>
