@@ -276,15 +276,19 @@ const Fonts: React.FC = () => {
             <div className="flex-1 flex items-center gap-4 px-6 py-4 border-b md:border-b-0 md:border-r border-vintage-ink overflow-x-auto custom-scrollbar">
               <span className="text-[10px] font-black uppercase tracking-widest shrink-0">Offers:</span>
               <div className="flex gap-2">
-                {promos.filter(p => new Date() >= new Date(p.start_date) && new Date() <= new Date(p.end_date)).map(promo => (
-                  <button
-                    key={promo.id}
-                    onClick={() => { setActivePromoId(activePromoId === promo.id ? null : promo.id); setCurrentPage(1); }}
-                    className={`px-3 py-1 border border-vintage-ink text-[10px] font-bold uppercase transition-all whitespace-nowrap ${activePromoId === promo.id ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
-                  >
-                    {promo.name} <span className="text-vintage-accent">-{promo.discount_percent}%</span>
-                  </button>
-                ))}
+                {promos.filter(p => new Date() >= new Date(p.start_date) && new Date() <= new Date(p.end_date)).length > 0 ? (
+                  promos.filter(p => new Date() >= new Date(p.start_date) && new Date() <= new Date(p.end_date)).map(promo => (
+                    <button
+                      key={promo.id}
+                      onClick={() => { setActivePromoId(activePromoId === promo.id ? null : promo.id); setCurrentPage(1); }}
+                      className={`px-3 py-1 border border-vintage-ink text-[10px] font-bold uppercase transition-all whitespace-nowrap ${activePromoId === promo.id ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
+                    >
+                      {promo.name} <span className="text-vintage-accent">-{promo.discount_percent}%</span>
+                    </button>
+                  ))
+                ) : (
+                  <span className="text-[9px] font-bold uppercase tracking-widest opacity-25 italic py-1">No active offers available</span>
+                )}
               </div>
             </div>
 
