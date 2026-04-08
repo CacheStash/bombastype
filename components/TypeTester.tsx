@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FontConfig } from '../types';
 import opentype from 'opentype.js';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -63,26 +63,21 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`) 
   ]);
 
-  const rowsPerPage = mapGridSize === 10 ? 3 : mapGridSize === 20 ? 5 : 7;
+  const rowsPerPage = 10; 
   const glyphsPerPage = mapGridSize * rowsPerPage;
 
-  // --- LOGIC: FONT LOADING (FUNCTIONAL PRESERVATION) ---
   useEffect(() => {
     const files = Array.isArray(config.font_files) ? config.font_files : [];
-    if (files.length === 0) return;
     const configAny = config as any;
     const version = new Date(configAny.updated_at || configAny.created_at || Date.now()).getTime();
-
     files.forEach((file, index) => {
-      if (detectedStyleNames[index]) return;
       const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=${version}`;
       opentype.load(url, (err, font) => {
         if (!err && font) {
           const names = font.names as any;
           const isVariable = font.tables.fvar?.axes?.length > 0;
           const detectedName = names.preferredSubfamily?.en || names.fontSubfamily?.en;
-          const styleName = isVariable ? "Variable" : detectedName;
-          if (styleName) setDetectedStyleNames(prev => ({ ...prev, [index]: styleName }));
+          setDetectedStyleNames(prev => ({ ...prev, [index]: isVariable ? "Variable" : detectedName }));
         }
       });
     });
@@ -90,121 +85,77 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   useEffect(() => {
     let targetFile = '';
-    const files = Array.isArray(config.font_files) && config.font_files.length > 0 
-      ? config.font_files : (config.file_url ? [config.file_url] : []);
-
-    if (files[activeStyleIndex]) {
-       const f = files[activeStyleIndex];
-       const configAny = config as any;
-       const version = new Date(configAny.updated_at || configAny.created_at || Date.now()).getTime();
-       targetFile = f.startsWith('http') || f.startsWith('/') ? f : `/api/fonts/${f}?v=${version}`;
-    }
-    if (!targetFile) return;
+    const files = Array.isArray(config.font_files) ? config.font_files : (config.file_url ? [config.file_url] : []);
+    if (!files[activeStyleIndex]) return;
+    const f = files[activeStyleIndex];
+    const configAny = config as any;
+    const version = new Date(configAny.updated_at || configAny.created_at || Date.now()).getTime();
+    targetFile = f.startsWith('http') || f.startsWith('/') ? f : `/api/fonts/${f}?v=${version}`;
 
     setIsLoadingGlyphs(true);
     opentype.load(targetFile, (err, font) => {
       setIsLoadingGlyphs(false);
       if (err || !font) return;
-
       const glyphs = [];
-      for (let i = 0; i < font.glyphs.length && i < 2000; i++) { 
+      for (let i = 0; i < font.glyphs.length && i < 2000; i++) {
         const glyph = font.glyphs.get(i);
-        if (glyph.unicode) glyphs.push({ char: String.fromCharCode(glyph.unicode), index: i, unicode: glyph.unicode });
+        if (glyph.unicode) glyphs.push({ char: String.fromCharCode(glyph.unicode), index: i });
       }
       setDetectedGlyphs(glyphs);
-      setFilteredGlyphs(glyphs); 
-
       if (font.tables.fvar?.axes?.length > 0) {
-          const autoAxes = font.tables.fvar.axes.map((axis: any) => ({
-              tag: axis.tag,
-              name: axis.name?.en || axis.tag,
-              min: axis.minValue, max: axis.maxValue, default: axis.defaultValue
-          }));
-          setDetectedAxes(autoAxes);
-          const vals: Record<string, number> = {};
-          autoAxes.forEach((axis: any) => vals[axis.tag] = axis.default);
-          setAxesValues(prev => ({ ...prev, ...vals }));
-      } else {
-          setDetectedAxes([]);
-      }
-
+        const autoAxes = font.tables.fvar.axes.map((axis: any) => ({
+          tag: axis.tag, name: axis.name?.en || axis.tag, min: axis.minValue, max: axis.maxValue, default: axis.defaultValue
+        }));
+        setDetectedAxes(autoAxes);
+        const vals: Record<string, number> = {};
+        autoAxes.forEach((a: any) => vals[a.tag] = a.default);
+        setAxesValues(prev => ({ ...prev, ...vals }));
+      } else { setDetectedAxes([]); }
       const foundTags = new Set<string>();
       if (font.tables.gsub?.features) {
-        font.tables.gsub.features.forEach((f: any) => {
-           if (f.tag && ALLOWED_TAGS.has(f.tag)) foundTags.add(f.tag);
-        });
+        font.tables.gsub.features.forEach((feat: any) => { if (feat.tag && ALLOWED_TAGS.has(feat.tag)) foundTags.add(feat.tag); });
       }
-      setDynamicFeatures(Array.from(foundTags).sort().map(tag => ({
-        tag, name: FEATURE_NAMES[tag] || (tag.startsWith('ss') ? `Stylistic Set ${parseInt(tag.slice(2))}` : tag.toUpperCase())
-      })));
+      setDynamicFeatures(Array.from(foundTags).sort().map(tag => ({ tag, name: tag.startsWith('ss') ? `Set ${tag.slice(2)}` : tag.toUpperCase() })));
       setActiveFeatures({});
     });
   }, [config, activeStyleIndex]);
 
-  useEffect(() => { setFilteredGlyphs(detectedGlyphs); }, [activeFeatures, detectedGlyphs]);
+  useEffect(() => { setFilteredGlyphs(detectedGlyphs); }, [detectedGlyphs]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024 && viewMode === 'glyphs') setViewMode('type');
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [viewMode]);
-
-  const currentFontFamily = `"${config.name}-${activeStyleIndex}"`;
-  const fontFeatureSettings = Object.entries(activeFeatures).map(([t, on]) => `"${t}" ${on ? 'on' : 'off'}`).join(', ') || 'normal';
-  const fontVariationSettings = Object.entries(axesValues).map(([t, v]) => `"${t}" ${v}`).join(', ');
-
-  const commonFontStyle = { fontFamily: currentFontFamily, fontVariationSettings, fontFeatureSettings };
-const hasAxes = detectedAxes.length > 0;
-  const hasFeatures = dynamicFeatures.length > 0
+  const hasAxes = detectedAxes.length > 0;
+  const hasFeatures = dynamicFeatures.length > 0;
+  const commonFontStyle = { 
+    fontFamily: `"${config.name}-${activeStyleIndex}"`, 
+    fontVariationSettings: Object.entries(axesValues).map(([t, v]) => `"${t}" ${v}`).join(', '),
+    fontFeatureSettings: Object.entries(activeFeatures).map(([t, on]) => `"${t}" ${on ? 'on' : 'off'}`).join(', ') || 'normal'
+  };
 
   return (
     <div className="w-full bg-transparent text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper">
-      <div className="border border-vintage-ink/20 overflow-hidden relative z-10">
+      <div className="border border-vintage-ink/20 overflow-visible relative z-40 bg-transparent">
         
-        {/* HEADER TOOLBAR */}
-        <div className="flex flex-col lg:flex-row items-stretch border-b border-vintage-ink/20 bg-vintage-paper/50 backdrop-blur-md">
-          
-          {/* 1. View Toggle */}
+        <div className="flex flex-col lg:flex-row items-stretch border-b border-vintage-ink/20 bg-vintage-paper/50 backdrop-blur-md relative z-50">
           <div className="hidden lg:flex items-center px-6 py-4 border-r border-vintage-ink/20">
-            <button 
-              onClick={() => setViewMode(viewMode === 'type' ? 'glyphs' : 'type')} 
-              className="vintage-btn py-1.5 px-4 text-[9px] flex items-center gap-2 group/btn"
-            >
+            <button onClick={() => setViewMode(viewMode === 'type' ? 'glyphs' : 'type')} className="vintage-btn py-1.5 px-4 text-[9px] flex items-center gap-2 group/btn">
               {viewMode === 'type' ? <Grid size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> : <Keyboard size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" />}
               <span className="font-bold tracking-[0.2em]">{viewMode === 'type' ? 'GLYPH MAP' : 'TYPE TESTER'}</span>
             </button>
           </div>
 
-          {/* 2. Style Dropdown */}
           <div className="flex-1 flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 relative group">
             <div className="w-full relative">
               <span className="absolute -top-3.5 left-0 text-[8px] font-bold text-vintage-accent uppercase tracking-[0.3em]">Font Style</span>
-              <button 
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full flex items-center justify-between text-[13px] font-bold uppercase tracking-tighter pt-1.5 border-b border-transparent hover:border-vintage-ink/30 transition-colors"
-              >
+              <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="w-full flex items-center justify-between text-[13px] font-bold uppercase tracking-tighter pt-1.5 border-b border-transparent hover:border-vintage-ink/30 transition-colors relative z-10">
                 <span className="truncate">{detectedStyleNames[activeStyleIndex] || `STYLE ${String(activeStyleIndex + 1).padStart(2, '0')}`}</span>
                 <ChevronDown size={14} className={`transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-              
               <AnimatePresence>
                 {isDropdownOpen && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                      className="absolute left-0 top-full mt-2 w-full bg-vintage-paper border border-vintage-ink/20 z-50 shadow-2xl overflow-hidden"
-                    >
+                    <div className="fixed inset-0 z-60" onClick={() => setIsDropdownOpen(false)} />
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute left-0 top-full mt-1 w-full bg-vintage-paper border border-vintage-ink/20 z-70 shadow-2xl overflow-hidden">
                       {Array.isArray(config.font_files) && config.font_files.map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => { setActiveStyleIndex(i); setIsDropdownOpen(false); }}
-                          className={`w-full text-left px-6 py-4 text-[10px] font-bold uppercase border-b border-vintage-ink/5 last:border-0 transition-colors ${activeStyleIndex === i ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
-                        >
-                          {detectedStyleNames[i] || `STYLE ${String(i + 1).padStart(2, '0')}`}
-                        </button>
+                        <button key={i} onClick={() => { setActiveStyleIndex(i); setIsDropdownOpen(false); }} className={`w-full text-left px-6 py-4 text-[10px] font-bold uppercase border-b border-vintage-ink/5 last:border-0 transition-colors ${activeStyleIndex === i ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}>{detectedStyleNames[i] || `STYLE ${String(i + 1).padStart(2, '0')}`}</button>
                       ))}
                     </motion.div>
                   </>
@@ -213,32 +164,22 @@ const hasAxes = detectedAxes.length > 0;
             </div>
           </div>
 
-          {/* 3. Size / Map Grid Selector */}
-          <div className="flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 min-w-35">
+          <div className="flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 min-w-35 relative">
             <div className="w-full relative">
               <span className="absolute -top-3.5 left-0 text-[8px] font-bold text-vintage-accent uppercase tracking-[0.3em]">{viewMode === 'type' ? 'Size' : 'Grid'}</span>
-              
               {viewMode === 'type' ? (
                 <>
-                  <button 
-                    onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)}
-                    className="w-full flex items-center justify-between text-[13px] font-bold pt-1.5 border-b border-transparent hover:border-vintage-ink/30 transition-colors"
-                  >
+                  <button onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)} className="w-full flex items-center justify-between text-[13px] font-bold pt-1.5 border-b border-transparent hover:border-vintage-ink/30 transition-colors relative z-10">
                     <span>{fontSize} PX</span>
                     <ChevronDown size={14} className={`transition-transform duration-300 ${isSizeDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
                   <AnimatePresence>
                     {isSizeDropdownOpen && (
                       <>
-                        <div className="fixed inset-0 z-40" onClick={() => setIsSizeDropdownOpen(false)} />
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                          className="absolute left-0 top-full mt-2 w-full bg-vintage-paper border border-vintage-ink/20 z-50 shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
+                        <div className="fixed inset-0 z-60" onClick={() => setIsSizeDropdownOpen(false)} />
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute left-0 top-full mt-1 w-full bg-vintage-paper border border-vintage-ink/20 z-70 shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
                           {PRESET_SIZES.map((s) => (
-                            <button key={s} onClick={() => { setFontSize(s); setIsSizeDropdownOpen(false); }}
-                              className={`w-full text-left px-6 py-3 text-[10px] font-bold transition-colors ${fontSize === s ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
-                            >
-                              {s} PX
-                            </button>
+                            <button key={s} onClick={() => { setFontSize(s); setIsSizeDropdownOpen(false); }} className={`w-full text-left px-6 py-3 text-[10px] font-bold transition-colors ${fontSize === s ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}>{s} PX</button>
                           ))}
                         </motion.div>
                       </>
@@ -248,49 +189,35 @@ const hasAxes = detectedAxes.length > 0;
               ) : (
                 <div className="flex gap-1 pt-1.5">
                   {[10, 20, 30].map(s => (
-                    <button key={s} onClick={() => { setMapGridSize(s); setMapPage(0); }} className={`flex-1 py-1 text-[10px] font-bold border border-vintage-ink/20 ${mapGridSize === s ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' : 'hover:bg-vintage-ink/5'}`}>{s}</button>
+                    <button key={s} onClick={() => { setMapGridSize(s); }} className={`flex-1 py-1 text-[10px] font-bold border border-vintage-ink/20 ${mapGridSize === s ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' : 'hover:bg-vintage-ink/5'}`}>{s}</button>
                   ))}
                 </div>
               )}
             </div>
           </div>
 
-          {/* 4. Align / Pagination Controls */}
           <div className="flex items-center px-6 py-4 gap-4">
-             {viewMode === 'type' ? (
+             {viewMode === 'type' && (
                 <div className="flex border border-vintage-ink/20 rounded-sm overflow-hidden">
                   {(['left', 'center', 'right'] as const).map(a => (
-                    <button key={a} onClick={() => setAlign(a)} className={`p-2 transition-colors ${align === a ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}>
-                      {a === 'left' ? <AlignLeft size={14}/> : a === 'center' ? <AlignCenter size={14}/> : <AlignRight size={14}/>}
+                    <button key={a} onClick={() => setAlign(a)} className={`p-2 transition-all duration-300 group ${align === a ? 'bg-vintage-ink! text-vintage-background! border-vintage-ink' : 'bg-transparent text-vintage-ink/40 hover:text-vintage-ink'}`}>
+                      {a === 'left' ? <AlignLeft size={14} className="transition-transform duration-500 group-hover:rotate-90" /> : a === 'center' ? <AlignCenter size={14} className="transition-transform duration-500 group-hover:rotate-90" /> : <AlignRight size={14} className="transition-transform duration-500 group-hover:rotate-90" />}
                     </button>
                   ))}
-                </div>
-             ) : (
-                <div className="flex gap-1">
-                   <button onClick={() => setMapPage(Math.max(0, mapPage - 1))} disabled={mapPage === 0} className="p-2 border border-vintage-ink/20 disabled:opacity-20 hover:bg-vintage-ink hover:text-vintage-paper transition-all"><ChevronLeft size={16}/></button>
-                   <button onClick={() => setMapPage(mapPage + 1)} disabled={(mapPage + 1) * glyphsPerPage >= filteredGlyphs.length} className="p-2 border border-vintage-ink/20 disabled:opacity-20 hover:bg-vintage-ink hover:text-vintage-paper transition-all"><ChevronRight size={16}/></button>
                 </div>
              )}
           </div>
         </div>
 
-        {/* MAIN TESTER AREA */}
-        <div className="min-h-100 relative bg-vintage-ink/2">
+        <div className="min-h-100 relative bg-transparent">
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
-              <motion.textarea 
-                key="type" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                value={text} onChange={(e) => setText(e.target.value)} 
-                className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20" 
-                style={{ ...commonFontStyle, fontSize: `${fontSize}px`, textAlign: align, lineHeight: lineHeight, letterSpacing: `${letterSpacing}em` }} 
-                spellCheck={false} 
-              />
+              <motion.textarea key="type" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} value={text} onChange={(e) => setText(e.target.value)} className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20" style={{ ...commonFontStyle, fontSize: `${fontSize}px`, textAlign: align, lineHeight: lineHeight, letterSpacing: `${letterSpacing}em` }} spellCheck={false} />
             ) : (
-              <motion.div key="glyphs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="w-full grid content-start" style={{ gridTemplateColumns: `repeat(${mapGridSize}, minmax(0, 1fr))` }}>
-                {filteredGlyphs.slice(mapPage * glyphsPerPage, (mapPage + 1) * glyphsPerPage).map((item, idx) => (
+              <motion.div key="glyphs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full grid content-start" style={{ gridTemplateColumns: `repeat(10, minmax(0, 1fr))` }}>
+                {filteredGlyphs.map((item, idx) => (
                   <div key={idx} className="aspect-square flex items-center justify-center border-b border-r border-vintage-ink/5 hover:bg-vintage-ink hover:text-vintage-paper transition-all cursor-default">
-                    <span style={{ ...commonFontStyle, fontSize: mapGridSize === 10 ? '60px' : mapGridSize === 20 ? '32px' : '20px' }}>{item.char}</span>
+                    <span style={{ ...commonFontStyle, fontSize: '32px' }}>{item.char}</span>
                   </div>
                 ))}
               </motion.div>
@@ -298,15 +225,12 @@ const hasAxes = detectedAxes.length > 0;
           </AnimatePresence>
         </div>
 
-        {/* SETTINGS PANEL (BOTTOM) */}
-        <div className="bg-vintage-paper border-t border-vintage-ink/20">
-          
-          {/* Leading & Tracking Controls */}
+        <div className="bg-vintage-paper border-t border-vintage-ink/20 relative z-30">
           <div className="grid grid-cols-1 md:grid-cols-2 border-b border-vintage-ink/10">
             <div className="px-8 py-6 flex items-center gap-6 border-b md:border-b-0 md:border-r border-vintage-ink/10">
               <label className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent w-20 shrink-0">Leading</label>
               <input type="range" min="0.8" max="2.0" step="0.1" value={lineHeight} onChange={(e) => setLineHeight(parseFloat(e.target.value))} className="grow accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer" />
-              <span className="text-[11px] font-bold w-10 text-right">{lineHeight.toFixed(1)}</span>
+              <span className="text-[10px] font-bold w-10 text-right">{lineHeight.toFixed(1)}</span>
             </div>
             <div className="px-8 py-6 flex items-center gap-6">
               <label className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent w-20 shrink-0">Tracking</label>
@@ -314,49 +238,34 @@ const hasAxes = detectedAxes.length > 0;
               <span className="text-[11px] font-bold w-10 text-right">{letterSpacing.toFixed(2)}</span>
             </div>
           </div>
-
-          {/* Variable Font Axes & Features */}
           {(hasAxes || hasFeatures) && (
             <div className="grid grid-cols-1 lg:grid-cols-12">
-              
-              {/* Axes Panel */}
-              <div className={`lg:col-span-8 p-8 border-b lg:border-b-0 lg:border-r border-vintage-ink/10 ${!hasAxes ? 'hidden' : ''}`}>
-                <h4 className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent/60 mb-8 border-b border-vintage-ink/5 pb-2">Variation Axes</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                  {detectedAxes.map((axis: any) => (
-                    <div key={axis.tag} className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-bold uppercase tracking-widest">{axis.name}</label>
-                        <span className="text-[10px] font-bold opacity-40">{Math.round(axesValues[axis.tag] ?? axis.default)}</span>
+              {hasAxes && (
+                <div className="lg:col-span-8 p-8 border-b lg:border-b-0 lg:border-r border-vintage-ink/10">
+                  <h4 className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent/60 mb-8 border-b border-vintage-ink/5 pb-2">Variation Axes</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    {detectedAxes.map((axis: any) => (
+                      <div key={axis.tag} className="space-y-3">
+                        <div className="flex justify-between items-center"><label className="text-[10px] font-bold uppercase tracking-widest">{axis.name}</label><span className="text-[10px] font-bold opacity-40">{Math.round(axesValues[axis.tag] ?? axis.default)}</span></div>
+                        <input type="range" min={axis.min} max={axis.max} step={1} value={axesValues[axis.tag] ?? axis.default} onChange={(e) => setAxesValues(p => ({...p, [axis.tag]: parseFloat(e.target.value)}))} className="w-full accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer" />
                       </div>
-                      <input type="range" min={axis.min} max={axis.max} step={1} value={axesValues[axis.tag] ?? axis.default} onChange={(e) => setAxesValues(p => ({...p, [axis.tag]: parseFloat(e.target.value)}))} className="w-full accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer" />
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* OT Features Panel */}
-              <div className={`${hasAxes ? 'lg:col-span-4' : 'lg:col-span-12'} p-8`}>
-                <h4 className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent/60 mb-8 border-b border-vintage-ink/5 pb-2">OT Features</h4>
-                <div className="flex flex-wrap gap-2 max-h-75 overflow-y-auto custom-scrollbar pr-4">
-                  {dynamicFeatures.length > 0 ? dynamicFeatures.map((feat) => (
-                    <button 
-                      key={feat.tag} 
-                      onClick={() => setActiveFeatures(prev => ({ ...prev, [feat.tag]: !prev[feat.tag] }))}
-                      className={`px-3 py-1.5 text-[9px] font-bold uppercase border transition-all duration-300 rounded-sm ${activeFeatures[feat.tag] ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' : 'border-vintage-ink/10 text-vintage-ink/40 hover:border-vintage-ink/30 hover:text-vintage-ink'}`}
-                    >
-                      {feat.name}
-                    </button>
-                  )) : (
-                    <div className="text-[10px] italic opacity-30 text-center w-full py-4 uppercase tracking-widest">No Features Available</div>
-                  )}
+              )}
+              {hasFeatures && (
+                <div className={`${hasAxes ? 'lg:col-span-4' : 'lg:col-span-12'} p-8`}>
+                  <h4 className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent/60 mb-8 border-b border-vintage-ink/5 pb-2">OT Features</h4>
+                  <div className="flex flex-wrap gap-2 max-h-75 overflow-y-auto custom-scrollbar pr-4">
+                    {dynamicFeatures.map((feat) => (
+                      <button key={feat.tag} onClick={() => setActiveFeatures(prev => ({ ...prev, [feat.tag]: !prev[feat.tag] }))} className={`px-3 py-1.5 text-[9px] font-bold uppercase border transition-all duration-300 rounded-sm ${activeFeatures[feat.tag] ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' : 'border-vintage-ink/10 text-vintage-ink/40 hover:border-vintage-ink/30 hover:text-vintage-ink'}`}>{feat.name}</button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-
+              )}
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

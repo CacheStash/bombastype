@@ -24,12 +24,9 @@ const FontDetail: React.FC = () => {
   const { openConfigurator } = useCart(); 
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
+  useEffect(() => { fetchData(); }, [id]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -37,7 +34,6 @@ const FontDetail: React.FC = () => {
       supabase.from('fonts').select('*').eq('id', id).single(),
       supabase.from('promotions').select('*').eq('is_active', true)
     ]);
-    
     if (fontRes.data) setFont(fontRes.data);
     if (promosRes.data) setPromos(promosRes.data);
     setLoading(false);
@@ -65,8 +61,8 @@ const FontDetail: React.FC = () => {
 
   // --- SLIDER LOGIC: Handling Odd Numbers by Looping first image ---
   const displayImages = [...fontPreviews];
-  if (displayImages.length % 2 !== 0 && displayImages.length > 1) {
-    displayImages.push(fontPreviews[0]); // Tempel image pertama di akhir jika ganjil
+  if (displayImages.length > 1 && displayImages.length % 2 !== 0) {
+    displayImages.push(fontPreviews[0]); 
   }
   const totalSlides = Math.ceil(displayImages.length / 2);
 
@@ -76,23 +72,21 @@ const FontDetail: React.FC = () => {
   return (
     <div className="relative z-10 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper min-h-screen bg-transparent overflow-x-hidden pb-24">
       
-      {/* 1. HEADER SECTION (Menggunakan setingan manual Anda) */}
+      {/* 1. HEADER SECTION (About.tsx Style) */}
       <section className="text-center max-w-4xl mx-auto relative z-10 px-6 pt-16 md:pt-24 mb-16">
-        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
+        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.4em] font-bold text-vintage-accent mb-4">
           Typeface Archival Specimen
         </motion.p>
-        
         <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight capitalize">
           {font.name}
         </motion.h2>
-        
         <motion.p className="text-base md:text-lg lg:text-xl italic text-vintage-ink/60 leading-relaxed">
           Consisting of {styleCount} unique styles
         </motion.p>
       </section>
 
       {/* 2. TOP SLIDER SECTION */}
-      <section className="relative w-full border-y border-vintage-ink/20 group bg-vintage-paper/50 mb-20">
+      <section className="relative w-full border-y border-vintage-ink/20 group bg-vintage-paper/50 mb-24">
         <div className="flex overflow-hidden aspect-video md:aspect-21/8">
           <AnimatePresence mode="wait">
             <motion.div 
@@ -118,7 +112,6 @@ const FontDetail: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* Full Height Transparent Buttons (Hover State Only) */}
         {totalSlides > 1 && (
           <>
             <button 
@@ -136,8 +129,8 @@ const FontDetail: React.FC = () => {
           </>
         )}
 
-        {/* Bullets Centered (Fixing position to page center) */}
-        <div className="absolute -bottom-10 left-0 w-full flex justify-center gap-4 z-20">
+        {/* Bullets Centered in page */}
+        <div className="absolute -bottom-12 left-0 right-0 flex justify-center gap-4 z-20">
           {Array.from({ length: totalSlides }).map((_, i) => (
             <button key={i} onClick={() => setCurrentSlide(i)} className="p-2 group/dot">
               <div className={`h-1 transition-all duration-500 ${currentSlide === i ? 'w-12 bg-vintage-accent' : 'w-2 bg-vintage-ink/20 group-hover/dot:bg-vintage-ink/40'}`} />
@@ -146,8 +139,8 @@ const FontDetail: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. TYPE TESTER SECTION (Fixing Dropdown and Borders) */}
-      <section className="w-full border-y border-vintage-ink/20 bg-transparent relative z-40">
+      {/* 3. TYPE TESTER SECTION */}
+      <section className="w-full mt-24 border-y border-vintage-ink/20 bg-transparent relative z-40">
         <div className="max-w-full">
           <TypeTester 
             config={{
@@ -160,15 +153,12 @@ const FontDetail: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. DESCRIPTION & TAGS SECTION (FAQ Style Center) */}
-      <section className="max-w-4xl mx-auto px-6 py-24 text-center">
+      {/* 4. DESCRIPTION & TAGS SECTION (FAQ style center) */}
+      <section className="max-w-4xl mx-auto px-6 py-24 text-center relative z-10">
         <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-10">Background & Characteristics</h4>
-        
-        {/* Match FAQ Text Style: text-lg md:text-xl */}
         <p className="text-lg md:text-xl text-vintage-ink/80 leading-relaxed italic font-serif mb-12">
           {font.description}
         </p>
-        
         <div className="flex flex-wrap justify-center gap-2">
           {tags.map((tag: string) => (
             <span key={tag} className="text-[10px] font-bold uppercase tracking-widest px-4 py-2 border border-vintage-ink/10 rounded-full opacity-60">
@@ -179,7 +169,7 @@ const FontDetail: React.FC = () => {
       </section>
 
       {/* 5. INVESTMENT & ACTION SECTION */}
-      <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center lg:items-end gap-12">
+      <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center lg:items-end gap-12 relative z-10">
         <div className="flex flex-col items-center lg:items-start">
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-4 italic">Pricing Information</span>
           <div className="flex items-baseline gap-6">
@@ -221,7 +211,6 @@ const FontDetail: React.FC = () => {
           </div>
         </div>
       </section>
-
     </div>
   );
 };
