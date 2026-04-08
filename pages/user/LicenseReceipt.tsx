@@ -106,7 +106,7 @@ const LicenseReceipt = () => {
 
         {/* HEADER */}
         <header className="text-center border-b border-vintage-ink/20 pb-10 mb-12 relative z-10">
-          <h1 className="text-5xl md:text-6xl font-display italic leading-none mb-2">Subqi Studio</h1>
+          <h1 className="text-5xl md:text-6xl font-display italic leading-none mb-2">Bombastype</h1>
           <p className="text-[10px] font-bold tracking-[0.5em] uppercase text-vintage-accent">Official License Certificate</p>
         </header>
 
@@ -198,14 +198,14 @@ const LicenseReceipt = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-[10px] leading-relaxed italic opacity-60 text-center px-4">
             <p>1. Unauthorized distribution, reselling, or sub-licensing of font software to third parties is strictly prohibited.</p>
             <p>2. Modification, adaptation, or decompilation of the original font software is forbidden under copyright law.</p>
-            <p>3. Intellectual property and font software remain the exclusive property of Subqi Studio at all times.</p>
+            <p>3. Intellectual property and font software remain the exclusive property of Bombastype at all times.</p>
           </div>
         </div>
 
         {/* FOOTER SIGNATURE */}
         <footer className="mt-20 text-center relative z-10">
           <div className="inline-block border-t border-vintage-ink px-12 pt-4">
-            <p className="font-script text-3xl mb-1">Subqi Studio</p>
+            <p className="font-script text-3xl mb-1">Bombastype</p>
             <p className="text-[9px] font-bold uppercase tracking-[0.5em] opacity-40">Archival Registry Division</p>
           </div>
         </footer>

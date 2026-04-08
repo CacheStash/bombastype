@@ -574,7 +574,7 @@ export default {
           .replace(/^_|_$/g, '');
 
         // Hapus .toLowerCase() agar Case Sensitive (Royal_Grande.zip)
-        const zipName = `SQ_${baseName}${isTrial ? '_Trial' : ''}.zip`;
+        const zipName = `BT_${baseName}${isTrial ? '_Trial' : ''}.zip`;
      
 
        // 3. MASTER TIER MAPPING (Sinkronisasi Frontend CartCard.tsx)
@@ -621,7 +621,7 @@ export default {
 
         // 4. Susun isi LICENSE.txt
         const issueDate = new Date().toLocaleDateString();
-        let licenseBody = `SUBQI STUDIO — OFFICIAL LICENSE CERTIFICATE\n`;
+        let licenseBody = `BOMBASTYPE — OFFICIAL LICENSE CERTIFICATE\n`;
         licenseBody += `========================================================================\n`;
         licenseBody += `ORDER ID       : ${transactionId || 'N/A'} (USE AS PASSWORD RESETTER)\n`;
         licenseBody += `LICENSE HOLDER : ${buyerEmail} (USERNAME)\n`;
@@ -651,8 +651,8 @@ export default {
         licenseBody += `GENERAL RULES:\n`;
         licenseBody += `1. This license is non-transferable and belongs strictly to the buyer.\n`;
         licenseBody += `2. You may not sell, rent, sublicense, or redistribute the font files.\n`;
-        licenseBody += `3. The font software remains the sole property of Subqi Studio.\n\n`;
-        licenseBody += `FULL DIGITAL RECEIPT:\nhttps://font.subqi.workers.dev/user/receipt/${transactionId} *LOGIN FIRST TO ACCESS*\n`;
+        licenseBody += `3. The font software remains the sole property of Bombastype.\n\n`;
+        licenseBody += `FULL DIGITAL RECEIPT:\nhttps://font.bombastype.workers.dev/user/receipt/${transactionId} *LOGIN FIRST TO ACCESS*\n`;
 
         const licenseData = new TextEncoder().encode(licenseBody.trim());
 

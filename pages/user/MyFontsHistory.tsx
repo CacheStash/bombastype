@@ -59,7 +59,7 @@ const MyFontsHistory = () => {
       a.href = url;
       const contentDisposition = res.headers.get('Content-Disposition');
 
-      let downloadName = `SubqiStudio_Archive.zip`; 
+      let downloadName = `Bombastype_Archive.zip`; 
       if (contentDisposition && contentDisposition.includes('filename=')) {
         downloadName = contentDisposition.split('filename=')[1].split(';')[0].replace(/["']/g, '').trim();
       }
