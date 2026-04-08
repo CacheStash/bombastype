@@ -287,7 +287,7 @@ const Fonts: React.FC = () => {
                     </button>
                   ))
                 ) : (
-                  <span className="text-[9px] font-bold uppercase tracking-widest opacity-25 italic py-1">No active offers available</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-vintage-ink/60 italic py-1">No active offers available</span>
                 )}
               </div>
             </div>
