@@ -132,8 +132,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   return (
     <div className="w-full bg-transparent text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper">
-      {/* overflow-visible penting agar dropdown z-index berfungsi ke luar container */}
-      <div className="border border-vintage-ink/10 overflow-visible relative z-40 bg-transparent">
+      {/* Menghapus border agar tidak double dengan container di FontDetail */}
+      <div className="overflow-visible relative z-40 bg-transparent">
         
         <div className="flex flex-col lg:flex-row items-stretch border-b border-vintage-ink/20 bg-vintage-paper/50 backdrop-blur-md relative z-50">
           <div className="hidden lg:flex items-center px-6 py-4 border-r border-vintage-ink/20">
@@ -252,7 +252,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-12">
               {hasAxes && (
                 <div className="lg:col-span-8 p-8 border-b lg:border-b-0 lg:border-r border-vintage-ink/10">
-                  <h4 className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent/60 mb-8 border-b border-vintage-ink/5 pb-2">Variation Axes</h4>
+                  <h4 className="text-[9px] font-bold uppercase tracking-[0.4em] text-vintage-accent mb-8 border-b border-vintage-ink/5 pb-2">Variation Axes</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                     {detectedAxes.map((axis: any) => (
                       <div key={axis.tag} className="space-y-3">
@@ -265,7 +265,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
               )}
               {hasFeatures && (
                 <div className={`${hasAxes ? 'lg:col-span-4' : 'lg:col-span-12'} p-8`}>
-                  <h4 className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent/60 mb-8 border-b border-vintage-ink/5 pb-2">OT Features</h4>
+                  <h4 className="text-[9px] font-bold uppercase tracking-[0.4em] text-vintage-accent mb-8 border-b border-vintage-ink/5 pb-2">OT Features</h4>
                   <div className="flex flex-wrap gap-2 max-h-75 overflow-y-auto custom-scrollbar pr-4">
                     {dynamicFeatures.map((feat) => (
                       <button key={feat.tag} onClick={() => setActiveFeatures(prev => ({ ...prev, [feat.tag]: !prev[feat.tag] }))} className={`px-3 py-1.5 text-[9px] font-bold uppercase border transition-all duration-300 rounded-sm ${activeFeatures[feat.tag] ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' : 'border-vintage-ink/10 text-vintage-ink/40 hover:border-vintage-ink/30 hover:text-vintage-ink'}`}>{feat.name}</button>
