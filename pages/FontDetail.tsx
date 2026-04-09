@@ -89,19 +89,23 @@ const FontDetail: React.FC = () => {
           <AnimatePresence mode="wait">
             <motion.div 
               key={currentSlide}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
               className="w-full h-full"
             >
-              <div className="relative w-full h-full overflow-hidden flex justify-center">
+              <div className="relative w-full h-full overflow-hidden flex justify-center bg-vintage-ink/2">
                 {fontPreviews[currentSlide] ? (
                   <img 
                     src={resolvePreviewUrl(fontPreviews[currentSlide])!} 
-                    className="h-full w-auto object-contain" 
-                    alt={`Preview ${currentSlide}`} 
+                    className="w-full h-full object-cover" 
+                    alt={`Specimen ${currentSlide}`} 
                   />
                 ) : (
-                  <div className="w-full h-full bg-vintage-ink/2" />
+                  <div className="w-full h-full flex items-center justify-center text-[10px] font-bold opacity-10 uppercase tracking-widest">
+                    No Preview Available
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -126,10 +130,18 @@ const FontDetail: React.FC = () => {
         )}
 
         {/* Bullets Centered in page */}
-        <div className="absolute -bottom-12 left-0 right-0 flex justify-center gap-4 z-20">
+        <div className="absolute -bottom-12 left-0 right-0 w-full flex justify-center gap-4 z-20">
           {Array.from({ length: totalSlides }).map((_, i) => (
-            <button key={i} onClick={() => setCurrentSlide(i)} className="p-2 group/dot">
-              <div className={`h-1 transition-all duration-500 ${currentSlide === i ? 'w-12 bg-vintage-accent' : 'w-2 bg-vintage-ink/20 group-hover/dot:bg-vintage-ink/40'}`} />
+            <button 
+              key={i} 
+              onClick={() => setCurrentSlide(i)} 
+              className="p-2 group/dot outline-none"
+            >
+              <div className={`h-1 transition-all duration-500 ${
+                currentSlide === i 
+                ? 'w-12 bg-vintage-accent' 
+                : 'w-2 bg-vintage-ink/20 group-hover/dot:bg-vintage-ink/40'
+              }`} />
             </button>
           ))}
         </div>
