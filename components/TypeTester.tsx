@@ -132,7 +132,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   return (
     <div className="w-full bg-transparent text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper">
-      <div className="border border-vintage-ink/20 overflow-visible relative z-40 bg-transparent">
+      {/* overflow-visible penting agar dropdown z-index berfungsi ke luar container */}
+      <div className="border border-vintage-ink/10 overflow-visible relative z-40 bg-transparent">
         
         <div className="flex flex-col lg:flex-row items-stretch border-b border-vintage-ink/20 bg-vintage-paper/50 backdrop-blur-md relative z-50">
           <div className="hidden lg:flex items-center px-6 py-4 border-r border-vintage-ink/20">
@@ -152,9 +153,10 @@ const TypeTester: React.FC<TypeTesterProps> = ({
               <AnimatePresence>
                 {isDropdownOpen && (
                   <>
-                    <div className="fixed inset-0 z-60" onClick={() => setIsDropdownOpen(false)} />
+                  <div className="fixed inset-0 z-60" onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(false); }} />
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute left-0 top-full mt-1 w-full bg-vintage-paper border border-vintage-ink/20 z-70 shadow-2xl overflow-hidden">
-                      {Array.isArray(config.font_files) && config.font_files.map((_, i) => (
+                    
+                         {Array.isArray(config.font_files) && config.font_files.map((_, i) => (
                         <button key={i} onClick={() => { setActiveStyleIndex(i); setIsDropdownOpen(false); }} className={`w-full text-left px-6 py-4 text-[10px] font-bold uppercase border-b border-vintage-ink/5 last:border-0 transition-colors ${activeStyleIndex === i ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}>{detectedStyleNames[i] || `STYLE ${String(i + 1).padStart(2, '0')}`}</button>
                       ))}
                     </motion.div>
@@ -200,7 +202,15 @@ const TypeTester: React.FC<TypeTesterProps> = ({
              {viewMode === 'type' && (
                 <div className="flex border border-vintage-ink/20 rounded-sm overflow-hidden">
                   {(['left', 'center', 'right'] as const).map(a => (
-                    <button key={a} onClick={() => setAlign(a)} className={`p-2 transition-all duration-300 group ${align === a ? 'bg-vintage-ink! text-vintage-background! border-vintage-ink' : 'bg-transparent text-vintage-ink/40 hover:text-vintage-ink'}`}>
+                    <button 
+                      key={a} 
+                      onClick={() => setAlign(a)} 
+                      className={`p-2 transition-all duration-300 group ${
+                        align === a 
+                        ? 'bg-vintage-ink! text-vintage-background! border-vintage-ink' 
+                        : 'bg-transparent text-vintage-ink/40 hover:text-vintage-ink'
+                      }`}
+                    >
                       {a === 'left' ? <AlignLeft size={14} className="transition-transform duration-500 group-hover:rotate-90" /> : a === 'center' ? <AlignCenter size={14} className="transition-transform duration-500 group-hover:rotate-90" /> : <AlignRight size={14} className="transition-transform duration-500 group-hover:rotate-90" />}
                     </button>
                   ))}

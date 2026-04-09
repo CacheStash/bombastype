@@ -60,11 +60,7 @@ const FontDetail: React.FC = () => {
   const tags = Array.isArray(font.tags) ? font.tags : (typeof font.tags === 'string' ? font.tags.split(',') : []);
 
   // --- SLIDER LOGIC: Handling Odd Numbers by Looping first image ---
-  const displayImages = [...fontPreviews];
-  if (displayImages.length > 1 && displayImages.length % 2 !== 0) {
-    displayImages.push(fontPreviews[0]); 
-  }
-  const totalSlides = Math.ceil(displayImages.length / 2);
+  const totalSlides = fontPreviews.length;
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
@@ -72,42 +68,42 @@ const FontDetail: React.FC = () => {
   return (
     <div className="relative z-10 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper min-h-screen bg-transparent overflow-x-hidden pb-24">
       
-      {/* 1. HEADER SECTION (About.tsx Style) */}
-      <section className="text-center max-w-4xl mx-auto relative z-10 px-6 pt-16 md:pt-24 mb-16">
-        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.4em] font-bold text-vintage-accent mb-4">
+      {/* 1. HEADER SECTION (Disamakan dengan About/License: pt-12, max-w-3xl) */}
+      <section className="text-center max-w-3xl mx-auto relative z-10 px-6 pt-12 mb-16">
+        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
           Typeface Archival Specimen
         </motion.p>
+        
         <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight capitalize">
           {font.name}
         </motion.h2>
+        
         <motion.p className="text-base md:text-lg lg:text-xl italic text-vintage-ink/60 leading-relaxed">
           Consisting of {styleCount} unique styles
         </motion.p>
       </section>
 
-      {/* 2. TOP SLIDER SECTION */}
-      <section className="relative w-full border-y border-vintage-ink/20 group bg-vintage-paper/50 mb-24">
-        <div className="flex overflow-hidden aspect-video md:aspect-21/8">
+      {/* 2. TOP SLIDER SECTION (1 Image per Slide) */}
+      <section className="relative w-full border-y border-vintage-ink/10 group bg-vintage-paper/50 mb-20">
+        <div className="flex overflow-hidden aspect-video md:aspect-21/9">
           <AnimatePresence mode="wait">
             <motion.div 
               key={currentSlide}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
-              className="grid grid-cols-2 w-full h-full"
+              className="w-full h-full"
             >
-              {[0, 1].map((offset) => {
-                const imgIdx = currentSlide * 2 + offset;
-                const img = displayImages[imgIdx];
-                return (
-                  <div key={imgIdx} className={`relative h-full overflow-hidden ${offset === 0 ? 'border-r border-vintage-ink/10' : ''}`}>
-                    {img ? (
-                      <img src={resolvePreviewUrl(img)!} className="w-full h-full object-cover" alt={`Preview ${imgIdx}`} />
-                    ) : (
-                      <div className="w-full h-full bg-vintage-ink/2" />
-                    )}
-                  </div>
-                );
-              })}
+              <div className="relative w-full h-full overflow-hidden flex justify-center">
+                {fontPreviews[currentSlide] ? (
+                  <img 
+                    src={resolvePreviewUrl(fontPreviews[currentSlide])!} 
+                    className="h-full w-auto object-contain" 
+                    alt={`Preview ${currentSlide}`} 
+                  />
+                ) : (
+                  <div className="w-full h-full bg-vintage-ink/2" />
+                )}
+              </div>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -140,7 +136,7 @@ const FontDetail: React.FC = () => {
       </section>
 
       {/* 3. TYPE TESTER SECTION */}
-      <section className="w-full mt-24 border-y border-vintage-ink/20 bg-transparent relative z-40">
+      <section className="w-full mt-24 border-y border-vintage-ink/10 bg-transparent relative z-40">
         <div className="max-w-full">
           <TypeTester 
             config={{
