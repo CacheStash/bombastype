@@ -60,7 +60,8 @@ const FontDetail: React.FC = () => {
   const tags = Array.isArray(font.tags) ? font.tags : (typeof font.tags === 'string' ? font.tags.split(',') : []);
 
   // --- SLIDER LOGIC: Handling Odd Numbers by Looping first image ---
-  const totalSlides = fontPreviews.length;
+ const displayImages = [...fontPreviews];
+  const totalSlides = displayImages.length;
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
@@ -68,7 +69,7 @@ const FontDetail: React.FC = () => {
   return (
     <div className="relative z-10 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper min-h-screen bg-transparent overflow-x-hidden pb-24">
       
-      {/* 1. HEADER SECTION (Disamakan dengan About/License: pt-12, max-w-3xl) */}
+      {/* 1. HEADER SECTION (Diselaraskan pt-12 & max-w-3xl) */}
       <section className="text-center max-w-3xl mx-auto relative z-10 px-6 pt-12 mb-16">
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
           Typeface Archival Specimen
