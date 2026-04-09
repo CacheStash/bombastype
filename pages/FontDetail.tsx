@@ -96,18 +96,31 @@ const FontDetail: React.FC = () => {
               transition={{ duration: 0.6 }}
               className="w-full h-full"
             >
-              {/* Container utama dengan ratio 3:2 murni */}
-              <div className="relative w-full h-full overflow-hidden flex justify-center items-center bg-vintage-ink/[0.01]">
-                {displayImages[currentSlide] ? (
-                  <img 
-                    src={resolvePreviewUrl(displayImages[currentSlide])!} 
-                    className="w-full h-full object-contain" 
-                    alt={`Specimen ${currentSlide}`} 
-                    loading="eager"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-vintage-ink/2" />
-                )}
+              <div className="relative w-full h-full overflow-hidden">
+                {/* Grid tata letak: 20% (Prev), 60% (Current), 20% (Next) */}
+                <div className="absolute inset-0 grid grid-cols-[20%_60%_20%] w-full h-full pointer-events-none">
+                  {[
+                    (currentSlide - 1 + totalSlides) % totalSlides, // Prev
+                    currentSlide,                                     // Current
+                    (currentSlide + 1) % totalSlides,                 // Next
+                  ].map((imgIdx, idx) => {
+                    const img = displayImages[imgIdx];
+                    const isCurrent = idx === 1;
+                    return (
+                      <div key={idx} className="relative h-full overflow-hidden">
+                        {img ? (
+                          <img 
+                            src={resolvePreviewUrl(img)!}
+                             className={`w-full h-full ${isCurrent ? 'object-contain' : 'object-cover'} pointer-events-auto`} 
+                            alt={`Specimen Preview ${imgIdx}`} 
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-vintage-ink/2" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           </AnimatePresence>
