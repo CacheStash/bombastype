@@ -90,23 +90,19 @@ const FontDetail: React.FC = () => {
           <AnimatePresence mode="wait">
             <motion.div 
               key={currentSlide}
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
               className="w-full h-full"
             >
-              <div className="relative w-full h-full overflow-hidden flex justify-center bg-vintage-ink/2">
-                {fontPreviews[currentSlide] ? (
+              <div className="relative w-full h-full overflow-hidden flex justify-center items-center bg-vintage-ink/2">
+                {displayImages[currentSlide] ? (
                   <img 
-                    src={resolvePreviewUrl(fontPreviews[currentSlide])!} 
-                    className="w-full h-full object-cover" 
-                    alt={`Specimen ${currentSlide}`} 
+                    src={resolvePreviewUrl(displayImages[currentSlide])!} 
+                    className="max-w-full max-h-full w-auto h-auto object-contain" 
+                    alt={`Preview ${currentSlide}`} 
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] font-bold opacity-10 uppercase tracking-widest">
-                    No Preview Available
-                  </div>
+                  <div className="w-full h-full bg-vintage-ink/2" />
                 )}
               </div>
             </motion.div>
