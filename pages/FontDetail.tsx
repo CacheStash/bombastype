@@ -90,17 +90,20 @@ const FontDetail: React.FC = () => {
           <AnimatePresence mode="wait">
             <motion.div 
               key={currentSlide}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
               className="w-full h-full"
             >
-              {/* Container mengunci ratio 3:2 (1440x960) dan memastikan full width */}
-              <div className="relative w-full aspect-3/2 overflow-hidden flex justify-center items-center bg-vintage-ink/2">
+              {/* Container utama dengan ratio 3:2 murni */}
+              <div className="relative w-full h-full overflow-hidden flex justify-center items-center bg-vintage-ink/[0.01]">
                 {displayImages[currentSlide] ? (
                   <img 
                     src={resolvePreviewUrl(displayImages[currentSlide])!} 
                     className="w-full h-full object-contain" 
-                    alt={`Preview ${currentSlide}`} 
+                    alt={`Specimen ${currentSlide}`} 
+                    loading="eager"
                   />
                 ) : (
                   <div className="w-full h-full bg-vintage-ink/2" />
