@@ -96,31 +96,35 @@ const FontDetail: React.FC = () => {
               transition={{ duration: 0.6 }}
               className="w-full h-full"
             >
-              <div className="relative w-full h-full overflow-hidden">
-                {/* Grid tata letak: 20% (Prev), 60% (Current), 20% (Next) */}
-                <div className="absolute inset-0 grid grid-cols-[20%_60%_20%] w-full h-full pointer-events-none">
-                  {[
-                    (currentSlide - 1 + totalSlides) % totalSlides, // Prev
-                    currentSlide,                                     // Current
-                    (currentSlide + 1) % totalSlides,                 // Next
-                  ].map((imgIdx, idx) => {
-                    const img = displayImages[imgIdx];
-                    const isCurrent = idx === 1;
-                    return (
-                      <div key={idx} className="relative h-full overflow-hidden">
-                        {img ? (
-                          <img 
-                            src={resolvePreviewUrl(img)!}
-                             className={`w-full h-full ${isCurrent ? 'object-contain' : 'object-cover'} pointer-events-auto`} 
-                            alt={`Specimen Preview ${imgIdx}`} 
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-vintage-ink/2" />
-                        )}
-                      </div>
-                    );
-                  })}
+              <div className="relative w-full h-full overflow-hidden flex justify-center items-center bg-black">
+                {/* Peek-a-boo Background: Mengisi sisa space kosong di kanan/kiri */}
+                <div className="absolute inset-0 flex opacity-30 pointer-events-none">
+                  <div className="w-1/2 h-full overflow-hidden border-r border-white/5">
+                    <img 
+                      src={resolvePreviewUrl(displayImages[(currentSlide - 1 + totalSlides) % totalSlides])!} 
+                      className="w-full h-full object-cover blur-sm" 
+                      alt="prev-peek" 
+                    />
+                  </div>
+                  <div className="w-1/2 h-full overflow-hidden">
+                    <img 
+                      src={resolvePreviewUrl(displayImages[(currentSlide + 1) % totalSlides])!} 
+                      className="w-full h-full object-cover blur-sm" 
+                      alt="next-peek" 
+                    />
+                  </div>
                 </div>
+
+                {/* Main Image: Force Full Height & No Crop */}
+                {displayImages[currentSlide] ? (
+                  <img 
+                    src={resolvePreviewUrl(displayImages[currentSlide])!} 
+                    className="relative z-10 h-full w-auto object-contain" 
+                    alt={`Specimen ${currentSlide}`} 
+                  />
+                ) : (
+                  <div className="w-full h-full bg-vintage-ink/2" />
+                )}
               </div>
             </motion.div>
           </AnimatePresence>
