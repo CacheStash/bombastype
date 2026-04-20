@@ -1,16 +1,28 @@
-name: Supabase Keep Alive
+name: Supabase Real Activity Keep Alive
 
 on:
   schedule:
-    # Berjalan setiap hari Senin dan Kamis jam 00:00 UTC (07:00 WIB)
+    # Berjalan setiap hari jam 00:00 UTC
     - cron: '0 0 * * *'
-  workflow_dispatch: # Memungkinkan kamu menjalankan manual untuk test
+  workflow_dispatch:
 
 jobs:
-  ping_supabase:
+  supabase_activity:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Database via REST API
+      - name: Insert Dummy Data & Cleanup
         run: |
-          curl -I "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"
+          # 1. Insert data baru ke tabel
+          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive_ping" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '[{}]'
+
+          # 2. Hapus data yang lebih lama dari 3 hari (agar tidak penuh)
+          # Kita pakai operator 'lt' (less than) dengan ISO8601 date dari shell
+          THREE_DAYS_AGO=$(date -u -d "3 days ago" +%Y-%m-%dT%H:%M:%SZ)
+          
+          curl -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive_ping?created_at=lt.${THREE_DAYS_AGO}" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
