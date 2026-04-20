@@ -4,25 +4,34 @@ on:
   schedule:
     # Berjalan setiap hari jam 00:00 UTC
     - cron: '0 0 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Supaya bisa kamu klik tombol "Run Workflow" buat ngetes
 
 jobs:
   supabase_activity:
     runs-on: ubuntu-latest
     steps:
-      - name: Insert Dummy Data & Cleanup
+      - name: Eksekusi Ping Database
         run: |
-          # 1. Insert data baru ke tabel
-          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive_ping" \
-          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          # Kita definisikan variabel lokal di sini biar gampang
+          URL="https://zuvlxospyjtypwijrxvd.supabase.co"
+          KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1dmx4b3NweWp0eXB3aWpyeHZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NTc5NjIsImV4cCI6MjA4OTUzMzk2Mn0.rsRt2muxqc55tqQK8rcyzMXcoPXgdPXpuP6U2SyIHT8"
+
+          echo "--- MEMULAI PROSES KEEP ALIVE ---"
+
+          # 1. INSERT DATA (Activity: WRITE)
+          echo "Step 1: Memasukkan data dummy..."
+          curl -X POST "$URL/rest/v1/keep_alive_ping" \
+          -H "apikey: $KEY" \
+          -H "Authorization: Bearer $KEY" \
           -H "Content-Type: application/json" \
           -d '[{}]'
 
-          # 2. Hapus data yang lebih lama dari 3 hari (agar tidak penuh)
-          # Kita pakai operator 'lt' (less than) dengan ISO8601 date dari shell
+          # 2. DELETE DATA LAMA (Activity: DELETE)
+          echo "Step 2: Menghapus data lama (biar gak penuh)..."
           THREE_DAYS_AGO=$(date -u -d "3 days ago" +%Y-%m-%dT%H:%M:%SZ)
           
-          curl -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive_ping?created_at=lt.${THREE_DAYS_AGO}" \
-          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          curl -X DELETE "$URL/rest/v1/keep_alive_ping?created_at=lt.${THREE_DAYS_AGO}" \
+          -H "apikey: $KEY" \
+          -H "Authorization: Bearer $KEY"
+
+          echo "--- SELESAI ---"
