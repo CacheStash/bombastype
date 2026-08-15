@@ -84,72 +84,54 @@ const FontDetail: React.FC = () => {
         </motion.p>
       </section>
 
-      {/* 2. TOP SLIDER SECTION (1 Image per Slide) */}
-      <section className="relative w-full border-y border-vintage-ink/10 group bg-vintage-paper/50 mb-20">
-        <div className="flex overflow-hidden aspect-video md:aspect-21/9">
+      {/* 2. TOP SLIDER SECTION (Ratio 1820x1214 Container Width) */}
+      <section className="relative w-full max-w-7xl mx-auto px-4 md:px-8 group mb-20">
+        <div className="relative w-full overflow-hidden border border-vintage-ink/20 aspect-[1820/1214] bg-vintage-paper/50 shadow-sm">
           <AnimatePresence mode="wait">
             <motion.div 
               key={currentSlide}
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.5 }}
               className="w-full h-full"
             >
-              <div className="relative w-full h-full overflow-hidden flex justify-center items-center bg-black">
-                {/* Peek-a-boo Background: Mengisi sisa space kosong di kanan/kiri */}
-                <div className="absolute inset-0 flex opacity-30 pointer-events-none">
-                  <div className="w-1/2 h-full overflow-hidden border-r border-white/5">
-                    <img 
-                      src={resolvePreviewUrl(displayImages[(currentSlide - 1 + totalSlides) % totalSlides])!} 
-                      className="w-full h-full object-cover blur-sm" 
-                      alt="prev-peek" 
-                    />
-                  </div>
-                  <div className="w-1/2 h-full overflow-hidden">
-                    <img 
-                      src={resolvePreviewUrl(displayImages[(currentSlide + 1) % totalSlides])!} 
-                      className="w-full h-full object-cover blur-sm" 
-                      alt="next-peek" 
-                    />
-                  </div>
-                </div>
-
-                {/* Main Image: Force Full Height & No Crop */}
-                {displayImages[currentSlide] ? (
-                  <img 
-                    src={resolvePreviewUrl(displayImages[currentSlide])!} 
-                    className="relative z-10 h-full w-auto object-contain" 
-                    alt={`Specimen ${currentSlide}`} 
-                  />
-                ) : (
-                  <div className="w-full h-full bg-vintage-ink/2" />
-                )}
-              </div>
+              {displayImages[currentSlide] ? (
+                <img 
+                  src={resolvePreviewUrl(displayImages[currentSlide])!} 
+                  className="w-full h-full object-cover" 
+                  alt={`Specimen ${currentSlide + 1}`} 
+                />
+              ) : (
+                <div className="w-full h-full bg-vintage-ink/5" />
+              )}
             </motion.div>
           </AnimatePresence>
+
+          {/* Navigation Arrows */}
+          {totalSlides > 1 && (
+            <>
+              <button 
+                onClick={prevSlide} 
+                className="absolute left-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30"
+                aria-label="Previous Slide"
+              >
+                <ChevronLeft size={44} strokeWidth={1} className="drop-shadow-md text-white" />
+              </button>
+              <button 
+                onClick={nextSlide} 
+                className="absolute right-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30"
+                aria-label="Next Slide"
+              >
+                <ChevronRight size={44} strokeWidth={1} className="drop-shadow-md text-white" />
+              </button>
+            </>
+          )}
         </div>
 
+        {/* HORIZONTAL IMAGE THUMBNAILS */}
         {totalSlides > 1 && (
-          <>
-            <button 
-              onClick={prevSlide} 
-              className="absolute left-0 top-0 h-full w-16 md:w-24 flex items-center justify-center bg-vintage-paper/0 hover:bg-vintage-ink/5 text-vintage-ink opacity-0 group-hover:opacity-100 transition-all z-30"
-            >
-              <ChevronLeft size={48} strokeWidth={0.5} />
-            </button>
-            <button 
-              onClick={nextSlide} 
-              className="absolute right-0 top-0 h-full w-16 md:w-24 flex items-center justify-center bg-vintage-paper/0 hover:bg-vintage-ink/5 text-vintage-ink opacity-0 group-hover:opacity-100 transition-all z-30"
-            >
-              <ChevronRight size={48} strokeWidth={0.5} />
-            </button>
-          </>
-        )}
-
-       {/* HORIZONTAL IMAGE THUMBNAILS */}
-        {totalSlides > 1 && (
-          <div className="w-full max-w-7xl mx-auto px-6 pt-6 pb-2">
+          <div className="w-full pt-6 pb-2">
             <div className="flex items-center justify-center gap-3 overflow-x-auto custom-scrollbar py-2">
               {displayImages.map((img, i) => {
                 const imgUrl = resolvePreviewUrl(img);
@@ -161,7 +143,7 @@ const FontDetail: React.FC = () => {
                     key={i}
                     type="button"
                     onClick={() => setCurrentSlide(i)}
-                    className={`relative shrink-0 h-16 md:h-20 aspect-video overflow-hidden border transition-all duration-300 ${
+                    className={`relative shrink-0 h-16 md:h-20 aspect-[1820/1214] overflow-hidden border transition-all duration-300 ${
                       isActive 
                         ? 'border-vintage-accent ring-2 ring-vintage-accent/40 opacity-100 scale-105 shadow-md' 
                         : 'border-vintage-ink/20 opacity-40 hover:opacity-80 hover:border-vintage-ink/50'
