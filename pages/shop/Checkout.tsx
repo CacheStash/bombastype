@@ -6,7 +6,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCart } from '../../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Check, Copy, Download, ShieldCheck, DollarSign } from 'lucide-react';
+import { ArrowLeft, Plus, Copy, Download, ShieldCheck, DollarSign, Tag } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { supabase } from '../../lib/supabase';
 import { User } from '@supabase/supabase-js';
@@ -16,7 +16,7 @@ const Checkout: React.FC = () => {
   const { cart, clearCart, checkExistingTrials } = useCart();
   const navigate = useNavigate();
 
-  // --- LOGIC STATES (PRESERVED) ---
+  // --- LOGIC STATES ---
   const [user, setUser] = useState<User | null>(null);
   const [trialConflicts, setTrialConflicts] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,16 +28,35 @@ const Checkout: React.FC = () => {
   const [purchasedItems, setPurchasedItems] = useState<any[]>([]);
   const [successfulOrderId, setSuccessfulOrderId] = useState<string | null>(null);
 
-  // BT Prefix Rebranding (PRESERVED)
+  // COUPON STATES
+  const [couponCodeInput, setCouponCodeInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [couponMessage, setCouponMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
+
+  // BT Prefix Rebranding
   const orderId = useMemo(() => `BT-${Math.floor(100000 + Math.random() * 900000)}`, []);
-  const total = cart.reduce((acc, curr) => acc + curr.price, 0);
+  const total = cart.reduce((acc, curr) => acc + (Number(curr.price) || 0), 0);
+
+  // CALCULATE FINAL TOTAL WITH COUPON
+  const finalTotal = useMemo(() => {
+    if (!appliedCoupon) return total;
+    let discountAmount = 0;
+    if (appliedCoupon.discount_type === 'percentage') {
+      discountAmount = total * (appliedCoupon.discount_value / 100);
+    } else {
+      discountAmount = Number(appliedCoupon.discount_value) || 0;
+    }
+    const calculated = total - discountAmount;
+    return calculated > 0 ? Number(calculated.toFixed(2)) : 0;
+  }, [total, appliedCoupon]);
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     alert(`${label} COPIED TO CLIPBOARD`);
   };
 
-  // --- AUTH & PROFILE LOGIC (PRESERVED) ---
+  // --- AUTH & PROFILE LOGIC ---
   useEffect(() => {
     const fetchBuyerProfile = async (userId: string) => {
       const { data, error } = await supabase
@@ -72,7 +91,7 @@ const Checkout: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
   
-  // --- TRIAL VALIDATION LOGIC (PRESERVED) ---
+  // --- TRIAL VALIDATION LOGIC ---
   useEffect(() => {
     const validateTrials = async () => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -89,7 +108,52 @@ const Checkout: React.FC = () => {
     validateTrials();
   }, [email, cart, checkExistingTrials]);
 
-  // --- PURCHASE SUCCESS HANDLER (PRESERVED) ---
+  // --- COUPON HANDLERS ---
+  const handleApplyCoupon = async () => {
+    if (!couponCodeInput.trim()) return;
+    setIsApplyingCoupon(true);
+    setCouponMessage(null);
+    
+    try {
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .ilike('code', couponCodeInput.trim())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !coupon) throw new Error("INVALID_OR_INACTIVE_COUPON");
+
+      const now = new Date();
+      const startDate = new Date(coupon.start_date);
+      const endDate = new Date(coupon.end_date);
+      endDate.setHours(23, 59, 59, 999);
+      if (now < startDate || now > endDate) throw new Error("COUPON_EXPIRED");
+
+      if (coupon.max_uses !== null && coupon.used_count >= coupon.max_uses) {
+        throw new Error("COUPON_USAGE_LIMIT_REACHED");
+      }
+
+      setAppliedCoupon(coupon);
+      setCouponMessage({ type: 'success', text: `TOKEN APPLIED: ${coupon.discount_type === 'percentage' ? coupon.discount_value + '% OFF' : '$' + coupon.discount_value + ' OFF'}` });
+    } catch (err: any) {
+      setAppliedCoupon(null);
+      let msg = "INVALID COUPON CODE";
+      if (err.message === "COUPON_EXPIRED") msg = "THIS COUPON HAS EXPIRED OR IS NOT YET ACTIVE";
+      if (err.message === "COUPON_USAGE_LIMIT_REACHED") msg = "COUPON USAGE LIMIT HAS BEEN REACHED";
+      setCouponMessage({ type: 'error', text: msg });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCodeInput('');
+    setCouponMessage(null);
+  };
+
+  // --- PURCHASE SUCCESS HANDLER ---
   const handlePurchaseSuccess = async (finalOrderId: string) => {
     setLoading(true);
     try {
@@ -118,6 +182,13 @@ const Checkout: React.FC = () => {
           { onConflict: 'email' }
         ).select();
       }
+
+      if (appliedCoupon) {
+        await supabase
+          .from('coupons')
+          .update({ used_count: appliedCoupon.used_count + 1 })
+          .eq('id', appliedCoupon.id);
+      }
       
       setIsPaid(true);
       setPurchasedItems([...cart]);
@@ -130,7 +201,7 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // --- SECURE DOWNLOAD HANDLER (PRESERVED) ---
+  // --- SECURE DOWNLOAD HANDLER ---
   const handleSecureDownload = async (fileName: string, type: 'trial' | 'full' = 'full') => {
     const { data: { session } } = await supabase.auth.getSession();
     const targetOrder = successfulOrderId || orderId;
@@ -167,7 +238,7 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // --- FREE TRIAL HANDLER (PRESERVED) ---
+  // --- FREE TRIAL HANDLER ---
   const handleFreeTrial = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -207,8 +278,8 @@ const Checkout: React.FC = () => {
   };
 
   return (
-    <PayPalScriptProvider options={{ clientId: "AXw6xL6HBIWZRoBSnsigTHBPaYB70tTFMJHv3o4tA_AP9BEsH81uyOLGYWnWonxP9kn59OjE9Tyo5ABW", currency: "USD", intent: "capture", locale: "en_US" }}>
-<div className="min-h-screen bg-vintage-paper py-12 px-6 md:px-12 flex flex-col items-center text-vintage-ink print:bg-white">
+    <PayPalScriptProvider options={{ clientId: "AW3HtSermytFGmhSTbMNpacFkkEyTYo19CRismstFmSUT2drz6TBj8nAH18pg4YWPj0esy4-MIzAGhki", currency: "USD", intent: "capture", locale: "en_US" }}>
+      <div className="min-h-screen bg-vintage-paper py-12 px-6 md:px-12 flex flex-col items-center text-vintage-ink print:bg-white">
           
         {/* HEADER TOOLS */}
         <div className="w-full max-w-5xl mb-12 flex justify-between items-center text-[10px] font-bold print:hidden">
@@ -220,11 +291,11 @@ const Checkout: React.FC = () => {
           </Link>
         </div>
 
-        {/* MAIN RECEIPT CONTENT - NO BG, NO SHADOW */}
-<div className="w-full max-w-5xl border border-vintage-ink/10 relative flex flex-col items-center overflow-hidden print:border-none bg-vintage-paper/50 shadow-none">
+        {/* MAIN RECEIPT CONTENT */}
+        <div className="w-full max-w-5xl border border-vintage-ink/10 relative flex flex-col items-center overflow-hidden print:border-none bg-vintage-paper/50 shadow-none">
 
           <div className="w-full p-8 md:p-16 pt-20 pb-20">
-            {/* Header: BOMBASTYPE (Policy/License Hero Style) */}
+            {/* Header: BOMBASTYPE */}
             <section className="text-center mb-16 md:mb-24 max-w-3xl mx-auto relative z-10 px-4 pt-12">
               <motion.p 
                 initial={{ opacity: 0, y: 20 }}
@@ -273,8 +344,8 @@ const Checkout: React.FC = () => {
                 </div>
                 <div className="flex justify-between md:justify-end md:gap-12 border-b border-vintage-ink/5 pb-1">
                   <span className="text-vintage-accent uppercase">Status</span>
-                  <span className={isPaid ? "text-green-700" : total === 0 ? "text-vintage-accent" : "text-red-700 animate-pulse"}>
-                    {isPaid ? "PAID" : (total === 0 ? "FREE" : "UNPAID")}
+                  <span className={isPaid ? "text-green-700" : finalTotal === 0 ? "text-vintage-accent" : "text-red-700 animate-pulse"}>
+                    {isPaid ? "PAID" : (finalTotal === 0 ? "FREE" : "UNPAID")}
                   </span>
                 </div>
               </div>
@@ -290,7 +361,7 @@ const Checkout: React.FC = () => {
                     </span>
                     <div className="flex items-start text-vintage-ink">
                       <DollarSign size={20} className="mt-2 md:mt-1.5 text-vintage-accent" strokeWidth={3} />
-                      <span className="text-xl md:text-3xl font-display leading-none">{item.price}</span>
+                      <span className="text-xl md:text-3xl font-display leading-none">{Number(item.price).toFixed(2)}</span>
                     </div>
                   </div>
                   <div className="flex justify-between text-[9px] text-vintage-accent font-bold tracking-[0.2em]">
@@ -301,12 +372,27 @@ const Checkout: React.FC = () => {
               ))}
             </div>
 
+            {/* Discount Row */}
+            {appliedCoupon && (
+              <div className="flex justify-between items-center mb-6 text-vintage-accent font-bold text-sm md:text-base border-b border-vintage-ink/10 border-dashed pb-6">
+                <span>EXCLUSIVE TOKEN ({appliedCoupon.code})</span>
+                <span>-${(total - finalTotal).toFixed(2)}</span>
+              </div>
+            )}
+
             {/* TOTAL */}
             <div className="border-y-2 border-vintage-ink py-10 flex justify-between items-center mb-12">
               <span className="text-lg md:text-xl font-bold tracking-[0.3em]">GRAND TOTAL</span>
-              <div className="flex items-start text-vintage-ink">
-                <DollarSign size={45} className="mt-9 md:mt-9 text-vintage-accent" strokeWidth={2.5} />
-                <span className="text-7xl md:text-9xl font-display tracking-tighter leading-none">{total}</span>
+              <div className="flex flex-col items-end">
+                {appliedCoupon && (
+                  <span className="text-lg md:text-2xl font-bold tracking-tighter line-through opacity-30 text-vintage-ink mb-1">
+                    ${total.toFixed(2)}
+                  </span>
+                )}
+                <div className="flex items-start text-vintage-ink">
+                  <DollarSign size={45} className="mt-9 md:mt-9 text-vintage-accent" strokeWidth={2.5} />
+                  <span className="text-7xl md:text-9xl font-display tracking-tighter leading-none">{finalTotal.toFixed(2)}</span>
+                </div>
               </div>
             </div>
 
@@ -391,52 +477,115 @@ const Checkout: React.FC = () => {
                   </div>
                 </div>
 
-                {/* PAYPAL GATEWAY - CENTERED & PROPORTIONAL */}
-{total > 0 && (
-  <div className="p-8 border-2 border-dashed border-vintage-ink/20 bg-vintage-ink/3 flex flex-col items-center gap-8">
-    <div className="flex flex-col items-center text-center">
-      <span className="text-[10px] font-bold tracking-[0.4em] text-vintage-ink">SECURE PAYMENT GATEWAY</span>
-      <span className="text-[8px] font-bold tracking-widest text-vintage-accent mt-1 uppercase">Paypal / Credit Card (USD)</span>
-    </div>
+                {/* COUPON SECTION */}
+                {total > 0 && (
+                  <div className="p-8 border border-vintage-ink/10 bg-vintage-accent/5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-vintage-accent flex items-center gap-2">
+                        <Tag size={14} /> BARGAIN / PROMO TOKEN
+                      </span>
+                      <span className="text-[8px] font-bold tracking-widest text-vintage-ink/40 uppercase italic">
+                        Claim Negotiated Deal*
+                      </span>
+                    </div>
 
-    {/* Wrapper Tombol dengan max-width agar terlihat rapi di tengah */}
-    <div className={`w-full max-w-md transition-all ${(loading || !name || !address || !email || trialConflicts.length > 0) ? 'opacity-10 grayscale pointer-events-none' : 'opacity-100'}`}>
-      <PayPalButtons 
-        style={{ 
-          layout: "vertical", 
-          shape: "rect", 
-          label: "pay", 
-          height: 50 // Tinggi disesuaikan agar lebih elegan
-        }}
-        onClick={(data, actions) => {
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            alert("PLEASE PROVIDE A VALID RECEIVER EMAIL (BLOCK 00) BEFORE PROCEEDING.");
-            return actions.reject();
-          }
-          return actions.resolve();
-        }}
-        createOrder={(_data, actions) => actions.order.create({
-          intent: "CAPTURE",
-          purchase_units: [{ 
-            amount: { currency_code: "USD", value: total.toFixed(2) }, 
-            description: `BOMBASTYPE Font Purchase - Order ${orderId}` 
-          }]
-        })}
-        onApprove={async (_data, actions) => {
-          const details = await actions.order?.capture();
-          if (details?.status === "COMPLETED") {
-            await handlePurchaseSuccess(orderId);
-            alert(`TRANSACTION SUCCESSFUL! WELCOME, ${details?.payer?.name?.given_name || 'BUYER'}.`);
-          }
-        }}
-        onError={(err) => {
-          console.error("PayPal Error:", err);
-          alert("GATEWAY_ERROR: COULD NOT INITIALIZE TRANSACTION.");
-        }}
-      />
-    </div>
-  </div>
-)}
+                    <div className="flex gap-3">
+                      <input 
+                        type="text" 
+                        value={couponCodeInput}
+                        onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                        disabled={!!appliedCoupon || isApplyingCoupon}
+                        className="flex-1 border border-vintage-ink/20 p-4 bg-vintage-background font-bold uppercase text-xs tracking-widest outline-none focus:border-vintage-ink disabled:opacity-50"
+                        placeholder="PASTE COUPON CODE HERE"
+                      />
+                      {!appliedCoupon ? (
+                        <button 
+                          onClick={handleApplyCoupon}
+                          disabled={isApplyingCoupon || !couponCodeInput.trim()}
+                          className="vintage-btn bg-vintage-ink! text-vintage-background! px-8 text-[10px] font-bold tracking-[0.3em] uppercase hover:opacity-90 disabled:opacity-30"
+                        >
+                          {isApplyingCoupon ? 'VERIFYING...' : 'APPLY'}
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={handleRemoveCoupon}
+                          className="vintage-btn bg-red-900! text-white! px-8 text-[10px] font-bold tracking-[0.3em] uppercase hover:opacity-90"
+                        >
+                          REMOVE
+                        </button>
+                      )}
+                    </div>
+
+                    {couponMessage && (
+                      <p className={`text-[10px] font-bold tracking-widest uppercase ${couponMessage.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                        {couponMessage.type === 'success' ? '✓ ' : '✕ '}{couponMessage.text}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* PAYPAL GATEWAY */}
+                {finalTotal > 0 && (
+                  <div className="p-8 border-2 border-dashed border-vintage-ink/20 bg-vintage-ink/3 flex flex-col items-center gap-8">
+                    <div className="flex flex-col items-center text-center">
+                      <span className="text-[10px] font-bold tracking-[0.4em] text-vintage-ink">SECURE PAYMENT GATEWAY</span>
+                      <span className="text-[8px] font-bold tracking-widest text-vintage-accent mt-1 uppercase">Paypal / Credit Card (USD)</span>
+                    </div>
+
+                    <div className={`w-full max-w-md transition-all ${(loading || !name || !address || !email || trialConflicts.length > 0) ? 'opacity-10 grayscale pointer-events-none' : 'opacity-100'}`}>
+                      <PayPalButtons 
+                        style={{ 
+                          layout: "vertical", 
+                          shape: "rect", 
+                          label: "pay", 
+                          height: 50 
+                        }}
+                        onClick={(data, actions) => {
+                          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                            alert("PLEASE PROVIDE A VALID RECEIVER EMAIL (BLOCK 00) BEFORE PROCEEDING.");
+                            return actions.reject();
+                          }
+                          return actions.resolve();
+                        }}
+                        createOrder={(_data, actions) => actions.order.create({
+                          intent: "CAPTURE",
+                          purchase_units: [{ 
+                            amount: { currency_code: "USD", value: finalTotal.toFixed(2) }, 
+                            description: `BOMBASTYPE Font Purchase - Order ${orderId}` 
+                          }]
+                        })}
+                        onApprove={async (_data, actions) => {
+                          const details = await actions.order?.capture();
+                          if (details?.status === "COMPLETED") {
+                            await handlePurchaseSuccess(orderId);
+                            alert(`TRANSACTION SUCCESSFUL! WELCOME, ${details?.payer?.name?.given_name || 'BUYER'}.`);
+                          }
+                        }}
+                        onError={(err) => {
+                          console.error("PayPal Error:", err);
+                          alert("GATEWAY_ERROR: COULD NOT INITIALIZE TRANSACTION.");
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 100% DISCOUNT CLAIM BUTTON */}
+                {total > 0 && finalTotal === 0 && (
+                  <div className="p-8 border border-vintage-accent bg-vintage-accent/10 text-center space-y-4">
+                    <h4 className="text-2xl font-display text-vintage-accent tracking-tight">100% Token Discount Granted</h4>
+                    <p className="text-[10px] font-bold text-vintage-ink/60 uppercase tracking-[0.2em]">
+                      No payment gateway required. Proceed to claim your assets directly.
+                    </p>
+                    <button 
+                      onClick={() => handlePurchaseSuccess(orderId)}
+                      disabled={loading || !name || !address || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || trialConflicts.length > 0}
+                      className="vintage-btn w-full py-6 text-xs bg-vintage-ink! text-vintage-background! tracking-[0.4em] hover:opacity-90 transition-all disabled:opacity-30"
+                    >
+                      {loading ? "PROCESSING..." : "COMPLETE FREE CLAIM"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -467,7 +616,7 @@ const Checkout: React.FC = () => {
               </div>
             )}
           </div>
-assd
+
           <div className="h-4 w-full bg-vintage-ink/5" />
         </div>
         

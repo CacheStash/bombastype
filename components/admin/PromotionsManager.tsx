@@ -4,19 +4,32 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Loader2, Tag, Calendar, Target, Trash2, Edit3, Search } from 'lucide-react';
+import { Plus, X, Loader2, Calendar, Trash2, Edit3, Search, Tag, Calculator } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-const PromotionsManager = () => {
+const PromotionsManager: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'coupons'>('campaigns');
   const [promos, setPromos] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
   const [fonts, setFonts] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isAddingCoupon, setIsAddingCoupon] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editingPromo, setEditingPromo] = useState<any>(null);
 
-  // Form State
+  // Bargain Calculator State
+  const [calcOriginalPrice, setCalcOriginalPrice] = useState<string>('350');
+  const [calcTargetPrice, setCalcTargetPrice] = useState<string>('270');
+
+  // Form State Kupon
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState('');
+  const [couponMaxUses, setCouponMaxUses] = useState('1');
+  const [couponEndDate, setCouponEndDate] = useState('');
+
+  // Form State Campaign
+  const [editingPromo, setEditingPromo] = useState<any>(null);
   const [promoName, setPromoName] = useState('');
   const [discount, setDiscount] = useState('');
   const [fontSearch, setFontSearch] = useState('');
@@ -28,12 +41,18 @@ const PromotionsManager = () => {
   useEffect(() => {
     fetchPromos();
     fetchFonts();
+    fetchCoupons();
   }, []);
 
   const fetchPromos = async () => {
     const { data } = await supabase.from('promotions').select('*').order('created_at', { ascending: false });
     if (data) setPromos(data);
     setLoading(false);
+  };
+
+  const fetchCoupons = async () => {
+    const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+    if (data) setCoupons(data || []);
   };
 
   const fetchFonts = async () => {
@@ -60,6 +79,55 @@ const PromotionsManager = () => {
     setEndDate('');
     setSelectedFonts([]);
     setFontSearch('');
+  };
+
+  const handleApplyBargain = () => {
+    const orig = parseFloat(calcOriginalPrice) || 0;
+    const target = parseFloat(calcTargetPrice) || 0;
+    if (orig <= 0 || target <= 0 || target >= orig) {
+      return alert("Target price must be lower than original price!");
+    }
+    const percent = (((orig - target) / orig) * 100).toFixed(2);
+    setCouponDiscount(percent);
+    setCouponCode(`DEAL${Math.round(parseFloat(percent))}OFF`);
+  };
+
+  const handleSaveCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponCode || !couponDiscount || !couponEndDate) return alert("Please complete coupon records!");
+    
+    setIsSaving(true);
+    try {
+      const payload = {
+        code: couponCode.trim().toUpperCase(),
+        discount_type: 'percentage',
+        discount_value: parseFloat(couponDiscount),
+        max_uses: parseInt(couponMaxUses) || 1,
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: couponEndDate,
+        is_active: true
+      };
+
+      const { error } = await supabase.from('coupons').insert([payload]);
+      if (error) throw error;
+
+      alert("Coupon successfully registered!");
+      setIsAddingCoupon(false);
+      setCouponCode('');
+      setCouponDiscount('');
+      setCouponEndDate('');
+      fetchCoupons();
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteCoupon = async (id: string) => {
+    if (!confirm("Revoke this coupon permanently?")) return;
+    await supabase.from('coupons').delete().eq('id', id);
+    fetchCoupons();
   };
 
   const handleSavePromo = async (e: React.FormEvent) => {
@@ -100,7 +168,7 @@ const PromotionsManager = () => {
     fetchPromos();
   };
 
-  // --- VIEW: FORM MODE ---
+  // --- VIEW: FORM CAMPAIGN ---
   if (isAdding) {
     return (
       <div className="space-y-12 animate-in fade-in duration-500">
@@ -224,67 +292,251 @@ const PromotionsManager = () => {
     );
   }
 
-  // --- VIEW: LIST MODE ---
+  // --- VIEW: LIST & MODAL ---
   return (
     <div className="space-y-12 pb-20">
-      <div className="flex justify-between items-end border-b border-vintage-ink pb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-vintage-ink pb-8 gap-6">
         <div>
-          <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Campaign Archive</h2>
+          <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Promotions & Coupons</h2>
+          <div className="flex gap-6 mt-4">
+            <button 
+              onClick={() => setActiveTab('campaigns')}
+              className={`text-[10px] font-bold uppercase tracking-[0.3em] pb-1 border-b-2 transition-all ${
+                activeTab === 'campaigns' ? 'border-vintage-ink text-vintage-ink' : 'border-transparent text-vintage-ink/40 hover:text-vintage-ink'
+              }`}
+            >
+              Store Campaigns
+            </button>
+            <button 
+              onClick={() => setActiveTab('coupons')}
+              className={`text-[10px] font-bold uppercase tracking-[0.3em] pb-1 border-b-2 transition-all ${
+                activeTab === 'coupons' ? 'border-vintage-ink text-vintage-ink' : 'border-transparent text-vintage-ink/40 hover:text-vintage-ink'
+              }`}
+            >
+              Buyer Coupons (Bargain)
+            </button>
+          </div>
         </div>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="vintage-btn btn-reverse px-10 py-4 text-[11px]"
-        >
-          <Plus size={16} className="inline mr-2" /> New Provision
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Active Ledger Provisions</h3>
-        {loading ? (
-          <div className="p-20 text-center italic opacity-40 font-serif">Consulting Campaign Registry...</div>
-        ) : promos.length === 0 ? (
-          <div className="p-20 border border-dashed border-vintage-ink/20 text-center">
-             <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">No active provisions found in folio.</p>
-          </div>
+        {activeTab === 'campaigns' ? (
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="vintage-btn btn-reverse px-10 py-4 text-[11px]"
+          >
+            <Plus size={16} className="inline mr-2" /> New Provision
+          </button>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {promos.map(p => (
-              <div key={p.id} className="vintage-card bg-white/40 flex flex-col justify-between group hover:border-vintage-accent transition-all duration-500">
-                <div>
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="bg-vintage-ink text-vintage-paper px-3 py-1 text-[10px] font-bold tracking-widest border border-vintage-ink uppercase">
-                      {p.discount_percent}% Reduction
-                    </div>
-                    <div className="flex items-center gap-2 text-[9px] font-bold text-vintage-ink/40 uppercase tracking-tighter">
-                      <Calendar size={12} /> {new Date(p.end_date).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-display text-vintage-ink leading-tight mb-2 uppercase">{p.name}</h3>
-                  <p className="text-[10px] font-bold text-vintage-accent uppercase tracking-[0.2em] italic mb-6">
-                    {p.type === 'global' ? 'Studio-wide Provision' : `${p.font_ids?.length} Selected Artifacts`}
-                  </p>
-                </div>
-
-                <div className="flex gap-6 pt-4 border-t border-vintage-ink/10">
-                  <button 
-                    onClick={() => handleEdit(p)} 
-                    className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-2"
-                  >
-                    <Edit3 size={14} /> Refine
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(p.id)} 
-                    className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-2"
-                  >
-                    <Trash2 size={14} /> Terminate
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <button 
+            onClick={() => setIsAddingCoupon(true)}
+            className="vintage-btn btn-reverse px-10 py-4 text-[11px]"
+          >
+            <Plus size={16} className="inline mr-2" /> Generate Coupon
+          </button>
         )}
       </div>
+
+      {/* TAB 1: CAMPAIGNS */}
+      {activeTab === 'campaigns' && (
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Active Ledger Provisions</h3>
+          {loading ? (
+            <div className="p-20 text-center italic opacity-40 font-serif">Consulting Campaign Registry...</div>
+          ) : promos.length === 0 ? (
+            <div className="p-20 border border-dashed border-vintage-ink/20 text-center">
+              <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">No active provisions found in folio.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {promos.map(p => (
+                <div key={p.id} className="vintage-card bg-white/40 flex flex-col justify-between group hover:border-vintage-accent transition-all duration-500">
+                  <div>
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="bg-vintage-ink text-vintage-paper px-3 py-1 text-[10px] font-bold tracking-widest border border-vintage-ink uppercase">
+                        {p.discount_percent}% Reduction
+                      </div>
+                      <div className="flex items-center gap-2 text-[9px] font-bold text-vintage-ink/40 uppercase tracking-tighter">
+                        <Calendar size={12} /> {new Date(p.end_date).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-display text-vintage-ink leading-tight mb-2 uppercase">{p.name}</h3>
+                    <p className="text-[10px] font-bold text-vintage-accent uppercase tracking-[0.2em] italic mb-6">
+                      {p.type === 'global' ? 'Studio-wide Provision' : `${p.font_ids?.length} Selected Artifacts`}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-6 pt-4 border-t border-vintage-ink/10">
+                    <button 
+                      onClick={() => handleEdit(p)} 
+                      className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-2"
+                    >
+                      <Edit3 size={14} /> Refine
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(p.id)} 
+                      className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-2"
+                    >
+                      <Trash2 size={14} /> Terminate
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: COUPONS */}
+      {activeTab === 'coupons' && (
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Exclusive Bargain & Promo Tokens</h3>
+          {coupons.length === 0 ? (
+            <div className="p-20 border border-dashed border-vintage-ink/20 text-center">
+              <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">No coupons generated yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {coupons.map(c => (
+                <div key={c.id} className="vintage-card bg-white/40 flex flex-col justify-between group hover:border-vintage-accent transition-all duration-500">
+                  <div>
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="bg-vintage-accent text-vintage-paper px-3 py-1 text-[10px] font-bold tracking-widest border border-vintage-accent uppercase">
+                        {c.code}
+                      </div>
+                      <div className="flex items-center gap-2 text-[9px] font-bold text-vintage-ink/40 uppercase tracking-tighter">
+                        <Calendar size={12} /> {new Date(c.end_date).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <h3 className="text-3xl font-display text-vintage-ink leading-tight mb-2">{c.discount_value}% OFF</h3>
+                    <p className="text-[10px] font-bold text-vintage-ink/60 uppercase tracking-[0.2em] italic mb-6">
+                      Redemptions: {c.used_count} / {c.max_uses || '∞'}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-6 pt-4 border-t border-vintage-ink/10">
+                    <button 
+                      onClick={() => handleDeleteCoupon(c.id)} 
+                      className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-2"
+                    >
+                      <Trash2 size={14} /> Revoke Token
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODAL GENERATOR KUPON & KALKULATOR TAWARAN */}
+      {isAddingCoupon && (
+        <div className="fixed inset-0 bg-vintage-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-vintage-paper border border-vintage-ink/20 p-8 max-w-lg w-full shadow-2xl text-vintage-ink">
+            <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
+              <div>
+                <span className="text-[9px] font-bold tracking-[0.3em] text-vintage-accent uppercase block mb-1">Coupon Minting</span>
+                <h3 className="text-3xl font-display uppercase">Bargain Token Generator</h3>
+              </div>
+              <button onClick={() => setIsAddingCoupon(false)} className="p-1 hover:text-vintage-accent transition-colors"><X size={20} /></button>
+            </div>
+
+            {/* KALKULATOR TAWAR-MENAWAR */}
+            <div className="p-5 bg-vintage-ink/3 border border-vintage-ink/10 mb-6 space-y-4">
+              <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-vintage-accent flex items-center gap-2">
+                <Calculator size={14} /> BARGAIN CALCULATOR (Auto Percentage)
+              </span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[8px] font-bold uppercase block text-vintage-ink/50 mb-1">Original Price ($)</label>
+                  <input 
+                    type="number" 
+                    value={calcOriginalPrice} 
+                    onChange={e => setCalcOriginalPrice(e.target.value)} 
+                    className="w-full border-b border-vintage-ink/20 bg-transparent p-2 font-display text-lg outline-none focus:border-vintage-ink" 
+                    placeholder="350"
+                  />
+                </div>
+                <div>
+                  <label className="text-[8px] font-bold uppercase block text-vintage-ink/50 mb-1">Deal Target ($)</label>
+                  <input 
+                    type="number" 
+                    value={calcTargetPrice} 
+                    onChange={e => setCalcTargetPrice(e.target.value)} 
+                    className="w-full border-b border-vintage-ink/20 bg-transparent p-2 font-display text-lg outline-none focus:border-vintage-ink" 
+                    placeholder="270"
+                  />
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={handleApplyBargain}
+                className="vintage-btn w-full py-2.5 text-[9px] font-bold uppercase tracking-widest bg-vintage-ink! text-vintage-background!"
+              >
+                Compute & Apply Percentage
+              </button>
+            </div>
+
+            {/* FORM KUPON */}
+            <form onSubmit={handleSaveCoupon} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/50">Token Code</label>
+                  <input 
+                    type="text" 
+                    value={couponCode} 
+                    onChange={e => setCouponCode(e.target.value.toUpperCase())} 
+                    className="w-full border-b border-vintage-ink/20 py-2 bg-transparent font-bold uppercase text-sm outline-none focus:border-vintage-ink" 
+                    placeholder="DEAL23OFF" 
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/50">Discount (%)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={couponDiscount} 
+                    onChange={e => setCouponDiscount(e.target.value)} 
+                    className="w-full border-b border-vintage-ink/20 py-2 bg-transparent font-bold text-sm outline-none focus:border-vintage-ink" 
+                    placeholder="22.86" 
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/50">Usage Limit</label>
+                  <input 
+                    type="number" 
+                    value={couponMaxUses} 
+                    onChange={e => setCouponMaxUses(e.target.value)} 
+                    className="w-full border-b border-vintage-ink/20 py-2 bg-transparent font-bold text-sm outline-none focus:border-vintage-ink" 
+                    placeholder="1" 
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/50">Expiry Date</label>
+                  <input 
+                    type="date" 
+                    value={couponEndDate} 
+                    onChange={e => setCouponEndDate(e.target.value)} 
+                    className="w-full border-b border-vintage-ink/20 py-2 bg-transparent font-bold text-xs uppercase outline-none focus:border-vintage-ink cursor-pointer" 
+                    required
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isSaving}
+                className="vintage-btn btn-reverse w-full py-5 text-[10px] tracking-[0.3em] uppercase flex justify-center items-center gap-2 mt-4"
+              >
+                {isSaving ? <Loader2 className="animate-spin" size={16} /> : "Save & Activate Token"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

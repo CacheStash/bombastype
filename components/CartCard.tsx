@@ -38,7 +38,7 @@ const CartCard: React.FC<CartCardProps> = ({
   const [isTrial, setIsTrial] = useState(initialOption === 'trial');
   const [isAdded, setIsAdded] = useState(false);
 
-  // --- LOGIC BLOCKS (UNTOUCHED) ---
+  // --- LOGIC BLOCKS ---
   useEffect(() => {
     if (initialOption === 'trial') { setIsTrial(true); setIsCorporate(false); setSelectedUsages([]); } 
     else if (initialOption === 'corporate') { setIsCorporate(true); setIsTrial(false); setSelectedUsages([]); }
@@ -70,7 +70,7 @@ const CartCard: React.FC<CartCardProps> = ({
     let currentSum = 0;
     selectedUsages.forEach(u => {
       const categoryData = (prices as any)[u];
-      if (categoryData) currentSum += categoryData[selectedTiers[u]] || 0;
+      if (categoryData) currentSum += Number(categoryData[selectedTiers[u]]) || 0;
     });
     let bundleDiscount = selectedUsages.length === 3 ? 0.15 : selectedUsages.length === 4 ? 0.20 : selectedUsages.length >= 5 ? 0.25 : 0;
     const afterBundle = currentSum * (1 - bundleDiscount);
@@ -83,16 +83,23 @@ const CartCard: React.FC<CartCardProps> = ({
 
   const totalPrice = useMemo(() => {
     if (!prices || isTrial) return 0;
-    if (isCorporate) return discount > 0 ? Math.round(prices.corporate_full_suite * (1 - discount / 100)) : prices.corporate_full_suite;
+    if (isCorporate) {
+      const baseCorporate = Number(prices.corporate_full_suite) || 0;
+      return discount > 0 
+        ? Number((baseCorporate * (1 - discount / 100)).toFixed(2)) 
+        : baseCorporate;
+    }
     let total = 0, qualifyingCount = 0;
     selectedUsages.forEach(usage => {
-      const itemPrice = (prices as any)[usage]?.[selectedTiers[usage]] || 0;
+      const itemPrice = Number((prices as any)[usage]?.[selectedTiers[usage]]) || 0;
       total += itemPrice;
       if (itemPrice >= 250) qualifyingCount++;
     });
     let bundleDiscount = qualifyingCount === 3 ? 0.15 : qualifyingCount === 4 ? 0.20 : qualifyingCount >= 5 ? 0.25 : 0;
     const baseAfterBundle = total * (1 - bundleDiscount);
-    return discount > 0 ? Math.round(baseAfterBundle * (1 - discount / 100)) : Math.round(baseAfterBundle);
+    return discount > 0 
+      ? Number((baseAfterBundle * (1 - discount / 100)).toFixed(2)) 
+      : Number(baseAfterBundle.toFixed(2));
   }, [selectedUsages, selectedTiers, isCorporate, isTrial, prices, discount]);
 
   const savingsInfo = useMemo(() => {
@@ -101,14 +108,19 @@ const CartCard: React.FC<CartCardProps> = ({
     if (isCorporate) {
       Object.keys(tierMap).forEach(u => {
         const tiers = (prices as any)[u];
-        if (tiers) originalPrice += Math.max(...(Object.values(tiers) as number[]));
+        if (tiers) {
+          const values = Object.values(tiers).map(v => Number(v) || 0);
+          originalPrice += Math.max(...values);
+        }
       });
     } else {
       if (selectedUsages.length === 0) return null;
-      selectedUsages.forEach(u => { originalPrice += (prices as any)[u]?.[selectedTiers[u]] || 0; });
+      selectedUsages.forEach(u => { 
+        originalPrice += Number((prices as any)[u]?.[selectedTiers[u]]) || 0; 
+      });
     }
-    const savedAmount = originalPrice - totalPrice;
-    return savedAmount > 0 ? { amount: savedAmount, percent: Math.round((savedAmount / originalPrice) * 100) } : null;
+    const savedAmount = Number((originalPrice - totalPrice).toFixed(2));
+    return savedAmount > 0 ? { amount: savedAmount.toFixed(2), percent: Math.round((savedAmount / originalPrice) * 100) } : null;
   }, [prices, isCorporate, isTrial, selectedUsages, selectedTiers, totalPrice, tierMap]);
 
   // --- HANDLERS ---
@@ -167,7 +179,7 @@ const CartCard: React.FC<CartCardProps> = ({
               <label className="text-[9px] font-bold tracking-[0.3em] mb-6 block text-vintage-ink/40">LICENSE CATEGORIES (SELECTABLE)</label>
               
               <div className="flex flex-col gap-4">
-                {/* TRIAL BUTTON - Pake Tailwind !important buat maksa mode reverse */}
+                {/* TRIAL BUTTON */}
                 <button onClick={handleTrialToggle} 
                   className={`vintage-btn flex items-center justify-between py-5 px-6 transition-all duration-300 ${
                     isTrial 
@@ -271,7 +283,7 @@ const CartCard: React.FC<CartCardProps> = ({
               <span className="text-[9px] font-bold tracking-[0.3em] text-vintage-ink/40 mb-3 uppercase">Investment Total</span>
               <div className="flex items-start justify-center md:justify-start">
                 <span className="text-2xl font-bold mt-2 mr-1 tracking-tighter text-vintage-ink">$</span>
-                <span className="text-8xl font-display tracking-tighter leading-[0.7] text-vintage-ink">{totalPrice}</span>
+                <span className="text-8xl font-display tracking-tighter leading-[0.7] text-vintage-ink">{Number(totalPrice).toFixed(2)}</span>
               </div>
               {savingsInfo && (
                 <div className="mt-4">
