@@ -147,22 +147,37 @@ const FontDetail: React.FC = () => {
           </>
         )}
 
-        {/* Bullets Centered in page */}
-        <div className="absolute -bottom-12 left-0 right-0 w-full flex justify-center gap-4 z-20">
-          {Array.from({ length: totalSlides }).map((_, i) => (
-            <button 
-              key={i} 
-              onClick={() => setCurrentSlide(i)} 
-              className="p-2 group/dot outline-none"
-            >
-              <div className={`h-1 transition-all duration-500 ${
-                currentSlide === i 
-                ? 'w-12 bg-vintage-accent' 
-                : 'w-2 bg-vintage-ink/20 group-hover/dot:bg-vintage-ink/40'
-              }`} />
-            </button>
-          ))}
-        </div>
+       {/* HORIZONTAL IMAGE THUMBNAILS */}
+        {totalSlides > 1 && (
+          <div className="w-full max-w-7xl mx-auto px-6 pt-6 pb-2">
+            <div className="flex items-center justify-center gap-3 overflow-x-auto custom-scrollbar py-2">
+              {displayImages.map((img, i) => {
+                const imgUrl = resolvePreviewUrl(img);
+                if (!imgUrl) return null;
+                const isActive = currentSlide === i;
+
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setCurrentSlide(i)}
+                    className={`relative shrink-0 h-16 md:h-20 aspect-video overflow-hidden border transition-all duration-300 ${
+                      isActive 
+                        ? 'border-vintage-accent ring-2 ring-vintage-accent/40 opacity-100 scale-105 shadow-md' 
+                        : 'border-vintage-ink/20 opacity-40 hover:opacity-80 hover:border-vintage-ink/50'
+                    }`}
+                  >
+                    <img 
+                      src={imgUrl} 
+                      alt={`Thumbnail ${i + 1}`} 
+                      className="w-full h-full object-cover" 
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 3. TYPE TESTER SECTION */}
