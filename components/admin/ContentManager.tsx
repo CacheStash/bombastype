@@ -139,17 +139,25 @@ const ContentManager = () => {
           Management of Static Documentation & Page Narratives
         </p>
         
-        {/* CATEGORIES - Below Title */}
-        <div className="flex flex-wrap gap-2 bg-vintage-paper/50 border border-vintage-ink p-1 w-fit">
+        {/* CATEGORIES - Clear Active High-Contrast Tabs */}
+        <div className="flex flex-wrap gap-2 bg-vintage-ink/5 border border-vintage-ink/20 p-1.5 w-fit">
           {categories.map(cat => (
             <button
               key={cat}
+              type="button"
               onClick={() => {
                 setCurrentCategory(cat);
                 setFormData(prev => ({...prev, category: cat, page_path: `/${cat}`}));
               }}
-              className={`px-4 py-2 font-bold text-[10px] uppercase tracking-widest transition-all ${currentCategory === cat ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
+              className={`px-5 py-2.5 font-bold text-[10px] uppercase tracking-[0.25em] transition-all duration-300 relative ${
+                currentCategory === cat 
+                  ? 'bg-vintage-ink text-vintage-background shadow-md' 
+                  : 'text-vintage-ink/50 hover:text-vintage-ink hover:bg-vintage-ink/10'
+              }`}
             >
+              {currentCategory === cat && (
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-vintage-accent mr-2 align-middle" />
+              )}
               {cat}
             </button>
           ))}
@@ -262,8 +270,15 @@ const ContentManager = () => {
 
       {/* ARCHIVE LIST */}
       <div className="space-y-4">
-        {/* Active Ledger Entries dibuat lebih gelap */}
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Active Ledger Entries</h3>
+        {/* Dynamic Category Indicator Heading */}
+        <div className="flex items-center justify-between border-b border-vintage-ink/10 pb-3 mb-6">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.3em] text-vintage-ink">
+            Active Ledger Records <span className="text-vintage-accent ml-2">[{currentCategory.toUpperCase()}]</span>
+          </h3>
+          <span className="text-[9px] font-bold tracking-widest text-vintage-ink/40 uppercase">
+            {items.length} {items.length === 1 ? 'Entry' : 'Entries'} in Folio
+          </span>
+        </div>
         {loading ? (
           <div className="p-20 text-center italic opacity-40 font-serif">Syncing Ledger...</div>
         ) : (
