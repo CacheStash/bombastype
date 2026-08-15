@@ -43,7 +43,7 @@ const Contact: React.FC = () => {
       return;
     }
 
-const mailtoUrl = `mailto:bombastype@gmail.com?subject=${encodeURIComponent(`[BOMBASTYPE INQUIRY] ${subject}`)}&body=${encodeURIComponent(`FROM: ${email}\n\nMESSAGE:\n${message}`)}`;
+    const mailtoUrl = `mailto:bombastype@gmail.com?subject=${encodeURIComponent(`[BOMBASTYPE INQUIRY] ${subject}`)}&body=${encodeURIComponent(`FROM: ${email}\n\nMESSAGE:\n${message}`)}`;
     
     window.location.href = mailtoUrl;
   };
@@ -52,7 +52,7 @@ const mailtoUrl = `mailto:bombastype@gmail.com?subject=${encodeURIComponent(`[BO
     <div className="pb-12 relative z-10">
       {/* HERO SECTION */}
       <section className="text-center mb-16 md:mb-24 max-w-3xl mx-auto relative z-10 px-4 pt-12">
-              <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
+        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
           Get in Touch
         </motion.p>
         <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight">
@@ -63,8 +63,34 @@ const mailtoUrl = `mailto:bombastype@gmail.com?subject=${encodeURIComponent(`[BO
         </motion.p>
       </section>
 
+      {/* SECTION 00: DIRECT DISPATCH */}
+      <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">
+        <ContactCard 
+          number="00" 
+          title="Direct Dispatch Protocol"
+        >
+          <div className="space-y-6">
+            <p className="text-base md:text-lg leading-relaxed text-vintage-ink/80 italic font-serif">
+              To bypass strict corporate spam filters and keep studio correspondence streamlined, all communications are managed directly via our dedicated Gmail inbox.
+            </p>
+            <p className="text-base md:text-lg leading-relaxed text-vintage-ink/70">
+              If you prefer not using the contact form below, you can send an inquiry directly to:
+            </p>
+            <div className="pt-2">
+              <a 
+                href="mailto:bombastype@gmail.com" 
+                className="group inline-flex items-center gap-4 text-lg md:text-2xl font-display tracking-tight text-vintage-ink hover:text-vintage-accent transition-colors duration-300 pb-2 border-b border-vintage-ink/20 hover:border-vintage-accent"
+              >
+                <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
+                bombastype@gmail.com
+              </a>
+            </div>
+          </div>
+        </ContactCard>
+      </section>
+
       {/* CONTACT FORM SECTION */}
-      <section className="px-4 md:px-8 py-12 md:py-16 relative z-10">
+      <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">
         <ContactCard 
           number="01" 
           title="Send a Message"
@@ -95,6 +121,7 @@ const mailtoUrl = `mailto:bombastype@gmail.com?subject=${encodeURIComponent(`[BO
                 className="w-full bg-transparent border-none outline-none text-lg md:text-2xl font-normal tracking-tight p-0 text-vintage-ink appearance-none cursor-pointer"
               >
                 <option value="" disabled>Select an option...</option>
+                <option value="bargain">Custom Deal / Price Negotiation: Propose a budget for custom tokens.</option>
                 <option value="support">Font Support: Technical issues or glyph help.</option>
                 <option value="upgrade">License Upgrades: Expanding your scale.</option>
                 <option value="custom">Custom Projects: Unique brand collaborations.</option>
@@ -102,6 +129,7 @@ const mailtoUrl = `mailto:bombastype@gmail.com?subject=${encodeURIComponent(`[BO
               </select>
               <div className="mt-4 min-h-[1.5em]">
                 <p className="text-xs italic text-vintage-accent font-medium">
+                  {subject === "bargain" && "Got a specific project budget? Let's discuss and mint a custom token for you."}
                   {subject === "support" && "Having trouble with installation? Let's fix it together."}
                   {subject === "upgrade" && "Need more seats or views for your team? I've got you covered."}
                   {subject === "custom" && "Want a unique voice for your brand? Let's discuss a collaboration."}
@@ -136,14 +164,14 @@ const mailtoUrl = `mailto:bombastype@gmail.com?subject=${encodeURIComponent(`[BO
       </section>
 
       {/* QUICK RESOURCES SECTION */}
-      <section className="px-4 md:px-8 py-12 md:py-16 relative z-10">
+      <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">
         <ContactCard
-            number="02" 
-            title="Quick Resources"
-          >
+          number="02" 
+          title="Quick Resources"
+        >
           <div className="space-y-8">
             <p className="text-base md:text-lg leading-relaxed text-vintage-ink/70">
-              Before sending a message, you might find an instant answer in these resources.
+              Before sending a message, you might find an instant answer in these resources[cite: 10].
             </p>
             <Link 
               to="/faq" 
@@ -153,16 +181,16 @@ const mailtoUrl = `mailto:bombastype@gmail.com?subject=${encodeURIComponent(`[BO
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </Link>
             <p className="text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-semibold text-vintage-ink/50">
-              Typical response time: Within 24-48 hours.
+              Typical response time: Within 24-48 hours[cite: 10].
             </p>
           </div>
-          </ContactCard>
+        </ContactCard>
       </section>
 
       {/* FOOTER */}
       <footer className="px-4 md:px-8 py-12 md:py-16 relative z-10 text-center border-t border-vintage-ink/20">
         <p className="text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-semibold text-vintage-ink/40">
-          Last Updated: February 21, 2026
+          Last Updated: February 21, 2026[cite: 10]
         </p>
       </footer>
 
