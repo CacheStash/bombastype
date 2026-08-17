@@ -122,8 +122,9 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [isAddLayerOpen, setIsAddLayerOpen] = useState(false);
   const PRESET_SIZES = [12, 14, 16, 18, 20, 24, 32, 36, 48, 64, 72, 96, 120, 144, 200];
 
-  // Alternates State
+// Alternates State & Cache semua font object untuk render layered SVG
   const [loadedFontObj, setLoadedFontObj] = useState<opentype.Font | null>(null);
+  const [loadedFontsMap, setLoadedFontsMap] = useState<Record<number, opentype.Font>>({});
   const [popoverPos, setPopoverPos] = useState<{ x: number; y: number } | null>(null);
   const [alternateGlyphs, setAlternateGlyphs] = useState<AlternateGlyph[]>([]);
   const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(null);
@@ -161,6 +162,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           const isVariable = font.tables.fvar?.axes?.length > 0;
           const detectedName = names.preferredSubfamily?.en || names.fontSubfamily?.en;
           setDetectedStyleNames(prev => ({ ...prev, [index]: isVariable ? "Variable" : detectedName }));
+          setLoadedFontsMap(prev => ({ ...prev, [index]: font }));
         }
       });
     });
@@ -397,14 +399,17 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
 
   // Helper render khusus untuk huruf inline di dalam teks textarea overlay (Akurat Baseline)
-  const renderInlineGlyphSvg = (glyphIdx: number, targetSize: number) => {
-    if (!loadedFontObj) return null;
-    const glyph = loadedFontObj.glyphs.get(glyphIdx);
+  const renderInlineGlyphSvg = (glyphIdx: number, targetSize: number, fontIdx: number) => {
+    const targetFontObj = loadedFontsMap[fontIdx] || loadedFontObj;
+    if (!targetFontObj) return null;
+
+    // Ambil glyph sesuai index dari file font layer yang bersangkutan
+    const glyph = targetFontObj.glyphs.get(glyphIdx);
     if (!glyph) return null;
 
-    const unitsPerEm = loadedFontObj.unitsPerEm || 1000;
-    const ascender = loadedFontObj.tables.os2?.sTypoAscender || loadedFontObj.tables.hhea?.ascender || (unitsPerEm * 0.8);
-    const descender = Math.abs(loadedFontObj.tables.os2?.sTypoDescender || loadedFontObj.tables.hhea?.descender || (unitsPerEm * 0.2));
+    const unitsPerEm = targetFontObj.unitsPerEm || 1000;
+    const ascender = targetFontObj.tables.os2?.sTypoAscender || targetFontObj.tables.hhea?.ascender || (unitsPerEm * 0.8);
+    const descender = Math.abs(targetFontObj.tables.os2?.sTypoDescender || targetFontObj.tables.hhea?.descender || (unitsPerEm * 0.2));
     const totalHeight = ascender + descender;
 
     const scale = targetSize / unitsPerEm;
@@ -560,7 +565,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       if (overrideGlyphIdx !== undefined) {
         return (
           <React.Fragment key={i}>
-            {renderInlineGlyphSvg(overrideGlyphIdx, fontSize) || char}
+            {renderInlineGlyphSvg(overrideGlyphIdx, fontSize, fontIdx) || char}
           </React.Fragment>
         );
       }
