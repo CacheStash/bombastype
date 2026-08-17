@@ -329,7 +329,17 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
     if (alternates.length > 0) {
       setSelectedCharIndex(start);
-      setPopoverPos({ x: 0, y: 0 });
+      let posX = 24;
+      let posY = 16;
+      const targetCharEl = document.getElementById(`char-span-${start}`);
+      if (targetCharEl && textareaRef.current) {
+        const containerRect = textareaRef.current.getBoundingClientRect();
+        const charRect = targetCharEl.getBoundingClientRect();
+        posX = charRect.left - containerRect.left;
+        posY = charRect.top - containerRect.top;
+      }
+
+      setPopoverPos({ x: posX, y: posY });
       setAlternateGlyphs(alternates);
     } else {
       setPopoverPos(null);
@@ -451,7 +461,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       return null;
     }
   };
-  
+
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     setCharOverrides({});
@@ -578,6 +588,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       return (
         <span 
           key={i}
+          id={fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex) ? `char-span-${i}` : undefined}
           style={{
             fontFamily: styleFontFamily,
             fontFeatureSettings: activeCharFeatures,
@@ -857,7 +868,11 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                       initial={{ opacity: 0, scale: 0.9, y: 10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                      className="absolute z-60 top-4 left-6 md:left-12 bg-vintage-paper border border-vintage-ink shadow-2xl p-2.5 flex items-center gap-3"
+                      className="absolute z-60 bg-vintage-paper border border-vintage-ink shadow-2xl p-2.5 flex items-center gap-3 pointer-events-auto"
+                      style={{
+                        left: `${Math.max(16, Math.min(popoverPos.x - 20, (textareaRef.current?.clientWidth || 600) - 280))}px`,
+                        top: `${popoverPos.y > 70 ? popoverPos.y - 65 : popoverPos.y + fontSize + 15}px`
+                      }}
                     >
                       <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-vintage-accent border-r border-vintage-ink/10 pr-2">
                         Alternates
