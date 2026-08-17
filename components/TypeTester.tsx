@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FontConfig } from '../types';
 import opentype from 'opentype.js';
@@ -25,11 +25,21 @@ interface AlternateGlyph {
   featureTag: string;
 }
 
+interface CharToken {
+  char: string;
+  feature?: string;
+}
+
 const TypeTester: React.FC<TypeTesterProps> = ({ 
   config, 
   defaultText = "One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin.",
 }) => {
-  const [text, setText] = useState(config.randomText || defaultText);
+  const initialTokens = useMemo(() => {
+    const raw = config.randomText || defaultText;
+    return raw.split('').map(c => ({ char: c }));
+  }, [config.randomText, defaultText]);
+
+  const [tokens, setTokens] = useState<CharToken[]>(initialTokens);
   const [fontSize, setFontSize] = useState(64);
   const [align, setAlign] = useState<'left' | 'center' | 'right'>('left');
   const [viewMode, setViewMode] = useState<'type' | 'glyphs'>('type');
@@ -57,12 +67,12 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false);
   const PRESET_SIZES = [12, 14, 16, 18, 20, 24, 32, 36, 48, 64, 72, 96, 120, 144, 200];
 
-  // Alternates & Textarea State
+  // Alternates State
   const [loadedFontObj, setLoadedFontObj] = useState<opentype.Font | null>(null);
   const [popoverPos, setPopoverPos] = useState<{ x: number; y: number } | null>(null);
   const [alternateGlyphs, setAlternateGlyphs] = useState<AlternateGlyph[]>([]);
-  const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [selectedTokenIndex, setSelectedTokenIndex] = useState<number | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
 
   const ALLOWED_TAGS = new Set([
     'liga', 'dlig', 'calt', 'aalt', 'salt',
@@ -147,6 +157,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       setDynamicFeatures(Array.from(foundTags).sort().map(tag => ({ tag, name: tag.startsWith('ss') ? `Set ${tag.slice(2)}` : tag.toUpperCase() })));
       setActiveFeatures({});
       setPopoverPos(null);
+      setSelectedTokenIndex(null);
     });
   }, [config, activeStyleIndex]);
 
@@ -155,24 +166,37 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   }, [detectedGlyphs]);
 
   // Handler Seleksi Teks untuk Alternate Glyph Popover (Photoshop/Illustrator Style)
-  const handleTextSelect = () => {
-    if (!textareaRef.current || !loadedFontObj) {
+  const handleEditorSelect = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
       setPopoverPos(null);
+      setSelectedTokenIndex(null);
       return;
     }
 
-    const el = textareaRef.current;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
+    const anchorNode = sel.anchorNode;
+    let targetSpan = anchorNode instanceof HTMLElement ? anchorNode : anchorNode?.parentElement;
+    
+    // Cari elemen span token terdekat
+    while (targetSpan && targetSpan !== editorRef.current && !targetSpan.hasAttribute('data-token-idx')) {
+      targetSpan = targetSpan.parentElement;
+    }
 
-    // Hanya tampilkan jika tepat 1 karakter yang dipilih
-    if (start === end || end - start !== 1) {
+    if (!targetSpan || !targetSpan.hasAttribute('data-token-idx') || !loadedFontObj) {
       setPopoverPos(null);
+      setSelectedTokenIndex(null);
       return;
     }
 
-    const selectedChar = text.slice(start, end);
-    const glyphIndex = loadedFontObj.charToGlyphIndex(selectedChar);
+    const tokenIdx = parseInt(targetSpan.getAttribute('data-token-idx') || '-1', 10);
+    if (tokenIdx < 0 || tokenIdx >= tokens.length) {
+      setPopoverPos(null);
+      setSelectedTokenIndex(null);
+      return;
+    }
+
+    const targetChar = tokens[tokenIdx].char;
+    const glyphIndex = loadedFontObj.charToGlyphIndex(targetChar);
 
     if (!glyphIndex) {
       setPopoverPos(null);
@@ -202,25 +226,20 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     ? subtable.substitute[covIdx] 
                     : (glyphIndex + subtable.deltaGlyphId) % 65536;
                   
-                  const targetGlyph = loadedFontObj.glyphs.get(targetGlyphIdx);
-                  const charStr = targetGlyph?.unicode ? String.fromCharCode(targetGlyph.unicode) : selectedChar;
-                  
-                  if (!alternates.some(a => a.glyphIndex === targetGlyphIdx)) {
-                    alternates.push({ char: charStr, glyphIndex: targetGlyphIdx, featureTag: featureRecord.tag });
+                  if (!alternates.some(a => a.featureTag === featureRecord.tag)) {
+                    alternates.push({ char: targetChar, glyphIndex: targetGlyphIdx, featureTag: featureRecord.tag });
                   }
                 }
               }
-            }
+            } 
             // Lookup Type 3: Alternate Substitution
             else if (lookup.lookupType === 3) {
               if (subtable.coverage && subtable.coverage.glyphs) {
                 const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
                 if (covIdx !== -1 && subtable.alternateSet && subtable.alternateSet[covIdx]) {
                   subtable.alternateSet[covIdx].forEach((altIdx: number) => {
-                    const targetGlyph = loadedFontObj.glyphs.get(altIdx);
-                    const charStr = targetGlyph?.unicode ? String.fromCharCode(targetGlyph.unicode) : selectedChar;
-                    if (!alternates.some(a => a.glyphIndex === altIdx)) {
-                      alternates.push({ char: charStr, glyphIndex: altIdx, featureTag: featureRecord.tag });
+                    if (!alternates.some(a => a.featureTag === featureRecord.tag)) {
+                      alternates.push({ char: targetChar, glyphIndex: altIdx, featureTag: featureRecord.tag });
                     }
                   });
                 }
@@ -232,19 +251,35 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     }
 
     if (alternates.length > 0) {
-      setSelectionRange({ start, end });
-      setPopoverPos({ x: 0, y: 0 }); // Posisi anchored di dalam container
+      setSelectedTokenIndex(tokenIdx);
+      setPopoverPos({ x: 0, y: 0 });
       setAlternateGlyphs(alternates);
     } else {
       setPopoverPos(null);
+      setSelectedTokenIndex(null);
     }
   };
 
   const applyAlternate = (alt: AlternateGlyph) => {
-    if (!selectionRange) return;
-    const newText = text.slice(0, selectionRange.start) + alt.char + text.slice(selectionRange.end);
-    setText(newText);
+    if (selectedTokenIndex === null) return;
+    setTokens(prev => {
+      const next = [...prev];
+      const currentFeat = next[selectedTokenIndex].feature;
+      next[selectedTokenIndex] = {
+        ...next[selectedTokenIndex],
+        feature: currentFeat === alt.featureTag ? undefined : (alt.featureTag || undefined)
+      };
+      return next;
+    });
     setPopoverPos(null);
+    setSelectedTokenIndex(null);
+  };
+
+  const handleEditorInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const rawText = e.currentTarget.innerText || '';
+    setTokens(rawText.split('').map(c => ({ char: c })));
+    setPopoverPos(null);
+    setSelectedTokenIndex(null);
   };
 
   const totalPages = Math.max(1, Math.ceil(filteredGlyphs.length / GLYPHS_PER_PAGE));
@@ -372,22 +407,38 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
               <div className="relative w-full min-h-100">
-                <textarea 
+                <div 
                   key="type" 
-                  ref={textareaRef}
-                  value={text} 
-                  onChange={(e) => { setText(e.target.value); setPopoverPos(null); }} 
-                  onSelect={handleTextSelect}
-                  onKeyUp={handleTextSelect}
-                  onMouseUp={handleTextSelect}
-                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20" 
+                  ref={editorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={handleEditorInput}
+                  onSelect={handleEditorSelect}
+                  onKeyUp={handleEditorSelect}
+                  onMouseUp={handleEditorSelect}
+                  className="w-full min-h-100 bg-transparent outline-none p-10 md:p-16 lg:p-20 whitespace-pre-wrap break-words cursor-text select-text" 
                   style={{ ...commonFontStyle, fontSize: `${fontSize}px`, textAlign: align, lineHeight: lineHeight, letterSpacing: `${letterSpacing}em` }} 
                   spellCheck={false} 
-                />
+                >
+                  {tokens.map((tok, i) => (
+                    <span 
+                      key={i} 
+                      data-token-idx={i}
+                      style={{ 
+                        fontFeatureSettings: tok.feature 
+                          ? `"${tok.feature}" on, ${commonFontStyle.fontFeatureSettings}` 
+                          : commonFontStyle.fontFeatureSettings 
+                      }}
+                      className={tok.feature ? "text-vintage-accent underline decoration-vintage-accent/40 decoration-1 underline-offset-4" : ""}
+                    >
+                      {tok.char}
+                    </span>
+                  ))}
+                </div>
 
                 {/* ADOBE / PHOTOSHOP STYLE ALTERNATE POPUP */}
                 <AnimatePresence>
-                  {popoverPos && alternateGlyphs.length > 0 && (
+                  {popoverPos && alternateGlyphs.length > 0 && selectedTokenIndex !== null && (
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.9, y: 10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -398,18 +449,54 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                         Alternates
                       </span>
                       <div className="flex items-center gap-1.5 overflow-x-auto max-w-sm">
-                        {alternateGlyphs.map((alt, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => applyAlternate(alt)}
-                            className="h-11 min-w-11 px-2 flex flex-col items-center justify-center border border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper transition-all group shrink-0"
-                            title={`Feature: ${alt.featureTag.toUpperCase()}`}
-                          >
-                            <span style={{ ...commonFontStyle, fontSize: '20px' }} className="leading-none">{alt.char}</span>
-                            <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">{alt.featureTag}</span>
-                          </button>
-                        ))}
+                        {/* Pilihan Default / Reset */}
+                        <button
+                          type="button"
+                          onClick={() => applyAlternate({ char: tokens[selectedTokenIndex].char, glyphIndex: 0, featureTag: '' })}
+                          className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center border transition-all group shrink-0 ${
+                            !tokens[selectedTokenIndex].feature 
+                              ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
+                              : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper'
+                          }`}
+                          title="Default Style"
+                        >
+                          <span style={{ ...commonFontStyle, fontSize: '20px', fontFeatureSettings: 'normal' }} className="leading-none">
+                            {tokens[selectedTokenIndex].char}
+                          </span>
+                          <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">DEFAULT</span>
+                        </button>
+
+                        {/* Pilihan Alternate per Feature */}
+                        {alternateGlyphs.map((alt, idx) => {
+                          const isActive = tokens[selectedTokenIndex].feature === alt.featureTag;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => applyAlternate(alt)}
+                              className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center border transition-all group shrink-0 ${
+                                isActive 
+                                  ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
+                                  : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper'
+                              }`}
+                              title={`Feature: ${alt.featureTag.toUpperCase()}`}
+                            >
+                              <span 
+                                style={{ 
+                                  ...commonFontStyle, 
+                                  fontSize: '20px', 
+                                  fontFeatureSettings: `"${alt.featureTag}" on` 
+                                }} 
+                                className="leading-none"
+                              >
+                                {alt.char}
+                              </span>
+                              <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">
+                                {alt.featureTag}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </motion.div>
                   )}
