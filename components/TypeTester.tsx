@@ -333,6 +333,33 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     }
   };
 
+  // Helper render khusus untuk huruf inline di dalam teks textarea overlay
+  const renderInlineGlyphSvg = (glyphIdx: number, targetSize: number) => {
+    if (!loadedFontObj) return null;
+    const glyph = loadedFontObj.glyphs.get(glyphIdx);
+    if (!glyph) return null;
+
+    const unitsPerEm = loadedFontObj.unitsPerEm || 1000;
+    const scale = targetSize / unitsPerEm;
+    const ascender = (loadedFontObj.tables.os2?.sTypoAscender || loadedFontObj.tables.hhea?.ascender || unitsPerEm * 0.8) * scale;
+    const advanceWidth = (glyph.advanceWidth || unitsPerEm * 0.6) * scale;
+
+    try {
+      const pathData = glyph.getPath(0, ascender, targetSize).toPathData(2);
+      return (
+        <svg 
+          style={{ width: `${advanceWidth}px`, height: `${targetSize}px` }} 
+          viewBox={`0 0 ${advanceWidth} ${targetSize}`} 
+          className="inline-block fill-current overflow-visible align-baseline pointer-events-none"
+        >
+          <path d={pathData} />
+        </svg>
+      );
+    } catch (e) {
+      return null;
+    }
+  };
+
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     setCharOverrides({});
@@ -488,7 +515,18 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   aria-hidden="true"
                 >
                   {text.split('').map((char, i) => {
+                    const overrideGlyphIdx = glyphOverrides[i];
                     const overrideFeature = charOverrides[i];
+
+                    // Jika user memilih alternate spesifik (seperti o.alt1), render SVG vector dari glyph-nya langsung
+                    if (overrideGlyphIdx !== undefined) {
+                      return (
+                        <span key={i} className="inline-block align-baseline">
+                          {renderInlineGlyphSvg(overrideGlyphIdx, fontSize) || char}
+                        </span>
+                      );
+                    }
+
                     const activeCharFeatures = overrideFeature 
                       ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
                       : globalActiveFeatureString;
