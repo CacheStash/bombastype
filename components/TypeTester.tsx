@@ -29,6 +29,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   config, 
   defaultText = "One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin.",
 }) => {
+  // State Glyph Index Overrides untuk presisi multi-alternate per huruf
+  const [glyphOverrides, setGlyphOverrides] = useState<Record<number, number>>({});
   const [text, setText] = useState(config.randomText || defaultText);
   const [charOverrides, setCharOverrides] = useState<Record<number, string>>({});
   const [fontSize, setFontSize] = useState(64);
@@ -271,7 +273,17 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   const applyAlternate = (alt: AlternateGlyph) => {
     if (selectedCharIndex === null) return;
-    
+   // Simpan glyph index spesifik untuk posisi karakter ini
+    setGlyphOverrides(prev => {
+      const next = { ...prev };
+      if (!alt.glyphIndex || next[selectedCharIndex] === alt.glyphIndex) {
+        delete next[selectedCharIndex];
+      } else {
+        next[selectedCharIndex] = alt.glyphIndex;
+      }
+      return next;
+    });
+
     // 1. Jika glyph target memiliki kode Unicode / PUA, ganti karakter langsung di teks textarea
     const targetGlyph = loadedFontObj?.glyphs?.get(alt.glyphIndex);
     if (targetGlyph && targetGlyph.unicode && targetGlyph.unicode !== text.charCodeAt(selectedCharIndex)) {
@@ -280,7 +292,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       setText(newText);
     }
 
-    // 2. Set override tag CSS (map 'aalt' ke 'salt' agar browser mengeksekusi render alternatifnya)
     const effectiveTag = alt.featureTag === 'aalt' ? 'salt' : alt.featureTag;
 
     setCharOverrides(prev => {
@@ -295,6 +306,31 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
     setPopoverPos(null);
     setSelectedCharIndex(null);
+  };
+
+  // Helper untuk merender visual preview glyph langsung dari glyph object opentype
+  const renderGlyphSvg = (glyphIdx: number, size: number = 24) => {
+    if (!loadedFontObj) return null;
+    const glyph = loadedFontObj.glyphs.get(glyphIdx);
+    if (!glyph) return null;
+
+    const head = loadedFontObj.tables.head;
+    const unitsPerEm = loadedFontObj.unitsPerEm || 1000;
+    const scale = (size * 0.75) / unitsPerEm;
+    const baseline = size * 0.75;
+    const advanceWidth = (glyph.advanceWidth || unitsPerEm * 0.6) * scale;
+    const xOffset = Math.max(0, (size - advanceWidth) / 2);
+
+    try {
+      const pathData = glyph.getPath(xOffset, baseline, size * 0.75).toPathData(2);
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="fill-current pointer-events-none">
+          <path d={pathData} />
+        </svg>
+      );
+    } catch (e) {
+      return null;
+    }
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -453,7 +489,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                 >
                   {text.split('').map((char, i) => {
                     const overrideFeature = charOverrides[i];
-                    // Gabungkan fitur override karakter dengan fitur global yang aktif
                     const activeCharFeatures = overrideFeature 
                       ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
                       : globalActiveFeatureString;
@@ -518,39 +553,47 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                           }`}
                           title="Default Style"
                         >
-                          <span style={{ ...commonFontStyle, fontSize: '20px', fontFeatureSettings: 'normal' }} className="leading-none">
-                            {text.charAt(selectedCharIndex)}
-                          </span>
+                          <div className="h-6 flex items-center justify-center">
+                            {renderGlyphSvg(loadedFontObj ? loadedFontObj.charToGlyphIndex(text.charAt(selectedCharIndex)) : 0, 22) || (
+                              <span style={{ ...commonFontStyle, fontSize: '18px', fontFeatureSettings: 'normal' }} className="leading-none">
+                                {text.charAt(selectedCharIndex)}
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">DEFAULT</span>
                         </button>
 
                         {/* Pilihan Alternate per Feature */}
                         {alternateGlyphs.map((alt, idx) => {
-                          const isActive = charOverrides[selectedCharIndex] === alt.featureTag;
+                          const isSelected = glyphOverrides[selectedCharIndex] === alt.glyphIndex || (!glyphOverrides[selectedCharIndex] && charOverrides[selectedCharIndex] === alt.featureTag && idx === 0);
                           return (
                             <button
                               key={idx}
                               type="button"
                               onClick={() => applyAlternate(alt)}
                               className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center border transition-all group shrink-0 ${
-                                isActive 
+                                isSelected 
                                   ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
                                   : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper bg-transparent text-vintage-ink'
                               }`}
-                              title={`Feature: ${alt.featureTag.toUpperCase()}`}
+                              title={`Glyph #${alt.glyphIndex} (${alt.featureTag.toUpperCase()})`}
                             >
-                              <span 
-                                style={{ 
-                                  ...commonFontStyle, 
-                                  fontSize: '20px', 
-                                  fontFeatureSettings: `"${alt.featureTag}" 1` 
-                                }} 
-                                className="leading-none"
-                              >
-                                {alt.char}
-                              </span>
+                              <div className="h-6 flex items-center justify-center">
+                                {renderGlyphSvg(alt.glyphIndex, 22) || (
+                                  <span 
+                                    style={{ 
+                                      ...commonFontStyle, 
+                                      fontSize: '18px', 
+                                      fontFeatureSettings: `"${alt.featureTag}" 1` 
+                                    }} 
+                                    className="leading-none"
+                                  >
+                                    {alt.char}
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">
-                                {alt.featureTag}
+                                {alt.featureTag === 'aalt' ? 'SALT' : alt.featureTag.toUpperCase()}
                               </span>
                             </button>
                           );
