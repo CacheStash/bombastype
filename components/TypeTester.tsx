@@ -57,11 +57,28 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   ]);
 
   useEffect(() => {
-    const files = Array.isArray(config.font_files) ? config.font_files : [];
+    const files = Array.isArray(config.font_files) ? config.font_files : (config.file_url ? [config.file_url] : []);
     const configAny = config as any;
     const version = new Date(configAny.updated_at || configAny.created_at || Date.now()).getTime();
+
     files.forEach((file, index) => {
+      if (!file) return;
       const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=${version}`;
+      const fontNameIdentifier = `${config.name}-${index}`;
+
+      // Daftarkan font ke CSS Engine browser
+      try {
+        const fontFace = new FontFace(fontNameIdentifier, `url("${url}")`);
+        fontFace.load().then((loadedFace) => {
+          document.fonts.add(loadedFace);
+        }).catch((err) => {
+          console.error(`Failed to register FontFace ${fontNameIdentifier}:`, err);
+        });
+      } catch (e) {
+        console.error("FontFace API error:", e);
+      }
+
+      // Load data OpenType untuk metadata nama & glyph
       opentype.load(url, (err, font) => {
         if (!err && font) {
           const names = font.names as any;
@@ -71,7 +88,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
         }
       });
     });
-  }, [config.font_files]);
+  }, [config.font_files, config.name, config.file_url]);
 
   useEffect(() => {
     let targetFile = '';
