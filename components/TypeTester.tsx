@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FontConfig } from '../types';
 import opentype from 'opentype.js';
@@ -25,21 +25,12 @@ interface AlternateGlyph {
   featureTag: string;
 }
 
-interface CharToken {
-  char: string;
-  feature?: string;
-}
-
 const TypeTester: React.FC<TypeTesterProps> = ({ 
   config, 
   defaultText = "One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin.",
 }) => {
-  const initialTokens = useMemo(() => {
-    const raw = config.randomText || defaultText;
-    return raw.split('').map(c => ({ char: c }));
-  }, [config.randomText, defaultText]);
-
-  const [tokens, setTokens] = useState<CharToken[]>(initialTokens);
+  const [text, setText] = useState(config.randomText || defaultText);
+  const [charOverrides, setCharOverrides] = useState<Record<number, string>>({});
   const [fontSize, setFontSize] = useState(64);
   const [align, setAlign] = useState<'left' | 'center' | 'right'>('left');
   const [viewMode, setViewMode] = useState<'type' | 'glyphs'>('type');
@@ -71,8 +62,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [loadedFontObj, setLoadedFontObj] = useState<opentype.Font | null>(null);
   const [popoverPos, setPopoverPos] = useState<{ x: number; y: number } | null>(null);
   const [alternateGlyphs, setAlternateGlyphs] = useState<AlternateGlyph[]>([]);
-  const [selectedTokenIndex, setSelectedTokenIndex] = useState<number | null>(null);
-  const editorRef = useRef<HTMLDivElement | null>(null);
+  const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const ALLOWED_TAGS = new Set([
     'liga', 'dlig', 'calt', 'aalt', 'salt',
@@ -157,7 +148,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       setDynamicFeatures(Array.from(foundTags).sort().map(tag => ({ tag, name: tag.startsWith('ss') ? `Set ${tag.slice(2)}` : tag.toUpperCase() })));
       setActiveFeatures({});
       setPopoverPos(null);
-      setSelectedTokenIndex(null);
+      setSelectedCharIndex(null);
     });
   }, [config, activeStyleIndex]);
 
@@ -165,41 +156,36 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setFilteredGlyphs(detectedGlyphs); 
   }, [detectedGlyphs]);
 
-  // Handler Seleksi Teks untuk Alternate Glyph Popover (Photoshop/Illustrator Style)
-  const handleEditorSelect = () => {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+  // Handler Seleksi Teks untuk Alternate Glyph Popover
+  const handleTextSelect = () => {
+    if (!textareaRef.current || !loadedFontObj) {
       setPopoverPos(null);
-      setSelectedTokenIndex(null);
+      setSelectedCharIndex(null);
       return;
     }
 
-    const anchorNode = sel.anchorNode;
-    let targetSpan = anchorNode instanceof HTMLElement ? anchorNode : anchorNode?.parentElement;
-    
-    // Cari elemen span token terdekat
-    while (targetSpan && targetSpan !== editorRef.current && !targetSpan.hasAttribute('data-token-idx')) {
-      targetSpan = targetSpan.parentElement;
-    }
+    const el = textareaRef.current;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
 
-    if (!targetSpan || !targetSpan.hasAttribute('data-token-idx') || !loadedFontObj) {
+    // Hanya tampilkan jika tepat 1 karakter yang dipilih
+    if (start === end || end - start !== 1) {
       setPopoverPos(null);
-      setSelectedTokenIndex(null);
+      setSelectedCharIndex(null);
       return;
     }
 
-    const tokenIdx = parseInt(targetSpan.getAttribute('data-token-idx') || '-1', 10);
-    if (tokenIdx < 0 || tokenIdx >= tokens.length) {
+    const targetChar = text.charAt(start);
+    if (!targetChar || targetChar === '\n' || targetChar === ' ') {
       setPopoverPos(null);
-      setSelectedTokenIndex(null);
+      setSelectedCharIndex(null);
       return;
     }
 
-    const targetChar = tokens[tokenIdx].char;
     const glyphIndex = loadedFontObj.charToGlyphIndex(targetChar);
-
     if (!glyphIndex) {
       setPopoverPos(null);
+      setSelectedCharIndex(null);
       return;
     }
 
@@ -251,35 +237,35 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     }
 
     if (alternates.length > 0) {
-      setSelectedTokenIndex(tokenIdx);
+      setSelectedCharIndex(start);
       setPopoverPos({ x: 0, y: 0 });
       setAlternateGlyphs(alternates);
     } else {
       setPopoverPos(null);
-      setSelectedTokenIndex(null);
+      setSelectedCharIndex(null);
     }
   };
 
   const applyAlternate = (alt: AlternateGlyph) => {
-    if (selectedTokenIndex === null) return;
-    setTokens(prev => {
-      const next = [...prev];
-      const currentFeat = next[selectedTokenIndex].feature;
-      next[selectedTokenIndex] = {
-        ...next[selectedTokenIndex],
-        feature: currentFeat === alt.featureTag ? undefined : (alt.featureTag || undefined)
-      };
+    if (selectedCharIndex === null) return;
+    setCharOverrides(prev => {
+      const next = { ...prev };
+      if (!alt.featureTag || next[selectedCharIndex] === alt.featureTag) {
+        delete next[selectedCharIndex];
+      } else {
+        next[selectedCharIndex] = alt.featureTag;
+      }
       return next;
     });
     setPopoverPos(null);
-    setSelectedTokenIndex(null);
+    setSelectedCharIndex(null);
   };
 
-  const handleEditorInput = (e: React.FormEvent<HTMLDivElement>) => {
-    const rawText = e.currentTarget.innerText || '';
-    setTokens(rawText.split('').map(c => ({ char: c })));
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
+    setCharOverrides({});
     setPopoverPos(null);
-    setSelectedTokenIndex(null);
+    setSelectedCharIndex(null);
   };
 
   const totalPages = Math.max(1, Math.ceil(filteredGlyphs.length / GLYPHS_PER_PAGE));
@@ -407,38 +393,53 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
               <div className="relative w-full min-h-100">
+                {/* Visual Overlay untuk menampilkan per-character alternate features */}
                 <div 
+                  className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap break-words overflow-hidden"
+                  style={{ 
+                    ...commonFontStyle, 
+                    fontSize: `${fontSize}px`, 
+                    textAlign: align, 
+                    lineHeight: lineHeight, 
+                    letterSpacing: `${letterSpacing}em` 
+                  }}
+                  aria-hidden="true"
+                >
+                  {text.split('').map((char, i) => {
+                    const feat = charOverrides[i];
+                    return (
+                      <span 
+                        key={i}
+                        style={{
+                          fontFeatureSettings: feat 
+                            ? `"${feat}" on, ${commonFontStyle.fontFeatureSettings}` 
+                            : commonFontStyle.fontFeatureSettings
+                        }}
+                        className={feat ? "text-vintage-accent" : ""}
+                      >
+                        {char}
+                      </span>
+                    );
+                  })}
+                </div>
+
+                {/* Input Textarea Transparan (Menangani Typing, Edit, Backspace, Selection) */}
+                <textarea 
                   key="type" 
-                  ref={editorRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  onInput={handleEditorInput}
-                  onSelect={handleEditorSelect}
-                  onKeyUp={handleEditorSelect}
-                  onMouseUp={handleEditorSelect}
-                  className="w-full min-h-100 bg-transparent outline-none p-10 md:p-16 lg:p-20 whitespace-pre-wrap break-words cursor-text select-text" 
+                  ref={textareaRef}
+                  value={text} 
+                  onChange={handleTextChange} 
+                  onSelect={handleTextSelect}
+                  onKeyUp={handleTextSelect}
+                  onMouseUp={handleTextSelect}
+                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-10 text-transparent caret-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper" 
                   style={{ ...commonFontStyle, fontSize: `${fontSize}px`, textAlign: align, lineHeight: lineHeight, letterSpacing: `${letterSpacing}em` }} 
                   spellCheck={false} 
-                >
-                  {tokens.map((tok, i) => (
-                    <span 
-                      key={i} 
-                      data-token-idx={i}
-                      style={{ 
-                        fontFeatureSettings: tok.feature 
-                          ? `"${tok.feature}" on, ${commonFontStyle.fontFeatureSettings}` 
-                          : commonFontStyle.fontFeatureSettings 
-                      }}
-                      className={tok.feature ? "text-vintage-accent underline decoration-vintage-accent/40 decoration-1 underline-offset-4" : ""}
-                    >
-                      {tok.char}
-                    </span>
-                  ))}
-                </div>
+                />
 
                 {/* ADOBE / PHOTOSHOP STYLE ALTERNATE POPUP */}
                 <AnimatePresence>
-                  {popoverPos && alternateGlyphs.length > 0 && selectedTokenIndex !== null && (
+                  {popoverPos && alternateGlyphs.length > 0 && selectedCharIndex !== null && (
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.9, y: 10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -452,23 +453,23 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                         {/* Pilihan Default / Reset */}
                         <button
                           type="button"
-                          onClick={() => applyAlternate({ char: tokens[selectedTokenIndex].char, glyphIndex: 0, featureTag: '' })}
+                          onClick={() => applyAlternate({ char: text.charAt(selectedCharIndex), glyphIndex: 0, featureTag: '' })}
                           className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center border transition-all group shrink-0 ${
-                            !tokens[selectedTokenIndex].feature 
+                            !charOverrides[selectedCharIndex] 
                               ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
                               : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper'
                           }`}
                           title="Default Style"
                         >
                           <span style={{ ...commonFontStyle, fontSize: '20px', fontFeatureSettings: 'normal' }} className="leading-none">
-                            {tokens[selectedTokenIndex].char}
+                            {text.charAt(selectedCharIndex)}
                           </span>
                           <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">DEFAULT</span>
                         </button>
 
                         {/* Pilihan Alternate per Feature */}
                         {alternateGlyphs.map((alt, idx) => {
-                          const isActive = tokens[selectedTokenIndex].feature === alt.featureTag;
+                          const isActive = charOverrides[selectedCharIndex] === alt.featureTag;
                           return (
                             <button
                               key={idx}
