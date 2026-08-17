@@ -42,6 +42,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 }) => {
   const [text, setText] = useState(config.randomText || defaultText);
   const [charOverrides, setCharOverrides] = useState<Record<number, string>>({});
+  const [glyphOverrides, setGlyphOverrides] = useState<Record<number, number>>({});
   const [fontSize, setFontSize] = useState(64);
   const [align, setAlign] = useState<'left' | 'center' | 'right'>('left');
   const [viewMode, setViewMode] = useState<'type' | 'glyphs'>('type');
@@ -337,7 +338,17 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const applyAlternate = (alt: AlternateGlyph) => {
     if (selectedCharIndex === null) return;
 
-    // Jika glyph memiliki unicode / PUA, update text sehingga semua layer auto berubah
+    setGlyphOverrides(prev => {
+      const next = { ...prev };
+      if (!alt.glyphIndex || next[selectedCharIndex] === alt.glyphIndex) {
+        delete next[selectedCharIndex];
+      } else {
+        next[selectedCharIndex] = alt.glyphIndex;
+      }
+      return next;
+    });
+
+    // Jika glyph memiliki unicode / PUA, update text
     const targetGlyph = loadedFontObj?.glyphs?.get(alt.glyphIndex);
     if (targetGlyph && targetGlyph.unicode && targetGlyph.unicode !== text.charCodeAt(selectedCharIndex)) {
       const replacementChar = String.fromCharCode(targetGlyph.unicode);
@@ -345,7 +356,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       setText(newText);
     }
 
-    // Terapkan OpenType feature override agar sinkron ke seluruh layer
     const effectiveTag = alt.featureTag === 'aalt' ? 'salt' : alt.featureTag;
 
     setCharOverrides(prev => {
@@ -379,6 +389,57 @@ const TypeTester: React.FC<TypeTesterProps> = ({
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="fill-current pointer-events-none">
           <path d={pathData} />
         </svg>
+      );
+    } catch (e) {
+      return null;
+    }
+  };
+
+
+  // Helper render khusus untuk huruf inline di dalam teks textarea overlay (Akurat Baseline)
+  const renderInlineGlyphSvg = (glyphIdx: number, targetSize: number) => {
+    if (!loadedFontObj) return null;
+    const glyph = loadedFontObj.glyphs.get(glyphIdx);
+    if (!glyph) return null;
+
+    const unitsPerEm = loadedFontObj.unitsPerEm || 1000;
+    const ascender = loadedFontObj.tables.os2?.sTypoAscender || loadedFontObj.tables.hhea?.ascender || (unitsPerEm * 0.8);
+    const descender = Math.abs(loadedFontObj.tables.os2?.sTypoDescender || loadedFontObj.tables.hhea?.descender || (unitsPerEm * 0.2));
+    const totalHeight = ascender + descender;
+
+    const scale = targetSize / unitsPerEm;
+    const advanceWidth = (glyph.advanceWidth || unitsPerEm * 0.6) * scale;
+    const svgHeight = totalHeight * scale;
+    const baselineY = ascender * scale;
+    const descenderOffset = descender * scale;
+
+    try {
+      const pathData = glyph.getPath(0, baselineY, targetSize).toPathData(2);
+      return (
+        <span 
+          className="inline-block relative pointer-events-none"
+          style={{ 
+            width: `${advanceWidth}px`, 
+            height: `${targetSize}px`,
+            verticalAlign: 'baseline',
+            lineHeight: 1
+          }}
+        >
+          <svg 
+            style={{ 
+              width: `${advanceWidth}px`, 
+              height: `${svgHeight}px`,
+              position: 'absolute',
+              top: `-${(baselineY - targetSize)}px`,
+              left: 0,
+              bottom: `-${descenderOffset}px`
+            }} 
+            viewBox={`0 0 ${advanceWidth} ${svgHeight}`} 
+            className="fill-current overflow-visible"
+          >
+            <path d={pathData} />
+          </svg>
+        </span>
       );
     } catch (e) {
       return null;
@@ -492,7 +553,18 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const renderTextSpans = (fontIdx: number) => {
     const styleFontFamily = `"${config.name}-${fontIdx}"`;
     return text.split('').map((char, i) => {
+      const overrideGlyphIdx = glyphOverrides[i];
       const overrideFeature = charOverrides[i];
+
+      // Jika user memilih alternate spesifik (seperti o.alt1 pada salt kedua)
+      if (overrideGlyphIdx !== undefined) {
+        return (
+          <React.Fragment key={i}>
+            {renderInlineGlyphSvg(overrideGlyphIdx, fontSize) || char}
+          </React.Fragment>
+        );
+      }
+
       const activeCharFeatures = overrideFeature 
         ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
         : globalActiveFeatureString;
@@ -808,7 +880,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
                         {/* List Alternate Feature */}
                         {alternateGlyphs.map((alt, idx) => {
-                          const isSelected = charOverrides[selectedCharIndex] === alt.featureTag || (alt.featureTag === 'aalt' && charOverrides[selectedCharIndex] === 'salt');
+                          const isSelected = glyphOverrides[selectedCharIndex] === alt.glyphIndex || (!glyphOverrides[selectedCharIndex] && charOverrides[selectedCharIndex] === alt.featureTag && idx === 0);
                           return (
                             <button
                               key={idx}
