@@ -75,6 +75,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
   const [driveResults, setDriveResults] = useState<{images: any[], fonts: any[], trial: any[]} | null>(null);
   const [isSearchingDrive, setIsSearchingDrive] = useState(false);
   const [primaryFontIndex, setPrimaryFontIndex] = useState<number>(initialData?.metadata?.primary_font_index || 0);
+const [isLayered, setIsLayered] = useState<boolean>(initialData?.metadata?.is_layered || false);
 
   const [draggedImgIndex, setDraggedImgIndex] = useState<number | null>(null);
 
@@ -147,6 +148,8 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
       setExistingFontFiles(initialData.font_files || []);
       setExistingPreviewImages(initialData.preview_images || []);
       setExistingTrialFile(initialData.trial_file_url || '');
+      setPrimaryFontIndex(initialData?.metadata?.primary_font_index || 0);
+      setIsLayered(initialData?.metadata?.is_layered || false);
     }
   }, [initialData]);
 
@@ -256,7 +259,8 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         has_trial: uploadedTrialUrl !== '',
         metadata: {
           ...initialData?.metadata,
-          primary_font_index: primaryFontIndex
+          primary_font_index: primaryFontIndex,
+          is_layered: isLayered
         }
       };
 
@@ -372,6 +376,25 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
             ))}
           </datalist>
         </div>
+      </div>
+
+{/* KONFIGURASI LAYERED FONT SYSTEM */}
+      <div className="p-6 border border-vintage-ink/20 bg-vintage-ink/2 flex items-center justify-between">
+        <div>
+          <label className="font-bold text-[11px] uppercase tracking-[0.2em] text-vintage-ink block cursor-pointer" htmlFor="isLayeredCheckbox">
+            Layered Font System
+          </label>
+          <p className="text-[10px] italic font-serif opacity-60 mt-0.5">
+            Aktifkan jika font ini memiliki file terpisah (Regular, Extrude, Contour, dll) yang dapat ditumpuk di TypeTester.
+          </p>
+        </div>
+        <input 
+          id="isLayeredCheckbox"
+          type="checkbox" 
+          checked={isLayered} 
+          onChange={(e) => setIsLayered(e.target.checked)} 
+          className="w-5 h-5 accent-vintage-ink cursor-pointer"
+        />
       </div>
 
       <div className="space-y-4">
