@@ -333,27 +333,50 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     }
   };
 
-  // Helper render khusus untuk huruf inline di dalam teks textarea overlay
+  // Helper render khusus untuk huruf inline di dalam teks textarea overlay (Akurat Baseline)
   const renderInlineGlyphSvg = (glyphIdx: number, targetSize: number) => {
     if (!loadedFontObj) return null;
     const glyph = loadedFontObj.glyphs.get(glyphIdx);
     if (!glyph) return null;
 
     const unitsPerEm = loadedFontObj.unitsPerEm || 1000;
+    const ascender = loadedFontObj.tables.os2?.sTypoAscender || loadedFontObj.tables.hhea?.ascender || (unitsPerEm * 0.8);
+    const descender = Math.abs(loadedFontObj.tables.os2?.sTypoDescender || loadedFontObj.tables.hhea?.descender || (unitsPerEm * 0.2));
+    const totalHeight = ascender + descender;
+
     const scale = targetSize / unitsPerEm;
-    const ascender = (loadedFontObj.tables.os2?.sTypoAscender || loadedFontObj.tables.hhea?.ascender || unitsPerEm * 0.8) * scale;
     const advanceWidth = (glyph.advanceWidth || unitsPerEm * 0.6) * scale;
+    const svgHeight = totalHeight * scale;
+    const baselineY = ascender * scale;
+    const descenderOffset = descender * scale;
 
     try {
-      const pathData = glyph.getPath(0, ascender, targetSize).toPathData(2);
+      const pathData = glyph.getPath(0, baselineY, targetSize).toPathData(2);
       return (
-        <svg 
-          style={{ width: `${advanceWidth}px`, height: `${targetSize}px` }} 
-          viewBox={`0 0 ${advanceWidth} ${targetSize}`} 
-          className="inline-block fill-current overflow-visible align-baseline pointer-events-none"
+        <span 
+          className="inline-block relative pointer-events-none"
+          style={{ 
+            width: `${advanceWidth}px`, 
+            height: `${targetSize}px`,
+            verticalAlign: 'baseline',
+            lineHeight: 1
+          }}
         >
-          <path d={pathData} />
-        </svg>
+          <svg 
+            style={{ 
+              width: `${advanceWidth}px`, 
+              height: `${svgHeight}px`,
+              position: 'absolute',
+              top: `-${(baselineY - targetSize)}px`,
+              left: 0,
+              bottom: `-${descenderOffset}px`
+            }} 
+            viewBox={`0 0 ${advanceWidth} ${svgHeight}`} 
+            className="fill-current overflow-visible"
+          >
+            <path d={pathData} />
+          </svg>
+        </span>
       );
     } catch (e) {
       return null;
@@ -518,12 +541,12 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     const overrideGlyphIdx = glyphOverrides[i];
                     const overrideFeature = charOverrides[i];
 
-                    // Jika user memilih alternate spesifik (seperti o.alt1), render SVG vector dari glyph-nya langsung
+                    // Jika user memilih alternate spesifik (seperti o.alt1), render SVG vector yang rata baseline
                     if (overrideGlyphIdx !== undefined) {
                       return (
-                        <span key={i} className="inline-block align-baseline">
+                        <React.Fragment key={i}>
                           {renderInlineGlyphSvg(overrideGlyphIdx, fontSize) || char}
-                        </span>
+                        </React.Fragment>
                       );
                     }
 
