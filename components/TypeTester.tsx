@@ -422,12 +422,13 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       const pathData = glyph.getPath(0, baselineY, targetSize).toPathData(2);
       return (
         <span 
-          className="inline-block relative pointer-events-none"
+          className="inline relative pointer-events-none select-none"
           style={{ 
+            display: 'inline-block',
             width: `${advanceWidth}px`, 
-            height: `${targetSize}px`,
-            verticalAlign: 'baseline',
-            lineHeight: 1
+            height: 0,
+            lineHeight: 0,
+            verticalAlign: 'baseline'
           }}
         >
           <svg 
@@ -435,12 +436,12 @@ const TypeTester: React.FC<TypeTesterProps> = ({
               width: `${advanceWidth}px`, 
               height: `${svgHeight}px`,
               position: 'absolute',
-              top: `-${(baselineY - targetSize)}px`,
+              top: `-${baselineY}px`,
               left: 0,
-              bottom: `-${descenderOffset}px`
+              overflow: 'visible'
             }} 
             viewBox={`0 0 ${advanceWidth} ${svgHeight}`} 
-            className="fill-current overflow-visible"
+            className="fill-current pointer-events-none"
           >
             <path d={pathData} />
           </svg>
@@ -450,7 +451,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       return null;
     }
   };
-
+  
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     setCharOverrides({});
