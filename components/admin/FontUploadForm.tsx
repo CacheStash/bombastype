@@ -385,7 +385,7 @@ const [isLayered, setIsLayered] = useState<boolean>(initialData?.metadata?.is_la
             Layered Font System
           </label>
           <p className="text-[10px] italic font-serif opacity-60 mt-0.5">
-            Aktifkan jika font ini memiliki file terpisah (Regular, Extrude, Contour, dll) yang dapat ditumpuk di TypeTester.
+            Enable if this typeface includes chromatic or multi-layer artifact files intended for composite stacking in TypeTester.
           </p>
         </div>
         <input 

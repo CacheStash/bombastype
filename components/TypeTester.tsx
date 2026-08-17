@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight, Layers, Plus, Trash2, ArrowUp, ArrowDown, Eye, EyeOff, Contrast } from 'lucide-react';
 import { FontConfig } from '../types';
 import opentype from 'opentype.js';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,11 +12,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface TypeTesterProps {
   config: FontConfig & { 
     metadata?: { 
-      primary_font_index?: number 
+      primary_font_index?: number;
+      is_layered?: boolean;
     } 
   };
   defaultText?: string;
   isEven?: boolean;
+}
+
+interface FontLayerItem {
+  id: string;
+  fontIndex: number;
+  isInverted: boolean;
+  isVisible: boolean;
 }
 
 interface AlternateGlyph {
@@ -37,6 +45,17 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [align, setAlign] = useState<'left' | 'center' | 'right'>('left');
   const [viewMode, setViewMode] = useState<'type' | 'glyphs'>('type');
   
+  const isLayeredSupported = !!config.metadata?.is_layered && Array.isArray(config.font_files) && config.font_files.length > 1;
+  const [isLayeredMode, setIsLayeredMode] = useState<boolean>(false);
+
+  // Inisialisasi daftar layer (Default: Layer 0 Base & Layer 1 jika tersedia)
+  const [layers, setLayers] = useState<FontLayerItem[]>([
+    { id: 'layer-base', fontIndex: config.metadata?.primary_font_index || 0, isInverted: false, isVisible: true },
+    ...(Array.isArray(config.font_files) && config.font_files.length > 1
+      ? [{ id: 'layer-top', fontIndex: (config.metadata?.primary_font_index || 0) === 0 ? 1 : 0, isInverted: true, isVisible: true }]
+      : [])
+  ]);
+
   const [detectedGlyphs, setDetectedGlyphs] = useState<any[]>([]); 
   const [filteredGlyphs, setFilteredGlyphs] = useState<any[]>([]); 
   const [isLoadingGlyphs, setIsLoadingGlyphs] = useState(false);
@@ -394,6 +413,78 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setActiveFeatures(prev => ({ ...prev, [tag]: !prev[tag] }));
   };
 
+  const addLayer = () => {
+    const nextIndex = layers.length % (config.font_files?.length || 1);
+    const newLayer: FontLayerItem = {
+      id: `layer-${Date.now()}`,
+      fontIndex: nextIndex,
+      isInverted: layers.length % 2 === 1,
+      isVisible: true
+    };
+    setLayers(prev => [...prev, newLayer]);
+  };
+
+  const removeLayer = (id: string) => {
+    if (layers.length <= 1) return;
+    setLayers(prev => prev.filter(l => l.id !== id));
+  };
+
+  const moveLayer = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index + 1 : index - 1;
+    if (targetIndex < 0 || targetIndex >= layers.length) return;
+    const next = [...layers];
+    const item = next[index];
+    next[index] = next[targetIndex];
+    next[targetIndex] = item;
+    setLayers(next);
+  };
+
+  const toggleLayerInvert = (id: string) => {
+    setLayers(prev => prev.map(l => l.id === id ? { ...l, isInverted: !l.isInverted } : l));
+  };
+
+  const toggleLayerVisibility = (id: string) => {
+    setLayers(prev => prev.map(l => l.id === id ? { ...l, isVisible: !l.isVisible } : l));
+  };
+
+  const changeLayerFont = (id: string, fontIndex: number) => {
+    setLayers(prev => prev.map(l => l.id === id ? { ...l, fontIndex } : l));
+  };
+
+  // Shared Text Rendering Helper (Dipakai oleh single style maupun multi-layer)
+  const renderTextSpans = (fontIdx: number, isOverlayInverted: boolean = false) => {
+    const styleFontFamily = `"${config.name}-${fontIdx}"`;
+    return text.split('').map((char, i) => {
+      const overrideGlyphIdx = glyphOverrides[i];
+      const overrideFeature = charOverrides[i];
+
+      if (overrideGlyphIdx !== undefined) {
+        return (
+          <React.Fragment key={i}>
+            {renderInlineGlyphSvg(overrideGlyphIdx, fontSize) || char}
+          </React.Fragment>
+        );
+      }
+
+      const activeCharFeatures = overrideFeature 
+        ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
+        : globalActiveFeatureString;
+
+      return (
+        <span 
+          key={i}
+          style={{
+            fontFamily: styleFontFamily,
+            fontFeatureSettings: activeCharFeatures,
+            WebkitFontFeatureSettings: activeCharFeatures
+          }}
+        >
+          {char}
+        </span>
+      );
+    });
+  };
+
   const totalPages = Math.max(1, Math.ceil(filteredGlyphs.length / GLYPHS_PER_PAGE));
   const paginatedGlyphs = filteredGlyphs.slice((currentPage - 1) * GLYPHS_PER_PAGE, currentPage * GLYPHS_PER_PAGE);
 
@@ -423,6 +514,24 @@ const TypeTester: React.FC<TypeTesterProps> = ({
               <span className="font-bold tracking-[0.2em]">{viewMode === 'type' ? 'GLYPH MAP' : 'TYPE TESTER'}</span>
             </button>
           </div>
+
+{/* LAYERED MODE TOGGLE (JIKA FONT MENDUKUNG LAYERED) */}
+          {isLayeredSupported && viewMode === 'type' && (
+            <div className="flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20">
+              <button 
+                type="button"
+                onClick={() => setIsLayeredMode(!isLayeredMode)}
+                className={`py-1.5 px-3 text-[9px] font-bold tracking-[0.2em] uppercase flex items-center gap-2 border transition-all ${
+                  isLayeredMode 
+                    ? 'bg-vintage-ink text-vintage-paper border-vintage-ink shadow-sm' 
+                    : 'border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink hover:border-vintage-ink bg-transparent'
+                }`}
+              >
+                <Layers size={13} className={isLayeredMode ? 'text-vintage-accent' : ''} />
+                <span>LAYERED MODE {isLayeredMode ? 'ON' : 'OFF'}</span>
+              </button>
+            </div>
+          )}
 
           {/* FONT STYLE SELECTOR */}
           <div className="flex-1 flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 relative group">
@@ -525,48 +634,50 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
               <div className="relative w-full min-h-100">
-                {/* Visual Overlay untuk menampilkan teks per-karakter */}
-                <div 
-                  className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap wrap-break-word overflow-hidden select-none"
-                  style={{ 
-                    ...commonFontStyle, 
-                    fontSize: `${fontSize}px`, 
-                    textAlign: align, 
-                    lineHeight: lineHeight, 
-                    letterSpacing: `${letterSpacing}em` 
-                  }}
-                  aria-hidden="true"
-                >
-                  {text.split('').map((char, i) => {
-                    const overrideGlyphIdx = glyphOverrides[i];
-                    const overrideFeature = charOverrides[i];
-
-                    // Jika user memilih alternate spesifik (seperti o.alt1), render SVG vector yang rata baseline
-                    if (overrideGlyphIdx !== undefined) {
+                {/* Visual Overlay: Mendukung Single Style & Multi-Layer Stacking */}
+                {!isLayeredMode ? (
+                  /* SINGLE STYLE DISPLAY */
+                  <div 
+                    className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap wrap-break-word overflow-hidden select-none"
+                    style={{ 
+                      ...commonFontStyle, 
+                      fontSize: `${fontSize}px`, 
+                      textAlign: align, 
+                      lineHeight: lineHeight, 
+                      letterSpacing: `${letterSpacing}em` 
+                    }}
+                    aria-hidden="true"
+                  >
+                    {renderTextSpans(activeStyleIndex)}
+                  </div>
+                ) : (
+                  /* MULTI-LAYER STACKING DISPLAY */
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    {layers.map((layer, stackIdx) => {
+                      if (!layer.isVisible) return null;
                       return (
-                        <React.Fragment key={i}>
-                          {renderInlineGlyphSvg(overrideGlyphIdx, fontSize) || char}
-                        </React.Fragment>
+                        <div 
+                          key={layer.id}
+                          className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word select-none transition-colors"
+                          style={{ 
+                            ...commonFontStyle,
+                            fontFamily: `"${config.name}-${layer.fontIndex}"`,
+                            fontSize: `${fontSize}px`, 
+                            textAlign: align, 
+                            lineHeight: lineHeight, 
+                            letterSpacing: `${letterSpacing}em`,
+                            zIndex: stackIdx + 1,
+                            color: layer.isInverted ? 'var(--color-vintage-paper)' : 'var(--color-vintage-ink)',
+                            textShadow: layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none'
+                          }}
+                          aria-hidden="true"
+                        >
+                          {renderTextSpans(layer.fontIndex, layer.isInverted)}
+                        </div>
                       );
-                    }
-
-                    const activeCharFeatures = overrideFeature 
-                      ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
-                      : globalActiveFeatureString;
-
-                    return (
-                      <span 
-                        key={i}
-                        style={{
-                          fontFeatureSettings: activeCharFeatures,
-                          WebkitFontFeatureSettings: activeCharFeatures
-                        }}
-                      >
-                        {char}
-                      </span>
-                    );
-                  })}
-                </div>
+                    })}
+                  </div>
+                )}
 
                 {/* Input Textarea Transparan */}
                 <textarea 
@@ -691,6 +802,110 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
         {/* BOTTOM CONTROLS (LEADING, TRACKING, AXES, OT FEATURES) */}
         <div className={`bg-vintage-paper relative z-30 ${viewMode === 'type' ? 'border-t border-vintage-ink/20' : ''}`}>
+          {/* LAYER STACKING MANAGER PANEL (HANYA AKTIF SAAT LAYERED MODE ON) */}
+          {isLayeredMode && viewMode === 'type' && (
+            <div className="p-6 md:p-8 border-b border-vintage-ink/20 bg-vintage-ink/3">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Layers size={14} className="text-vintage-accent" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-vintage-accent">Layer Stacking Order (Bottom to Top)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addLayer}
+                  className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider border border-vintage-ink/30 hover:bg-vintage-ink hover:text-vintage-paper transition-all flex items-center gap-1.5"
+                >
+                  <Plus size={12} /> ADD LAYER
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {layers.map((layer, idx) => (
+                  <div 
+                    key={layer.id} 
+                    className={`flex items-center justify-between p-3 border transition-all ${
+                      !layer.isVisible ? 'opacity-40 border-vintage-ink/10 bg-transparent' : 'border-vintage-ink/20 bg-vintage-paper shadow-xs'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-[9px] font-mono font-bold opacity-40 w-4">#{idx + 1}</span>
+                      
+                      {/* Pilihan Font Style untuk Layer ini */}
+                      <select 
+                        value={layer.fontIndex}
+                        onChange={(e) => changeLayerFont(layer.id, parseInt(e.target.value))}
+                        className="bg-transparent border border-vintage-ink/20 px-2.5 py-1 text-[10px] font-bold uppercase outline-none cursor-pointer"
+                      >
+                        {Array.isArray(config.font_files) && config.font_files.map((_, fIdx) => (
+                          <option key={fIdx} value={fIdx} className="bg-vintage-paper text-vintage-ink">
+                            {detectedStyleNames[fIdx] || `Style ${fIdx + 1}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {/* Toggle Invert Color */}
+                      <button
+                        type="button"
+                        onClick={() => toggleLayerInvert(layer.id)}
+                        className={`p-1.5 border transition-colors ${
+                          layer.isInverted 
+                            ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
+                            : 'border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink'
+                        }`}
+                        title={layer.isInverted ? "Color: Inverted (Paper Light)" : "Color: Normal (Ink Dark)"}
+                      >
+                        <Contrast size={13} />
+                      </button>
+
+                      {/* Toggle Visibility */}
+                      <button
+                        type="button"
+                        onClick={() => toggleLayerVisibility(layer.id)}
+                        className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink transition-colors"
+                        title={layer.isVisible ? "Hide Layer" : "Show Layer"}
+                      >
+                        {layer.isVisible ? <Eye size={13} /> : <EyeOff size={13} />}
+                      </button>
+
+                      {/* Reorder Buttons */}
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveLayer(idx, 'down')}
+                        className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink disabled:opacity-20 transition-colors"
+                        title="Move Down in Stack"
+                      >
+                        <ArrowDown size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === layers.length - 1}
+                        onClick={() => moveLayer(idx, 'up')}
+                        className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink disabled:opacity-20 transition-colors"
+                        title="Move Up in Stack"
+                      >
+                        <ArrowUp size={13} />
+                      </button>
+
+                      {/* Delete Layer */}
+                      {layers.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeLayer(layer.id)}
+                          className="p-1.5 border border-red-300/40 text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                          title="Remove Layer"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 border-b border-vintage-ink/10">
             <div className="px-8 py-6 flex items-center gap-6 border-b md:border-b-0 md:border-r border-vintage-ink/10">
               <label className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent w-20 shrink-0">Leading</label>
