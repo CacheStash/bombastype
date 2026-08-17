@@ -191,7 +191,7 @@ const FontDetail: React.FC = () => {
         </div>
       </section>
 
-      {/* 5. INVESTMENT & ACTION SECTION */}
+    
       {/* 5. INVESTMENT & ACTION SECTION */}
       <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center lg:items-end gap-12 relative z-10">
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
@@ -200,8 +200,8 @@ const FontDetail: React.FC = () => {
             <div className="flex flex-col">
               <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-3">Starting at</span>
               <div className="flex items-start justify-center lg:justify-start">
-                <span className="text-2xl font-bold mt-2 mr-1 tracking-tighter text-vintage-ink">$</span>
-                <span className="text-8xl md:text-9xl font-display tracking-tighter leading-[0.7] text-vintage-ink">
+                <span className="text-3xl md:text-4xl font-display font-normal mt-1 md:mt-2 mr-1 tracking-tighter text-vintage-ink leading-none">$</span>
+                <span className="text-8xl md:text-9xl font-display tracking-tighter leading-[0.8] text-vintage-ink">
                   {Number(discountPrice).toFixed(2)}
                 </span>
               </div>
@@ -210,8 +210,8 @@ const FontDetail: React.FC = () => {
               <div className="flex flex-col pb-2">
                 <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-2">Promo Active</span>
                 <div className="flex items-start line-through opacity-30 decoration-vintage-accent decoration-2">
-                  <span className="text-sm font-bold mt-1 mr-0.5 tracking-tighter text-vintage-ink">$</span>
-                  <span className="text-3xl md:text-4xl font-display leading-[0.7] text-vintage-ink">
+                  <span className="text-base font-display font-normal mt-0.5 mr-0.5 tracking-tighter text-vintage-ink leading-none">$</span>
+                  <span className="text-3xl md:text-4xl font-display leading-[0.8] text-vintage-ink">
                     {Number(basePrice).toFixed(2)}
                   </span>
                 </div>
