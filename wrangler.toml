@@ -1,6 +1,7 @@
 name = "font"
 main = "index.js"
 compatibility_date = "2024-09-23"
+account_id = "346e497de742c671b7effa8e76f51832"
 
 # --- PERBAIKAN: GUNAKAN FORMAT TABEL & EKSPLISIT BINDING ---
 [assets]
