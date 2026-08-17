@@ -26,7 +26,7 @@ interface FontLayerItem {
   fontIndex: number;
   isInverted: boolean;
   isVisible: boolean;
-  opacity: number; // 0.1 s/d 1.0 (Default 1.0)
+  color?: string; // Menyimpan kode warna HEX per layer
 }
 
 interface AlternateGlyph {
@@ -50,13 +50,14 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   // Inisialisasi daftar layer (Daftar UI urut dari TOP layer ke BOTTOM layer)
   const [layers, setLayers] = useState<FontLayerItem[]>([
-    { id: 'layer-top', fontIndex: config.metadata?.primary_font_index || 0, isInverted: false, isVisible: true, opacity: 1.0 },
+   { id: 'layer-top', fontIndex: config.metadata?.primary_font_index || 0, isInverted: false, isVisible: true, color: '#2B2621' },
     ...(Array.isArray(config.font_files) && config.font_files.length > 1
-      ? [{ id: 'layer-bottom', fontIndex: (config.metadata?.primary_font_index || 0) === 0 ? 1 : 0, isInverted: true, isVisible: true, opacity: 1.0 }]
+      ? [{ id: 'layer-bottom', fontIndex: (config.metadata?.primary_font_index || 0) === 0 ? 1 : 0, isInverted: false, isVisible: true, color: '#8C4A32' }]
       : [])
   ]);
 
   const [draggedLayerIdx, setDraggedLayerIdx] = useState<number | null>(null);
+  const layerContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [detectedGlyphs, setDetectedGlyphs] = useState<any[]>([]); 
   const [filteredGlyphs, setFilteredGlyphs] = useState<any[]>([]); 
   const [isLoadingGlyphs, setIsLoadingGlyphs] = useState(false);
@@ -347,12 +348,15 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   };
 
   const addSpecificLayer = (fontIndex: number) => {
+    const VINTAGE_COLOR_PALETTE = ['#2B2621', '#8C4A32', '#BFA15F', '#5A6B5C', '#6E5D4F', '#A33B20'];
+    const assignedColor = VINTAGE_COLOR_PALETTE[layers.length % VINTAGE_COLOR_PALETTE.length];
+
     const newLayer: FontLayerItem = {
       id: `layer-${Date.now()}`,
       fontIndex: fontIndex,
-      isInverted: layers.length % 2 === 1,
+      isInverted: false,
       isVisible: true,
-      opacity: 1.0
+      color: assignedColor
     };
     setLayers(prev => [...prev, newLayer]);
     setIsAddLayerOpen(false);
@@ -386,8 +390,19 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setLayers(prev => prev.map(l => l.id === id ? { ...l, fontIndex } : l));
   };
 
-  const changeLayerOpacity = (id: string, opacity: number) => {
-    setLayers(prev => prev.map(l => l.id === id ? { ...l, opacity } : l));
+  const changeLayerColor = (id: string, color: string) => {
+    setLayers(prev => prev.map(l => l.id === id ? { ...l, color } : l));
+  };
+
+  // Sync scroll dari textarea ke semua layer visual overlay
+  const handleScrollSync = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    const { scrollTop, scrollLeft } = e.currentTarget;
+    Object.values(layerContainerRefs.current).forEach((el) => {
+      if (el) {
+        el.scrollTop = scrollTop;
+        el.scrollLeft = scrollLeft;
+      }
+    });
   };
 
   // Drag & Drop Handlers untuk Urutan Layer
@@ -584,6 +599,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                 {!isLayeredMode ? (
                   /* SINGLE STYLE DISPLAY */
                   <div 
+                    ref={(el) => { layerContainerRefs.current['single'] = el; }}
                     className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap wrap-break-word overflow-hidden select-none"
                     style={{ 
                       ...commonFontStyle, 
@@ -597,7 +613,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     {renderTextSpans(activeStyleIndex)}
                   </div>
                 ) : (
-                  /* MULTI-LAYER STACKING DISPLAY (Z-Index disesuaikan: Layer #1 = Depan/Tertinggi) */
+                  /* MULTI-LAYER STACKING DISPLAY */
                   <div className="absolute inset-0 pointer-events-none overflow-hidden">
                     {layers.map((layer, stackIdx) => {
                       if (!layer.isVisible) return null;
@@ -605,7 +621,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                       return (
                         <div 
                           key={layer.id}
-                          className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word select-none transition-colors"
+                          ref={(el) => { layerContainerRefs.current[layer.id] = el; }}
+                          className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word select-none overflow-hidden"
                           style={{ 
                             ...commonFontStyle,
                             fontFamily: `"${config.name}-${layer.fontIndex}"`,
@@ -614,9 +631,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                             lineHeight: lineHeight, 
                             letterSpacing: `${letterSpacing}em`,
                             zIndex: calculatedZIndex,
-                            opacity: layer.opacity ?? 1.0,
-                            color: layer.isInverted ? 'var(--color-vintage-paper)' : 'var(--color-vintage-ink)',
-                            textShadow: layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none'
+                            color: layer.color || (layer.isInverted ? 'var(--color-vintage-paper)' : 'var(--color-vintage-ink)'),
+                            textShadow: layer.color ? 'none' : (layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none')
                           }}
                           aria-hidden="true"
                         >
@@ -636,6 +652,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   onSelect={handleTextSelect}
                   onKeyUp={handleTextSelect}
                   onMouseUp={handleTextSelect}
+                  onScroll={handleScrollSync}
                   className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-30 text-transparent caret-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper" 
                   style={{ 
                     ...commonFontStyle, 
@@ -800,10 +817,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
               <div className="flex flex-col gap-2">
                 {layers.map((layer, idx) => (
-                  <div 
+                 <div 
                     key={layer.id} 
-                    draggable
-                    onDragStart={() => handleLayerDragStart(idx)}
                     onDragOver={handleLayerDragOver}
                     onDrop={() => handleLayerDrop(idx)}
                     className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border transition-all gap-3 ${
@@ -813,10 +828,16 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      {/* Drag Handle Icon */}
-                      <span className="cursor-grab active:cursor-grabbing text-vintage-ink/40 hover:text-vintage-ink">
-                        <GripVertical size={14} />
-                      </span>
+                      {/* Drag Handle Khusus */}
+                      <div
+                        draggable
+                        onDragStart={() => handleLayerDragStart(idx)}
+                        onDragEnd={() => setDraggedLayerIdx(null)}
+                        className="cursor-grab active:cursor-grabbing text-vintage-ink/40 hover:text-vintage-ink p-1 -m-1"
+                        title="Drag to Reorder Layer"
+                      >
+                        <GripVertical size={15} />
+                      </div>
                       <span className="text-[9px] font-mono font-bold opacity-40 w-4">#{idx + 1}</span>
                       
                       <select 
@@ -832,38 +853,27 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                       </select>
                     </div>
 
-                    <div className="flex items-center gap-3 self-end sm:self-auto">
-                      {/* Slider Opacity / Transparansi */}
-                      <div className="flex items-center gap-1.5 border border-vintage-ink/20 px-2 py-0.5" title="Layer Opacity / Transparency">
-                        <span className="text-[8px] font-mono font-bold opacity-50 uppercase">OPAC</span>
+                    <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                      {/* COLOR PICKER BUTTON */}
+                      <div className="flex items-center gap-1.5 border border-vintage-ink/20 px-2 py-1 relative group cursor-pointer hover:border-vintage-ink transition-colors">
                         <input 
-                          type="range"
-                          min="0.1"
-                          max="1.0"
-                          step="0.05"
-                          value={layer.opacity ?? 1.0}
-                          onChange={(e) => changeLayerOpacity(layer.id, parseFloat(e.target.value))}
-                          className="w-14 accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer"
+                          type="color"
+                          value={layer.color || '#2B2621'}
+                          onChange={(e) => changeLayerColor(layer.id, e.target.value)}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                          title="Pick Layer Color"
                         />
-                        <span className="text-[8px] font-mono font-bold w-6 text-right">
-                          {Math.round((layer.opacity ?? 1.0) * 100)}%
+                        <div 
+                          className="w-3.5 h-3.5 border border-vintage-ink/30 shadow-xs" 
+                          style={{ backgroundColor: layer.color || '#2B2621' }} 
+                        />
+                        <span className="text-[8px] font-mono font-bold uppercase text-vintage-ink">
+                          {layer.color || '#2B2621'}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => toggleLayerInvert(layer.id)}
-                          className={`p-1.5 border transition-colors ${
-                            layer.isInverted 
-                              ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                              : 'border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink'
-                          }`}
-                          title={layer.isInverted ? "Color: Inverted (Paper Light)" : "Color: Normal (Ink Dark)"}
-                        >
-                          <Contrast size={13} />
-                        </button>
-
+                      <div className="flex items-center gap-1">
+                        {/* Toggle Visibility */}
                         <button
                           type="button"
                           onClick={() => toggleLayerVisibility(layer.id)}
@@ -873,6 +883,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                           {layer.isVisible ? <Eye size={13} /> : <EyeOff size={13} />}
                         </button>
 
+                        {/* Reorder Buttons */}
                         <button
                           type="button"
                           disabled={idx === 0}
@@ -892,6 +903,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                           <ArrowDown size={13} />
                         </button>
 
+                        {/* Delete Layer */}
                         {layers.length > 1 && (
                           <button
                             type="button"
