@@ -37,8 +37,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   config, 
   defaultText = "One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin.",
 }) => {
-  // State Glyph Index Overrides untuk presisi multi-alternate per huruf
-  const [glyphOverrides, setGlyphOverrides] = useState<Record<number, number>>({});
   const [text, setText] = useState(config.randomText || defaultText);
   const [charOverrides, setCharOverrides] = useState<Record<number, string>>({});
   const [fontSize, setFontSize] = useState(64);
@@ -48,11 +46,11 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const isLayeredSupported = !!config.metadata?.is_layered && Array.isArray(config.font_files) && config.font_files.length > 1;
   const [isLayeredMode, setIsLayeredMode] = useState<boolean>(false);
 
-  // Inisialisasi daftar layer (Default: Layer 0 Base & Layer 1 jika tersedia)
+  // Inisialisasi daftar layer (Daftar UI urut dari TOP layer ke BOTTOM layer)
   const [layers, setLayers] = useState<FontLayerItem[]>([
-    { id: 'layer-base', fontIndex: config.metadata?.primary_font_index || 0, isInverted: false, isVisible: true },
+    { id: 'layer-top', fontIndex: config.metadata?.primary_font_index || 0, isInverted: false, isVisible: true },
     ...(Array.isArray(config.font_files) && config.font_files.length > 1
-      ? [{ id: 'layer-top', fontIndex: (config.metadata?.primary_font_index || 0) === 0 ? 1 : 0, isInverted: true, isVisible: true }]
+      ? [{ id: 'layer-bottom', fontIndex: (config.metadata?.primary_font_index || 0) === 0 ? 1 : 0, isInverted: true, isVisible: true }]
       : [])
   ]);
 
@@ -77,6 +75,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false);
+  const [isAddLayerOpen, setIsAddLayerOpen] = useState(false);
   const PRESET_SIZES = [12, 14, 16, 18, 20, 24, 32, 36, 48, 64, 72, 96, 120, 144, 200];
 
   // Alternates State
@@ -86,7 +85,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Daftar fitur OT yang diizinkan (aalt dihapus)
   const ALLOWED_TAGS = new Set([
     'liga', 'dlig', 'calt', 'salt', 'swsh', 'titl',
     ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`) 
@@ -176,7 +174,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setFilteredGlyphs(detectedGlyphs); 
   }, [detectedGlyphs]);
 
-  // Handler Seleksi Teks untuk Alternate Glyph Popover
   const handleTextSelect = () => {
     if (!textareaRef.current || !loadedFontObj) {
       setPopoverPos(null);
@@ -188,7 +185,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     const start = el.selectionStart;
     const end = el.selectionEnd;
 
-    // Hanya aktif jika 1 karakter yang dipilih
     if (start === end || end - start !== 1) {
       setPopoverPos(null);
       setSelectedCharIndex(null);
@@ -212,8 +208,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     const alternates: AlternateGlyph[] = [];
     const gsub = loadedFontObj.tables.gsub;
 
-   if (gsub && gsub.features && gsub.lookups) {
-      // Izinkan kembali deteksi aalt agar lookup font terbaca, beserta salt, ss01-ss20, swsh
+    if (gsub && gsub.features && gsub.lookups) {
       const altFeatureTags = [
         'aalt', 'salt', 'swsh', 'titl', 'calt', 'dlig',
         ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`)
@@ -227,7 +222,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           if (!lookup || !lookup.subtables) return;
 
           lookup.subtables.forEach((subtable: any) => {
-            // Lookup Type 1: Single Substitution
             if (lookup.lookupType === 1) {
               if (subtable.coverage && subtable.coverage.glyphs) {
                 const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
@@ -246,13 +240,10 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   }
                 }
               }
-            } 
-            // Lookup Type 3: Alternate Substitution (sub x from [x.alt x.alt1])
-            else if (lookup.lookupType === 3) {
+            } else if (lookup.lookupType === 3) {
               if (subtable.coverage && subtable.coverage.glyphs) {
                 const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
                 if (covIdx !== -1) {
-                  // opentype.js menyediakan data di alternateSets atau alternateSet
                   const altSets = subtable.alternateSets || subtable.alternateSet || [];
                   const targetSet = altSets[covIdx];
 
@@ -292,18 +283,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   const applyAlternate = (alt: AlternateGlyph) => {
     if (selectedCharIndex === null) return;
-   // Simpan glyph index spesifik untuk posisi karakter ini
-    setGlyphOverrides(prev => {
-      const next = { ...prev };
-      if (!alt.glyphIndex || next[selectedCharIndex] === alt.glyphIndex) {
-        delete next[selectedCharIndex];
-      } else {
-        next[selectedCharIndex] = alt.glyphIndex;
-      }
-      return next;
-    });
 
-    // 1. Jika glyph target memiliki kode Unicode / PUA, ganti karakter langsung di teks textarea
+    // Jika glyph memiliki unicode / PUA, update text sehingga semua layer auto berubah
     const targetGlyph = loadedFontObj?.glyphs?.get(alt.glyphIndex);
     if (targetGlyph && targetGlyph.unicode && targetGlyph.unicode !== text.charCodeAt(selectedCharIndex)) {
       const replacementChar = String.fromCharCode(targetGlyph.unicode);
@@ -311,6 +292,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       setText(newText);
     }
 
+    // Terapkan OpenType feature override agar sinkron ke seluruh layer
     const effectiveTag = alt.featureTag === 'aalt' ? 'salt' : alt.featureTag;
 
     setCharOverrides(prev => {
@@ -327,13 +309,11 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setSelectedCharIndex(null);
   };
 
-  // Helper untuk merender visual preview glyph langsung dari glyph object opentype
   const renderGlyphSvg = (glyphIdx: number, size: number = 24) => {
     if (!loadedFontObj) return null;
     const glyph = loadedFontObj.glyphs.get(glyphIdx);
     if (!glyph) return null;
 
-    const head = loadedFontObj.tables.head;
     const unitsPerEm = loadedFontObj.unitsPerEm || 1000;
     const scale = (size * 0.75) / unitsPerEm;
     const baseline = size * 0.75;
@@ -352,56 +332,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     }
   };
 
-  // Helper render khusus untuk huruf inline di dalam teks textarea overlay (Akurat Baseline)
-  const renderInlineGlyphSvg = (glyphIdx: number, targetSize: number) => {
-    if (!loadedFontObj) return null;
-    const glyph = loadedFontObj.glyphs.get(glyphIdx);
-    if (!glyph) return null;
-
-    const unitsPerEm = loadedFontObj.unitsPerEm || 1000;
-    const ascender = loadedFontObj.tables.os2?.sTypoAscender || loadedFontObj.tables.hhea?.ascender || (unitsPerEm * 0.8);
-    const descender = Math.abs(loadedFontObj.tables.os2?.sTypoDescender || loadedFontObj.tables.hhea?.descender || (unitsPerEm * 0.2));
-    const totalHeight = ascender + descender;
-
-    const scale = targetSize / unitsPerEm;
-    const advanceWidth = (glyph.advanceWidth || unitsPerEm * 0.6) * scale;
-    const svgHeight = totalHeight * scale;
-    const baselineY = ascender * scale;
-    const descenderOffset = descender * scale;
-
-    try {
-      const pathData = glyph.getPath(0, baselineY, targetSize).toPathData(2);
-      return (
-        <span 
-          className="inline-block relative pointer-events-none"
-          style={{ 
-            width: `${advanceWidth}px`, 
-            height: `${targetSize}px`,
-            verticalAlign: 'baseline',
-            lineHeight: 1
-          }}
-        >
-          <svg 
-            style={{ 
-              width: `${advanceWidth}px`, 
-              height: `${svgHeight}px`,
-              position: 'absolute',
-              top: `-${(baselineY - targetSize)}px`,
-              left: 0,
-              bottom: `-${descenderOffset}px`
-            }} 
-            viewBox={`0 0 ${advanceWidth} ${svgHeight}`} 
-            className="fill-current overflow-visible"
-          >
-            <path d={pathData} />
-          </svg>
-        </span>
-      );
-    } catch (e) {
-      return null;
-    }
-  };
-
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     setCharOverrides({});
@@ -413,15 +343,15 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setActiveFeatures(prev => ({ ...prev, [tag]: !prev[tag] }));
   };
 
-  const addLayer = () => {
-    const nextIndex = layers.length % (config.font_files?.length || 1);
+  const addSpecificLayer = (fontIndex: number) => {
     const newLayer: FontLayerItem = {
       id: `layer-${Date.now()}`,
-      fontIndex: nextIndex,
+      fontIndex: fontIndex,
       isInverted: layers.length % 2 === 1,
       isVisible: true
     };
     setLayers(prev => [...prev, newLayer]);
+    setIsAddLayerOpen(false);
   };
 
   const removeLayer = (id: string) => {
@@ -429,8 +359,9 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setLayers(prev => prev.filter(l => l.id !== id));
   };
 
+  // Reorder layer di UI list (0 = Teratas / Paling Depan)
   const moveLayer = (index: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? index + 1 : index - 1;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= layers.length) return;
     const next = [...layers];
     const item = next[index];
@@ -451,21 +382,17 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setLayers(prev => prev.map(l => l.id === id ? { ...l, fontIndex } : l));
   };
 
-  // Shared Text Rendering Helper (Dipakai oleh single style maupun multi-layer)
-  const renderTextSpans = (fontIdx: number, isOverlayInverted: boolean = false) => {
+  // List fitur global yang aktif
+  const globalActiveFeatureString = Object.entries(activeFeatures)
+    .filter(([_, on]) => on)
+    .map(([t]) => `"${t}" 1`)
+    .join(', ') || 'normal';
+
+  // Sinkronisasi alternate feature ke seluruh layer
+  const renderTextSpans = (fontIdx: number) => {
     const styleFontFamily = `"${config.name}-${fontIdx}"`;
     return text.split('').map((char, i) => {
-      const overrideGlyphIdx = glyphOverrides[i];
       const overrideFeature = charOverrides[i];
-
-      if (overrideGlyphIdx !== undefined) {
-        return (
-          <React.Fragment key={i}>
-            {renderInlineGlyphSvg(overrideGlyphIdx, fontSize) || char}
-          </React.Fragment>
-        );
-      }
-
       const activeCharFeatures = overrideFeature 
         ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
         : globalActiveFeatureString;
@@ -491,12 +418,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const hasAxes = detectedAxes.length > 0;
   const hasFeatures = dynamicFeatures.length > 0;
 
-  // List fitur global yang aktif
-  const globalActiveFeatureString = Object.entries(activeFeatures)
-    .filter(([_, on]) => on)
-    .map(([t]) => `"${t}" 1`)
-    .join(', ') || 'normal';
-
   const commonFontStyle = { 
     fontFamily: `"${config.name}-${activeStyleIndex}"`, 
     fontVariationSettings: Object.entries(axesValues).map(([t, v]) => `"${t}" ${v}`).join(', ')
@@ -515,7 +436,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
             </button>
           </div>
 
-{/* LAYERED MODE TOGGLE (JIKA FONT MENDUKUNG LAYERED) */}
+          {/* LAYERED MODE TOGGLE */}
           {isLayeredSupported && viewMode === 'type' && (
             <div className="flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20">
               <button 
@@ -556,7 +477,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
             </div>
           </div>
 
-          {/* SIZE (TYPE TESTER) OR PAGINATION (GLYPH MAP) */}
+          {/* SIZE / PAGINATION */}
           <div className="flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 min-w-44 relative">
             <div className="w-full relative">
               <span className="absolute -top-3.5 left-0 text-[8px] font-bold text-vintage-accent uppercase tracking-[0.3em]">
@@ -607,7 +528,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
             </div>
           </div>
 
-          {/* ALIGNMENT BUTTONS */}
+          {/* ALIGNMENT */}
           <div className="flex items-center px-6 py-4 gap-4">
              {viewMode === 'type' && (
                 <div className="flex border border-vintage-ink/20 rounded-sm overflow-hidden">
@@ -617,8 +538,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                       onClick={() => setAlign(a)} 
                       className={`p-2 transition-all duration-300 group ${
                         align === a 
-                        ? 'bg-vintage-ink! text-vintage-background! border-vintage-ink' 
-                        : 'bg-transparent text-vintage-ink/40 hover:text-vintage-ink'
+                          ? 'bg-vintage-ink! text-vintage-paper! border-vintage-ink' 
+                          : 'bg-transparent text-vintage-ink/40 hover:text-vintage-ink'
                       }`}
                     >
                       {a === 'left' ? <AlignLeft size={14} className="transition-transform duration-500 group-hover:rotate-90" /> : a === 'center' ? <AlignCenter size={14} className="transition-transform duration-500 group-hover:rotate-90" /> : <AlignRight size={14} className="transition-transform duration-500 group-hover:rotate-90" />}
@@ -634,7 +555,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
               <div className="relative w-full min-h-100">
-                {/* Visual Overlay: Mendukung Single Style & Multi-Layer Stacking */}
                 {!isLayeredMode ? (
                   /* SINGLE STYLE DISPLAY */
                   <div 
@@ -651,10 +571,11 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     {renderTextSpans(activeStyleIndex)}
                   </div>
                 ) : (
-                  /* MULTI-LAYER STACKING DISPLAY */
+                  /* MULTI-LAYER STACKING DISPLAY (Z-Index disesuaikan: Layer #1 = Depan/Tertinggi) */
                   <div className="absolute inset-0 pointer-events-none overflow-hidden">
                     {layers.map((layer, stackIdx) => {
                       if (!layer.isVisible) return null;
+                      const calculatedZIndex = layers.length - stackIdx;
                       return (
                         <div 
                           key={layer.id}
@@ -666,20 +587,20 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                             textAlign: align, 
                             lineHeight: lineHeight, 
                             letterSpacing: `${letterSpacing}em`,
-                            zIndex: stackIdx + 1,
+                            zIndex: calculatedZIndex,
                             color: layer.isInverted ? 'var(--color-vintage-paper)' : 'var(--color-vintage-ink)',
                             textShadow: layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none'
                           }}
                           aria-hidden="true"
                         >
-                          {renderTextSpans(layer.fontIndex, layer.isInverted)}
+                          {renderTextSpans(layer.fontIndex)}
                         </div>
                       );
                     })}
                   </div>
                 )}
 
-                {/* Input Textarea Transparan */}
+                {/* TEXTAREA INPUT */}
                 <textarea 
                   key="type" 
                   ref={textareaRef}
@@ -688,7 +609,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   onSelect={handleTextSelect}
                   onKeyUp={handleTextSelect}
                   onMouseUp={handleTextSelect}
-                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-10 text-transparent caret-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper" 
+                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-30 text-transparent caret-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper" 
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
@@ -701,7 +622,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   spellCheck={false} 
                 />
 
-                {/* ADOBE / PHOTOSHOP STYLE ALTERNATE POPUP */}
+                {/* ALTERNATE GLYPH POPOVER */}
                 <AnimatePresence>
                   {popoverPos && alternateGlyphs.length > 0 && selectedCharIndex !== null && (
                     <motion.div 
@@ -735,9 +656,9 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                           <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">DEFAULT</span>
                         </button>
 
-                        {/* Pilihan Alternate per Feature */}
+                        {/* List Alternate Feature */}
                         {alternateGlyphs.map((alt, idx) => {
-                          const isSelected = glyphOverrides[selectedCharIndex] === alt.glyphIndex || (!glyphOverrides[selectedCharIndex] && charOverrides[selectedCharIndex] === alt.featureTag && idx === 0);
+                          const isSelected = charOverrides[selectedCharIndex] === alt.featureTag || (alt.featureTag === 'aalt' && charOverrides[selectedCharIndex] === 'salt');
                           return (
                             <button
                               key={idx}
@@ -800,23 +721,54 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           </AnimatePresence>
         </div>
 
-        {/* BOTTOM CONTROLS (LEADING, TRACKING, AXES, OT FEATURES) */}
+        {/* BOTTOM CONTROLS */}
         <div className={`bg-vintage-paper relative z-30 ${viewMode === 'type' ? 'border-t border-vintage-ink/20' : ''}`}>
-          {/* LAYER STACKING MANAGER PANEL (HANYA AKTIF SAAT LAYERED MODE ON) */}
           {isLayeredMode && viewMode === 'type' && (
             <div className="p-6 md:p-8 border-b border-vintage-ink/20 bg-vintage-ink/3">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Layers size={14} className="text-vintage-accent" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-vintage-accent">Layer Stacking Order (Bottom to Top)</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-vintage-accent">Layer Stacking Order (Top to Bottom)</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={addLayer}
-                  className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider border border-vintage-ink/30 hover:bg-vintage-ink hover:text-vintage-paper transition-all flex items-center gap-1.5"
-                >
-                  <Plus size={12} /> ADD LAYER
-                </button>
+
+                {/* ADD LAYER DROPDOWN SELECTOR */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddLayerOpen(!isAddLayerOpen)}
+                    className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider border border-vintage-ink/30 hover:bg-vintage-ink hover:text-vintage-paper transition-all flex items-center gap-1.5 relative z-10"
+                  >
+                    <Plus size={12} /> ADD LAYER
+                  </button>
+
+                  <AnimatePresence>
+                    {isAddLayerOpen && (
+                      <>
+                        <div className="fixed inset-0 z-60" onClick={() => setIsAddLayerOpen(false)} />
+                        <motion.div 
+                          initial={{ opacity: 0, y: 5 }} 
+                          animate={{ opacity: 1, y: 0 }} 
+                          exit={{ opacity: 0, y: 5 }} 
+                          className="absolute right-0 bottom-full mb-1 w-48 bg-vintage-paper border border-vintage-ink/20 z-70 shadow-2xl overflow-hidden"
+                        >
+                          <div className="px-3 py-1.5 text-[8px] font-bold uppercase text-vintage-accent border-b border-vintage-ink/10 tracking-widest bg-vintage-ink/5">
+                            Select Layer Font
+                          </div>
+                          {Array.isArray(config.font_files) && config.font_files.map((_, fIdx) => (
+                            <button
+                              key={fIdx}
+                              type="button"
+                              onClick={() => addSpecificLayer(fIdx)}
+                              className="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase border-b border-vintage-ink/5 last:border-0 hover:bg-vintage-ink hover:text-vintage-paper transition-colors"
+                            >
+                              {detectedStyleNames[fIdx] || `Style ${fIdx + 1}`}
+                            </button>
+                          ))}
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -830,7 +782,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     <div className="flex items-center gap-3">
                       <span className="text-[9px] font-mono font-bold opacity-40 w-4">#{idx + 1}</span>
                       
-                      {/* Pilihan Font Style untuk Layer ini */}
                       <select 
                         value={layer.fontIndex}
                         onChange={(e) => changeLayerFont(layer.id, parseInt(e.target.value))}
@@ -845,7 +796,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      {/* Toggle Invert Color */}
                       <button
                         type="button"
                         onClick={() => toggleLayerInvert(layer.id)}
@@ -859,7 +809,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                         <Contrast size={13} />
                       </button>
 
-                      {/* Toggle Visibility */}
                       <button
                         type="button"
                         onClick={() => toggleLayerVisibility(layer.id)}
@@ -869,27 +818,25 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                         {layer.isVisible ? <Eye size={13} /> : <EyeOff size={13} />}
                       </button>
 
-                      {/* Reorder Buttons */}
                       <button
                         type="button"
                         disabled={idx === 0}
-                        onClick={() => moveLayer(idx, 'down')}
+                        onClick={() => moveLayer(idx, 'up')}
                         className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink disabled:opacity-20 transition-colors"
-                        title="Move Down in Stack"
+                        title="Move Up in Stack (Bring Forward)"
                       >
-                        <ArrowDown size={13} />
+                        <ArrowUp size={13} />
                       </button>
                       <button
                         type="button"
                         disabled={idx === layers.length - 1}
-                        onClick={() => moveLayer(idx, 'up')}
+                        onClick={() => moveLayer(idx, 'down')}
                         className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink disabled:opacity-20 transition-colors"
-                        title="Move Up in Stack"
+                        title="Move Down in Stack (Send Backward)"
                       >
-                        <ArrowUp size={13} />
+                        <ArrowDown size={13} />
                       </button>
 
-                      {/* Delete Layer */}
                       {layers.length > 1 && (
                         <button
                           type="button"
@@ -906,6 +853,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
               </div>
             </div>
           )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 border-b border-vintage-ink/10">
             <div className="px-8 py-6 flex items-center gap-6 border-b md:border-b-0 md:border-r border-vintage-ink/10">
               <label className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent w-20 shrink-0">Leading</label>
@@ -918,6 +866,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
               <span className="text-[11px] font-bold w-10 text-right">{letterSpacing.toFixed(2)}</span>
             </div>
           </div>
+
           {(hasAxes || hasFeatures) && (
             <div className="grid grid-cols-1 lg:grid-cols-12">
               {hasAxes && (
