@@ -191,8 +191,12 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     const alternates: AlternateGlyph[] = [];
     const gsub = loadedFontObj.tables.gsub;
 
-    if (gsub && gsub.features && gsub.lookups) {
-      const altFeatureTags = ['salt', 'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'ss06', 'ss07', 'ss08', 'ss09', 'ss10', 'swsh', 'titl', 'calt', 'dlig'];
+   if (gsub && gsub.features && gsub.lookups) {
+      // Izinkan kembali deteksi aalt agar lookup font terbaca, beserta salt, ss01-ss20, swsh
+      const altFeatureTags = [
+        'aalt', 'salt', 'swsh', 'titl', 'calt', 'dlig',
+        ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`)
+      ];
       
       gsub.features.forEach((featureRecord: any) => {
         if (!altFeatureTags.includes(featureRecord.tag)) return;
@@ -211,8 +215,13 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     ? subtable.substitute[covIdx] 
                     : (glyphIndex + subtable.deltaGlyphId) % 65536;
                   
-                  if (!alternates.some(a => a.featureTag === featureRecord.tag)) {
-                    alternates.push({ char: targetChar, glyphIndex: targetGlyphIdx, featureTag: featureRecord.tag });
+                  const targetGlyph = loadedFontObj.glyphs.get(targetGlyphIdx);
+                  const charStr = (targetGlyph && targetGlyph.unicode) 
+                    ? String.fromCharCode(targetGlyph.unicode) 
+                    : targetChar;
+
+                  if (!alternates.some(a => a.glyphIndex === targetGlyphIdx)) {
+                    alternates.push({ char: charStr, glyphIndex: targetGlyphIdx, featureTag: featureRecord.tag });
                   }
                 }
               }
@@ -223,8 +232,13 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                 const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
                 if (covIdx !== -1 && subtable.alternateSet && subtable.alternateSet[covIdx]) {
                   subtable.alternateSet[covIdx].forEach((altIdx: number) => {
-                    if (!alternates.some(a => a.featureTag === featureRecord.tag)) {
-                      alternates.push({ char: targetChar, glyphIndex: altIdx, featureTag: featureRecord.tag });
+                    const targetGlyph = loadedFontObj.glyphs.get(altIdx);
+                    const charStr = (targetGlyph && targetGlyph.unicode) 
+                      ? String.fromCharCode(targetGlyph.unicode) 
+                      : targetChar;
+
+                    if (!alternates.some(a => a.glyphIndex === altIdx)) {
+                      alternates.push({ char: charStr, glyphIndex: altIdx, featureTag: featureRecord.tag });
                     }
                   });
                 }
@@ -248,13 +262,23 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const applyAlternate = (alt: AlternateGlyph) => {
     if (selectedCharIndex === null) return;
     
-    // Toggle atau set tag fitur untuk karakter ini
+    // 1. Jika glyph target memiliki kode Unicode / PUA, ganti karakter langsung di teks textarea
+    const targetGlyph = loadedFontObj?.glyphs?.get(alt.glyphIndex);
+    if (targetGlyph && targetGlyph.unicode && targetGlyph.unicode !== text.charCodeAt(selectedCharIndex)) {
+      const replacementChar = String.fromCharCode(targetGlyph.unicode);
+      const newText = text.slice(0, selectedCharIndex) + replacementChar + text.slice(selectedCharIndex + 1);
+      setText(newText);
+    }
+
+    // 2. Set override tag CSS (map 'aalt' ke 'salt' agar browser mengeksekusi render alternatifnya)
+    const effectiveTag = alt.featureTag === 'aalt' ? 'salt' : alt.featureTag;
+
     setCharOverrides(prev => {
       const next = { ...prev };
-      if (!alt.featureTag || next[selectedCharIndex] === alt.featureTag) {
+      if (!effectiveTag || next[selectedCharIndex] === effectiveTag) {
         delete next[selectedCharIndex];
       } else {
-        next[selectedCharIndex] = alt.featureTag;
+        next[selectedCharIndex] = effectiveTag;
       }
       return next;
     });
@@ -262,7 +286,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setPopoverPos(null);
     setSelectedCharIndex(null);
   };
-
+  
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     setCharOverrides({});
