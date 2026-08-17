@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight, Layers, Plus, Trash2, ArrowUp, ArrowDown, Eye, EyeOff, Contrast } from 'lucide-react';
 import { GripVertical, SlidersHorizontal } from 'lucide-react';
 import { FontConfig } from '../types';
@@ -95,6 +95,20 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       }
     });
   }, [isLayeredMode]);
+
+  useLayoutEffect(() => {
+    if (!textareaRef.current) return;
+    const currentTop = textareaRef.current.scrollTop;
+    const currentLeft = textareaRef.current.scrollLeft;
+
+    Object.values(layerContainerRefs.current).forEach((el) => {
+      if (el) {
+        el.scrollTop = currentTop;
+        el.scrollLeft = currentLeft;
+      }
+    });
+  }, [layers]);
+
   const [lineHeight, setLineHeight] = useState(1.1);
   const [letterSpacing, setLetterSpacing] = useState(0);
   
@@ -393,7 +407,17 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       isVisible: true,
       color: assignedColor
     };
-    setLayers(prev => [...prev, newLayer]);
+    setLayers(prev => {
+      const next = [...prev, newLayer];
+      // Langsung sinkronkan ref container layer baru dengan scroll textarea saat ini
+      requestAnimationFrame(() => {
+        if (textareaRef.current && layerContainerRefs.current[newLayer.id]) {
+          layerContainerRefs.current[newLayer.id]!.scrollTop = textareaRef.current.scrollTop;
+          layerContainerRefs.current[newLayer.id]!.scrollLeft = textareaRef.current.scrollLeft;
+        }
+      });
+      return next;
+    });
     setIsAddLayerOpen(false);
   };
 
