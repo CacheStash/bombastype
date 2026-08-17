@@ -193,29 +193,23 @@ const FontDetail: React.FC = () => {
 
     
       {/* 5. INVESTMENT & ACTION SECTION */}
-      <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
+      <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center lg:items-end gap-12 relative z-10">
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-4 italic">Pricing Information</span>
-          <div className="flex items-baseline gap-8">
+          <div className="flex items-end gap-8">
             <div className="flex flex-col">
               <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-1">Starting at</span>
-              <div className="flex items-start text-vintage-ink justify-center lg:justify-start font-display">
-                <DollarSign size={36} className="mt-2.5 md:mt-4 text-vintage-accent shrink-0 mr-1" strokeWidth={2.5} />
-                <span className="text-7xl md:text-9xl leading-none tracking-tighter">{Math.floor(Number(discountPrice))}</span>
-                <span className="text-2xl md:text-3xl font-bold tracking-normal leading-none pt-2.5 md:pt-4 ml-1">
-                  {(Number(discountPrice) % 1).toFixed(2).substring(2)}
-                </span>
+              <div className="flex items-start text-vintage-ink justify-center lg:justify-start">
+                <DollarSign size={45} className="mt-7 md:mt-9 text-vintage-accent shrink-0" strokeWidth={2.5} />
+                <span className="text-7xl md:text-9xl font-display tracking-tighter leading-none">{Number(discountPrice).toFixed(2)}</span>
               </div>
             </div>
             {activePromo && (
               <div className="flex flex-col pb-2">
                 <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">Promo Active</span>
-                <div className="flex items-start text-vintage-ink line-through opacity-30 decoration-vintage-accent decoration-2 font-display">
-                  <DollarSign size={16} className="mt-1 text-vintage-accent shrink-0" strokeWidth={2.5} />
-                  <span className="text-3xl md:text-4xl leading-none">{Math.floor(Number(basePrice))}</span>
-                  <span className="text-sm md:text-base font-bold leading-none pt-1 ml-0.5">
-                    {(Number(basePrice) % 1).toFixed(2).substring(2)}
-                  </span>
+                <div className="flex items-start text-vintage-ink line-through opacity-30 decoration-vintage-accent decoration-2">
+                  <DollarSign size={20} className="mt-2 md:mt-1.5 text-vintage-accent shrink-0" strokeWidth={2.5} />
+                  <span className="text-3xl md:text-4xl font-display leading-none">{Number(basePrice).toFixed(2)}</span>
                 </div>
               </div>
             )}
