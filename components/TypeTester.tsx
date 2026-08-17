@@ -226,21 +226,31 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                 }
               }
             } 
-            // Lookup Type 3: Alternate Substitution
+            // Lookup Type 3: Alternate Substitution (sub x from [x.alt x.alt1])
             else if (lookup.lookupType === 3) {
               if (subtable.coverage && subtable.coverage.glyphs) {
                 const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
-                if (covIdx !== -1 && subtable.alternateSet && subtable.alternateSet[covIdx]) {
-                  subtable.alternateSet[covIdx].forEach((altIdx: number) => {
-                    const targetGlyph = loadedFontObj.glyphs.get(altIdx);
-                    const charStr = (targetGlyph && targetGlyph.unicode) 
-                      ? String.fromCharCode(targetGlyph.unicode) 
-                      : targetChar;
+                if (covIdx !== -1) {
+                  // opentype.js menyediakan data di alternateSets atau alternateSet
+                  const altSets = subtable.alternateSets || subtable.alternateSet || [];
+                  const targetSet = altSets[covIdx];
 
-                    if (!alternates.some(a => a.glyphIndex === altIdx)) {
-                      alternates.push({ char: charStr, glyphIndex: altIdx, featureTag: featureRecord.tag });
-                    }
-                  });
+                  if (targetSet) {
+                    const glyphIndices: number[] = Array.isArray(targetSet)
+                      ? targetSet
+                      : (targetSet.alternateGlyphs || targetSet.glyphs || targetSet.alternateSet || []);
+
+                    glyphIndices.forEach((altIdx: number) => {
+                      const targetGlyph = loadedFontObj.glyphs.get(altIdx);
+                      const charStr = (targetGlyph && targetGlyph.unicode) 
+                        ? String.fromCharCode(targetGlyph.unicode) 
+                        : targetChar;
+
+                      if (!alternates.some(a => a.glyphIndex === altIdx)) {
+                        alternates.push({ char: charStr, glyphIndex: altIdx, featureTag: featureRecord.tag });
+                      }
+                    });
+                  }
                 }
               }
             }
@@ -286,7 +296,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setPopoverPos(null);
     setSelectedCharIndex(null);
   };
-  
+
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     setCharOverrides({});
