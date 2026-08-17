@@ -276,7 +276,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
         </div>
 
         {/* BOTTOM CONTROLS (LEADING, TRACKING, AXES, OT FEATURES) */}
-        <div className="bg-vintage-paper border-t border-vintage-ink/20 relative z-30">
+        <div className={`bg-vintage-paper relative z-30 ${viewMode === 'type' ? 'border-t border-vintage-ink/20' : ''}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 border-b border-vintage-ink/10">
             <div className="px-8 py-6 flex items-center gap-6 border-b md:border-b-0 md:border-r border-vintage-ink/10">
               <label className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent w-20 shrink-0">Leading</label>
