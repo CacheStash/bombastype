@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight, Layers, Plus, Trash2, ArrowUp, ArrowDown, Eye, EyeOff, Contrast } from 'lucide-react';
+import { GripVertical, SlidersHorizontal } from 'lucide-react';
 import { FontConfig } from '../types';
 import opentype from 'opentype.js';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,6 +26,7 @@ interface FontLayerItem {
   fontIndex: number;
   isInverted: boolean;
   isVisible: boolean;
+  opacity: number; // 0.1 s/d 1.0 (Default 1.0)
 }
 
 interface AlternateGlyph {
@@ -48,12 +50,13 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   // Inisialisasi daftar layer (Daftar UI urut dari TOP layer ke BOTTOM layer)
   const [layers, setLayers] = useState<FontLayerItem[]>([
-    { id: 'layer-top', fontIndex: config.metadata?.primary_font_index || 0, isInverted: false, isVisible: true },
+    { id: 'layer-top', fontIndex: config.metadata?.primary_font_index || 0, isInverted: false, isVisible: true, opacity: 1.0 },
     ...(Array.isArray(config.font_files) && config.font_files.length > 1
-      ? [{ id: 'layer-bottom', fontIndex: (config.metadata?.primary_font_index || 0) === 0 ? 1 : 0, isInverted: true, isVisible: true }]
+      ? [{ id: 'layer-bottom', fontIndex: (config.metadata?.primary_font_index || 0) === 0 ? 1 : 0, isInverted: true, isVisible: true, opacity: 1.0 }]
       : [])
   ]);
 
+  const [draggedLayerIdx, setDraggedLayerIdx] = useState<number | null>(null);
   const [detectedGlyphs, setDetectedGlyphs] = useState<any[]>([]); 
   const [filteredGlyphs, setFilteredGlyphs] = useState<any[]>([]); 
   const [isLoadingGlyphs, setIsLoadingGlyphs] = useState(false);
@@ -348,7 +351,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       id: `layer-${Date.now()}`,
       fontIndex: fontIndex,
       isInverted: layers.length % 2 === 1,
-      isVisible: true
+      isVisible: true,
+      opacity: 1.0
     };
     setLayers(prev => [...prev, newLayer]);
     setIsAddLayerOpen(false);
@@ -380,6 +384,28 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   const changeLayerFont = (id: string, fontIndex: number) => {
     setLayers(prev => prev.map(l => l.id === id ? { ...l, fontIndex } : l));
+  };
+
+  const changeLayerOpacity = (id: string, opacity: number) => {
+    setLayers(prev => prev.map(l => l.id === id ? { ...l, opacity } : l));
+  };
+
+  // Drag & Drop Handlers untuk Urutan Layer
+  const handleLayerDragStart = (idx: number) => {
+    setDraggedLayerIdx(idx);
+  };
+
+  const handleLayerDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleLayerDrop = (targetIdx: number) => {
+    if (draggedLayerIdx === null || draggedLayerIdx === targetIdx) return;
+    const updated = [...layers];
+    const item = updated.splice(draggedLayerIdx, 1)[0];
+    updated.splice(targetIdx, 0, item);
+    setLayers(updated);
+    setDraggedLayerIdx(null);
   };
 
   // List fitur global yang aktif
@@ -588,6 +614,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                             lineHeight: lineHeight, 
                             letterSpacing: `${letterSpacing}em`,
                             zIndex: calculatedZIndex,
+                            opacity: layer.opacity ?? 1.0,
                             color: layer.isInverted ? 'var(--color-vintage-paper)' : 'var(--color-vintage-ink)',
                             textShadow: layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none'
                           }}
@@ -775,11 +802,21 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                 {layers.map((layer, idx) => (
                   <div 
                     key={layer.id} 
-                    className={`flex items-center justify-between p-3 border transition-all ${
+                    draggable
+                    onDragStart={() => handleLayerDragStart(idx)}
+                    onDragOver={handleLayerDragOver}
+                    onDrop={() => handleLayerDrop(idx)}
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border transition-all gap-3 ${
+                      draggedLayerIdx === idx ? 'opacity-30 border-dashed border-vintage-ink' : ''
+                    } ${
                       !layer.isVisible ? 'opacity-40 border-vintage-ink/10 bg-transparent' : 'border-vintage-ink/20 bg-vintage-paper shadow-xs'
                     }`}
                   >
                     <div className="flex items-center gap-3">
+                      {/* Drag Handle Icon */}
+                      <span className="cursor-grab active:cursor-grabbing text-vintage-ink/40 hover:text-vintage-ink">
+                        <GripVertical size={14} />
+                      </span>
                       <span className="text-[9px] font-mono font-bold opacity-40 w-4">#{idx + 1}</span>
                       
                       <select 
@@ -795,58 +832,77 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                       </select>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => toggleLayerInvert(layer.id)}
-                        className={`p-1.5 border transition-colors ${
-                          layer.isInverted 
-                            ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                            : 'border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink'
-                        }`}
-                        title={layer.isInverted ? "Color: Inverted (Paper Light)" : "Color: Normal (Ink Dark)"}
-                      >
-                        <Contrast size={13} />
-                      </button>
+                    <div className="flex items-center gap-3 self-end sm:self-auto">
+                      {/* Slider Opacity / Transparansi */}
+                      <div className="flex items-center gap-1.5 border border-vintage-ink/20 px-2 py-0.5" title="Layer Opacity / Transparency">
+                        <span className="text-[8px] font-mono font-bold opacity-50 uppercase">OPAC</span>
+                        <input 
+                          type="range"
+                          min="0.1"
+                          max="1.0"
+                          step="0.05"
+                          value={layer.opacity ?? 1.0}
+                          onChange={(e) => changeLayerOpacity(layer.id, parseFloat(e.target.value))}
+                          className="w-14 accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer"
+                        />
+                        <span className="text-[8px] font-mono font-bold w-6 text-right">
+                          {Math.round((layer.opacity ?? 1.0) * 100)}%
+                        </span>
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => toggleLayerVisibility(layer.id)}
-                        className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink transition-colors"
-                        title={layer.isVisible ? "Hide Layer" : "Show Layer"}
-                      >
-                        {layer.isVisible ? <Eye size={13} /> : <EyeOff size={13} />}
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={idx === 0}
-                        onClick={() => moveLayer(idx, 'up')}
-                        className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink disabled:opacity-20 transition-colors"
-                        title="Move Up in Stack (Bring Forward)"
-                      >
-                        <ArrowUp size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={idx === layers.length - 1}
-                        onClick={() => moveLayer(idx, 'down')}
-                        className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink disabled:opacity-20 transition-colors"
-                        title="Move Down in Stack (Send Backward)"
-                      >
-                        <ArrowDown size={13} />
-                      </button>
-
-                      {layers.length > 1 && (
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => removeLayer(layer.id)}
-                          className="p-1.5 border border-red-300/40 text-red-600 hover:bg-red-600 hover:text-white transition-colors"
-                          title="Remove Layer"
+                          onClick={() => toggleLayerInvert(layer.id)}
+                          className={`p-1.5 border transition-colors ${
+                            layer.isInverted 
+                              ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
+                              : 'border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink'
+                          }`}
+                          title={layer.isInverted ? "Color: Inverted (Paper Light)" : "Color: Normal (Ink Dark)"}
                         >
-                          <Trash2 size={13} />
+                          <Contrast size={13} />
                         </button>
-                      )}
+
+                        <button
+                          type="button"
+                          onClick={() => toggleLayerVisibility(layer.id)}
+                          className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink transition-colors"
+                          title={layer.isVisible ? "Hide Layer" : "Show Layer"}
+                        >
+                          {layer.isVisible ? <Eye size={13} /> : <EyeOff size={13} />}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => moveLayer(idx, 'up')}
+                          className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink disabled:opacity-20 transition-colors"
+                          title="Move Up in Stack (Bring Forward)"
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === layers.length - 1}
+                          onClick={() => moveLayer(idx, 'down')}
+                          className="p-1.5 border border-vintage-ink/20 text-vintage-ink/60 hover:text-vintage-ink disabled:opacity-20 transition-colors"
+                          title="Move Down in Stack (Send Backward)"
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+
+                        {layers.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeLayer(layer.id)}
+                            className="p-1.5 border border-red-300/40 text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                            title="Remove Layer"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
