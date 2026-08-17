@@ -498,7 +498,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           {/* FONT STYLE SELECTOR */}
           <div className="flex-1 flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 relative group">
             <div className="w-full relative">
-              <span className="absolute -top-3.5 left-0 text-[8px] font-bold text-vintage-accent uppercase tracking-[0.3em]">Font Style</span>
               <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="w-full flex items-center justify-between text-[13px] font-bold uppercase tracking-tighter pt-1.5 border-b border-transparent hover:border-vintage-ink/30 transition-colors relative z-10">
                 <span className="truncate">{detectedStyleNames[activeStyleIndex] || `STYLE ${String(activeStyleIndex + 1).padStart(2, '0')}`}</span>
                 <ChevronDown size={14} className={`transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -521,9 +520,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           {/* SIZE / PAGINATION */}
           <div className="flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 min-w-44 relative">
             <div className="w-full relative">
-              <span className="absolute -top-3.5 left-0 text-[8px] font-bold text-vintage-accent uppercase tracking-[0.3em]">
-                {viewMode === 'type' ? 'Size' : 'Pages'}
-              </span>
+              
               {viewMode === 'type' ? (
                 <>
                   <button onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)} className="w-full flex items-center justify-between text-[13px] font-bold pt-1.5 border-b border-transparent hover:border-vintage-ink/30 transition-colors relative z-10">
