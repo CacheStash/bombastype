@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FontConfig } from '../types';
 import opentype from 'opentype.js';
@@ -17,6 +17,12 @@ interface TypeTesterProps {
   };
   defaultText?: string;
   isEven?: boolean;
+}
+
+interface AlternateGlyph {
+  char: string;
+  glyphIndex: number;
+  featureTag: string;
 }
 
 const TypeTester: React.FC<TypeTesterProps> = ({ 
@@ -50,6 +56,13 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false);
   const PRESET_SIZES = [12, 14, 16, 18, 20, 24, 32, 36, 48, 64, 72, 96, 120, 144, 200];
+
+  // Alternates & Textarea State
+  const [loadedFontObj, setLoadedFontObj] = useState<opentype.Font | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ x: number; y: number } | null>(null);
+  const [alternateGlyphs, setAlternateGlyphs] = useState<AlternateGlyph[]>([]);
+  const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const ALLOWED_TAGS = new Set([
     'liga', 'dlig', 'calt', 'aalt', 'salt',
@@ -103,6 +116,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     opentype.load(targetFile, (err, font) => {
       setIsLoadingGlyphs(false);
       if (err || !font) return;
+      
+      setLoadedFontObj(font);
       const glyphs = [];
       for (let i = 0; i < font.glyphs.length && i < 2000; i++) {
         const glyph = font.glyphs.get(i);
@@ -110,6 +125,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       }
       setDetectedGlyphs(glyphs);
       setCurrentPage(1); // Reset page on style switch
+      
       if (font.tables.fvar?.axes?.length > 0) {
         const autoAxes = font.tables.fvar.axes.map((axis: any) => ({
           tag: axis.tag, name: axis.name?.en || axis.tag, min: axis.minValue, max: axis.maxValue, default: axis.defaultValue
@@ -118,19 +134,118 @@ const TypeTester: React.FC<TypeTesterProps> = ({
         const vals: Record<string, number> = {};
         autoAxes.forEach((a: any) => vals[a.tag] = a.default);
         setAxesValues(prev => ({ ...prev, ...vals }));
-      } else { setDetectedAxes([]); }
+      } else { 
+        setDetectedAxes([]); 
+      }
+
       const foundTags = new Set<string>();
       if (font.tables.gsub?.features) {
-        font.tables.gsub.features.forEach((feat: any) => { if (feat.tag && ALLOWED_TAGS.has(feat.tag)) foundTags.add(feat.tag); });
+        font.tables.gsub.features.forEach((feat: any) => { 
+          if (feat.tag && ALLOWED_TAGS.has(feat.tag)) foundTags.add(feat.tag); 
+        });
       }
       setDynamicFeatures(Array.from(foundTags).sort().map(tag => ({ tag, name: tag.startsWith('ss') ? `Set ${tag.slice(2)}` : tag.toUpperCase() })));
       setActiveFeatures({});
+      setPopoverPos(null);
     });
   }, [config, activeStyleIndex]);
 
   useEffect(() => { 
     setFilteredGlyphs(detectedGlyphs); 
   }, [detectedGlyphs]);
+
+  // Handler Seleksi Teks untuk Alternate Glyph Popover (Photoshop/Illustrator Style)
+  const handleTextSelect = () => {
+    if (!textareaRef.current || !loadedFontObj) {
+      setPopoverPos(null);
+      return;
+    }
+
+    const el = textareaRef.current;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+
+    // Hanya tampilkan jika tepat 1 karakter yang dipilih
+    if (start === end || end - start !== 1) {
+      setPopoverPos(null);
+      return;
+    }
+
+    const selectedChar = text.slice(start, end);
+    const glyphIndex = loadedFontObj.charToGlyphIndex(selectedChar);
+
+    if (!glyphIndex) {
+      setPopoverPos(null);
+      return;
+    }
+
+    const alternates: AlternateGlyph[] = [];
+    const gsub = loadedFontObj.tables.gsub;
+
+    if (gsub && gsub.features && gsub.lookups) {
+      const altFeatureTags = ['aalt', 'salt', 'swsh', 'titl', 'calt', ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`)];
+      
+      gsub.features.forEach((featureRecord: any) => {
+        if (!altFeatureTags.includes(featureRecord.tag)) return;
+        
+        featureRecord.feature.lookupListIndexes.forEach((lookupIndex: number) => {
+          const lookup = gsub.lookups[lookupIndex];
+          if (!lookup || !lookup.subtables) return;
+
+          lookup.subtables.forEach((subtable: any) => {
+            // Lookup Type 1: Single Substitution
+            if (lookup.lookupType === 1) {
+              if (subtable.coverage && subtable.coverage.glyphs) {
+                const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
+                if (covIdx !== -1) {
+                  const targetGlyphIdx = Array.isArray(subtable.substitute) 
+                    ? subtable.substitute[covIdx] 
+                    : (glyphIndex + subtable.deltaGlyphId) % 65536;
+                  
+                  const targetGlyph = loadedFontObj.glyphs.get(targetGlyphIdx);
+                  const charStr = targetGlyph?.unicode ? String.fromCharCode(targetGlyph.unicode) : selectedChar;
+                  
+                  if (!alternates.some(a => a.glyphIndex === targetGlyphIdx)) {
+                    alternates.push({ char: charStr, glyphIndex: targetGlyphIdx, featureTag: featureRecord.tag });
+                  }
+                }
+              }
+            }
+            // Lookup Type 3: Alternate Substitution
+            else if (lookup.lookupType === 3) {
+              if (subtable.coverage && subtable.coverage.glyphs) {
+                const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
+                if (covIdx !== -1 && subtable.alternateSet && subtable.alternateSet[covIdx]) {
+                  subtable.alternateSet[covIdx].forEach((altIdx: number) => {
+                    const targetGlyph = loadedFontObj.glyphs.get(altIdx);
+                    const charStr = targetGlyph?.unicode ? String.fromCharCode(targetGlyph.unicode) : selectedChar;
+                    if (!alternates.some(a => a.glyphIndex === altIdx)) {
+                      alternates.push({ char: charStr, glyphIndex: altIdx, featureTag: featureRecord.tag });
+                    }
+                  });
+                }
+              }
+            }
+          });
+        });
+      });
+    }
+
+    if (alternates.length > 0) {
+      setSelectionRange({ start, end });
+      setPopoverPos({ x: 0, y: 0 }); // Posisi anchored di dalam container
+      setAlternateGlyphs(alternates);
+    } else {
+      setPopoverPos(null);
+    }
+  };
+
+  const applyAlternate = (alt: AlternateGlyph) => {
+    if (!selectionRange) return;
+    const newText = text.slice(0, selectionRange.start) + alt.char + text.slice(selectionRange.end);
+    setText(newText);
+    setPopoverPos(null);
+  };
 
   const totalPages = Math.max(1, Math.ceil(filteredGlyphs.length / GLYPHS_PER_PAGE));
   const paginatedGlyphs = filteredGlyphs.slice((currentPage - 1) * GLYPHS_PER_PAGE, currentPage * GLYPHS_PER_PAGE);
@@ -256,17 +371,50 @@ const TypeTester: React.FC<TypeTesterProps> = ({
         <div className="min-h-100 relative bg-transparent">
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
-              <motion.textarea 
-                key="type" 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                exit={{ opacity: 0 }} 
-                value={text} 
-                onChange={(e) => setText(e.target.value)} 
-                className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20" 
-                style={{ ...commonFontStyle, fontSize: `${fontSize}px`, textAlign: align, lineHeight: lineHeight, letterSpacing: `${letterSpacing}em` }} 
-                spellCheck={false} 
-              />
+              <div className="relative w-full min-h-100">
+                <textarea 
+                  key="type" 
+                  ref={textareaRef}
+                  value={text} 
+                  onChange={(e) => { setText(e.target.value); setPopoverPos(null); }} 
+                  onSelect={handleTextSelect}
+                  onKeyUp={handleTextSelect}
+                  onMouseUp={handleTextSelect}
+                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20" 
+                  style={{ ...commonFontStyle, fontSize: `${fontSize}px`, textAlign: align, lineHeight: lineHeight, letterSpacing: `${letterSpacing}em` }} 
+                  spellCheck={false} 
+                />
+
+                {/* ADOBE / PHOTOSHOP STYLE ALTERNATE POPUP */}
+                <AnimatePresence>
+                  {popoverPos && alternateGlyphs.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                      className="absolute z-60 top-4 left-6 md:left-12 bg-vintage-paper border border-vintage-ink shadow-2xl p-2.5 flex items-center gap-3"
+                    >
+                      <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-vintage-accent border-r border-vintage-ink/10 pr-2">
+                        Alternates
+                      </span>
+                      <div className="flex items-center gap-1.5 overflow-x-auto max-w-sm">
+                        {alternateGlyphs.map((alt, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => applyAlternate(alt)}
+                            className="h-11 min-w-11 px-2 flex flex-col items-center justify-center border border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper transition-all group shrink-0"
+                            title={`Feature: ${alt.featureTag.toUpperCase()}`}
+                          >
+                            <span style={{ ...commonFontStyle, fontSize: '20px' }} className="leading-none">{alt.char}</span>
+                            <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">{alt.featureTag}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ) : (
               <motion.div 
                 key={`glyphs-page-${currentPage}`} 
