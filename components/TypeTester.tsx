@@ -248,12 +248,24 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   const applyAlternate = (alt: AlternateGlyph) => {
     if (selectedCharIndex === null) return;
+    const targetGlyph = loadedFontObj?.glyphs?.get(alt.glyphIndex);
+    const replacementChar = (targetGlyph && targetGlyph.unicode) 
+      ? String.fromCharCode(targetGlyph.unicode) 
+      : alt.char;
+
+    if (replacementChar !== text.charAt(selectedCharIndex)) {
+      const newText = text.slice(0, selectedCharIndex) + replacementChar + text.slice(selectedCharIndex + 1);
+      setText(newText);
+    }
+
     setCharOverrides(prev => {
       const next = { ...prev };
-      if (!alt.featureTag || next[selectedCharIndex] === alt.featureTag) {
+      // Abaikan tag aalt untuk CSS karena browser hanya merespons tag aktif (salt, ss01, dll)
+      const validFeatureTag = alt.featureTag === 'aalt' ? '' : alt.featureTag;
+      if (!validFeatureTag || next[selectedCharIndex] === validFeatureTag) {
         delete next[selectedCharIndex];
       } else {
-        next[selectedCharIndex] = alt.featureTag;
+        next[selectedCharIndex] = validFeatureTag;
       }
       return next;
     });
@@ -395,7 +407,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
               <div className="relative w-full min-h-100">
                 {/* Visual Overlay untuk menampilkan per-character alternate features */}
                 <div 
-                  className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap break-words overflow-hidden"
+                  className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap wrap-break-word overflow-hidden"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
