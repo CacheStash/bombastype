@@ -193,11 +193,15 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     const gsub = loadedFontObj.tables.gsub;
 
     if (gsub && gsub.features && gsub.lookups) {
-      const altFeatureTags = ['aalt', 'salt', 'swsh', 'titl', 'calt', ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`)];
+      // Prioritaskan fitur render spesifik di depan aalt
+      const altFeatureTags = ['salt', 'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'swsh', 'titl', 'calt', 'aalt'];
       
       gsub.features.forEach((featureRecord: any) => {
         if (!altFeatureTags.includes(featureRecord.tag)) return;
         
+        // Map 'aalt' ke fitur CSS yang aktif yaitu 'salt'
+        const effectiveCssTag = featureRecord.tag === 'aalt' ? 'salt' : featureRecord.tag;
+
         featureRecord.feature.lookupListIndexes.forEach((lookupIndex: number) => {
           const lookup = gsub.lookups[lookupIndex];
           if (!lookup || !lookup.subtables) return;
@@ -212,8 +216,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     ? subtable.substitute[covIdx] 
                     : (glyphIndex + subtable.deltaGlyphId) % 65536;
                   
-                  if (!alternates.some(a => a.featureTag === featureRecord.tag)) {
-                    alternates.push({ char: targetChar, glyphIndex: targetGlyphIdx, featureTag: featureRecord.tag });
+                  if (!alternates.some(a => a.glyphIndex === targetGlyphIdx)) {
+                    alternates.push({ char: targetChar, glyphIndex: targetGlyphIdx, featureTag: effectiveCssTag });
                   }
                 }
               }
@@ -224,8 +228,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                 const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
                 if (covIdx !== -1 && subtable.alternateSet && subtable.alternateSet[covIdx]) {
                   subtable.alternateSet[covIdx].forEach((altIdx: number) => {
-                    if (!alternates.some(a => a.featureTag === featureRecord.tag)) {
-                      alternates.push({ char: targetChar, glyphIndex: altIdx, featureTag: featureRecord.tag });
+                    if (!alternates.some(a => a.glyphIndex === altIdx)) {
+                      alternates.push({ char: targetChar, glyphIndex: altIdx, featureTag: effectiveCssTag });
                     }
                   });
                 }
@@ -248,27 +252,26 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   const applyAlternate = (alt: AlternateGlyph) => {
     if (selectedCharIndex === null) return;
+    
+    // Ganti karakter Unicode langsung jika glyph alternate memiliki kode Unicode tersendiri
     const targetGlyph = loadedFontObj?.glyphs?.get(alt.glyphIndex);
-    const replacementChar = (targetGlyph && targetGlyph.unicode) 
-      ? String.fromCharCode(targetGlyph.unicode) 
-      : alt.char;
-
-    if (replacementChar !== text.charAt(selectedCharIndex)) {
+    if (targetGlyph && targetGlyph.unicode && targetGlyph.unicode !== text.charCodeAt(selectedCharIndex)) {
+      const replacementChar = String.fromCharCode(targetGlyph.unicode);
       const newText = text.slice(0, selectedCharIndex) + replacementChar + text.slice(selectedCharIndex + 1);
       setText(newText);
     }
 
+    // Set fitur CSS per-karakter (misal: 'salt')
     setCharOverrides(prev => {
       const next = { ...prev };
-      // Abaikan tag aalt untuk CSS karena browser hanya merespons tag aktif (salt, ss01, dll)
-      const validFeatureTag = alt.featureTag === 'aalt' ? '' : alt.featureTag;
-      if (!validFeatureTag || next[selectedCharIndex] === validFeatureTag) {
+      if (!alt.featureTag || next[selectedCharIndex] === alt.featureTag) {
         delete next[selectedCharIndex];
       } else {
-        next[selectedCharIndex] = validFeatureTag;
+        next[selectedCharIndex] = alt.featureTag;
       }
       return next;
     });
+
     setPopoverPos(null);
     setSelectedCharIndex(null);
   };
