@@ -15,6 +15,7 @@ interface TypeTesterProps {
     metadata?: { 
       primary_font_index?: number;
       is_layered?: boolean;
+      layer_font_indices?: number[];
     } 
   };
   defaultText?: string;
@@ -69,7 +70,31 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   const [activeFeatures, setActiveFeatures] = useState<Record<string, boolean>>({});
   const [dynamicFeatures, setDynamicFeatures] = useState<{ tag: string; name: string }[]>([]);
-  
+  const availableLayerIndices: number[] = React.useMemo(() => {
+    if (!Array.isArray(config.font_files)) return [];
+    
+    // 1. Prioritaskan konfigurasi metadata dari Admin
+    if (config.metadata?.layer_font_indices && config.metadata.layer_font_indices.length > 0) {
+      return config.metadata.layer_font_indices;
+    }
+
+    // 2. Fallback jika metadata belum diset: Tampilkan semua file style
+    return config.font_files.map((_, idx) => idx);
+  }, [config.font_files, config.metadata?.layer_font_indices]);
+
+  // Reset scroll position saat user berpindah antara Single Mode & Layered Mode
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.scrollTop = 0;
+      textareaRef.current.scrollLeft = 0;
+    }
+    Object.values(layerContainerRefs.current).forEach((el) => {
+      if (el) {
+        el.scrollTop = 0;
+        el.scrollLeft = 0;
+      }
+    });
+  }, [isLayeredMode]);
   const [lineHeight, setLineHeight] = useState(1.1);
   const [letterSpacing, setLetterSpacing] = useState(0);
   
@@ -469,8 +494,12 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const hasAxes = detectedAxes.length > 0;
   const hasFeatures = dynamicFeatures.length > 0;
 
+  const activeTextareaFontIndex = isLayeredMode 
+    ? (layers[0]?.fontIndex ?? config.metadata?.primary_font_index ?? 0)
+    : activeStyleIndex;
+
   const commonFontStyle = { 
-    fontFamily: `"${config.name}-${activeStyleIndex}"`, 
+    fontFamily: `"${config.name}-${activeTextareaFontIndex}"`, 
     fontVariationSettings: Object.entries(axesValues).map(([t, v]) => `"${t}" ${v}`).join(', ')
   };
 
@@ -860,7 +889,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                           <div className="px-3 py-1.5 text-[8px] font-bold uppercase text-vintage-accent border-b border-vintage-ink/10 tracking-widest bg-vintage-ink/5">
                             Select Layer Font
                           </div>
-                          {Array.isArray(config.font_files) && config.font_files.map((_, fIdx) => (
+                          {/* Hanya tampilkan font yang lolos filter Layer System */}
+                          {availableLayerIndices.map((fIdx) => (
                             <button
                               key={fIdx}
                               type="button"
@@ -907,7 +937,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                         onChange={(e) => changeLayerFont(layer.id, parseInt(e.target.value))}
                         className="bg-transparent border border-vintage-ink/20 px-2.5 py-1 text-[10px] font-bold uppercase outline-none cursor-pointer"
                       >
-                        {Array.isArray(config.font_files) && config.font_files.map((_, fIdx) => (
+                        {availableLayerIndices.map((fIdx) => (
                           <option key={fIdx} value={fIdx} className="bg-vintage-paper text-vintage-ink">
                             {detectedStyleNames[fIdx] || `Style ${fIdx + 1}`}
                           </option>
