@@ -453,19 +453,19 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
 
                     <span>{f.includes('-') ? f.replace(/^\d{10,}-/, '') : f}</span>
 
-                    {/* Tag Toggle Layer vs Pairing (Hanya muncul jika Layered System aktif) */}
+                    {/* Tag Toggle Layer vs Pairing (High Contrast) */}
                     {isLayered && (
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); toggleLayerIndex(i); }}
-                        className={`px-1.5 py-0.5 text-[8px] font-bold uppercase transition-colors border ${
+                        className={`px-2 py-0.5 text-[8px] font-mono font-bold uppercase transition-all border ${
                           isPartOfLayer 
-                            ? 'bg-vintage-accent text-white border-vintage-accent' 
-                            : 'bg-transparent text-gray-400 border-gray-300 hover:text-black'
+                            ? (primaryFontIndex === i ? 'bg-white text-black border-white' : 'bg-black text-white border-black')
+                            : (primaryFontIndex === i ? 'bg-transparent text-white/70 border-white/40 hover:text-white' : 'bg-white text-gray-700 border-gray-400 hover:text-black hover:border-black')
                         }`}
                         title={isPartOfLayer ? "Click to set as Pairing (Exclude from stack)" : "Click to include in Layered Stack"}
                       >
-                        {isPartOfLayer ? 'LAYER' : 'PAIRING'}
+                        {isPartOfLayer ? '● LAYER' : '○ PAIRING'}
                       </button>
                     )}
 
@@ -493,19 +493,19 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
 
                     <span>{f.name}</span>
 
-                    {/* Tag Toggle Layer vs Pairing untuk file baru */}
+                    {/* Tag Toggle Layer vs Pairing untuk file baru (High Contrast) */}
                     {isLayered && (
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); toggleLayerIndex(combinedIdx); }}
-                        className={`px-1.5 py-0.5 text-[8px] font-bold uppercase transition-colors border ${
+                        className={`px-2 py-0.5 text-[8px] font-mono font-bold uppercase transition-all border ${
                           isPartOfLayer 
-                            ? 'bg-vintage-accent text-white border-vintage-accent' 
-                            : 'bg-transparent text-gray-500 border-gray-600 hover:text-white'
+                            ? 'bg-white text-black border-white' 
+                            : 'bg-black text-gray-300 border-gray-600 hover:text-white hover:border-white'
                         }`}
                         title={isPartOfLayer ? "Click to set as Pairing (Exclude from stack)" : "Click to include in Layered Stack"}
                       >
-                        {isPartOfLayer ? 'LAYER' : 'PAIRING'}
+                        {isPartOfLayer ? '● LAYER' : '○ PAIRING'}
                       </button>
                     )}
 
