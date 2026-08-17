@@ -199,27 +199,23 @@ const FontDetail: React.FC = () => {
           <div className="flex items-baseline gap-8">
             <div className="flex flex-col">
               <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-1">Starting at</span>
-              <div className="flex items-start text-vintage-ink justify-center lg:justify-start">
-                <DollarSign size={42} className="mt-4 md:mt-6 text-vintage-accent shrink-0" strokeWidth={2.5} />
-                <div className="flex items-start font-display leading-none tracking-tighter">
-                  <span className="text-7xl md:text-9xl">{Math.floor(Number(discountPrice))}</span>
-                  <span className="text-2xl md:text-4xl mt-1 md:mt-2 text-vintage-ink/80 font-bold">
-                    {(Number(discountPrice) % 1).toFixed(2).substring(2)}
-                  </span>
-                </div>
+              <div className="flex items-start text-vintage-ink justify-center lg:justify-start font-display">
+                <DollarSign size={36} className="mt-2.5 md:mt-4 text-vintage-accent shrink-0 mr-1" strokeWidth={2.5} />
+                <span className="text-7xl md:text-9xl leading-none tracking-tighter">{Math.floor(Number(discountPrice))}</span>
+                <span className="text-2xl md:text-3xl font-bold tracking-normal leading-none pt-2.5 md:pt-4 ml-1">
+                  {(Number(discountPrice) % 1).toFixed(2).substring(2)}
+                </span>
               </div>
             </div>
             {activePromo && (
               <div className="flex flex-col pb-2">
                 <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">Promo Active</span>
-                <div className="flex items-start text-vintage-ink line-through opacity-30 decoration-vintage-accent decoration-2">
-                  <DollarSign size={18} className="mt-1 text-vintage-accent shrink-0" strokeWidth={2.5} />
-                  <div className="flex items-start font-display leading-none">
-                    <span className="text-3xl md:text-4xl">{Math.floor(Number(basePrice))}</span>
-                    <span className="text-sm md:text-base mt-0.5 font-bold">
-                      {(Number(basePrice) % 1).toFixed(2).substring(2)}
-                    </span>
-                  </div>
+                <div className="flex items-start text-vintage-ink line-through opacity-30 decoration-vintage-accent decoration-2 font-display">
+                  <DollarSign size={16} className="mt-1 text-vintage-accent shrink-0" strokeWidth={2.5} />
+                  <span className="text-3xl md:text-4xl leading-none">{Math.floor(Number(basePrice))}</span>
+                  <span className="text-sm md:text-base font-bold leading-none pt-1 ml-0.5">
+                    {(Number(basePrice) % 1).toFixed(2).substring(2)}
+                  </span>
                 </div>
               </div>
             )}
