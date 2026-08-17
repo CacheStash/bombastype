@@ -195,18 +195,24 @@ const FontDetail: React.FC = () => {
       <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center lg:items-end gap-12 relative z-10">
         <div className="flex flex-col items-center lg:items-start">
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-4 italic">Pricing Information</span>
-          <div className="flex items-baseline gap-6">
-            <div className="flex flex-col">
-               <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-1">Starting at</span>
-               <span className="text-8xl md:text-9xl font-display leading-none tracking-tighter">${discountPrice}</span>
-            </div>
-            {activePromo && (
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-orange-600 uppercase tracking-widest mb-1">Promo Active</span>
-                <span className="text-3xl md:text-4xl line-through opacity-20 decoration-vintage-accent decoration-2 font-display">${basePrice}</span>
-              </div>
-            )}
-          </div>
+          <div className="flex items-end gap-6">
+  <div className="flex flex-col">
+     <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-1">Starting at</span>
+     <div className="flex items-start">
+       <span className="text-2xl font-bold mt-2 mr-1 tracking-tighter text-vintage-ink">$</span>
+       <span className="text-8xl md:text-9xl font-display leading-none tracking-tighter text-vintage-ink">{discountPrice}</span>
+     </div>
+  </div>
+  {activePromo && (
+    <div className="flex flex-col">
+      <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">Promo Active</span>
+      <div className="flex items-start line-through opacity-30 decoration-vintage-accent decoration-2">
+        <span className="text-sm font-bold mt-1 mr-0.5 tracking-tighter">$</span>
+        <span className="text-3xl md:text-4xl font-display leading-none">{basePrice}</span>
+      </div>
+    </div>
+  )}
+</div>
         </div>
 
         <div className="flex flex-col gap-4 w-full md:w-auto">
