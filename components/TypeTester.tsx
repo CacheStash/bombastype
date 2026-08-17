@@ -65,8 +65,9 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Daftar fitur OT yang diizinkan (aalt dihapus)
   const ALLOWED_TAGS = new Set([
-    'liga', 'dlig', 'calt', 'aalt', 'salt',
+    'liga', 'dlig', 'calt', 'salt', 'swsh', 'titl',
     ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`) 
   ]);
 
@@ -80,7 +81,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=${version}`;
       const fontNameIdentifier = `${config.name}-${index}`;
 
-      // Daftarkan font ke CSS Engine browser
       try {
         const fontFace = new FontFace(fontNameIdentifier, `url("${url}")`);
         fontFace.load().then((loadedFace) => {
@@ -92,7 +92,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
         console.error("FontFace API error:", e);
       }
 
-      // Load data OpenType untuk metadata nama & glyph
       opentype.load(url, (err, font) => {
         if (!err && font) {
           const names = font.names as any;
@@ -125,7 +124,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
         if (glyph.unicode) glyphs.push({ char: String.fromCharCode(glyph.unicode), index: i });
       }
       setDetectedGlyphs(glyphs);
-      setCurrentPage(1); // Reset page on style switch
+      setCurrentPage(1);
       
       if (font.tables.fvar?.axes?.length > 0) {
         const autoAxes = font.tables.fvar.axes.map((axis: any) => ({
@@ -168,7 +167,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     const start = el.selectionStart;
     const end = el.selectionEnd;
 
-    // Hanya tampilkan jika tepat 1 karakter yang dipilih
+    // Hanya aktif jika 1 karakter yang dipilih
     if (start === end || end - start !== 1) {
       setPopoverPos(null);
       setSelectedCharIndex(null);
@@ -193,14 +192,10 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     const gsub = loadedFontObj.tables.gsub;
 
     if (gsub && gsub.features && gsub.lookups) {
-      // Prioritaskan fitur render spesifik di depan aalt
-      const altFeatureTags = ['salt', 'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'swsh', 'titl', 'calt', 'aalt'];
+      const altFeatureTags = ['salt', 'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'ss06', 'ss07', 'ss08', 'ss09', 'ss10', 'swsh', 'titl', 'calt', 'dlig'];
       
       gsub.features.forEach((featureRecord: any) => {
         if (!altFeatureTags.includes(featureRecord.tag)) return;
-        
-        // Map 'aalt' ke fitur CSS yang aktif yaitu 'salt'
-        const effectiveCssTag = featureRecord.tag === 'aalt' ? 'salt' : featureRecord.tag;
 
         featureRecord.feature.lookupListIndexes.forEach((lookupIndex: number) => {
           const lookup = gsub.lookups[lookupIndex];
@@ -216,8 +211,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     ? subtable.substitute[covIdx] 
                     : (glyphIndex + subtable.deltaGlyphId) % 65536;
                   
-                  if (!alternates.some(a => a.glyphIndex === targetGlyphIdx)) {
-                    alternates.push({ char: targetChar, glyphIndex: targetGlyphIdx, featureTag: effectiveCssTag });
+                  if (!alternates.some(a => a.featureTag === featureRecord.tag)) {
+                    alternates.push({ char: targetChar, glyphIndex: targetGlyphIdx, featureTag: featureRecord.tag });
                   }
                 }
               }
@@ -228,8 +223,8 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                 const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
                 if (covIdx !== -1 && subtable.alternateSet && subtable.alternateSet[covIdx]) {
                   subtable.alternateSet[covIdx].forEach((altIdx: number) => {
-                    if (!alternates.some(a => a.glyphIndex === altIdx)) {
-                      alternates.push({ char: targetChar, glyphIndex: altIdx, featureTag: effectiveCssTag });
+                    if (!alternates.some(a => a.featureTag === featureRecord.tag)) {
+                      alternates.push({ char: targetChar, glyphIndex: altIdx, featureTag: featureRecord.tag });
                     }
                   });
                 }
@@ -253,15 +248,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const applyAlternate = (alt: AlternateGlyph) => {
     if (selectedCharIndex === null) return;
     
-    // Ganti karakter Unicode langsung jika glyph alternate memiliki kode Unicode tersendiri
-    const targetGlyph = loadedFontObj?.glyphs?.get(alt.glyphIndex);
-    if (targetGlyph && targetGlyph.unicode && targetGlyph.unicode !== text.charCodeAt(selectedCharIndex)) {
-      const replacementChar = String.fromCharCode(targetGlyph.unicode);
-      const newText = text.slice(0, selectedCharIndex) + replacementChar + text.slice(selectedCharIndex + 1);
-      setText(newText);
-    }
-
-    // Set fitur CSS per-karakter (misal: 'salt')
+    // Toggle atau set tag fitur untuk karakter ini
     setCharOverrides(prev => {
       const next = { ...prev };
       if (!alt.featureTag || next[selectedCharIndex] === alt.featureTag) {
@@ -283,15 +270,25 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setSelectedCharIndex(null);
   };
 
+  const toggleFeature = (tag: string) => {
+    setActiveFeatures(prev => ({ ...prev, [tag]: !prev[tag] }));
+  };
+
   const totalPages = Math.max(1, Math.ceil(filteredGlyphs.length / GLYPHS_PER_PAGE));
   const paginatedGlyphs = filteredGlyphs.slice((currentPage - 1) * GLYPHS_PER_PAGE, currentPage * GLYPHS_PER_PAGE);
 
   const hasAxes = detectedAxes.length > 0;
   const hasFeatures = dynamicFeatures.length > 0;
+
+  // List fitur global yang aktif
+  const globalActiveFeatureString = Object.entries(activeFeatures)
+    .filter(([_, on]) => on)
+    .map(([t]) => `"${t}" 1`)
+    .join(', ') || 'normal';
+
   const commonFontStyle = { 
     fontFamily: `"${config.name}-${activeStyleIndex}"`, 
-    fontVariationSettings: Object.entries(axesValues).map(([t, v]) => `"${t}" ${v}`).join(', '),
-    fontFeatureSettings: Object.entries(activeFeatures).map(([t, on]) => `"${t}" ${on ? 'on' : 'off'}`).join(', ') || 'normal'
+    fontVariationSettings: Object.entries(axesValues).map(([t, v]) => `"${t}" ${v}`).join(', ')
   };
 
   return (
@@ -408,9 +405,9 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
               <div className="relative w-full min-h-100">
-                {/* Visual Overlay untuk menampilkan per-character alternate features */}
+                {/* Visual Overlay untuk menampilkan teks per-karakter */}
                 <div 
-                  className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap wrap-break-word overflow-hidden"
+                  className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap wrap-break-word overflow-hidden select-none"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
@@ -421,16 +418,19 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   aria-hidden="true"
                 >
                   {text.split('').map((char, i) => {
-                    const feat = charOverrides[i];
+                    const overrideFeature = charOverrides[i];
+                    // Gabungkan fitur override karakter dengan fitur global yang aktif
+                    const activeCharFeatures = overrideFeature 
+                      ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
+                      : globalActiveFeatureString;
+
                     return (
                       <span 
                         key={i}
                         style={{
-                          fontFeatureSettings: feat 
-                            ? `"${feat}" on, ${commonFontStyle.fontFeatureSettings}` 
-                            : commonFontStyle.fontFeatureSettings
+                          fontFeatureSettings: activeCharFeatures,
+                          WebkitFontFeatureSettings: activeCharFeatures
                         }}
-                        className={feat ? "text-vintage-accent" : ""}
                       >
                         {char}
                       </span>
@@ -438,7 +438,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   })}
                 </div>
 
-                {/* Input Textarea Transparan (Menangani Typing, Edit, Backspace, Selection) */}
+                {/* Input Textarea Transparan */}
                 <textarea 
                   key="type" 
                   ref={textareaRef}
@@ -448,7 +448,15 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   onKeyUp={handleTextSelect}
                   onMouseUp={handleTextSelect}
                   className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-10 text-transparent caret-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper" 
-                  style={{ ...commonFontStyle, fontSize: `${fontSize}px`, textAlign: align, lineHeight: lineHeight, letterSpacing: `${letterSpacing}em` }} 
+                  style={{ 
+                    ...commonFontStyle, 
+                    fontSize: `${fontSize}px`, 
+                    textAlign: align, 
+                    lineHeight: lineHeight, 
+                    letterSpacing: `${letterSpacing}em`,
+                    fontFeatureSettings: globalActiveFeatureString,
+                    WebkitFontFeatureSettings: globalActiveFeatureString
+                  }} 
                   spellCheck={false} 
                 />
 
@@ -472,7 +480,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                           className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center border transition-all group shrink-0 ${
                             !charOverrides[selectedCharIndex] 
                               ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                              : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper'
+                              : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper bg-transparent text-vintage-ink'
                           }`}
                           title="Default Style"
                         >
@@ -493,7 +501,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                               className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center border transition-all group shrink-0 ${
                                 isActive 
                                   ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                                  : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper'
+                                  : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper bg-transparent text-vintage-ink'
                               }`}
                               title={`Feature: ${alt.featureTag.toUpperCase()}`}
                             >
@@ -501,7 +509,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                                 style={{ 
                                   ...commonFontStyle, 
                                   fontSize: '20px', 
-                                  fontFeatureSettings: `"${alt.featureTag}" on` 
+                                  fontFeatureSettings: `"${alt.featureTag}" 1` 
                                 }} 
                                 className="leading-none"
                               >
@@ -576,9 +584,22 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                 <div className={`${hasAxes ? 'lg:col-span-4' : 'lg:col-span-12'} p-8`}>
                   <h4 className="text-[9px] font-bold uppercase tracking-[0.4em] text-vintage-accent mb-8 border-b border-vintage-ink/5 pb-2">OT Features</h4>
                   <div className="flex flex-wrap gap-2 max-h-75 overflow-y-auto custom-scrollbar pr-4">
-                    {dynamicFeatures.map((feat) => (
-                      <button key={feat.tag} onClick={() => setActiveFeatures(prev => ({ ...prev, [feat.tag]: !prev[feat.tag] }))} className={`px-3 py-1.5 text-[9px] font-bold uppercase border transition-all duration-300 rounded-sm ${activeFeatures[feat.tag] ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' : 'border-vintage-ink/10 text-vintage-ink/40 hover:border-vintage-ink/30 hover:text-vintage-ink'}`}>{feat.name}</button>
-                    ))}
+                    {dynamicFeatures.map((feat) => {
+                      const isActive = !!activeFeatures[feat.tag];
+                      return (
+                        <button 
+                          key={feat.tag} 
+                          onClick={() => toggleFeature(feat.tag)} 
+                          className={`px-4 py-2 text-[9px] font-bold uppercase transition-all duration-300 rounded-none cursor-pointer ${
+                            isActive 
+                              ? 'bg-vintage-ink! text-vintage-paper! border-transparent shadow-sm' 
+                              : 'bg-transparent border border-vintage-ink/20 text-vintage-ink/60 hover:border-vintage-ink hover:text-vintage-ink'
+                          }`}
+                        >
+                          {feat.name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
