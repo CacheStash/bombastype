@@ -76,7 +76,9 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
   const [isSearchingDrive, setIsSearchingDrive] = useState(false);
   const [primaryFontIndex, setPrimaryFontIndex] = useState<number>(initialData?.metadata?.primary_font_index || 0);
 const [isLayered, setIsLayered] = useState<boolean>(initialData?.metadata?.is_layered || false);
-
+const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
+    initialData?.metadata?.layer_font_indices || []
+  );
   const [draggedImgIndex, setDraggedImgIndex] = useState<number | null>(null);
 
   const handleDragStart = (index: number) => setDraggedImgIndex(index);
@@ -150,6 +152,10 @@ const [isLayered, setIsLayered] = useState<boolean>(initialData?.metadata?.is_la
       setExistingTrialFile(initialData.trial_file_url || '');
       setPrimaryFontIndex(initialData?.metadata?.primary_font_index || 0);
       setIsLayered(initialData?.metadata?.is_layered || false);
+      setLayerFontIndices(
+        initialData?.metadata?.layer_font_indices || 
+        (initialData?.font_files ? initialData.font_files.map((_: any, i: number) => i) : [])
+      );
     }
   }, [initialData]);
 
@@ -157,6 +163,16 @@ const [isLayered, setIsLayered] = useState<boolean>(initialData?.metadata?.is_la
 
   const removeExistingFont = (index: number) => {
     setExistingFontFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleLayerIndex = (idx: number) => {
+    setLayerFontIndices(prev => {
+      if (prev.includes(idx)) {
+        return prev.filter(i => i !== idx);
+      } else {
+        return [...prev, idx].sort((a, b) => a - b);
+      }
+    });
   };
 
   const removeExistingPreview = (index: number) => {
@@ -260,7 +276,10 @@ const [isLayered, setIsLayered] = useState<boolean>(initialData?.metadata?.is_la
         metadata: {
           ...initialData?.metadata,
           primary_font_index: primaryFontIndex,
-          is_layered: isLayered
+          is_layered: isLayered,
+          layer_font_indices: isLayered 
+            ? (layerFontIndices.length > 0 ? layerFontIndices : Array.from({ length: existingFontFiles.length + fontFiles.length }, (_, i) => i))
+            : []
         }
       };
 
@@ -416,33 +435,84 @@ const [isLayered, setIsLayered] = useState<boolean>(initialData?.metadata?.is_la
 
           {(existingFontFiles.length > 0 || fontFiles.length > 0) && (
             <div className="mt-4 flex flex-wrap gap-2 justify-center">
-              {existingFontFiles.map((f, i) => (
-                <span 
-                  key={`ex-f-${i}`} 
-                  onClick={() => setPrimaryFontIndex(i)}
-                  className={`border text-[9px] px-2 py-1 uppercase flex items-center gap-2 cursor-pointer transition-all ${primaryFontIndex === i ? 'bg-black text-white border-black' : 'bg-gray-100 border-black'}`}
-                  title="Click to set as Primary Style"
-                >
-                  {primaryFontIndex === i && <span className="text-yellow-400">★</span>}
-                  {f.includes('-') ? f.replace(/^\d{10,}-/, '') : f} 
-                  <button type="button" onClick={(e) => { e.stopPropagation(); removeExistingFont(i); }} className="text-red-500 font-bold hover:scale-125 transition-transform">×</button>
-                </span>
-              ))}
+              {existingFontFiles.map((f, i) => {
+                const isPartOfLayer = !isLayered || layerFontIndices.includes(i);
+                return (
+                  <span 
+                    key={`ex-f-${i}`} 
+                    className={`border text-[9px] px-2.5 py-1.5 uppercase flex items-center gap-2 transition-all select-none ${primaryFontIndex === i ? 'bg-black text-white border-black shadow-sm' : 'bg-gray-100 border-black'}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setPrimaryFontIndex(i)}
+                      className="hover:scale-110 transition-transform"
+                      title="Set as Primary Font"
+                    >
+                      {primaryFontIndex === i ? <span className="text-yellow-400">★</span> : <span className="opacity-30 hover:opacity-100">☆</span>}
+                    </button>
+
+                    <span>{f.includes('-') ? f.replace(/^\d{10,}-/, '') : f}</span>
+
+                    {/* Tag Toggle Layer vs Pairing (Hanya muncul jika Layered System aktif) */}
+                    {isLayered && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); toggleLayerIndex(i); }}
+                        className={`px-1.5 py-0.5 text-[8px] font-bold uppercase transition-colors border ${
+                          isPartOfLayer 
+                            ? 'bg-vintage-accent text-white border-vintage-accent' 
+                            : 'bg-transparent text-gray-400 border-gray-300 hover:text-black'
+                        }`}
+                        title={isPartOfLayer ? "Click to set as Pairing (Exclude from stack)" : "Click to include in Layered Stack"}
+                      >
+                        {isPartOfLayer ? 'LAYER' : 'PAIRING'}
+                      </button>
+                    )}
+
+                    <button type="button" onClick={(e) => { e.stopPropagation(); removeExistingFont(i); }} className="text-red-500 font-bold hover:scale-125 transition-transform ml-1">×</button>
+                  </span>
+                );
+              })}
+
               {fontFiles.map((f, i) => {
                 const combinedIdx = existingFontFiles.length + i;
+                const isPartOfLayer = !isLayered || layerFontIndices.includes(combinedIdx);
                 return (
                   <span 
                     key={`new-f-${i}`} 
-                    onClick={() => setPrimaryFontIndex(combinedIdx)}
-                    className={`text-[9px] px-2 py-1 uppercase flex items-center gap-2 cursor-pointer transition-all ${primaryFontIndex === combinedIdx ? 'bg-black text-white border border-black' : 'bg-gray-800 text-gray-300 border border-transparent'}`}
-                    title="Click to set as Primary Style"
+                    className={`text-[9px] px-2.5 py-1.5 uppercase flex items-center gap-2 transition-all select-none ${primaryFontIndex === combinedIdx ? 'bg-black text-white border border-black shadow-sm' : 'bg-gray-800 text-gray-300 border border-transparent'}`}
                   >
-                    {primaryFontIndex === combinedIdx && <span className="text-yellow-400">★</span>}
-                    {f.name}
+                    <button
+                      type="button"
+                      onClick={() => setPrimaryFontIndex(combinedIdx)}
+                      className="hover:scale-110 transition-transform"
+                      title="Set as Primary Font"
+                    >
+                      {primaryFontIndex === combinedIdx ? <span className="text-yellow-400">★</span> : <span className="opacity-30 hover:opacity-100">☆</span>}
+                    </button>
+
+                    <span>{f.name}</span>
+
+                    {/* Tag Toggle Layer vs Pairing untuk file baru */}
+                    {isLayered && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); toggleLayerIndex(combinedIdx); }}
+                        className={`px-1.5 py-0.5 text-[8px] font-bold uppercase transition-colors border ${
+                          isPartOfLayer 
+                            ? 'bg-vintage-accent text-white border-vintage-accent' 
+                            : 'bg-transparent text-gray-500 border-gray-600 hover:text-white'
+                        }`}
+                        title={isPartOfLayer ? "Click to set as Pairing (Exclude from stack)" : "Click to include in Layered Stack"}
+                      >
+                        {isPartOfLayer ? 'LAYER' : 'PAIRING'}
+                      </button>
+                    )}
+
                     <button 
                       type="button" 
                       onClick={(e) => { e.stopPropagation(); setFontFiles(prev => prev.filter((_, idx) => idx !== i)); }} 
-                      className="text-red-400 font-bold hover:text-red-200 transition-colors"
+                      className="text-red-400 font-bold hover:text-red-200 transition-colors ml-1"
                     >
                       ×
                     </button>
