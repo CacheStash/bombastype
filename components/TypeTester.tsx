@@ -524,7 +524,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                       animate={{ opacity: 1, width: '100%' }}
                       exit={{ opacity: 0, width: 0 }}
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                      className="flex-1 flex items-center px-6 py-4 relative group overflow-hidden"
+                      className="flex-1 flex items-center px-6 py-4 relative group overflow-visible z-50"
                     >
                       <div className="w-full relative">
                         <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="w-full flex items-center justify-between text-[13px] font-bold uppercase tracking-tighter border-b border-transparent hover:border-vintage-ink/30 transition-colors relative z-10">
@@ -535,7 +535,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                           {isDropdownOpen && (
                             <>
                               <div className="fixed inset-0 z-60" onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(false); }} />
-                              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute left-0 top-full mt-1 w-full bg-vintage-paper border border-vintage-ink/20 z-70 shadow-2xl overflow-hidden">
+                              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute left-0 top-full mt-2 w-full bg-vintage-paper border border-vintage-ink z-100 shadow-2xl overflow-y-auto max-h-64">
                                 {Array.isArray(config.font_files) && config.font_files.map((_, i) => (
                                   <button key={i} onClick={() => { setActiveStyleIndex(i); setIsDropdownOpen(false); }} className={`w-full text-left px-6 py-4 text-[10px] font-bold uppercase border-b border-vintage-ink/5 last:border-0 transition-colors ${activeStyleIndex === i ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}>{detectedStyleNames[i] || `STYLE ${String(i + 1).padStart(2, '0')}`}</button>
                                 ))}
@@ -550,7 +550,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
               </div>
             ) : (
               /* FONT STYLE SELECTOR STANDAR (JIKA BUKAN LAYERED FONT) */
-              <div className="w-full flex items-center px-6 py-4 relative group">
+              <div className="w-full flex items-center px-6 py-4 relative group overflow-visible z-50">
                 <div className="w-full relative">
                   <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="w-full flex items-center justify-between text-[13px] font-bold uppercase tracking-tighter border-b border-transparent hover:border-vintage-ink/30 transition-colors relative z-10">
                     <span className="truncate">{detectedStyleNames[activeStyleIndex] || `STYLE ${String(activeStyleIndex + 1).padStart(2, '0')}`}</span>
@@ -560,7 +560,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                     {isDropdownOpen && (
                       <>
                         <div className="fixed inset-0 z-60" onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(false); }} />
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute left-0 top-full mt-1 w-full bg-vintage-paper border border-vintage-ink/20 z-70 shadow-2xl overflow-hidden">
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute left-0 top-full mt-2 w-full bg-vintage-paper border border-vintage-ink z-100 shadow-2xl overflow-y-auto max-h-64">
                           {Array.isArray(config.font_files) && config.font_files.map((_, i) => (
                             <button key={i} onClick={() => { setActiveStyleIndex(i); setIsDropdownOpen(false); }} className={`w-full text-left px-6 py-4 text-[10px] font-bold uppercase border-b border-vintage-ink/5 last:border-0 transition-colors ${activeStyleIndex === i ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}>{detectedStyleNames[i] || `STYLE ${String(i + 1).padStart(2, '0')}`}</button>
                           ))}
