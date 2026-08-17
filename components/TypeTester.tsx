@@ -43,28 +43,18 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [lineHeight, setLineHeight] = useState(1.1);
   const [letterSpacing, setLetterSpacing] = useState(0);
   
-  const [mapPage, setMapPage] = useState(0);
-  const [mapGridSize, setMapGridSize] = useState(10);
+  // PAGINATION: 10 Columns x 12 Rows = 120 Glyphs per Page
+  const [currentPage, setCurrentPage] = useState(1);
+  const GLYPHS_PER_PAGE = 120;
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false);
   const PRESET_SIZES = [12, 14, 16, 18, 20, 24, 32, 36, 48, 64, 72, 96, 120, 144, 200];
 
-  const FEATURE_NAMES: Record<string, string> = {
-    liga: 'Standard Ligatures',
-    dlig: 'Discretionary Lig',
-    calt: 'Contextual Alt',
-    aalt: 'Access All Alt',
-    salt: 'Stylistic Alt',
-  };
-
   const ALLOWED_TAGS = new Set([
     'liga', 'dlig', 'calt', 'aalt', 'salt',
     ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`) 
   ]);
-
-  const rowsPerPage = 10; 
-  const glyphsPerPage = mapGridSize * rowsPerPage;
 
   useEffect(() => {
     const files = Array.isArray(config.font_files) ? config.font_files : [];
@@ -102,6 +92,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
         if (glyph.unicode) glyphs.push({ char: String.fromCharCode(glyph.unicode), index: i });
       }
       setDetectedGlyphs(glyphs);
+      setCurrentPage(1); // Reset page on style switch
       if (font.tables.fvar?.axes?.length > 0) {
         const autoAxes = font.tables.fvar.axes.map((axis: any) => ({
           tag: axis.tag, name: axis.name?.en || axis.tag, min: axis.minValue, max: axis.maxValue, default: axis.defaultValue
@@ -120,7 +111,12 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     });
   }, [config, activeStyleIndex]);
 
-  useEffect(() => { setFilteredGlyphs(detectedGlyphs); }, [detectedGlyphs]);
+  useEffect(() => { 
+    setFilteredGlyphs(detectedGlyphs); 
+  }, [detectedGlyphs]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredGlyphs.length / GLYPHS_PER_PAGE));
+  const paginatedGlyphs = filteredGlyphs.slice((currentPage - 1) * GLYPHS_PER_PAGE, currentPage * GLYPHS_PER_PAGE);
 
   const hasAxes = detectedAxes.length > 0;
   const hasFeatures = dynamicFeatures.length > 0;
@@ -132,9 +128,9 @@ const TypeTester: React.FC<TypeTesterProps> = ({
 
   return (
     <div className="w-full bg-transparent text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper">
-      {/* Menghapus border agar tidak double dengan container di FontDetail */}
       <div className="overflow-visible relative z-40 bg-transparent">
         
+        {/* TOP TOOLBAR */}
         <div className="flex flex-col lg:flex-row items-stretch border-b border-vintage-ink/20 bg-vintage-paper/50 backdrop-blur-md relative z-50">
           <div className="hidden lg:flex items-center px-6 py-4 border-r border-vintage-ink/20">
             <button onClick={() => setViewMode(viewMode === 'type' ? 'glyphs' : 'type')} className="vintage-btn py-1.5 px-4 text-[9px] flex items-center gap-2 group/btn">
@@ -143,6 +139,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
             </button>
           </div>
 
+          {/* FONT STYLE SELECTOR */}
           <div className="flex-1 flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 relative group">
             <div className="w-full relative">
               <span className="absolute -top-3.5 left-0 text-[8px] font-bold text-vintage-accent uppercase tracking-[0.3em]">Font Style</span>
@@ -153,10 +150,9 @@ const TypeTester: React.FC<TypeTesterProps> = ({
               <AnimatePresence>
                 {isDropdownOpen && (
                   <>
-                  <div className="fixed inset-0 z-60" onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(false); }} />
+                    <div className="fixed inset-0 z-60" onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(false); }} />
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute left-0 top-full mt-1 w-full bg-vintage-paper border border-vintage-ink/20 z-70 shadow-2xl overflow-hidden">
-                    
-                         {Array.isArray(config.font_files) && config.font_files.map((_, i) => (
+                      {Array.isArray(config.font_files) && config.font_files.map((_, i) => (
                         <button key={i} onClick={() => { setActiveStyleIndex(i); setIsDropdownOpen(false); }} className={`w-full text-left px-6 py-4 text-[10px] font-bold uppercase border-b border-vintage-ink/5 last:border-0 transition-colors ${activeStyleIndex === i ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}>{detectedStyleNames[i] || `STYLE ${String(i + 1).padStart(2, '0')}`}</button>
                       ))}
                     </motion.div>
@@ -166,9 +162,12 @@ const TypeTester: React.FC<TypeTesterProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 min-w-35 relative">
+          {/* SIZE (TYPE TESTER) OR PAGINATION (GLYPH MAP) */}
+          <div className="flex items-center px-6 py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20 min-w-44 relative">
             <div className="w-full relative">
-              <span className="absolute -top-3.5 left-0 text-[8px] font-bold text-vintage-accent uppercase tracking-[0.3em]">{viewMode === 'type' ? 'Size' : 'Grid'}</span>
+              <span className="absolute -top-3.5 left-0 text-[8px] font-bold text-vintage-accent uppercase tracking-[0.3em]">
+                {viewMode === 'type' ? 'Size' : 'Pages'}
+              </span>
               {viewMode === 'type' ? (
                 <>
                   <button onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)} className="w-full flex items-center justify-between text-[13px] font-bold pt-1.5 border-b border-transparent hover:border-vintage-ink/30 transition-colors relative z-10">
@@ -189,15 +188,32 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   </AnimatePresence>
                 </>
               ) : (
-                <div className="flex gap-1 pt-1.5">
-                  {[10, 20, 30].map(s => (
-                    <button key={s} onClick={() => { setMapGridSize(s); }} className={`flex-1 py-1 text-[10px] font-bold border border-vintage-ink/20 ${mapGridSize === s ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' : 'hover:bg-vintage-ink/5'}`}>{s}</button>
-                  ))}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-1 border border-vintage-ink/20 disabled:opacity-20 hover:bg-vintage-ink/5 transition-all text-vintage-ink"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span className="text-[10px] font-bold tracking-widest text-vintage-ink whitespace-nowrap">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-1 border border-vintage-ink/20 disabled:opacity-20 hover:bg-vintage-ink/5 transition-all text-vintage-ink"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
                 </div>
               )}
             </div>
           </div>
 
+          {/* ALIGNMENT BUTTONS */}
           <div className="flex items-center px-6 py-4 gap-4">
              {viewMode === 'type' && (
                 <div className="flex border border-vintage-ink/20 rounded-sm overflow-hidden">
@@ -219,22 +235,47 @@ const TypeTester: React.FC<TypeTesterProps> = ({
           </div>
         </div>
 
+        {/* MAIN DISPLAY AREA */}
         <div className="min-h-100 relative bg-transparent">
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
-              <motion.textarea key="type" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} value={text} onChange={(e) => setText(e.target.value)} className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20" style={{ ...commonFontStyle, fontSize: `${fontSize}px`, textAlign: align, lineHeight: lineHeight, letterSpacing: `${letterSpacing}em` }} spellCheck={false} />
+              <motion.textarea 
+                key="type" 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                value={text} 
+                onChange={(e) => setText(e.target.value)} 
+                className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20" 
+                style={{ ...commonFontStyle, fontSize: `${fontSize}px`, textAlign: align, lineHeight: lineHeight, letterSpacing: `${letterSpacing}em` }} 
+                spellCheck={false} 
+              />
             ) : (
-              <motion.div key="glyphs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full grid content-start" style={{ gridTemplateColumns: `repeat(10, minmax(0, 1fr))` }}>
-                {filteredGlyphs.map((item, idx) => (
-                  <div key={idx} className="aspect-square flex items-center justify-center border-b border-r border-vintage-ink/5 hover:bg-vintage-ink hover:text-vintage-paper transition-all cursor-default">
-                    <span style={{ ...commonFontStyle, fontSize: '32px' }}>{item.char}</span>
-                  </div>
-                ))}
+              <motion.div 
+                key={`glyphs-page-${currentPage}`} 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="w-full grid content-start" 
+                style={{ gridTemplateColumns: `repeat(10, minmax(0, 1fr))` }}
+              >
+                {paginatedGlyphs.map((item, idx) => {
+                  const isRightEdge = (idx + 1) % 10 === 0;
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`aspect-square flex items-center justify-center border-b ${isRightEdge ? '' : 'border-r'} border-vintage-ink/10 hover:bg-vintage-ink hover:text-vintage-paper transition-all cursor-default`}
+                    >
+                      <span style={{ ...commonFontStyle, fontSize: '32px' }}>{item.char}</span>
+                    </div>
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
+        {/* BOTTOM CONTROLS (LEADING, TRACKING, AXES, OT FEATURES) */}
         <div className="bg-vintage-paper border-t border-vintage-ink/20 relative z-30">
           <div className="grid grid-cols-1 md:grid-cols-2 border-b border-vintage-ink/10">
             <div className="px-8 py-6 flex items-center gap-6 border-b md:border-b-0 md:border-r border-vintage-ink/10">

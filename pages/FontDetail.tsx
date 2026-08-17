@@ -86,7 +86,7 @@ const FontDetail: React.FC = () => {
 
       {/* 2. TOP SLIDER SECTION (Ratio 1820x1214 Container Width) */}
       <section className="relative w-full max-w-7xl mx-auto px-4 md:px-8 group mb-20">
-        <div className="relative w-full overflow-hidden border border-vintage-ink/20 aspect-[1820/1214] bg-vintage-paper/50 shadow-sm">
+        <div className="relative w-full overflow-hidden border border-vintage-ink/20 aspect-1820/1214 bg-vintage-paper/50 shadow-sm">
           <AnimatePresence mode="wait">
             <motion.div 
               key={currentSlide}
@@ -143,7 +143,7 @@ const FontDetail: React.FC = () => {
                     key={i}
                     type="button"
                     onClick={() => setCurrentSlide(i)}
-                    className={`relative shrink-0 h-16 md:h-20 aspect-[1820/1214] overflow-hidden border transition-all duration-300 ${
+                    className={`relative shrink-0 h-16 md:h-20 aspect-1820/1214 overflow-hidden border transition-all duration-300 ${
                       isActive 
                         ? 'border-vintage-accent ring-2 ring-vintage-accent/40 opacity-100 scale-105 shadow-md' 
                         : 'border-vintage-ink/20 opacity-40 hover:opacity-80 hover:border-vintage-ink/50'
