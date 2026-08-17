@@ -142,9 +142,19 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       
       setLoadedFontObj(font);
       const glyphs = [];
-      for (let i = 0; i < font.glyphs.length && i < 2000; i++) {
+      for (let i = 0; i < font.glyphs.length && i < 2500; i++) {
         const glyph = font.glyphs.get(i);
-        if (glyph.unicode) glyphs.push({ char: String.fromCharCode(glyph.unicode), index: i });
+        if (!glyph) continue;
+
+        // Lewati .notdef / .null yang kosong jika tidak memiliki outline kurva
+        if (glyph.name === '.notdef' && (!glyph.path || glyph.path.commands.length === 0)) continue;
+
+        glyphs.push({ 
+          index: i,
+          name: glyph.name || `glyph_${i}`,
+          char: glyph.unicode ? String.fromCharCode(glyph.unicode) : '',
+          unicode: glyph.unicode
+        });
       }
       setDetectedGlyphs(glyphs);
       setCurrentPage(1);
@@ -796,10 +806,19 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   const isRightEdge = (idx + 1) % 10 === 0;
                   return (
                     <div 
-                      key={idx} 
-                      className={`aspect-square flex items-center justify-center border-b ${isRightEdge ? '' : 'border-r'} border-vintage-ink/10 hover:bg-vintage-ink hover:text-vintage-paper transition-all cursor-default`}
+                      key={item.index ?? idx} 
+                      className={`aspect-square flex items-center justify-center border-b ${isRightEdge ? '' : 'border-r'} border-vintage-ink/10 hover:bg-vintage-ink hover:text-vintage-paper transition-all cursor-default group relative p-2`}
+                      title={item.name ? `${item.name} (#${item.index})` : `Glyph #${item.index}`}
                     >
-                      <span style={{ ...commonFontStyle, fontSize: '32px' }}>{item.char}</span>
+                      <div className="w-9 h-9 flex items-center justify-center pointer-events-none">
+                        {renderGlyphSvg(item.index, 36) || (
+                          item.char ? (
+                            <span style={{ ...commonFontStyle, fontSize: '28px' }}>{item.char}</span>
+                          ) : (
+                            <span className="text-[9px] font-mono opacity-30">#{item.index}</span>
+                          )
+                        )}
+                      </div>
                     </div>
                   );
                 })}
