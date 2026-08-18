@@ -130,6 +130,60 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).current;
+const [cursorPos, setCursorPos] = useState<number | null>(0);
+  const [isFocused, setIsFocused] = useState(false);
+  const [caretCoords, setCaretCoords] = useState<{ left: number; top: number; height: number } | null>(null);
+  const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
+  const isDraggingSelection = useRef(false);
+  const dragAnchorIdx = useRef<number | null>(null);
+
+  const updateCaretPosition = (pos: number | null) => {
+    if (pos === null || !textareaRef.current) {
+      setCaretCoords(null);
+      return;
+    }
+    const container = textareaRef.current;
+    const containerRect = container.getBoundingClientRect();
+
+    if (pos >= text.length && text.length > 0) {
+      const lastSpan = document.getElementById(`char-span-${testerId}-${text.length - 1}`);
+      if (lastSpan) {
+        const r = lastSpan.getBoundingClientRect();
+        setCaretCoords({
+          left: r.right - containerRect.left + container.scrollLeft,
+          top: r.top - containerRect.top + container.scrollTop,
+          height: r.height || fontSize * lineHeight
+        });
+        return;
+      }
+    }
+
+    const currentSpan = document.getElementById(`char-span-${testerId}-${pos}`);
+    if (currentSpan) {
+      const r = currentSpan.getBoundingClientRect();
+      setCaretCoords({
+        left: r.left - containerRect.left + container.scrollLeft,
+        top: r.top - containerRect.top + container.scrollTop,
+        height: r.height || fontSize * lineHeight
+      });
+    } else {
+      const firstSpan = document.getElementById(`char-span-${testerId}-0`);
+      if (firstSpan) {
+        const r = firstSpan.getBoundingClientRect();
+        setCaretCoords({
+          left: r.left - containerRect.left + container.scrollLeft,
+          top: r.top - containerRect.top + container.scrollTop,
+          height: r.height || fontSize * lineHeight
+        });
+      } else {
+        setCaretCoords({
+          left: 40,
+          top: 40,
+          height: fontSize * lineHeight
+        });
+      }
+    }
+  };
 
   const ALLOWED_TAGS = new Set([
     'liga', 'dlig', 'calt', 'salt', 'swsh', 'titl',
@@ -231,24 +285,9 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
     setFilteredGlyphs(detectedGlyphs); 
   }, [detectedGlyphs]);
 
-  const handleTextSelect = () => {
-    if (!textareaRef.current || !loadedFontObj) {
-      setPopoverPos(null);
-      setSelectedCharIndex(null);
-      return;
-    }
-
-    const el = textareaRef.current;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-
-    if (start === end || end - start !== 1) {
-      setPopoverPos(null);
-      setSelectedCharIndex(null);
-      return;
-    }
-
-    const targetChar = text.charAt(start);
+  const checkAlternatesForChar = (index: number) => {
+    if (!loadedFontObj) return;
+    const targetChar = text.charAt(index);
     if (!targetChar || targetChar === '\n' || targetChar === ' ') {
       setPopoverPos(null);
       setSelectedCharIndex(null);
@@ -329,10 +368,11 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
     }
 
     if (alternates.length > 0) {
-      setSelectedCharIndex(start);
+      setSelectedCharIndex(index);
       let posX = 24;
       let posY = 16;
-const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`);      if (targetCharEl && textareaRef.current) {
+      const targetCharEl = document.getElementById(`char-span-${testerId}-${index}`);
+      if (targetCharEl && textareaRef.current) {
         const containerRect = textareaRef.current.getBoundingClientRect();
         const charRect = targetCharEl.getBoundingClientRect();
         posX = charRect.left - containerRect.left;
@@ -347,31 +387,121 @@ const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`); 
     }
   };
 
+  const handleSelectionOrCursorChange = () => {
+    if (!textareaRef.current) return;
+    const { selectionStart, selectionEnd } = textareaRef.current;
+    
+    if (selectionStart === selectionEnd) {
+      setCursorPos(selectionStart);
+      setSelectionRange(null);
+      updateCaretPosition(selectionStart);
+      setPopoverPos(null);
+      setSelectedCharIndex(null);
+    } else {
+      setCursorPos(null);
+      setCaretCoords(null);
+      setSelectionRange({ start: selectionStart, end: selectionEnd });
+      if (selectionEnd - selectionStart === 1) {
+        checkAlternatesForChar(selectionStart);
+      } else {
+        setPopoverPos(null);
+        setSelectedCharIndex(null);
+      }
+    }
+  };
+
+  const handleSpanMouseDown = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    isDraggingSelection.current = true;
+    dragAnchorIdx.current = index;
+
+    const spanEl = document.getElementById(`char-span-${testerId}-${index}`);
+    let targetCaretPos = index;
+    if (spanEl) {
+      const rect = spanEl.getBoundingClientRect();
+      if (e.clientX > rect.left + rect.width / 2) {
+        targetCaretPos = index + 1;
+      }
+    }
+
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(targetCaretPos, targetCaretPos);
+    }
+    setCursorPos(targetCaretPos);
+    setSelectionRange(null);
+    updateCaretPosition(targetCaretPos);
+    setPopoverPos(null);
+    setSelectedCharIndex(null);
+  };
+
+  const handleSpanMouseEnter = (index: number) => {
+    if (!isDraggingSelection.current || dragAnchorIdx.current === null) return;
+    const anchor = dragAnchorIdx.current;
+    if (anchor === index) return;
+
+    const start = Math.min(anchor, index);
+    const end = Math.max(anchor, index) + 1;
+    setSelectionRange({ start, end });
+    setCursorPos(null);
+    setCaretCoords(null);
+
+    if (textareaRef.current) {
+      textareaRef.current.setSelectionRange(start, end);
+    }
+    if (end - start === 1) {
+      checkAlternatesForChar(start);
+    } else {
+      setPopoverPos(null);
+      setSelectedCharIndex(null);
+    }
+  };
+
+  const handleSpanDoubleClick = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    setSelectionRange({ start: index, end: index + 1 });
+    setCursorPos(null);
+    setCaretCoords(null);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(index, index + 1);
+    }
+    checkAlternatesForChar(index);
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      isDraggingSelection.current = false;
+      dragAnchorIdx.current = null;
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
+
   const applyAlternate = (alt: AlternateGlyph) => {
     if (selectedCharIndex === null) return;
 
-    setGlyphOverrides(prev => {
-      const next = { ...prev };
-      if (!alt.glyphIndex || next[selectedCharIndex] === alt.glyphIndex) {
+    if (!alt.glyphIndex || alt.glyphIndex === 0) {
+      setGlyphOverrides(prev => {
+        const next = { ...prev };
         delete next[selectedCharIndex];
-      } else {
-        next[selectedCharIndex] = alt.glyphIndex;
-      }
-      return next;
-    });
-
-    // Jika glyph memiliki unicode / PUA, update text
-    const effectiveTag = alt.featureTag === 'aalt' ? 'salt' : alt.featureTag;
-
-    setCharOverrides(prev => {
-      const next = { ...prev };
-      if (!effectiveTag || next[selectedCharIndex] === effectiveTag) {
+        return next;
+      });
+      setCharOverrides(prev => {
+        const next = { ...prev };
         delete next[selectedCharIndex];
-      } else {
-        next[selectedCharIndex] = effectiveTag;
-      }
-      return next;
-    });
+        return next;
+      });
+    } else {
+      setGlyphOverrides(prev => ({
+        ...prev,
+        [selectedCharIndex]: alt.glyphIndex
+      }));
+      setCharOverrides(prev => ({
+        ...prev,
+        [selectedCharIndex]: alt.featureTag || 'alt'
+      }));
+    }
 
     setPopoverPos(null);
     setSelectedCharIndex(null);
@@ -456,11 +586,67 @@ const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`); 
     }
   };
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
-    setCharOverrides({});
+ const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const nextText = e.target.value;
+    const prevText = text;
+    setText(nextText);
+
+    const diff = nextText.length - prevText.length;
+    const changePos = textareaRef.current?.selectionStart ?? nextText.length;
+    const insertPos = diff > 0 ? changePos - diff : changePos;
+
+    setGlyphOverrides(prev => {
+      const next: Record<number, number> = {};
+      Object.entries(prev).forEach(([k, val]) => {
+        const idx = Number(k);
+        if (diff > 0) {
+          if (idx < insertPos) {
+            next[idx] = val;
+          } else {
+            next[idx + diff] = val;
+          }
+        } else if (diff < 0) {
+          const deletedCount = Math.abs(diff);
+          if (idx < insertPos) {
+            next[idx] = val;
+          } else if (idx >= insertPos + deletedCount) {
+            next[idx - deletedCount] = val;
+          }
+        } else {
+          next[idx] = val;
+        }
+      });
+      return next;
+    });
+
+    setCharOverrides(prev => {
+      const next: Record<number, string> = {};
+      Object.entries(prev).forEach(([k, val]) => {
+        const idx = Number(k);
+        if (diff > 0) {
+          if (idx < insertPos) {
+            next[idx] = val;
+          } else {
+            next[idx + diff] = val;
+          }
+        } else if (diff < 0) {
+          const deletedCount = Math.abs(diff);
+          if (idx < insertPos) {
+            next[idx] = val;
+          } else if (idx >= insertPos + deletedCount) {
+            next[idx - deletedCount] = val;
+          }
+        } else {
+          next[idx] = val;
+        }
+      });
+      return next;
+    });
+
     setPopoverPos(null);
     setSelectedCharIndex(null);
+    setSelectionRange(null);
+    setTimeout(handleSelectionOrCursorChange, 0);
   };
 
   const toggleFeature = (tag: string) => {
@@ -566,43 +752,38 @@ const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`); 
       const overrideGlyphIdx = glyphOverrides[i];
       const overrideFeature = charOverrides[i];
 
-      // Jika user memilih alternate spesifik (seperti o.alt1 pada salt kedua)
-     const activeCharFeatures = overrideFeature 
+      const activeCharFeatures = overrideFeature && overrideFeature !== 'alt'
         ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
         : globalActiveFeatureString;
 
-      // KUNCI: Jika alternate memiliki featureTag (seperti ss05, salt), render sebagai <span> teks
-      // sehingga CSS fontVariationSettings (slider weight/slant/dll) langsung mengubah bentuk hurufnya secara live!
-      // Render SVG hanya sebagai fallback jika alternate benar-benar unencoded (tanpa tag GSUB).
-      if (overrideGlyphIdx !== undefined && !overrideFeature) {
-        return (
-          <React.Fragment key={i}>
-            {renderInlineGlyphSvg(overrideGlyphIdx, fontSize, fontIdx) || char}
-          </React.Fragment>
-        );
-      }
+      const isCurrentActiveLayer = fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex);
+      const isSelected = selectionRange 
+        ? (i >= Math.min(selectionRange.start, selectionRange.end) && i < Math.max(selectionRange.start, selectionRange.end))
+        : false;
 
       return (
         <span 
           key={i}
-          id={fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex) ? `char-span-${testerId}-${i}` : undefined}
+          id={isCurrentActiveLayer ? `char-span-${testerId}-${i}` : undefined}
+          data-char-idx={i}
           style={{
             fontFamily: styleFontFamily,
             fontFeatureSettings: activeCharFeatures,
             WebkitFontFeatureSettings: activeCharFeatures,
             fontVariationSettings: commonFontStyle.fontVariationSettings || undefined
           }}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (textareaRef.current) {
-              textareaRef.current.focus();
-              textareaRef.current.setSelectionRange(i, i + 1);
-              handleTextSelect();
-            }
-          }}
-          className="pointer-events-auto cursor-text"
-       >
-          {char}
+          onMouseDown={(e) => handleSpanMouseDown(e, i)}
+          onMouseEnter={() => handleSpanMouseEnter(i)}
+          onDoubleClick={(e) => handleSpanDoubleClick(e, i)}
+          className={`cursor-text select-none transition-colors ${
+            isSelected ? 'bg-vintage-ink! text-vintage-paper!' : ''
+          }`}
+        >
+          {overrideGlyphIdx !== undefined ? (
+            renderInlineGlyphSvg(overrideGlyphIdx, fontSize, fontIdx) || char
+          ) : (
+            char
+          )}
         </span>
       );
     });
@@ -798,11 +979,11 @@ const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`); 
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
               <div className="relative w-full min-h-100">
-                {!isLayeredMode ? (
+              {!isLayeredMode ? (
                   /* SINGLE STYLE DISPLAY */
                   <div 
                     ref={(el) => { layerContainerRefs.current['single'] = el; }}
-                    className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word overflow-hidden select-text z-35"
+                    className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word overflow-hidden z-25 pointer-events-auto select-none"
                     style={{ 
                       ...commonFontStyle, 
                       fontSize: `${fontSize}px`, 
@@ -810,13 +991,24 @@ const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`); 
                       lineHeight: lineHeight, 
                       letterSpacing: `${letterSpacing}em` 
                     }}
-                    aria-hidden="true"
+                    onMouseDown={(e) => {
+                      if (e.target === e.currentTarget && textareaRef.current) {
+                        textareaRef.current.focus();
+                        const len = text.length;
+                        textareaRef.current.setSelectionRange(len, len);
+                        setCursorPos(len);
+                        updateCaretPosition(len);
+                        setSelectionRange(null);
+                        setPopoverPos(null);
+                        setSelectedCharIndex(null);
+                      }
+                    }}
                   >
                     {renderTextSpans(activeStyleIndex)}
                   </div>
                 ) : (
                   /* MULTI-LAYER STACKING DISPLAY */
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  <div className="absolute inset-0 z-25 pointer-events-auto overflow-hidden select-none">
                     {layers.map((layer, stackIdx) => {
                       if (!layer.isVisible) return null;
                       const calculatedZIndex = layers.length - stackIdx;
@@ -836,7 +1028,18 @@ const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`); 
                             color: layer.color || (layer.isInverted ? 'var(--color-vintage-paper)' : 'var(--color-vintage-ink)'),
                             textShadow: layer.color ? 'none' : (layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none')
                           }}
-                          aria-hidden="true"
+                          onMouseDown={(e) => {
+                            if (e.target === e.currentTarget && textareaRef.current) {
+                              textareaRef.current.focus();
+                              const len = text.length;
+                              textareaRef.current.setSelectionRange(len, len);
+                              setCursorPos(len);
+                              updateCaretPosition(len);
+                              setSelectionRange(null);
+                              setPopoverPos(null);
+                              setSelectedCharIndex(null);
+                            }
+                          }}
                         >
                           {renderTextSpans(layer.fontIndex)}
                         </div>
@@ -845,25 +1048,45 @@ const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`); 
                   </div>
                 )}
 
+                {/* ACCURATE VISUAL CARET */}
+                {isFocused && caretCoords && cursorPos !== null && !selectionRange && (
+                  <div 
+                    className="absolute z-40 w-0.5 bg-black pointer-events-none animate-pulse"
+                    style={{
+                      left: `${caretCoords.left}px`,
+                      top: `${caretCoords.top}px`,
+                      height: `${caretCoords.height}px`
+                    }}
+                  />
+                )}
+
                 {/* TEXTAREA INPUT */}
                 <textarea 
                   key="type" 
                   ref={textareaRef}
                   value={text} 
                   onChange={handleTextChange} 
-                  onSelect={handleTextSelect}
-                  onKeyUp={handleTextSelect}
-                  onMouseUp={handleTextSelect}
+                  onFocus={() => {
+                    setIsFocused(true);
+                    handleSelectionOrCursorChange();
+                  }}
+                  onBlur={() => {
+                    setIsFocused(false);
+                    setCaretCoords(null);
+                  }}
+                  onSelect={handleSelectionOrCursorChange}
+                  onKeyUp={handleSelectionOrCursorChange}
+                  onKeyDown={handleSelectionOrCursorChange}
+                  onMouseUp={handleSelectionOrCursorChange}
+                  onMouseDown={handleSelectionOrCursorChange}
                   onScroll={handleScrollSync}
-                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-20 text-transparent caret-vintage-ink selection:bg-transparent"
+                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-10 text-transparent caret-transparent selection:bg-transparent selection:text-transparent pointer-events-none"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
                     textAlign: align, 
                     lineHeight: lineHeight, 
-                    letterSpacing: `${letterSpacing}em`,
-                    fontFeatureSettings: globalActiveFeatureString,
-                    WebkitFontFeatureSettings: globalActiveFeatureString
+                    letterSpacing: `${letterSpacing}em`
                   }} 
                   spellCheck={false} 
                 />
