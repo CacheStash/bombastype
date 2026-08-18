@@ -255,7 +255,7 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
       return;
     }
 
-    const glyphIndex = loadedFontObj.charToGlyphIndex(targetChar);
+    let glyphIndex = loadedFontObj.charToGlyphIndex(targetChar);
     if (!glyphIndex) {
       setPopoverPos(null);
       setSelectedCharIndex(null);
@@ -384,6 +384,7 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
     setPopoverPos(null);
     setSelectedCharIndex(null);
   };
+
 
   const renderGlyphSvg = (glyphIdx: number, size: number = 24) => {
     if (!loadedFontObj) return null;
