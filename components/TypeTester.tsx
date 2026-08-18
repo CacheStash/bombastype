@@ -690,19 +690,23 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
     });
   };
 
-  const handleVisualWheel = (e: React.WheelEvent) => {
+  const handleMasterScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollLeft } = e.currentTarget;
+
     if (textareaRef.current) {
-      textareaRef.current.scrollTop += e.deltaY;
-      textareaRef.current.scrollLeft += e.deltaX;
-      Object.values(layerContainerRefs.current).forEach((el) => {
-        if (el) {
-          el.scrollTop = textareaRef.current!.scrollTop;
-          el.scrollLeft = textareaRef.current!.scrollLeft;
-        }
-      });
-      if (cursorPos !== null) {
-        updateCaretPosition(cursorPos);
+      textareaRef.current.scrollTop = scrollTop;
+      textareaRef.current.scrollLeft = scrollLeft;
+    }
+
+    Object.values(layerContainerRefs.current).forEach((el) => {
+      if (el) {
+        el.scrollTop = scrollTop;
+        el.scrollLeft = scrollLeft;
       }
+    });
+
+    if (cursorPos !== null) {
+      updateCaretPosition(cursorPos);
     }
   };
 
@@ -967,14 +971,14 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
             {viewMode === 'type' ? (
               <div 
                 ref={scrollContainerRef}
-                className="relative w-full h-[450px] overflow-y-auto overflow-x-hidden custom-scrollbar"
-                onWheel={handleVisualWheel}
+                onScroll={handleMasterScroll}
+                className="relative w-full h-112.5 overflow-y-auto overflow-x-hidden custom-scrollbar"
               >
              {!isLayeredMode ? (
                   /* SINGLE STYLE DISPLAY */
                   <div 
                     ref={(el) => { layerContainerRefs.current['single'] = el; }}
-                    className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word overflow-y-auto overflow-x-hidden z-25 pointer-events-auto select-none custom-scrollbar"
+                    className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word overflow-hidden z-25 pointer-events-auto select-none"
                     style={{ 
                       ...commonFontStyle, 
                       fontSize: `${fontSize}px`, 
@@ -990,7 +994,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   </div>
                 ) : (
                   /* MULTI-LAYER STACKING DISPLAY */
-                  <div className="absolute inset-0 z-25 pointer-events-auto overflow-y-auto overflow-x-hidden select-none custom-scrollbar">
+                  <div className="absolute inset-0 z-25 pointer-events-auto overflow-hidden select-none">
                     {layers.map((layer, stackIdx) => {
                       if (!layer.isVisible) return null;
                       const calculatedZIndex = layers.length - stackIdx;
@@ -998,7 +1002,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                         <div 
                           key={layer.id}
                           ref={(el) => { layerContainerRefs.current[layer.id] = el; }}
-                          className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word select-none overflow-y-auto overflow-x-hidden custom-scrollbar"
+                          className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word select-none overflow-hidden"
                           style={{ 
                             ...commonFontStyle,
                             fontFamily: `"${config.name}-${layer.fontIndex}"`,
@@ -1051,14 +1055,13 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   onKeyDown={handleSelectionOrCursorChange}
                   onMouseUp={handleSelectionOrCursorChange}
                   onMouseDown={handleSelectionOrCursorChange}
-                  onScroll={handleScrollSync}
-                  className="w-full h-full min-h-[450px] bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-10 text-transparent caret-transparent selection:bg-transparent selection:text-transparent pointer-events-none"
+                  className="w-full min-h-112.5 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-10 text-transparent caret-transparent selection:bg-transparent selection:text-transparent pointer-events-none overflow-hidden"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
                     textAlign: align, 
                     lineHeight: lineHeight, 
-                    letterSpacing: `${letterSpacing}em`
+                    letterSpacing: `${letterSpacing}em` 
                   }} 
                   spellCheck={false} 
                 />
