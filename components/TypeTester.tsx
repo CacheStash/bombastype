@@ -403,11 +403,16 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
   const handleSpanMouseDown = (index: number) => {
     isDraggingSelection.current = true;
     dragAnchorIdx.current = index;
-    setSelectionRange({ start: index, end: index + 1 });
+    setIsFocused(true);
+
     if (textareaRef.current) {
       textareaRef.current.focus();
       textareaRef.current.setSelectionRange(index, index + 1);
     }
+    
+    setCursorPos(index);
+    updateCaretPosition(index);
+    setSelectionRange({ start: index, end: index + 1 });
     checkAlternatesForChar(index);
   };
 
@@ -989,13 +994,15 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                 )}
 
                 {/* ACCURATE VISUAL CARET */}
-                {isFocused && caretCoords && cursorPos !== null && !selectionRange && (
+                {isFocused && caretCoords && (
                   <div 
-                    className="absolute z-35 w-0.5 bg-vintage-ink pointer-events-none animate-pulse"
+                    className="absolute z-40 pointer-events-none animate-pulse"
                     style={{
                       left: `${caretCoords.left}px`,
                       top: `${caretCoords.top}px`,
-                      height: `${caretCoords.height}px`
+                      height: `${caretCoords.height}px`,
+                      width: '2px',
+                      backgroundColor: '#000000'
                     }}
                   />
                 )}
