@@ -410,23 +410,42 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
     }
   };
 
-  const handleSpanMouseDown = (index: number) => {
+  const handleSpanMouseDown = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
     isDraggingSelection.current = true;
     dragAnchorIdx.current = index;
-    setSelectionRange({ start: index, end: index + 1 });
+
+    const spanEl = document.getElementById(`char-span-${testerId}-${index}`);
+    let targetCaretPos = index;
+    if (spanEl) {
+      const rect = spanEl.getBoundingClientRect();
+      if (e.clientX > rect.left + rect.width / 2) {
+        targetCaretPos = index + 1;
+      }
+    }
+
     if (textareaRef.current) {
       textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(index, index + 1);
+      textareaRef.current.setSelectionRange(targetCaretPos, targetCaretPos);
     }
-    checkAlternatesForChar(index);
+    setCursorPos(targetCaretPos);
+    setSelectionRange(null);
+    updateCaretPosition(targetCaretPos);
+    setPopoverPos(null);
+    setSelectedCharIndex(null);
   };
 
   const handleSpanMouseEnter = (index: number) => {
     if (!isDraggingSelection.current || dragAnchorIdx.current === null) return;
     const anchor = dragAnchorIdx.current;
+    if (anchor === index) return;
+
     const start = Math.min(anchor, index);
     const end = Math.max(anchor, index) + 1;
     setSelectionRange({ start, end });
+    setCursorPos(null);
+    setCaretCoords(null);
+
     if (textareaRef.current) {
       textareaRef.current.setSelectionRange(start, end);
     }
@@ -436,6 +455,18 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
       setPopoverPos(null);
       setSelectedCharIndex(null);
     }
+  };
+
+  const handleSpanDoubleClick = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    setSelectionRange({ start: index, end: index + 1 });
+    setCursorPos(null);
+    setCaretCoords(null);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(index, index + 1);
+    }
+    checkAlternatesForChar(index);
   };
 
   useEffect(() => {
@@ -728,7 +759,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
       const isCurrentActiveLayer = fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex);
       const isSelected = selectionRange 
         ? (i >= Math.min(selectionRange.start, selectionRange.end) && i < Math.max(selectionRange.start, selectionRange.end))
-        : (selectedCharIndex === i);
+        : false;
 
       return (
         <span 
@@ -741,11 +772,9 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
             WebkitFontFeatureSettings: activeCharFeatures,
             fontVariationSettings: commonFontStyle.fontVariationSettings || undefined
           }}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            handleSpanMouseDown(i);
-          }}
+          onMouseDown={(e) => handleSpanMouseDown(e, i)}
           onMouseEnter={() => handleSpanMouseEnter(i)}
+          onDoubleClick={(e) => handleSpanDoubleClick(e, i)}
           className={`cursor-text select-none transition-colors ${
             isSelected ? 'bg-vintage-ink! text-vintage-paper!' : ''
           }`}
@@ -962,8 +991,8 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
                       lineHeight: lineHeight, 
                       letterSpacing: `${letterSpacing}em` 
                     }}
-                    onClick={() => {
-                      if (textareaRef.current) {
+                    onMouseDown={(e) => {
+                      if (e.target === e.currentTarget && textareaRef.current) {
                         textareaRef.current.focus();
                         const len = text.length;
                         textareaRef.current.setSelectionRange(len, len);
@@ -999,8 +1028,8 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
                             color: layer.color || (layer.isInverted ? 'var(--color-vintage-paper)' : 'var(--color-vintage-ink)'),
                             textShadow: layer.color ? 'none' : (layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none')
                           }}
-                          onClick={() => {
-                            if (textareaRef.current) {
+                          onMouseDown={(e) => {
+                            if (e.target === e.currentTarget && textareaRef.current) {
                               textareaRef.current.focus();
                               const len = text.length;
                               textareaRef.current.setSelectionRange(len, len);
@@ -1022,7 +1051,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
                 {/* ACCURATE VISUAL CARET */}
                 {isFocused && caretCoords && cursorPos !== null && !selectionRange && (
                   <div 
-                    className="absolute z-40 w-[2px] bg-black pointer-events-none animate-pulse"
+                    className="absolute z-40 w-0.5 bg-black pointer-events-none animate-pulse"
                     style={{
                       left: `${caretCoords.left}px`,
                       top: `${caretCoords.top}px`,
