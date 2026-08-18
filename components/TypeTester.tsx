@@ -136,13 +136,14 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const isDraggingSelection = useRef(false);
   const dragAnchorIdx = useRef<number | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const updateCaretPosition = (pos: number | null) => {
-    if (pos === null || !textareaRef.current) {
+    if (pos === null || !textareaRef.current || !scrollContainerRef.current) {
       setCaretCoords(null);
       return;
     }
-    const container = textareaRef.current;
+    const container = scrollContainerRef.current;
     const containerRect = container.getBoundingClientRect();
 
     if (pos >= text.length && text.length > 0) {
@@ -167,11 +168,15 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
         height: r.height || fontSize * lineHeight
       });
     } else {
-      setCaretCoords({
-        left: 24,
-        top: 16,
-        height: fontSize * lineHeight
-      });
+      const firstSpan = document.getElementById(`char-span-${testerId}-0`);
+      if (firstSpan) {
+        const r = firstSpan.getBoundingClientRect();
+        setCaretCoords({
+          left: r.left - containerRect.left + container.scrollLeft,
+          top: r.top - containerRect.top + container.scrollTop,
+          height: r.height || fontSize * lineHeight
+        });
+      }
     }
   };
 
@@ -685,6 +690,22 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
     });
   };
 
+  const handleVisualWheel = (e: React.WheelEvent) => {
+    if (textareaRef.current) {
+      textareaRef.current.scrollTop += e.deltaY;
+      textareaRef.current.scrollLeft += e.deltaX;
+      Object.values(layerContainerRefs.current).forEach((el) => {
+        if (el) {
+          el.scrollTop = textareaRef.current!.scrollTop;
+          el.scrollLeft = textareaRef.current!.scrollLeft;
+        }
+      });
+      if (cursorPos !== null) {
+        updateCaretPosition(cursorPos);
+      }
+    }
+  };
+
   // Drag & Drop Handlers untuk Urutan Layer
   const handleLayerDragStart = (idx: number) => {
     setDraggedLayerIdx(idx);
@@ -944,12 +965,16 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
         <div className="min-h-100 relative bg-transparent">
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
-              <div className="relative w-full min-h-100">
+              <div 
+                ref={scrollContainerRef}
+                className="relative w-full h-[450px] overflow-y-auto overflow-x-hidden custom-scrollbar"
+                onWheel={handleVisualWheel}
+              >
              {!isLayeredMode ? (
                   /* SINGLE STYLE DISPLAY */
                   <div 
                     ref={(el) => { layerContainerRefs.current['single'] = el; }}
-                    className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word overflow-hidden z-25 pointer-events-auto select-none"
+                    className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word overflow-y-auto overflow-x-hidden z-25 pointer-events-auto select-none custom-scrollbar"
                     style={{ 
                       ...commonFontStyle, 
                       fontSize: `${fontSize}px`, 
@@ -965,7 +990,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   </div>
                 ) : (
                   /* MULTI-LAYER STACKING DISPLAY */
-                  <div className="absolute inset-0 z-25 pointer-events-auto overflow-hidden select-none">
+                  <div className="absolute inset-0 z-25 pointer-events-auto overflow-y-auto overflow-x-hidden select-none custom-scrollbar">
                     {layers.map((layer, stackIdx) => {
                       if (!layer.isVisible) return null;
                       const calculatedZIndex = layers.length - stackIdx;
@@ -973,7 +998,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                         <div 
                           key={layer.id}
                           ref={(el) => { layerContainerRefs.current[layer.id] = el; }}
-                          className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word select-none overflow-hidden"
+                          className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word select-none overflow-y-auto overflow-x-hidden custom-scrollbar"
                           style={{ 
                             ...commonFontStyle,
                             fontFamily: `"${config.name}-${layer.fontIndex}"`,
@@ -1001,8 +1026,8 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                       left: `${caretCoords.left}px`,
                       top: `${caretCoords.top}px`,
                       height: `${caretCoords.height}px`,
-                      width: '2px',
-                      backgroundColor: '#000000'
+                      width: '2.5px',
+                      backgroundColor: '#2B2621'
                     }}
                   />
                 )}
@@ -1027,7 +1052,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   onMouseUp={handleSelectionOrCursorChange}
                   onMouseDown={handleSelectionOrCursorChange}
                   onScroll={handleScrollSync}
-                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-10 text-transparent caret-transparent selection:bg-transparent selection:text-transparent pointer-events-none"
+                  className="w-full h-full min-h-[450px] bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-10 text-transparent caret-transparent selection:bg-transparent selection:text-transparent pointer-events-none"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 

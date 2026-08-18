@@ -130,7 +130,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).current;
-const [cursorPos, setCursorPos] = useState<number | null>(0);
+const [cursorPos, setCursorPos] = useState<number | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [caretCoords, setCaretCoords] = useState<{ left: number; top: number; height: number } | null>(null);
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
@@ -167,21 +167,11 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
         height: r.height || fontSize * lineHeight
       });
     } else {
-      const firstSpan = document.getElementById(`char-span-${testerId}-0`);
-      if (firstSpan) {
-        const r = firstSpan.getBoundingClientRect();
-        setCaretCoords({
-          left: r.left - containerRect.left + container.scrollLeft,
-          top: r.top - containerRect.top + container.scrollTop,
-          height: r.height || fontSize * lineHeight
-        });
-      } else {
-        setCaretCoords({
-          left: 40,
-          top: 40,
-          height: fontSize * lineHeight
-        });
-      }
+      setCaretCoords({
+        left: 24,
+        top: 16,
+        height: fontSize * lineHeight
+      });
     }
   };
 
@@ -410,42 +400,28 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
     }
   };
 
-  const handleSpanMouseDown = (e: React.MouseEvent, index: number) => {
-    e.stopPropagation();
+  const handleSpanMouseDown = (index: number) => {
     isDraggingSelection.current = true;
     dragAnchorIdx.current = index;
-
-    const spanEl = document.getElementById(`char-span-${testerId}-${index}`);
-    let targetCaretPos = index;
-    if (spanEl) {
-      const rect = spanEl.getBoundingClientRect();
-      if (e.clientX > rect.left + rect.width / 2) {
-        targetCaretPos = index + 1;
-      }
-    }
+    setIsFocused(true);
 
     if (textareaRef.current) {
       textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(targetCaretPos, targetCaretPos);
+      textareaRef.current.setSelectionRange(index, index + 1);
     }
-    setCursorPos(targetCaretPos);
-    setSelectionRange(null);
-    updateCaretPosition(targetCaretPos);
-    setPopoverPos(null);
-    setSelectedCharIndex(null);
+    
+    setCursorPos(index);
+    updateCaretPosition(index);
+    setSelectionRange({ start: index, end: index + 1 });
+    checkAlternatesForChar(index);
   };
 
   const handleSpanMouseEnter = (index: number) => {
     if (!isDraggingSelection.current || dragAnchorIdx.current === null) return;
     const anchor = dragAnchorIdx.current;
-    if (anchor === index) return;
-
     const start = Math.min(anchor, index);
     const end = Math.max(anchor, index) + 1;
     setSelectionRange({ start, end });
-    setCursorPos(null);
-    setCaretCoords(null);
-
     if (textareaRef.current) {
       textareaRef.current.setSelectionRange(start, end);
     }
@@ -455,18 +431,6 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
       setPopoverPos(null);
       setSelectedCharIndex(null);
     }
-  };
-
-  const handleSpanDoubleClick = (e: React.MouseEvent, index: number) => {
-    e.stopPropagation();
-    setSelectionRange({ start: index, end: index + 1 });
-    setCursorPos(null);
-    setCaretCoords(null);
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(index, index + 1);
-    }
-    checkAlternatesForChar(index);
   };
 
   useEffect(() => {
@@ -759,7 +723,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
       const isCurrentActiveLayer = fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex);
       const isSelected = selectionRange 
         ? (i >= Math.min(selectionRange.start, selectionRange.end) && i < Math.max(selectionRange.start, selectionRange.end))
-        : false;
+        : (selectedCharIndex === i);
 
       return (
         <span 
@@ -772,9 +736,11 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
             WebkitFontFeatureSettings: activeCharFeatures,
             fontVariationSettings: commonFontStyle.fontVariationSettings || undefined
           }}
-          onMouseDown={(e) => handleSpanMouseDown(e, i)}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            handleSpanMouseDown(i);
+          }}
           onMouseEnter={() => handleSpanMouseEnter(i)}
-          onDoubleClick={(e) => handleSpanDoubleClick(e, i)}
           className={`cursor-text select-none transition-colors ${
             isSelected ? 'bg-vintage-ink! text-vintage-paper!' : ''
           }`}
@@ -979,7 +945,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
               <div className="relative w-full min-h-100">
-              {!isLayeredMode ? (
+             {!isLayeredMode ? (
                   /* SINGLE STYLE DISPLAY */
                   <div 
                     ref={(el) => { layerContainerRefs.current['single'] = el; }}
@@ -991,17 +957,8 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
                       lineHeight: lineHeight, 
                       letterSpacing: `${letterSpacing}em` 
                     }}
-                    onMouseDown={(e) => {
-                      if (e.target === e.currentTarget && textareaRef.current) {
-                        textareaRef.current.focus();
-                        const len = text.length;
-                        textareaRef.current.setSelectionRange(len, len);
-                        setCursorPos(len);
-                        updateCaretPosition(len);
-                        setSelectionRange(null);
-                        setPopoverPos(null);
-                        setSelectedCharIndex(null);
-                      }
+                    onClick={() => {
+                      if (textareaRef.current) textareaRef.current.focus();
                     }}
                   >
                     {renderTextSpans(activeStyleIndex)}
@@ -1028,18 +985,6 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
                             color: layer.color || (layer.isInverted ? 'var(--color-vintage-paper)' : 'var(--color-vintage-ink)'),
                             textShadow: layer.color ? 'none' : (layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none')
                           }}
-                          onMouseDown={(e) => {
-                            if (e.target === e.currentTarget && textareaRef.current) {
-                              textareaRef.current.focus();
-                              const len = text.length;
-                              textareaRef.current.setSelectionRange(len, len);
-                              setCursorPos(len);
-                              updateCaretPosition(len);
-                              setSelectionRange(null);
-                              setPopoverPos(null);
-                              setSelectedCharIndex(null);
-                            }
-                          }}
                         >
                           {renderTextSpans(layer.fontIndex)}
                         </div>
@@ -1049,13 +994,15 @@ const [cursorPos, setCursorPos] = useState<number | null>(0);
                 )}
 
                 {/* ACCURATE VISUAL CARET */}
-                {isFocused && caretCoords && cursorPos !== null && !selectionRange && (
+                {isFocused && caretCoords && (
                   <div 
-                    className="absolute z-40 w-0.5 bg-black pointer-events-none animate-pulse"
+                    className="absolute z-40 pointer-events-none animate-pulse"
                     style={{
                       left: `${caretCoords.left}px`,
                       top: `${caretCoords.top}px`,
-                      height: `${caretCoords.height}px`
+                      height: `${caretCoords.height}px`,
+                      width: '2px',
+                      backgroundColor: '#000000'
                     }}
                   />
                 )}
