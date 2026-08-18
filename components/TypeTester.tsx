@@ -332,8 +332,7 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
       setSelectedCharIndex(start);
       let posX = 24;
       let posY = 16;
-      const targetCharEl = document.getElementById(`char-span-${start}`);
-      if (targetCharEl && textareaRef.current) {
+const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`);      if (targetCharEl && textareaRef.current) {
         const containerRect = textareaRef.current.getBoundingClientRect();
         const charRect = targetCharEl.getBoundingClientRect();
         posX = charRect.left - containerRect.left;
@@ -803,7 +802,7 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
                   /* SINGLE STYLE DISPLAY */
                   <div 
                     ref={(el) => { layerContainerRefs.current['single'] = el; }}
-                    className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap wrap-break-word overflow-hidden select-none"
+                    className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word overflow-hidden select-text z-35"
                     style={{ 
                       ...commonFontStyle, 
                       fontSize: `${fontSize}px`, 
@@ -856,7 +855,7 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
                   onKeyUp={handleTextSelect}
                   onMouseUp={handleTextSelect}
                   onScroll={handleScrollSync}
-                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-30 text-transparent caret-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper"
+                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-20 text-transparent caret-vintage-ink selection:bg-transparent"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
