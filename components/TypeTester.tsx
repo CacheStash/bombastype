@@ -600,8 +600,7 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
             WebkitFontFeatureSettings: activeCharFeatures,
             fontVariationSettings: commonFontStyle.fontVariationSettings || undefined
           }}
-        className={selectedCharIndex === i ? "bg-vintage-ink text-vintage-paper" : undefined}
-        >
+       >
           {char}
         </span>
       );
@@ -855,7 +854,7 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
                   onKeyUp={handleTextSelect}
                   onMouseUp={handleTextSelect}
                   onScroll={handleScrollSync}
-                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-30 text-transparent caret-vintage-ink selection:bg-transparent"
+                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-30 text-transparent caret-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
