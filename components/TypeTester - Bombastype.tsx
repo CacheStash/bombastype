@@ -129,7 +129,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [alternateGlyphs, setAlternateGlyphs] = useState<AlternateGlyph[]>([]);
   const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).current;
 
   const ALLOWED_TAGS = new Set([
     'liga', 'dlig', 'calt', 'salt', 'swsh', 'titl',
@@ -574,14 +573,7 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
       const overrideFeature = charOverrides[i];
 
       // Jika user memilih alternate spesifik (seperti o.alt1 pada salt kedua)
-     const activeCharFeatures = overrideFeature 
-        ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
-        : globalActiveFeatureString;
-
-      // KUNCI: Jika alternate memiliki featureTag (seperti ss05, salt), render sebagai <span> teks
-      // sehingga CSS fontVariationSettings (slider weight/slant/dll) langsung mengubah bentuk hurufnya secara live!
-      // Render SVG hanya sebagai fallback jika alternate benar-benar unencoded (tanpa tag GSUB).
-      if (overrideGlyphIdx !== undefined && !overrideFeature) {
+      if (overrideGlyphIdx !== undefined) {
         return (
           <React.Fragment key={i}>
             {renderInlineGlyphSvg(overrideGlyphIdx, fontSize, fontIdx) || char}
@@ -589,15 +581,18 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
         );
       }
 
+      const activeCharFeatures = overrideFeature 
+        ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
+        : globalActiveFeatureString;
+
       return (
         <span 
           key={i}
-          id={fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex) ? `char-span-${testerId}-${i}` : undefined}
+          id={fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex) ? `char-span-${i}` : undefined}
           style={{
             fontFamily: styleFontFamily,
             fontFeatureSettings: activeCharFeatures,
-            WebkitFontFeatureSettings: activeCharFeatures,
-            fontVariationSettings: commonFontStyle.fontVariationSettings || undefined
+            WebkitFontFeatureSettings: activeCharFeatures
           }}
         >
           {char}
