@@ -362,13 +362,6 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
     });
 
     // Jika glyph memiliki unicode / PUA, update text
-    const targetGlyph = loadedFontObj?.glyphs?.get(alt.glyphIndex);
-    if (targetGlyph && targetGlyph.unicode && targetGlyph.unicode !== text.charCodeAt(selectedCharIndex)) {
-      const replacementChar = String.fromCharCode(targetGlyph.unicode);
-      const newText = text.slice(0, selectedCharIndex) + replacementChar + text.slice(selectedCharIndex + 1);
-      setText(newText);
-    }
-
     const effectiveTag = alt.featureTag === 'aalt' ? 'salt' : alt.featureTag;
 
     setCharOverrides(prev => {
@@ -600,6 +593,15 @@ const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).curr
             WebkitFontFeatureSettings: activeCharFeatures,
             fontVariationSettings: commonFontStyle.fontVariationSettings || undefined
           }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (textareaRef.current) {
+              textareaRef.current.focus();
+              textareaRef.current.setSelectionRange(i, i + 1);
+              handleTextSelect();
+            }
+          }}
+          className="pointer-events-auto cursor-text"
        >
           {char}
         </span>
