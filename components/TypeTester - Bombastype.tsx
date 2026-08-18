@@ -129,6 +129,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [alternateGlyphs, setAlternateGlyphs] = useState<AlternateGlyph[]>([]);
   const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).current;
 
   const ALLOWED_TAGS = new Set([
     'liga', 'dlig', 'calt', 'salt', 'swsh', 'titl',
@@ -254,7 +255,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       return;
     }
 
-    const glyphIndex = loadedFontObj.charToGlyphIndex(targetChar);
+    let glyphIndex = loadedFontObj.charToGlyphIndex(targetChar);
     if (!glyphIndex) {
       setPopoverPos(null);
       setSelectedCharIndex(null);
@@ -331,8 +332,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       setSelectedCharIndex(start);
       let posX = 24;
       let posY = 16;
-      const targetCharEl = document.getElementById(`char-span-${start}`);
-      if (targetCharEl && textareaRef.current) {
+const targetCharEl = document.getElementById(`char-span-${testerId}-${start}`);      if (targetCharEl && textareaRef.current) {
         const containerRect = textareaRef.current.getBoundingClientRect();
         const charRect = targetCharEl.getBoundingClientRect();
         posX = charRect.left - containerRect.left;
@@ -361,13 +361,6 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     });
 
     // Jika glyph memiliki unicode / PUA, update text
-    const targetGlyph = loadedFontObj?.glyphs?.get(alt.glyphIndex);
-    if (targetGlyph && targetGlyph.unicode && targetGlyph.unicode !== text.charCodeAt(selectedCharIndex)) {
-      const replacementChar = String.fromCharCode(targetGlyph.unicode);
-      const newText = text.slice(0, selectedCharIndex) + replacementChar + text.slice(selectedCharIndex + 1);
-      setText(newText);
-    }
-
     const effectiveTag = alt.featureTag === 'aalt' ? 'salt' : alt.featureTag;
 
     setCharOverrides(prev => {
@@ -383,6 +376,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
     setPopoverPos(null);
     setSelectedCharIndex(null);
   };
+
 
   const renderGlyphSvg = (glyphIdx: number, size: number = 24) => {
     if (!loadedFontObj) return null;
@@ -573,7 +567,14 @@ const TypeTester: React.FC<TypeTesterProps> = ({
       const overrideFeature = charOverrides[i];
 
       // Jika user memilih alternate spesifik (seperti o.alt1 pada salt kedua)
-      if (overrideGlyphIdx !== undefined) {
+     const activeCharFeatures = overrideFeature 
+        ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
+        : globalActiveFeatureString;
+
+      // KUNCI: Jika alternate memiliki featureTag (seperti ss05, salt), render sebagai <span> teks
+      // sehingga CSS fontVariationSettings (slider weight/slant/dll) langsung mengubah bentuk hurufnya secara live!
+      // Render SVG hanya sebagai fallback jika alternate benar-benar unencoded (tanpa tag GSUB).
+      if (overrideGlyphIdx !== undefined && !overrideFeature) {
         return (
           <React.Fragment key={i}>
             {renderInlineGlyphSvg(overrideGlyphIdx, fontSize, fontIdx) || char}
@@ -581,20 +582,26 @@ const TypeTester: React.FC<TypeTesterProps> = ({
         );
       }
 
-      const activeCharFeatures = overrideFeature 
-        ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
-        : globalActiveFeatureString;
-
       return (
         <span 
           key={i}
-          id={fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex) ? `char-span-${i}` : undefined}
+          id={fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex) ? `char-span-${testerId}-${i}` : undefined}
           style={{
             fontFamily: styleFontFamily,
             fontFeatureSettings: activeCharFeatures,
-            WebkitFontFeatureSettings: activeCharFeatures
+            WebkitFontFeatureSettings: activeCharFeatures,
+            fontVariationSettings: commonFontStyle.fontVariationSettings || undefined
           }}
-        >
+          onClick={(e) => {
+            e.stopPropagation();
+            if (textareaRef.current) {
+              textareaRef.current.focus();
+              textareaRef.current.setSelectionRange(i, i + 1);
+              handleTextSelect();
+            }
+          }}
+          className="pointer-events-auto cursor-text"
+       >
           {char}
         </span>
       );
@@ -795,7 +802,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   /* SINGLE STYLE DISPLAY */
                   <div 
                     ref={(el) => { layerContainerRefs.current['single'] = el; }}
-                    className="absolute inset-0 p-10 md:p-16 lg:p-20 pointer-events-none whitespace-pre-wrap wrap-break-word overflow-hidden select-none"
+                    className="absolute inset-0 p-10 md:p-16 lg:p-20 whitespace-pre-wrap wrap-break-word overflow-hidden select-text z-35"
                     style={{ 
                       ...commonFontStyle, 
                       fontSize: `${fontSize}px`, 
@@ -848,7 +855,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
                   onKeyUp={handleTextSelect}
                   onMouseUp={handleTextSelect}
                   onScroll={handleScrollSync}
-                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-30 text-transparent caret-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper" 
+                  className="w-full min-h-100 bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 relative z-20 text-transparent caret-vintage-ink selection:bg-transparent"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
