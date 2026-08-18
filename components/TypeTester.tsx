@@ -972,13 +972,13 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
               <div 
                 ref={scrollContainerRef}
                 onScroll={handleMasterScroll}
-                className="relative w-full h-[520px] overflow-y-auto overflow-x-hidden custom-scrollbar"
+                className="relative w-full h-[450px] overflow-y-auto overflow-x-hidden custom-scrollbar"
               >
-             {!isLayeredMode ? (
+                {!isLayeredMode ? (
                   /* SINGLE STYLE DISPLAY */
                   <div 
                     ref={(el) => { layerContainerRefs.current['single'] = el; }}
-                    className="absolute inset-0 p-10 md:p-16 lg:p-20 pb-40 md:pb-48 whitespace-pre-wrap wrap-break-word overflow-hidden z-25 pointer-events-auto select-none min-h-full"
+                    className="relative w-full p-10 md:p-14 pb-8 whitespace-pre-wrap wrap-break-word z-25 pointer-events-auto select-none min-h-full"
                     style={{ 
                       ...commonFontStyle, 
                       fontSize: `${fontSize}px`, 
@@ -994,15 +994,17 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   </div>
                 ) : (
                   /* MULTI-LAYER STACKING DISPLAY */
-                  <div className="absolute inset-0 z-25 pointer-events-auto overflow-hidden select-none min-h-full">
+                  <div className="relative w-full min-h-full">
                     {layers.map((layer, stackIdx) => {
                       if (!layer.isVisible) return null;
                       const calculatedZIndex = layers.length - stackIdx;
+                      const isFirstVisible = stackIdx === 0;
+
                       return (
                         <div 
                           key={layer.id}
                           ref={(el) => { layerContainerRefs.current[layer.id] = el; }}
-                          className="absolute inset-0 p-10 md:p-16 lg:p-20 pb-40 md:pb-48 whitespace-pre-wrap wrap-break-word select-none overflow-hidden min-h-full"
+                          className={`${isFirstVisible ? 'relative' : 'absolute inset-0'} w-full p-10 md:p-14 pb-8 whitespace-pre-wrap wrap-break-word select-none z-25 pointer-events-auto min-h-full`}
                           style={{ 
                             ...commonFontStyle,
                             fontFamily: `"${config.name}-${layer.fontIndex}"`,
@@ -1036,7 +1038,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   />
                 )}
 
-                {/* TEXTAREA INPUT (DRIVES SCROLL HEIGHT) */}
+                {/* TEXTAREA INPUT */}
                 <textarea 
                   key="type" 
                   ref={textareaRef}
@@ -1055,14 +1057,13 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   onKeyDown={handleSelectionOrCursorChange}
                   onMouseUp={handleSelectionOrCursorChange}
                   onMouseDown={handleSelectionOrCursorChange}
-                  className="w-full min-h-[520px] bg-transparent outline-none resize-none p-10 md:p-16 lg:p-20 pb-40 md:pb-48 relative z-10 text-transparent caret-transparent selection:bg-transparent selection:text-transparent pointer-events-none block"
+                  className="absolute inset-0 w-full h-full bg-transparent outline-none resize-none p-10 md:p-14 pb-8 z-10 text-transparent caret-transparent selection:bg-transparent selection:text-transparent pointer-events-none overflow-hidden"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
                     textAlign: align, 
                     lineHeight: lineHeight, 
-                    letterSpacing: `${letterSpacing}em`,
-                    height: `${Math.max(520, (text.split('\n').length + (text.length * fontSize * 0.6) / (scrollContainerRef.current?.clientWidth || 800)) * fontSize * lineHeight + 200)}px`
+                    letterSpacing: `${letterSpacing}em` 
                   }} 
                   spellCheck={false} 
                 />
