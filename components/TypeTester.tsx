@@ -130,7 +130,7 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 const testerId = useRef(`tt-${Math.random().toString(36).substring(2, 9)}`).current;
-const [cursorPos, setCursorPos] = useState<number | null>(null);
+const [cursorPos, setCursorPos] = useState<number | null>(0);
   const [isFocused, setIsFocused] = useState(false);
   const [caretCoords, setCaretCoords] = useState<{ left: number; top: number; height: number } | null>(null);
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
@@ -167,13 +167,24 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
         height: r.height || fontSize * lineHeight
       });
     } else {
-      setCaretCoords({
-        left: 40,
-        top: 40,
-        height: fontSize * lineHeight
-      });
+      const firstSpan = document.getElementById(`char-span-${testerId}-0`);
+      if (firstSpan) {
+        const r = firstSpan.getBoundingClientRect();
+        setCaretCoords({
+          left: r.left - containerRect.left + container.scrollLeft,
+          top: r.top - containerRect.top + container.scrollTop,
+          height: r.height || fontSize * lineHeight
+        });
+      } else {
+        setCaretCoords({
+          left: 40,
+          top: 40,
+          height: fontSize * lineHeight
+        });
+      }
     }
   };
+
   const ALLOWED_TAGS = new Set([
     'liga', 'dlig', 'calt', 'salt', 'swsh', 'titl',
     ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`) 
@@ -939,7 +950,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
           <AnimatePresence mode="wait">
             {viewMode === 'type' ? (
               <div className="relative w-full min-h-100">
-               {!isLayeredMode ? (
+              {!isLayeredMode ? (
                   /* SINGLE STYLE DISPLAY */
                   <div 
                     ref={(el) => { layerContainerRefs.current['single'] = el; }}
@@ -952,7 +963,16 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                       letterSpacing: `${letterSpacing}em` 
                     }}
                     onClick={() => {
-                      if (textareaRef.current) textareaRef.current.focus();
+                      if (textareaRef.current) {
+                        textareaRef.current.focus();
+                        const len = text.length;
+                        textareaRef.current.setSelectionRange(len, len);
+                        setCursorPos(len);
+                        updateCaretPosition(len);
+                        setSelectionRange(null);
+                        setPopoverPos(null);
+                        setSelectedCharIndex(null);
+                      }
                     }}
                   >
                     {renderTextSpans(activeStyleIndex)}
@@ -979,6 +999,18 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                             color: layer.color || (layer.isInverted ? 'var(--color-vintage-paper)' : 'var(--color-vintage-ink)'),
                             textShadow: layer.color ? 'none' : (layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none')
                           }}
+                          onClick={() => {
+                            if (textareaRef.current) {
+                              textareaRef.current.focus();
+                              const len = text.length;
+                              textareaRef.current.setSelectionRange(len, len);
+                              setCursorPos(len);
+                              updateCaretPosition(len);
+                              setSelectionRange(null);
+                              setPopoverPos(null);
+                              setSelectedCharIndex(null);
+                            }
+                          }}
                         >
                           {renderTextSpans(layer.fontIndex)}
                         </div>
@@ -990,7 +1022,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                 {/* ACCURATE VISUAL CARET */}
                 {isFocused && caretCoords && cursorPos !== null && !selectionRange && (
                   <div 
-                    className="absolute z-35 w-0.5 bg-vintage-ink pointer-events-none animate-pulse"
+                    className="absolute z-40 w-[2px] bg-black pointer-events-none animate-pulse"
                     style={{
                       left: `${caretCoords.left}px`,
                       top: `${caretCoords.top}px`,
