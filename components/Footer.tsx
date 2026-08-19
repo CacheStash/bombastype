@@ -51,7 +51,13 @@ export default function Footer() {
           
           {/* Kolom Kiri: Logo & Sosial */}
           <div className="text-center md:text-left">
-            <h2 className="text-3xl font-blackletter mb-4">Type & Heritage</h2>
+            <div className="mb-4 flex justify-center md:justify-start">
+              <img 
+                src="/LOGO2.png" 
+                alt="Bombastype" 
+                className="h-8 md:h-10 w-auto object-contain" 
+              />
+            </div>
             <div className="flex gap-4 justify-center md:justify-start opacity-60">
               <Instagram size={18} className="cursor-pointer hover:text-white transition-colors" />
               <Facebook size={18} className="cursor-pointer hover:text-white transition-colors" />

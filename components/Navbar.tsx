@@ -108,11 +108,13 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
         className="overflow-hidden relative z-50 bg-vintage-paper"
       >
         <header className="text-center pt-6 pb-12">
-          <Link to="/" className="inline-flex items-center justify-center gap-6 hover:opacity-70 transition-opacity">
+          <Link to="/" className="inline-flex items-center justify-center gap-6 hover:opacity-80 transition-opacity">
             <div className="h-px w-12 bg-vintage-ink"></div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-blackletter tracking-tighter text-vintage-ink">
-              Type & Heritage
-            </h1>
+            <img 
+              src="/LogoBombastype.png" 
+              alt="Bombastype" 
+              className="h-10 md:h-14 lg:h-16 w-auto object-contain" 
+            />
             <div className="h-px w-12 bg-vintage-ink"></div>
           </Link>
         </header>
@@ -138,8 +140,12 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                   transition={{ duration: 0.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                   className="mr-6 pr-6 border-r border-vintage-ink"
                 >
-                  <Link to="/" className="text-xl font-blackletter tracking-tighter text-vintage-ink whitespace-nowrap">
-                    Type & Heritage
+                  <Link to="/" className="inline-flex items-center">
+                    <img 
+                      src="/LogoBombastype.png" 
+                      alt="Bombastype" 
+                      className="h-5 w-auto object-contain" 
+                    />
                   </Link>
                 </motion.div>
               )}
