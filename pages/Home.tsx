@@ -185,10 +185,10 @@ export default function Home() {
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
         <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight">
-          Heritage Display
+          Crafted Antiquity
         </motion.h2>
         <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 mb-6 leading-relaxed">
-          Discover curated collections of historic fonts, meticulously digitized for timeless design, branding, & letterpress.
+          Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, & letterpress design.
         </motion.p>
         <div className="flex justify-center mt-12 w-full max-w-xl mx-auto relative z-30">
           <button onClick={() => navigate('/fonts')} className="vintage-btn btn-reverse px-16 py-4 text-sm tracking-[0.3em]">
