@@ -180,24 +180,26 @@ export default function Home() {
   return (
     <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
       {/* Hero Section */}
-      <section className="text-center mb-16 max-w-3xl mx-auto relative z-10 px-4 pt-12">
-        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
+      <section className="text-center mb-16 max-w-5xl mx-auto relative z-10 px-4 pt-12 flex flex-col items-center">
+        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-6">
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
+        
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="my-6 flex justify-center"
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="my-4 w-full flex justify-center"
         >
           <img 
             src="/header.webp" 
             alt="Authentic Vintage Typefaces" 
-            className="w-auto max-h-48 md:max-h-64 lg:max-h-72 object-contain drop-shadow-md hover:scale-105 transition-transform duration-300 cursor-pointer"
+            className="w-full max-w-xl md:max-w-2xl lg:max-w-3xl h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 cursor-pointer"
             onClick={() => navigate('/fonts')}
           />
         </motion.div>
-        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 mb-6 leading-relaxed">
+
+        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mt-6 mb-8 leading-relaxed">
           Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, & letterpress design.
         </motion.p>
         <div className="flex justify-center mt-12 w-full max-w-xl mx-auto relative z-30">
