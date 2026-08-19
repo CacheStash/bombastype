@@ -158,14 +158,23 @@ export default function Home() {
 
   const activeTesterFont = allFonts[currentTesterFontIndex] || null;
 
-  const handleNextRandomFont = () => {
+  const handleNextFont = () => {
     if (allFonts.length <= 1) return;
     setCurrentTesterFontIndex((prev) => (prev + 1) % allFonts.length);
   };
 
-  const handlePrevRandomFont = () => {
+  const handlePrevFont = () => {
     if (allFonts.length <= 1) return;
     setCurrentTesterFontIndex((prev) => (prev - 1 + allFonts.length) % allFonts.length);
+  };
+
+  const handleRandomFont = () => {
+    if (allFonts.length <= 1) return;
+    let nextIdx = Math.floor(Math.random() * allFonts.length);
+    if (nextIdx === currentTesterFontIndex) {
+      nextIdx = (nextIdx + 1) % allFonts.length;
+    }
+    setCurrentTesterFontIndex(nextIdx);
   };
 
   return (
@@ -270,7 +279,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-5xl font-script capitalize">Type Yourself</h2>
           </div>
 
-          {/* Header Info Font Terpilih */}
+          {/* Header Info Font Terpilih & Controller Navigasi Sejajar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 px-2">
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-vintage-accent font-bold">
@@ -280,20 +289,47 @@ export default function Home() {
                 {activeTesterFont.name}
               </h3>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Tombol Controller Berjajar: [ < ] [ RANDOM TYPEFACE ] [ > ] */}
+            <div className="flex items-center gap-1.5">
+              {allFonts.length > 1 && (
+                <button 
+                  type="button"
+                  onClick={handlePrevFont}
+                  className="vintage-btn p-1.5 text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper flex items-center justify-center transition-all"
+                  title="Previous Font"
+                  aria-label="Previous Font"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+              )}
+
               <button 
-                onClick={handleNextRandomFont}
+                type="button"
+                onClick={handleRandomFont}
                 className="vintage-btn py-1.5 px-3 text-[10px] flex items-center gap-2 group/btn"
-                title="Switch Random Font"
+                title="Pick Random Typeface"
               >
-                <Shuffle size={13} className="transition-transform group-hover/btn:rotate-180" />
+                <Shuffle size={12} className="transition-transform group-hover/btn:rotate-180" />
                 <span className="font-bold tracking-widest uppercase">RANDOM TYPEFACE</span>
               </button>
+
+              {allFonts.length > 1 && (
+                <button 
+                  type="button"
+                  onClick={handleNextFont}
+                  className="vintage-btn p-1.5 text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper flex items-center justify-center transition-all"
+                  title="Next Font"
+                  aria-label="Next Font"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Container TypeTester dengan Floating Nav Arrows */}
-          <div className="relative border border-vintage-ink/20 bg-vintage-paper shadow-sm group/tester">
+          {/* Container TypeTester */}
+          <div className="relative border border-vintage-ink/20 bg-vintage-paper shadow-sm">
             <TypeTester 
               key={activeTesterFont.id}
               config={{
@@ -303,32 +339,6 @@ export default function Home() {
                 randomText: activeTesterFont.random_text
               }} 
             />
-
-            {/* Left Floating Arrow (Middle Left) */}
-            {allFonts.length > 1 && (
-              <button
-                type="button"
-                onClick={handlePrevRandomFont}
-                className="absolute left-2 top-[30%] -translate-y-1/2 z-50 p-3 bg-vintage-paper/90 border border-vintage-ink text-vintage-ink shadow-lg hover:bg-vintage-ink hover:text-vintage-paper transition-all opacity-40 group-hover/tester:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
-                title="Previous Font"
-                aria-label="Previous Font"
-              >
-                <ChevronLeft size={22} strokeWidth={2.5} />
-              </button>
-            )}
-
-            {/* Right Floating Arrow (Middle Right) */}
-            {allFonts.length > 1 && (
-              <button
-                type="button"
-                onClick={handleNextRandomFont}
-                className="absolute right-2 top-[30%] -translate-y-1/2 z-50 p-3 bg-vintage-paper/90 border border-vintage-ink text-vintage-ink shadow-lg hover:bg-vintage-ink hover:text-vintage-paper transition-all opacity-40 group-hover/tester:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
-                title="Next Font"
-                aria-label="Next Font"
-              >
-                <ChevronRight size={22} strokeWidth={2.5} />
-              </button>
-            )}
 
             {/* Action Footer: Price + Add to Cart + View Detail */}
             <div className="p-6 md:p-8 bg-vintage-ink/3 border-t border-vintage-ink/20 flex flex-col sm:flex-row items-center justify-between gap-6">
