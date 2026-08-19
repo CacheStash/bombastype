@@ -184,9 +184,19 @@ export default function Home() {
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
-        <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight">
-          Crafted Antiquity
-        </motion.h2>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="my-6 flex justify-center"
+        >
+          <img 
+            src="/header.webp" 
+            alt="Authentic Vintage Typefaces" 
+            className="w-auto max-h-48 md:max-h-64 lg:max-h-72 object-contain drop-shadow-md hover:scale-105 transition-transform duration-300 cursor-pointer"
+            onClick={() => navigate('/fonts')}
+          />
+        </motion.div>
         <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 mb-6 leading-relaxed">
           Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, & letterpress design.
         </motion.p>
