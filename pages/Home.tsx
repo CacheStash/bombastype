@@ -186,16 +186,15 @@ export default function Home() {
         </motion.p>
         
         <motion.div 
-          initial={{ opacity: 0, scale: 0.92 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="my-4 w-full flex justify-center"
+          className="my-4 w-full flex justify-center pointer-events-none select-none"
         >
           <img 
             src="/header.webp" 
             alt="Authentic Vintage Typefaces" 
-            className="w-full max-w-xl md:max-w-2xl lg:max-w-3xl h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 cursor-pointer"
-            onClick={() => navigate('/fonts')}
+            className="w-full max-w-xl md:max-w-2xl lg:max-w-3xl h-auto object-contain drop-shadow-2xl"
           />
         </motion.div>
 
