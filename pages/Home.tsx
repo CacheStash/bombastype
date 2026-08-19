@@ -6,9 +6,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
-import { Plus, Eye } from 'lucide-react';
+import { Plus, Eye, ChevronLeft, ChevronRight, Shuffle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
+import TypeTester from '../components/TypeTester';
 
 // --- SUB-COMPONENTS: STYLING ELEMENTS ---
 const SlantedSpacer = () => (
@@ -112,11 +113,13 @@ export default function Home() {
   const { openConfigurator } = useCart();
   const [featuredFonts, setFeaturedFonts] = useState<any[]>([]);
   const [recentFonts, setRecentFonts] = useState<any[]>([]);
+  const [allFonts, setAllFonts] = useState<any[]>([]);
+  const [currentTesterFontIndex, setCurrentTesterFontIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { fetchData(); }, []);
 
-  // Dynamic Font Face Injection
+  // Dynamic Font Face Injection untuk Recent Fonts
   useEffect(() => {
     if (recentFonts.length === 0) return;
     const styleId = "dynamic-fonts-home-registry";
@@ -138,13 +141,31 @@ export default function Home() {
       setLoading(true);
       const { data: featured } = await supabase.from('fonts').select('*').filter('metadata->is_featured', 'eq', true).limit(3);
       const { data: recent } = await supabase.from('fonts').select('*').order('created_at', { ascending: false }).limit(4);
+      const { data: all } = await supabase.from('fonts').select('*').order('name', { ascending: true });
+      
       if (featured) setFeaturedFonts(featured);
       if (recent) setRecentFonts(recent);
+      if (all && all.length > 0) {
+        setAllFonts(all);
+        setCurrentTesterFontIndex(Math.floor(Math.random() * all.length));
+      }
     } catch (err) {
       console.error("Data retrieval failed:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const activeTesterFont = allFonts[currentTesterFontIndex] || null;
+
+  const handleNextRandomFont = () => {
+    if (allFonts.length <= 1) return;
+    setCurrentTesterFontIndex((prev) => (prev + 1) % allFonts.length);
+  };
+
+  const handlePrevRandomFont = () => {
+    if (allFonts.length <= 1) return;
+    setCurrentTesterFontIndex((prev) => (prev - 1 + allFonts.length) % allFonts.length);
   };
 
   return (
@@ -241,6 +262,103 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Type Yourself Section */}
+      {activeTesterFont && (
+        <section className="mb-20 md:mb-32 relative z-10 px-4 max-w-7xl mx-auto">
+          <div className="divider mb-8">
+            <h2 className="text-3xl md:text-5xl font-script capitalize">Type Yourself</h2>
+          </div>
+
+          {/* Header Info Font Terpilih */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 px-2">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-vintage-accent font-bold">
+                Active Font Specimen:
+              </span>
+              <h3 className="text-2xl md:text-3xl font-display capitalize tracking-tight">
+                {activeTesterFont.name}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleNextRandomFont}
+                className="vintage-btn py-1.5 px-3 text-[10px] flex items-center gap-2 group/btn"
+                title="Switch Random Font"
+              >
+                <Shuffle size={13} className="transition-transform group-hover/btn:rotate-180" />
+                <span className="font-bold tracking-widest uppercase">RANDOM TYPEFACE</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Container TypeTester dengan Floating Nav Arrows */}
+          <div className="relative border border-vintage-ink/20 bg-vintage-paper shadow-sm group/tester">
+            <TypeTester 
+              key={activeTesterFont.id}
+              config={{
+                ...activeTesterFont,
+                family: `"${activeTesterFont.name}"`,
+                styleCount: Array.isArray(activeTesterFont.font_files) ? activeTesterFont.font_files.length : 1,
+                randomText: activeTesterFont.random_text
+              }} 
+            />
+
+            {/* Left Floating Arrow (Middle Left) */}
+            {allFonts.length > 1 && (
+              <button
+                type="button"
+                onClick={handlePrevRandomFont}
+                className="absolute left-2 top-[30%] -translate-y-1/2 z-50 p-3 bg-vintage-paper/90 border border-vintage-ink text-vintage-ink shadow-lg hover:bg-vintage-ink hover:text-vintage-paper transition-all opacity-40 group-hover/tester:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                title="Previous Font"
+                aria-label="Previous Font"
+              >
+                <ChevronLeft size={22} strokeWidth={2.5} />
+              </button>
+            )}
+
+            {/* Right Floating Arrow (Middle Right) */}
+            {allFonts.length > 1 && (
+              <button
+                type="button"
+                onClick={handleNextRandomFont}
+                className="absolute right-2 top-[30%] -translate-y-1/2 z-50 p-3 bg-vintage-paper/90 border border-vintage-ink text-vintage-ink shadow-lg hover:bg-vintage-ink hover:text-vintage-paper transition-all opacity-40 group-hover/tester:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                title="Next Font"
+                aria-label="Next Font"
+              >
+                <ChevronRight size={22} strokeWidth={2.5} />
+              </button>
+            )}
+
+            {/* Action Footer: Price + Add to Cart + View Detail */}
+            <div className="p-6 md:p-8 bg-vintage-ink/3 border-t border-vintage-ink/20 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-60">Starting at</span>
+                <span className="text-3xl md:text-4xl font-display text-vintage-ink">
+                  <span className="text-vintage-accent text-2xl mr-0.5">$</span>{activeTesterFont.price || 25}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button 
+                  onClick={() => openConfigurator({ ...activeTesterFont, trialFileUrl: activeTesterFont.trial_file_url })}
+                  className="vintage-btn py-3 px-6 text-xs flex-1 sm:flex-initial flex items-center justify-center gap-2 group/btn"
+                >
+                  <Plus size={15} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" />
+                  ADD TO CART
+                </button>
+                <button 
+                  onClick={() => navigate(`/font/${activeTesterFont.id}`)}
+                  className="vintage-btn btn-reverse py-3 px-6 text-xs flex-1 sm:flex-initial flex items-center justify-center gap-2 group/btn"
+                >
+                  <Eye size={15} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" />
+                  VIEW FONT
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
