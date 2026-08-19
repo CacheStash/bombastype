@@ -301,61 +301,85 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
 
     if (gsub && gsub.features && gsub.lookups) {
       const altFeatureTags = [
-        'aalt', 'salt', 'swsh', 'titl', 'calt', 'dlig',
+        'aalt', 'salt', 'swsh', 'titl', 'calt', 'dlig', 'liga',
         ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`)
       ];
       
       gsub.features.forEach((featureRecord: any) => {
         if (!altFeatureTags.includes(featureRecord.tag)) return;
 
-        featureRecord.feature.lookupListIndexes.forEach((lookupIndex: number) => {
+        featureRecord.feature.lookupListIndexes?.forEach((lookupIndex: number) => {
           const lookup = gsub.lookups[lookupIndex];
           if (!lookup || !lookup.subtables) return;
 
           lookup.subtables.forEach((subtable: any) => {
-            if (lookup.lookupType === 1) {
-              if (subtable.coverage && subtable.coverage.glyphs) {
-                const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
-                if (covIdx !== -1) {
-                  const targetGlyphIdx = Array.isArray(subtable.substitute) 
-                    ? subtable.substitute[covIdx] 
-                    : (glyphIndex + subtable.deltaGlyphId) % 65536;
-                  
-                  const targetGlyph = loadedFontObj.glyphs.get(targetGlyphIdx);
-                  const charStr = (targetGlyph && targetGlyph.unicode) 
-                    ? String.fromCharCode(targetGlyph.unicode) 
-                    : targetChar;
+            try {
+              let covIdx = -1;
+              const cov = subtable.coverage;
+              if (!cov) return;
 
-                  if (!alternates.some(a => a.glyphIndex === targetGlyphIdx)) {
-                    alternates.push({ char: charStr, glyphIndex: targetGlyphIdx, featureTag: featureRecord.tag });
+              // Deteksi Coverage Format 1 (List/Array) maupun Format 2 (Ranges)
+              if (cov.format === 2 && Array.isArray(cov.ranges)) {
+                const range = cov.ranges.find((r: any) => glyphIndex >= r.start && glyphIndex <= r.end);
+                if (range) {
+                  covIdx = range.index + (glyphIndex - range.start);
+                }
+              } else if (Array.isArray(cov.glyphs)) {
+                covIdx = cov.glyphs.indexOf(glyphIndex);
+              } else if (Array.isArray(cov)) {
+                covIdx = cov.indexOf(glyphIndex);
+              }
+              
+              if (covIdx === -1) return;
+
+              let extractedIndices: number[] = [];
+
+              // LOOKUP TYPE 1: Single Substitution (sub d by @aalt_salt, sub a by a.alt)
+              if (lookup.lookupType === 1) {
+                if (subtable.deltaGlyphId !== undefined) {
+                  extractedIndices.push((glyphIndex + subtable.deltaGlyphId) % 65536);
+                } else if (Array.isArray(subtable.substitute)) {
+                  const targetSub = subtable.substitute[covIdx];
+                  if (targetSub !== undefined) extractedIndices.push(targetSub);
+                }
+              } 
+              // LOOKUP TYPE 3: Alternate Substitution (sub e from [uniE97D e.alt])
+              else if (lookup.lookupType === 3) {
+                const altSets = subtable.alternateSets || subtable.alternateSet || subtable.alternates || [];
+                const targetSet = altSets[covIdx];
+
+                if (targetSet) {
+                  if (Array.isArray(targetSet)) {
+                    extractedIndices.push(...targetSet);
+                  } else if (Array.isArray(targetSet.alternateGlyphs)) {
+                    extractedIndices.push(...targetSet.alternateGlyphs);
+                  } else if (Array.isArray(targetSet.alternates)) {
+                    extractedIndices.push(...targetSet.alternates);
+                  } else if (Array.isArray(targetSet.glyphs)) {
+                    extractedIndices.push(...targetSet.glyphs);
                   }
                 }
               }
-            } else if (lookup.lookupType === 3) {
-              if (subtable.coverage && subtable.coverage.glyphs) {
-                const covIdx = subtable.coverage.glyphs.indexOf(glyphIndex);
-                if (covIdx !== -1) {
-                  const altSets = subtable.alternateSets || subtable.alternateSet || [];
-                  const targetSet = altSets[covIdx];
 
-                  if (targetSet) {
-                    const glyphIndices: number[] = Array.isArray(targetSet)
-                      ? targetSet
-                      : (targetSet.alternateGlyphs || targetSet.glyphs || targetSet.alternateSet || []);
+              extractedIndices.forEach((altIdx: any) => {
+                const numIdx = Number(altIdx);
+                if (isNaN(numIdx) || numIdx === 0 || numIdx === glyphIndex) return;
+                
+                const targetGlyph = loadedFontObj.glyphs.get(numIdx);
+                if (!targetGlyph) return;
 
-                    glyphIndices.forEach((altIdx: number) => {
-                      const targetGlyph = loadedFontObj.glyphs.get(altIdx);
-                      const charStr = (targetGlyph && targetGlyph.unicode) 
-                        ? String.fromCharCode(targetGlyph.unicode) 
-                        : targetChar;
+                const charStr = (targetGlyph && targetGlyph.unicode) 
+                  ? String.fromCharCode(targetGlyph.unicode) 
+                  : targetChar;
 
-                      if (!alternates.some(a => a.glyphIndex === altIdx)) {
-                        alternates.push({ char: charStr, glyphIndex: altIdx, featureTag: featureRecord.tag });
-                      }
-                    });
-                  }
+                const effectiveTag = featureRecord.tag === 'aalt' ? 'salt' : featureRecord.tag;
+
+                if (!alternates.some(a => a.glyphIndex === numIdx)) {
+                  alternates.push({ char: charStr, glyphIndex: numIdx, featureTag: effectiveTag });
                 }
-              }
+              });
+            } catch (e) {
+              // bypass subtable yang tidak standar
             }
           });
         });
@@ -972,7 +996,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
               <div 
                 ref={scrollContainerRef}
                 onScroll={handleMasterScroll}
-                className="relative w-full h-[450px] overflow-y-auto overflow-x-hidden custom-scrollbar"
+                className="relative w-full h-112.5 overflow-y-auto overflow-x-hidden custom-scrollbar"
               >
                 {!isLayeredMode ? (
                   /* SINGLE STYLE DISPLAY */
