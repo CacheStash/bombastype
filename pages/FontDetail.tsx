@@ -8,7 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import TypeTester from '../components/TypeTester';
 import { useCart } from '../context/CartContext';
-import { ChevronLeft, ChevronRight, ArrowRight, Download, DollarSign } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight, Download, DollarSign, X, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const resolvePreviewUrl = (filename: string) => {
@@ -25,6 +25,7 @@ const FontDetail: React.FC = () => {
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
 
   useEffect(() => { fetchData(); }, [id]);
 
@@ -50,26 +51,37 @@ const FontDetail: React.FC = () => {
     });
   }, [font, promos]);
 
-  if (loading) return <div className="p-20 text-center uppercase font-bold animate-pulse tracking-widest text-vintage-ink">LOADING_SPECIMEN_DATA...</div>;
-  if (!font) return <div className="p-20 text-center uppercase font-bold text-vintage-ink">Font not found.</div>;
-
-  const fontPreviews = Array.isArray(font.preview_images) ? font.preview_images : [];
-  const basePrice = font.price || 25;
-  const styleCount = Array.isArray(font.font_files) ? font.font_files.length : 1;
+  const fontPreviews = Array.isArray(font?.preview_images) ? font.preview_images : [];
+  const basePrice = font?.price || 25;
+  const styleCount = Array.isArray(font?.font_files) ? font.font_files.length : 1;
   const discountPrice = activePromo ? (basePrice * (1 - (activePromo.discount_percent / 100))).toFixed(0) : basePrice;
-  const tags = Array.isArray(font.tags) ? font.tags : (typeof font.tags === 'string' ? font.tags.split(',') : []);
+  const tags = Array.isArray(font?.tags) ? font.tags : (typeof font?.tags === 'string' ? font.tags.split(',') : []);
 
-  // --- SLIDER LOGIC: Handling Odd Numbers by Looping first image ---
- const displayImages = [...fontPreviews];
+  const displayImages = [...fontPreviews];
   const totalSlides = displayImages.length;
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
 
+  // Keyboard navigation untuk Fullscreen Pop-out
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isFullscreenOpen) return;
+      if (e.key === 'Escape') setIsFullscreenOpen(false);
+      if (e.key === 'ArrowRight') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreenOpen, totalSlides]);
+
+  if (loading) return <div className="p-20 text-center uppercase font-bold animate-pulse tracking-widest text-vintage-ink">LOADING_SPECIMEN_DATA...</div>;
+  if (!font) return <div className="p-20 text-center uppercase font-bold text-vintage-ink">Font not found.</div>;
+
   return (
     <div className="relative z-10 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper min-h-screen bg-transparent overflow-x-hidden pb-24">
       
-      {/* 1. HEADER SECTION (Diselaraskan pt-12 & max-w-3xl) */}
+      {/* 1. HEADER SECTION */}
       <section className="text-center max-w-3xl mx-auto relative z-10 px-6 pt-12 mb-16">
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
           Typeface Archival Specimen
@@ -84,24 +96,35 @@ const FontDetail: React.FC = () => {
         </motion.p>
       </section>
 
-      {/* 2. TOP SLIDER SECTION (Ratio 1820x1214 Container Width) */}
+      {/* 2. TOP SLIDER SECTION (Ratio 1160x772 Container Width with Scrollable Long Images) */}
       <section className="relative w-full max-w-7xl mx-auto px-4 md:px-8 group mb-20">
-        <div className="relative w-full overflow-hidden border border-vintage-ink/20 aspect-1820/1214 bg-vintage-paper/50 shadow-sm">
+        <div className="relative w-full overflow-hidden border border-vintage-ink/20 aspect-[1160/772] bg-vintage-paper/50 shadow-sm">
           <AnimatePresence mode="wait">
             <motion.div 
               key={currentSlide}
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="w-full h-full"
+              transition={{ duration: 0.4 }}
+              className="w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar relative"
             >
               {displayImages[currentSlide] ? (
-                <img 
-                  src={resolvePreviewUrl(displayImages[currentSlide])!} 
-                  className="w-full h-full object-cover" 
-                  alt={`Specimen ${currentSlide + 1}`} 
-                />
+                <div 
+                  onClick={() => setIsFullscreenOpen(true)}
+                  className="w-full min-h-full cursor-zoom-in group/mainimg relative"
+                  title="Click to view full screen"
+                >
+                  <img 
+                    src={resolvePreviewUrl(displayImages[currentSlide])!} 
+                    className="w-full h-auto object-top block" 
+                    alt={`Specimen ${currentSlide + 1}`} 
+                  />
+                  
+                  {/* Floating zoom hint */}
+                  <div className="absolute top-4 right-4 bg-vintage-paper/90 border border-vintage-ink text-vintage-ink p-2 opacity-0 group-hover/mainimg:opacity-100 transition-opacity duration-300 pointer-events-none shadow-md">
+                    <Maximize2 size={16} />
+                  </div>
+                </div>
               ) : (
                 <div className="w-full h-full bg-vintage-ink/5" />
               )}
@@ -112,15 +135,17 @@ const FontDetail: React.FC = () => {
           {totalSlides > 1 && (
             <>
               <button 
-                onClick={prevSlide} 
-                className="absolute left-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30"
+                type="button"
+                onClick={(e) => { e.stopPropagation(); prevSlide(); }} 
+                className="absolute left-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30 cursor-pointer"
                 aria-label="Previous Slide"
               >
                 <ChevronLeft size={44} strokeWidth={1} className="drop-shadow-md text-white" />
               </button>
               <button 
-                onClick={nextSlide} 
-                className="absolute right-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30"
+                type="button"
+                onClick={(e) => { e.stopPropagation(); nextSlide(); }} 
+                className="absolute right-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30 cursor-pointer"
                 aria-label="Next Slide"
               >
                 <ChevronRight size={44} strokeWidth={1} className="drop-shadow-md text-white" />
@@ -129,7 +154,7 @@ const FontDetail: React.FC = () => {
           )}
         </div>
 
-        {/* HORIZONTAL IMAGE THUMBNAILS */}
+        {/* HORIZONTAL IMAGE THUMBNAILS (Top-Cropped) */}
         {totalSlides > 1 && (
           <div className="w-full pt-6 pb-2">
             <div className="flex items-center justify-center gap-3 overflow-x-auto custom-scrollbar py-2">
@@ -143,7 +168,7 @@ const FontDetail: React.FC = () => {
                     key={i}
                     type="button"
                     onClick={() => setCurrentSlide(i)}
-                    className={`relative shrink-0 h-16 md:h-20 aspect-1820/1214 overflow-hidden border transition-all duration-300 ${
+                    className={`relative shrink-0 h-16 md:h-20 aspect-[1160/772] overflow-hidden border transition-all duration-300 cursor-pointer ${
                       isActive 
                         ? 'border-vintage-accent ring-2 ring-vintage-accent/40 opacity-100 scale-105 shadow-md' 
                         : 'border-vintage-ink/20 opacity-40 hover:opacity-80 hover:border-vintage-ink/50'
@@ -152,7 +177,7 @@ const FontDetail: React.FC = () => {
                     <img 
                       src={imgUrl} 
                       alt={`Thumbnail ${i + 1}`} 
-                      className="w-full h-full object-cover" 
+                      className="w-full h-full object-cover object-top" 
                     />
                   </button>
                 );
@@ -161,6 +186,73 @@ const FontDetail: React.FC = () => {
           </div>
         )}
       </section>
+
+      {/* FULLSCREEN POP-OUT MODAL */}
+      <AnimatePresence>
+        {isFullscreenOpen && displayImages[currentSlide] && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 md:p-8"
+          >
+            {/* Top Toolbar */}
+            <div className="w-full flex items-center justify-between z-50 text-white pb-4">
+              <span className="text-xs uppercase tracking-widest font-mono opacity-60">
+                {currentSlide + 1} / {totalSlides} — {font.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsFullscreenOpen(false)}
+                className="p-2 border border-white/20 hover:bg-white hover:text-black transition-all cursor-pointer"
+                title="Close (Esc)"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Main Full Image Viewport */}
+            <div 
+              className="relative w-full h-[85vh] flex items-center justify-center overflow-y-auto custom-scrollbar"
+              onClick={() => setIsFullscreenOpen(false)}
+            >
+              <img
+                src={resolvePreviewUrl(displayImages[currentSlide])!}
+                alt={`Full Specimen ${currentSlide + 1}`}
+                className="max-w-full max-h-none md:max-h-full object-contain cursor-default select-none shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+
+              {/* Navigation in Modal */}
+              {totalSlides > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); prevSlide(); }}
+                    className="fixed left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 border border-white/20 text-white hover:bg-white hover:text-black transition-all cursor-pointer z-50"
+                    title="Previous"
+                  >
+                    <ChevronLeft size={28} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); nextSlide(); }}
+                    className="fixed right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 border border-white/20 text-white hover:bg-white hover:text-black transition-all cursor-pointer z-50"
+                    title="Next"
+                  >
+                    <ChevronRight size={28} />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Bottom Modal Hint */}
+            <div className="text-[10px] uppercase font-mono tracking-widest text-white/40 pt-2">
+              Press ESC to exit • Arrow keys to navigate
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 3. TYPE TESTER SECTION */}
       <section className="w-full mt-24 border-y border-vintage-ink/10 bg-transparent relative z-40">
@@ -176,7 +268,7 @@ const FontDetail: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. DESCRIPTION & TAGS SECTION (FAQ style center) */}
+      {/* 4. DESCRIPTION & TAGS SECTION */}
       <section className="max-w-4xl mx-auto px-6 py-24 text-center relative z-10">
         <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-10">Background & Characteristics</h4>
         <p className="text-lg md:text-xl text-vintage-ink/80 leading-relaxed italic font-serif mb-12">
@@ -191,9 +283,8 @@ const FontDetail: React.FC = () => {
         </div>
       </section>
 
-    
       {/* 5. INVESTMENT & ACTION SECTION */}
-     <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
+      <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-4 italic">Pricing Information</span>
           <div className="flex items-end gap-8">
