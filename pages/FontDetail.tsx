@@ -26,6 +26,7 @@ const FontDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
+  const [isLongImage, setIsLongImage] = useState(false);
 
   useEffect(() => { fetchData(); }, [id]);
 
@@ -63,6 +64,16 @@ const FontDetail: React.FC = () => {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
 
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const standardRatio = 1160 / 772; // ~1.5025
+    const actualRatio = img.naturalWidth / img.naturalHeight;
+
+    // Toleransi: Hanya aktifkan mode scrollable jika gambar signifikan lebih panjang (>10%) dari rasio standar.
+    // Selisih minor 1-5px atau pembulatan subpixel akan diabaikan.
+    setIsLongImage(actualRatio < standardRatio - 0.15);
+  };
+
   // Keyboard navigation untuk Fullscreen Pop-out
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -98,7 +109,7 @@ const FontDetail: React.FC = () => {
 
       {/* 2. TOP SLIDER SECTION (Ratio 1160x772 Container Width with Scrollable Long Images) */}
       <section className="relative w-full max-w-7xl mx-auto px-4 md:px-8 group mb-20">
-        <div className="relative w-full overflow-hidden border border-vintage-ink/20 aspect-[1160/772] bg-vintage-paper/50 shadow-sm">
+        <div className="relative w-full overflow-hidden border border-vintage-ink/20 aspect-1160/772 bg-vintage-paper/50 shadow-sm">
           <AnimatePresence mode="wait">
             <motion.div 
               key={currentSlide}
@@ -106,22 +117,33 @@ const FontDetail: React.FC = () => {
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar relative"
+              className={`w-full h-full relative ${
+                isLongImage 
+                  ? 'overflow-y-auto overflow-x-hidden custom-scrollbar' 
+                  : 'overflow-hidden'
+              }`}
             >
               {displayImages[currentSlide] ? (
                 <div 
                   onClick={() => setIsFullscreenOpen(true)}
-                  className="w-full min-h-full cursor-zoom-in group/mainimg relative"
+                  className={`w-full cursor-zoom-in group/mainimg relative ${
+                    isLongImage ? 'min-h-full' : 'h-full'
+                  }`}
                   title="Click to view full screen"
                 >
                   <img 
                     src={resolvePreviewUrl(displayImages[currentSlide])!} 
-                    className="w-full h-auto object-top block" 
+                    onLoad={handleImageLoad}
+                    className={`w-full block ${
+                      isLongImage 
+                        ? 'h-auto object-top' 
+                        : 'h-full object-cover object-center'
+                    }`} 
                     alt={`Specimen ${currentSlide + 1}`} 
                   />
                   
                   {/* Floating zoom hint */}
-                  <div className="absolute top-4 right-4 bg-vintage-paper/90 border border-vintage-ink text-vintage-ink p-2 opacity-0 group-hover/mainimg:opacity-100 transition-opacity duration-300 pointer-events-none shadow-md">
+                  <div className="absolute top-4 right-4 bg-vintage-paper/90 border border-vintage-ink text-vintage-ink p-2 opacity-0 group-hover/mainimg:opacity-100 transition-opacity duration-300 pointer-events-none shadow-md z-20">
                     <Maximize2 size={16} />
                   </div>
                 </div>
@@ -168,7 +190,7 @@ const FontDetail: React.FC = () => {
                     key={i}
                     type="button"
                     onClick={() => setCurrentSlide(i)}
-                    className={`relative shrink-0 h-16 md:h-20 aspect-[1160/772] overflow-hidden border transition-all duration-300 cursor-pointer ${
+                    className={`relative shrink-0 h-16 md:h-20 aspect-1160/772 overflow-hidden border transition-all duration-300 cursor-pointer ${
                       isActive 
                         ? 'border-vintage-accent ring-2 ring-vintage-accent/40 opacity-100 scale-105 shadow-md' 
                         : 'border-vintage-ink/20 opacity-40 hover:opacity-80 hover:border-vintage-ink/50'
@@ -194,7 +216,7 @@ const FontDetail: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 md:p-8"
+            className="fixed inset-0 z-300 bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 md:p-8"
           >
             {/* Top Toolbar */}
             <div className="w-full flex items-center justify-between z-50 text-white pb-4">
