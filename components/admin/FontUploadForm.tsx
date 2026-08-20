@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-// Definisi tipe untuk hasil API agar TypeScript tidak error
 interface UploadResponse {
   success: boolean;
   fileName: string;
@@ -10,9 +9,8 @@ interface UploadResponse {
   error?: string;
 }
 
-// Menambahkan props initialData & onSuccess untuk fitur EDIT
 const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSuccess?: () => void }) => {
-  // 1. State untuk Form (Diambil dari initialData jika sedang mode EDIT)
+  // 1. State Dasar Font
   const [fontName, setFontName] = useState(initialData?.name || '');
   const FONT_TAGS_LIBRARY = [
     // Dasar & Teknis
@@ -33,7 +31,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
   const [description, setDescription] = useState(initialData?.description || '');
   const [tags, setTags] = useState(initialData?.tags?.join(', ') || ''); 
   
-  // Matriks Harga sesuai EULA 2026 (User Seats, Traffic Tiers, & Corporate)
+  // 2. Matriks Harga EULA
   const [licensePrices, setLicensePrices] = useState(initialData?.license_prices || {
     desktop: { solo: 0, team: 0, studio: 0, enterprise: 0 },
     logo_branding: { personal: 0, solo: 0, team: 0, studio: 0, enterprise: 0 },
@@ -46,6 +44,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
 
   const [price, setPrice] = useState(initialData?.price?.toString() || ''); 
 
+  // 3. File & Preview State
   const [fontFiles, setFontFiles] = useState<File[]>([]);
   const [trialFile, setTrialFile] = useState<File | null>(null);
   const [previewImages, setPreviewImages] = useState<File[]>([]);
@@ -62,6 +61,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
   );
   const [draggedImgIndex, setDraggedImgIndex] = useState<number | null>(null);
 
+  // Drag and drop reordering untuk Preview Images
   const handleDragStart = (index: number) => setDraggedImgIndex(index);
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -103,7 +103,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         alert("Drive Error: " + data.error);
         setDriveResults({ images: [], fonts: [], trial: [] });
       } else {
-        // Natural Alphanumeric Sort (Client-Side Safety)
+        // Natural alphanumeric sort untuk menjaga urutan 1, 2, 3... 10
         const sortedImages = (data.images || []).sort((a, b) => 
           (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' })
         );
@@ -181,7 +181,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
     }
   };
 
-  // Fungsi upload helper ke R2
+  // Fungsi upload file ke Cloudflare R2
   const uploadToR2 = async (files: File[]) => {
     const uploadedUrls = [];
     const { data: { session } } = await supabase.auth.getSession();
@@ -222,7 +222,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
     return uploadedUrls;
   };
 
-  // Handler Upload & Save
+  // Handler Submit & Simpan Data
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!initialData && fontFiles.length === 0 && existingFontFiles.length === 0) {
@@ -393,6 +393,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         />
       </div>
 
+      {/* TYPOGRAPHIC ARTIFACTS / FONT FILES */}
       <div className="space-y-4">
         <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">Typographic Artifacts (.otf, .ttf, .woff2)</label>
         <div 
@@ -429,7 +430,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
 
                     <span>{f.includes('-') ? f.replace(/^\d{10,}-/, '') : f}</span>
 
-                    {/* Tag Toggle Layer vs Pairing (High Contrast) */}
+                    {/* Tag Toggle Layer vs Pairing */}
                     {isLayered && (
                       <button
                         type="button"
@@ -469,7 +470,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
 
                     <span>{f.name}</span>
 
-                    {/* Tag Toggle Layer vs Pairing untuk file baru (High Contrast) */}
+                    {/* Tag Toggle Layer vs Pairing untuk file baru */}
                     {isLayered && (
                       <button
                         type="button"
@@ -500,6 +501,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         </div>
       </div>
 
+      {/* TRIAL FILE */}
       <div className="space-y-2">
         <label className="block font-bold text-xs uppercase tracking-wider text-gray-500">
           Trial / Demo Version (.zip / .ttf)
@@ -539,6 +541,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         </div>
       </div>
 
+      {/* PREVIEW IMAGES */}
       <div className="space-y-2">
         <label className="block font-bold text-xs uppercase tracking-wider text-gray-500">Preview Images (Max 20)</label>
         <div 
@@ -588,6 +591,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
               </button>
             </div>
           ))}
+          
           {previewImages.map((file, i) => (
             <div key={`new-p-${i}`} className="aspect-square bg-white border border-black relative group overflow-hidden">
               <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
@@ -620,6 +624,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         </div>
       </div>
 
+      {/* HISTORICAL NARRATIVE */}
       <div className="space-y-4 pt-8">
         <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">Historical Narrative</label>
         <textarea 
@@ -630,6 +635,7 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         />
       </div>
 
+      {/* SUBMIT BUTTON */}
       <div className="pt-12">
         <button 
           type="submit"
