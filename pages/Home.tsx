@@ -360,20 +360,20 @@ export default function Home() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                 <button 
                   onClick={() => openConfigurator({ ...activeTesterFont, trialFileUrl: activeTesterFont.trial_file_url })}
-                  className="vintage-btn py-3 px-6 text-xs flex-1 sm:flex-initial flex items-center justify-center gap-2 group/btn"
+                  className="vintage-btn py-3 px-6 text-xs whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-2 group/btn"
                 >
-                  <Plus size={15} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" />
-                  ADD TO CART
+                  <Plus size={15} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100 shrink-0" />
+                  <span>ADD TO CART</span>
                 </button>
                 <button 
                   onClick={() => navigate(`/font/${activeTesterFont.id}`)}
-                  className="vintage-btn btn-reverse py-3 px-6 text-xs flex-1 sm:flex-initial flex items-center justify-center gap-2 group/btn"
+                  className="vintage-btn btn-reverse py-3 px-6 text-xs whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-2 group/btn"
                 >
-                  <Eye size={15} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" />
-                  VIEW FONT
+                  <Eye size={15} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100 shrink-0" />
+                  <span>VIEW FONT</span>
                 </button>
               </div>
             </div>
