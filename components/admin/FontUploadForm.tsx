@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase'; // Pastikan path ini benar sesuai folder lib kamu
+import { supabase } from '../../lib/supabase';
 
 // Definisi tipe untuk hasil API agar TypeScript tidak error
 interface UploadResponse {
@@ -42,28 +42,9 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
     broadcast: { solo: 0, team: 0, studio: 0, enterprise: 0 },
     server: { solo: 0, team: 0, studio: 0, enterprise: 0 },
     corporate_full_suite: 0
-  })
+  });
 
   const [price, setPrice] = useState(initialData?.price?.toString() || ''); 
-  // Preview sederhana (Tetap dipertahankan sesuai backup)
-  const [prices, setPrices] = useState({ desktop: 0, web: 0, app: 0 }); 
-
-  // Handler untuk update harga (Tetap dipertahankan sesuai backup)
-  const updatePrice = (category: string, subKey: string | null, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    setLicensePrices((prev: any) => {
-      if (category === 'corporate_full_suite') {
-        return { ...prev, corporate_full_suite: numValue };
-      }
-      return {
-        ...prev,
-        [category]: { 
-          ...(prev[category as keyof typeof prev] as object), 
-          [subKey!]: numValue 
-        }
-      };
-    });
-  };
 
   const [fontFiles, setFontFiles] = useState<File[]>([]);
   const [trialFile, setTrialFile] = useState<File | null>(null);
@@ -75,8 +56,8 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
   const [driveResults, setDriveResults] = useState<{images: any[], fonts: any[], trial: any[]} | null>(null);
   const [isSearchingDrive, setIsSearchingDrive] = useState(false);
   const [primaryFontIndex, setPrimaryFontIndex] = useState<number>(initialData?.metadata?.primary_font_index || 0);
-const [isLayered, setIsLayered] = useState<boolean>(initialData?.metadata?.is_layered || false);
-const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
+  const [isLayered, setIsLayered] = useState<boolean>(initialData?.metadata?.is_layered || false);
+  const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
     initialData?.metadata?.layer_font_indices || []
   );
   const [draggedImgIndex, setDraggedImgIndex] = useState<number | null>(null);
@@ -96,24 +77,15 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
     setDraggedImgIndex(null);
   };
 
-  // Fungsi helper untuk merubah urutan item dalam array (Move Up/Down)
-  const moveItem = (array: any[], setArray: React.Dispatch<React.SetStateAction<any[]>>, index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= array.length) return;
-    const newArray = [...array];
-    [newArray[index], newArray[newIndex]] = [newArray[newIndex], newArray[index]];
-    setArray(newArray);
-  };
-
   const handleSelectAllDrive = (type: 'fonts' | 'previews') => {
     if (!driveResults) return;
     if (type === 'fonts') {
-      const unselected = driveResults.fonts.filter(f => !existingFontFiles.includes(f.id));
-      setExistingFontFiles(prev => [...prev, ...unselected.map(f => f.id)]);
+      const unselected = driveResults.fonts.filter(f => !existingFontFiles.includes(f.name || f.id));
+      setExistingFontFiles(prev => [...prev, ...unselected.map(f => f.name || f.id)]);
     } else {
-      const unselected = driveResults.images.filter(img => !existingPreviewImages.includes(img.id));
+      const unselected = driveResults.images.filter(img => !existingPreviewImages.includes(img.name || img.id));
       if (existingPreviewImages.length + previewImages.length + unselected.length > 20) return alert("Maksimal 20 gambar!");
-      setExistingPreviewImages(prev => [...prev, ...unselected.map(img => img.id)]);
+      setExistingPreviewImages(prev => [...prev, ...unselected.map(img => img.name || img.id)]);
     }
   };
 
@@ -131,7 +103,22 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
         alert("Drive Error: " + data.error);
         setDriveResults({ images: [], fonts: [], trial: [] });
       } else {
-        setDriveResults(data);
+        // Natural Alphanumeric Sort (Client-Side Safety)
+        const sortedImages = (data.images || []).sort((a, b) => 
+          (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' })
+        );
+        const sortedFonts = (data.fonts || []).sort((a, b) => 
+          (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' })
+        );
+        const sortedTrial = (data.trial || []).sort((a, b) => 
+          (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' })
+        );
+
+        setDriveResults({
+          images: sortedImages,
+          fonts: sortedFonts,
+          trial: sortedTrial
+        });
       }
     } catch (err) { 
       alert("Gagal koneksi ke Worker"); 
@@ -158,8 +145,6 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
       );
     }
   }, [initialData]);
-
-  const removeExistingTrial = () => setExistingTrialFile('');
 
   const removeExistingFont = (index: number) => {
     setExistingFontFiles(prev => prev.filter((_, i) => i !== index));
@@ -196,22 +181,19 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
     }
   };
 
-  // Fungsi upload helper ke R2 (Tetap dipertahankan sesuai backup)
+  // Fungsi upload helper ke R2
   const uploadToR2 = async (files: File[]) => {
     const uploadedUrls = [];
-    // Ambil token sesi admin untuk verifikasi
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("Akses ditolak. Silakan login kembali.");
 
-    for (const file of files) {
-     try {
-        // Tembak jalur Admin Upload dengan method PUT & Token
-        const timestamp = Date.now();
+    for (const file of files) {
+      try {
+        const timestamp = Date.now();
         const cleanFileName = file.name.replace(/\s+/g, '_');
         const uniqueFileName = `${timestamp}-${cleanFileName}`;
 
-        // 2. Tembak jalur Admin Upload dengan nama file unik
-        const res = await fetch(`/api/admin/upload/${uniqueFileName}`, { 
+        const res = await fetch(`/api/admin/upload/${uniqueFileName}`, { 
           method: 'PUT', 
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
@@ -220,18 +202,17 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
           body: file 
         });
 
-        if (!res.ok) {
+        if (!res.ok) {
           const errorData = (await res.json()) as { error?: string };
-          throw new Error(errorData.error || `Server Error: ${res.status}`);
-        }
+          throw new Error(errorData.error || `Server Error: ${res.status}`);
+        }
 
-        // 3. Tangkap fileName dari response Worker (Sinkron dengan index.js)
-        const data = (await res.json()) as UploadResponse;
-        if (data.success && data.fileName) {
-          uploadedUrls.push(data.fileName);
-        } else {
-          throw new Error('Upload gagal tanpa alasan');
-        }
+        const data = (await res.json()) as UploadResponse;
+        if (data.success && data.fileName) {
+          uploadedUrls.push(data.fileName);
+        } else {
+          throw new Error('Upload gagal tanpa alasan');
+        }
 
       } catch (err: any) {
         console.error("Upload error detail:", err);
@@ -241,10 +222,9 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
     return uploadedUrls;
   };
 
-  // 2. Handler Upload & Save (Disesuaikan untuk INSERT & UPDATE)
+  // Handler Upload & Save
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Jika mode baru, fontFiles wajib. Jika mode edit, boleh kosong (menggunakan file lama).
     if (!initialData && fontFiles.length === 0 && existingFontFiles.length === 0) {
       return alert("Upload file font dulu (Local atau Drive)!");
     }
@@ -283,14 +263,11 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
         }
       };
 
-
       if (initialData?.id) {
-        // Mode UPDATE
         const { error: dbError } = await supabase.from('fonts').update(payload).eq('id', initialData.id);
         if (dbError) throw dbError;
         alert("Font berhasil diupdate!");
       } else {
-        // Mode INSERT
         const { error: dbError } = await supabase.from('fonts').insert([payload]);
         if (dbError) throw dbError;
         alert("Gokil! Font berhasil dipublikasikan.");
@@ -318,7 +295,7 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
           <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">Font Identity</label>
           <input 
             type="text" 
-            value={fontName}
+            value={fontName} 
             onChange={(e) => {
               const val = e.target.value;
               const titleCase = val.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -397,7 +374,7 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
         </div>
       </div>
 
-{/* KONFIGURASI LAYERED FONT SYSTEM */}
+      {/* KONFIGURASI LAYERED FONT SYSTEM */}
       <div className="p-6 border border-vintage-ink/20 bg-vintage-ink/2 flex items-center justify-between">
         <div>
           <label className="font-bold text-[11px] uppercase tracking-[0.2em] text-vintage-ink block cursor-pointer" htmlFor="isLayeredCheckbox">
@@ -423,7 +400,6 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
           onDrop={(e) => handleDropFiles(e, 'fonts')}
           className="border-2 border-dashed border-vintage-ink/20 p-12 text-center hover:bg-vintage-ink/2 transition-colors cursor-pointer group bg-transparent relative"
         >
-          {/* Sinkronisasi Drive untuk font dihapus (Hanya upload lokal ke R2) */}
           <input
             type="file" multiple accept=".ttf,.otf,.woff2" className="hidden" id="fontFiles" 
             onChange={(e) => setFontFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
@@ -540,7 +516,6 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
               <p className="text-[9px] font-bold uppercase text-black">
                 STATUS: {trialFile ? `NEW: ${trialFile.name}` : `EXISTING: ${existingTrialFile}`}
               </p>
-              {/* Tombol hapus untuk file trial baru yang baru dipilih */}
               {trialFile && (
                 <button 
                   type="button" 
@@ -550,7 +525,6 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
                   CANCEL NEW ×
                 </button>
               )}
-              {/* Tombol hapus trial file yang sudah ada di database */}
               {existingTrialFile && !trialFile && (
                 <button 
                   type="button" 
@@ -573,20 +547,20 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
           className="grid grid-cols-4 md:grid-cols-6 gap-2 border-2 border-black p-4 bg-gray-100"
         >
           {/* Header Select All untuk Images */}
-          {Array.isArray(driveResults?.images) && driveResults.images.filter(img => !existingPreviewImages.includes(img.id)).length > 0 && (
+          {Array.isArray(driveResults?.images) && driveResults.images.filter(img => !existingPreviewImages.includes(img.name || img.id)).length > 0 && (
              <div className="col-span-full flex justify-between items-center bg-blue-100 p-1 px-2 border border-blue-300">
                <span className="text-[8px] font-bold text-blue-700 uppercase">Drive Images</span>
                <button type="button" onClick={() => handleSelectAllDrive('previews')} className="text-[7px] bg-blue-600 text-white px-2 py-0.5 font-bold uppercase hover:bg-black transition-colors">Select All</button>
              </div>
           )}
 
-          {/* Hasil dari Google Drive (Filtered) */}
-          {Array.isArray(driveResults?.images) && driveResults.images.filter(img => !existingPreviewImages.includes(img.id)).map((img, i) => (
+          {/* Hasil dari Google Drive (Filtered & Ordered) */}
+          {Array.isArray(driveResults?.images) && driveResults.images.filter(img => !existingPreviewImages.includes(img.name || img.id)).map((img, i) => (
             <div key={`dr-p-${i}`} className="aspect-square bg-blue-50 border border-blue-200 relative group overflow-hidden">
               <img src={img.url} className="w-full h-full object-cover" alt="drive" />
               <button
                 type="button"
-                onClick={() => setExistingPreviewImages(prev => [...prev, img.id])}
+                onClick={() => setExistingPreviewImages(prev => [...prev, img.name || img.id])}
                 className="absolute inset-0 bg-blue-600/90 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center font-bold text-[8px]"
               >
                 USE DRIVE FILE
@@ -604,10 +578,9 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
               onDrop={() => handleDrop(i)}
               className={`aspect-square bg-white border border-black relative group overflow-hidden cursor-move transition-opacity ${draggedImgIndex === i ? 'opacity-30' : 'opacity-100'}`}
             >
-              {/* GUNAKAN /api/images/ agar mendukung format .webp & caching */}
               <img src={`/api/images/${url}`} className="w-full h-full object-cover" alt="preview" />
               <button 
-                type="button"
+                type="button" 
                 onClick={() => removeExistingPreview(i)}
                 className="absolute inset-0 bg-red-600/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center font-bold"
               >
@@ -619,7 +592,7 @@ const [layerFontIndices, setLayerFontIndices] = useState<number[]>(
             <div key={`new-p-${i}`} className="aspect-square bg-white border border-black relative group overflow-hidden">
               <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
               <button 
-                type="button"
+                type="button" 
                 onClick={() => setPreviewImages(prev => prev.filter((_, idx) => idx !== i))}
                 className="absolute inset-0 bg-red-600/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center font-bold"
               >
