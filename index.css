@@ -100,6 +100,42 @@
     color: var(--color-vintage-paper) !important;
   }
   
+  .tab-btn {
+    border: 1px solid var(--color-vintage-ink) !important;
+    background-color: transparent !important;
+    color: var(--color-vintage-ink) !important;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    padding: 8px 16px;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tab-btn:hover {
+    background-color: rgba(44, 36, 26, 0.08) !important;
+    color: var(--color-vintage-ink) !important;
+  }
+
+  .tab-btn:active {
+    transform: scale(0.96);
+  }
+
+  .tab-btn.active {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-background) !important;
+  }
+
+  .tab-btn.active:hover {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-background) !important;
+    opacity: 0.9;
+  }
+  
   /* Dividers */
   .divider {
     @apply flex items-center justify-center my-8 gap-4;
