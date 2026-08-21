@@ -298,19 +298,23 @@ const PromotionsManager: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-vintage-ink pb-8 gap-6">
         <div>
           <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Promotions & Coupons</h2>
-          <div className="flex gap-6 mt-4">
+          <div className="flex gap-3 mt-4">
             <button 
               onClick={() => setActiveTab('campaigns')}
-              className={`text-[10px] font-bold uppercase tracking-[0.3em] pb-1 border-b-2 transition-all ${
-                activeTab === 'campaigns' ? 'border-vintage-ink text-vintage-ink' : 'border-transparent text-vintage-ink/40 hover:text-vintage-ink'
+              className={`px-4 py-2 border border-vintage-ink text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-200 cursor-pointer active:scale-95 ${
+                activeTab === 'campaigns' 
+                  ? 'bg-vintage-ink text-vintage-paper shadow-sm' 
+                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5 hover:border-vintage-ink'
               }`}
             >
               Store Campaigns
             </button>
             <button 
               onClick={() => setActiveTab('coupons')}
-              className={`text-[10px] font-bold uppercase tracking-[0.3em] pb-1 border-b-2 transition-all ${
-                activeTab === 'coupons' ? 'border-vintage-ink text-vintage-ink' : 'border-transparent text-vintage-ink/40 hover:text-vintage-ink'
+              className={`px-4 py-2 border border-vintage-ink text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-200 cursor-pointer active:scale-95 ${
+                activeTab === 'coupons' 
+                  ? 'bg-vintage-ink text-vintage-paper shadow-sm' 
+                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5 hover:border-vintage-ink'
               }`}
             >
               Buyer Coupons (Bargain)

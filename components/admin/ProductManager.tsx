@@ -206,13 +206,7 @@ const ProductManager = () => {
 
       <div className="overflow-hidden">
         <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-vintage-ink">
-              <th className="p-4 w-10"></th>
-              <th className="p-4 text-[10px] uppercase font-bold tracking-[0.3em] text-vintage-ink/60">Designation</th>
-              <th className="p-4 text-[10px] uppercase font-bold tracking-[0.3em] text-right text-vintage-ink/60">Management</th>
-            </tr>
-          </thead>
+         
           <thead>
             <tr className="border-b border-vintage-ink">
               <th className="p-4 w-20"></th>
