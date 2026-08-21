@@ -82,7 +82,7 @@ const MyFontsHistory = () => {
       <div className="border-b border-vintage-ink pb-8">
         <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Acquisition Library</h2>
         <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic flex items-center gap-2">
-          <History size={12} /> Registry of Licensed Heritage Artifacts
+          <History size={12} /> Registry of Licensed Bombastype Artifacts
         </p>
       </div>
 

@@ -334,7 +334,7 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
     <form className="space-y-12 max-w-4xl mx-auto py-12" onSubmit={handleSaveProduct}>
       <div className="border-b border-vintage-ink/20 pb-8 mb-12">
         <h2 className="text-4xl font-display uppercase tracking-widest text-vintage-ink">
-          {initialData ? "Update Typeface Archive" : "Register New Heritage"}
+          {initialData ? "Update Typeface Archive" : "Register New Typeface"}
         </h2>
         <p className="text-sm italic opacity-60 font-serif mt-2">Meticulously documenting typographic history and provenance.</p>
       </div>
@@ -711,7 +711,7 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
           {isUploading ? (
             <><Loader2 className="animate-spin" /> ARCHIVING...</>
           ) : (
-            <>{initialData ? "UPDATE RECORD" : "COMMISSION TO HERITAGE"}</>
+            <>{initialData ? "UPDATE RECORD" : "COMMISSION TO BOMBASTYPE"}</>
           )}
         </button>
       </div>

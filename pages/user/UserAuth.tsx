@@ -153,7 +153,7 @@ const UserAuth = () => {
               onClick={() => navigate('/fonts')}
               className="text-[9px] font-bold uppercase tracking-[0.2em] text-vintage-accent hover:text-vintage-ink transition-colors underline decoration-vintage-accent/30"
             >
-              Return to Heritage Collection
+              Return to Bombastype Collection
             </button>
           </div>
         </div>
