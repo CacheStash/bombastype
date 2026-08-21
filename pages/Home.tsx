@@ -140,7 +140,7 @@ export default function Home() {
     try {
       setLoading(true);
       const { data: featured } = await supabase.from('fonts').select('*').filter('metadata->is_featured', 'eq', true).limit(3);
-      const { data: recent } = await supabase.from('fonts').select('*').order('created_at', { ascending: false }).limit(4);
+      const { data: recent } = await supabase.from('fonts').select('*').order('display_order', { ascending: false }).limit(4);
       const { data: all } = await supabase.from('fonts').select('*').order('name', { ascending: true });
       
       if (featured) setFeaturedFonts(featured);
