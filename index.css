@@ -89,6 +89,17 @@
     color: var(--color-vintage-paper) !important;
   }
 
+  .nav-dropdown-item {
+    background-color: transparent;
+    color: var(--color-vintage-ink) !important;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .nav-dropdown-item:hover {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+  }
+  
   /* Dividers */
   .divider {
     @apply flex items-center justify-center my-8 gap-4;
