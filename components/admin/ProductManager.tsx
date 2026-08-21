@@ -8,6 +8,7 @@ const ProductManager = () => {
   const [editingFont, setEditingFont] = useState<any>(null);
   const [fonts, setFonts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
@@ -28,6 +29,27 @@ const ProductManager = () => {
     setLoading(false);
   };
 
+  // --- LOGIC: DRAG & DROP REORDERING ---
+  const handleDragStart = (idx: number) => setDraggedIdx(idx);
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+
+  const handleDrop = async (idx: number) => {
+    if (draggedIdx === null || draggedIdx === idx) return;
+    const newFonts = [...fonts];
+    const draggedItem = newFonts[draggedIdx];
+    newFonts.splice(draggedIdx, 1);
+    newFonts.splice(idx, 0, draggedItem);
+    
+    const updatedFonts = newFonts.map((f, i) => ({ ...f, display_order: i }));
+    setFonts(updatedFonts);
+    setDraggedIdx(null);
+
+    const updates = updatedFonts.map(f => 
+      supabase.from('fonts').update({ display_order: f.display_order }).eq('id', f.id)
+    );
+    await Promise.all(updates);
+  };
+
   // --- LOGIC: ACTIONS ---
   const handleEdit = (font: any) => {
     setEditingFont(font);
@@ -42,7 +64,7 @@ const ProductManager = () => {
     };
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('fonts')
         .insert([duplicateData])
         .select();
@@ -72,7 +94,6 @@ const ProductManager = () => {
 
       if (error) throw error;
       
-      // Update local state untuk respon UI instan
       setFonts(fonts.map(f => f.id === font.id ? { ...f, metadata: newMetadata } : f));
     } catch (err: any) {
       alert("Registry Error: " + err.message);
@@ -96,6 +117,7 @@ const ProductManager = () => {
     f.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
+  const totalPages = Math.ceil(filteredFonts.length / itemsPerPage);
   const paginatedFonts = filteredFonts.slice(
     (currentPage - 1) * itemsPerPage, 
     currentPage * itemsPerPage
@@ -172,53 +194,92 @@ const ProductManager = () => {
                 <td colSpan={3} className="p-20 text-center italic opacity-40 font-serif">No artifacts found in this section.</td>
               </tr>
             ) : (
-              paginatedFonts.map((f) => (
-                <tr key={f.id} className="border-b border-vintage-ink hover:bg-vintage-ink/2 transition-colors group">
-                  {/* FEATURED TOGGLE */}
-                  <td className="p-4">
-                    <button 
-                      onClick={() => handleToggleFeatured(f)}
-                      className={`transition-all duration-500 ${f.metadata?.is_featured ? 'text-vintage-accent' : 'text-vintage-ink/10 hover:text-vintage-accent/40'}`}
-                      title={f.metadata?.is_featured ? "Remove from Featured" : "Set as Featured"}
-                    >
-                      <Star size={16} fill={f.metadata?.is_featured ? "currentColor" : "none"} />
-                    </button>
-                  </td>
-                  
-                  {/* FONT NAME */}
-                  <td className="p-4">
-                    <span className="font-display text-2xl tracking-wider">{f.name}</span>
-                  </td>
+              paginatedFonts.map((f, i) => {
+                const globalIdx = (currentPage - 1) * itemsPerPage + i;
+                return (
+                  <tr 
+                    key={f.id} 
+                    draggable
+                    onDragStart={() => handleDragStart(globalIdx)}
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(globalIdx)}
+                    className={`border-b border-vintage-ink hover:bg-vintage-ink/5 transition-colors group cursor-grab active:cursor-grabbing ${draggedIdx === globalIdx ? 'opacity-30 border-dashed' : ''}`}
+                  >
+                    {/* FEATURED TOGGLE */}
+                    <td className="p-4">
+                      <button 
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleToggleFeatured(f); }}
+                        className={`transition-all duration-500 cursor-pointer ${f.metadata?.is_featured ? 'text-vintage-accent' : 'text-vintage-ink/10 hover:text-vintage-accent/40'}`}
+                        title={f.metadata?.is_featured ? "Remove from Featured" : "Set as Featured"}
+                      >
+                        <Star size={16} fill={f.metadata?.is_featured ? "currentColor" : "none"} />
+                      </button>
+                    </td>
+                    
+                    {/* FONT NAME */}
+                    <td className="p-4">
+                      <span className="font-display text-2xl tracking-wider select-none">{f.name}</span>
+                    </td>
 
-                  {/* ACTIONS */}
-                  <td className="p-4 text-right">
-                    <div className="flex justify-end gap-6">
-                      <button 
-                        onClick={() => handleEdit(f)} 
-                        className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-1"
-                      >
-                        <Edit2 size={12} /> Edit
-                      </button>
-                      <button 
-                        onClick={() => handleDuplicate(f)} 
-                        className="text-[10px] font-bold uppercase tracking-widest text-vintage-ink/60 hover:text-vintage-accent transition-colors flex items-center gap-1"
-                      >
-                        <Copy size={12} /> Duplicate
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(f.id)} 
-                        className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-1"
-                      >
-                        <Trash2 size={12} /> Remove
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    {/* ACTIONS */}
+                    <td className="p-4 text-right">
+                      <div className="flex justify-end gap-6">
+                        <button 
+                          type="button"
+                          onClick={() => handleEdit(f)} 
+                          className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit2 size={12} /> Edit
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => handleDuplicate(f)} 
+                          className="text-[10px] font-bold uppercase tracking-widest text-vintage-ink/60 hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Copy size={12} /> Duplicate
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => handleDelete(f.id)} 
+                          className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 size={12} /> Remove
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+
+      {/* PAGINATION CONTROLS */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-6 pt-4 border-t border-vintage-ink/10">
+          <button 
+            type="button"
+            disabled={currentPage === 1} 
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
+            className="border border-vintage-ink/30 px-4 py-2 font-bold uppercase text-[10px] tracking-widest disabled:opacity-20 hover:bg-vintage-ink hover:text-vintage-paper transition-all cursor-pointer"
+          >
+            Prev
+          </button>
+          <span className="font-serif italic text-sm tracking-widest text-vintage-ink/60">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button 
+            type="button"
+            disabled={currentPage === totalPages} 
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
+            className="border border-vintage-ink/30 px-4 py-2 font-bold uppercase text-[10px] tracking-widest disabled:opacity-20 hover:bg-vintage-ink hover:text-vintage-paper transition-all cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };
