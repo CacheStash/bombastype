@@ -300,22 +300,16 @@ const PromotionsManager: React.FC = () => {
           <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Promotions & Coupons</h2>
           <div className="flex gap-3 mt-4">
             <button 
+              type="button"
               onClick={() => setActiveTab('campaigns')}
-              className={`px-4 py-2 border border-vintage-ink text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-200 cursor-pointer active:scale-95 ${
-                activeTab === 'campaigns' 
-                  ? 'bg-vintage-ink text-vintage-paper shadow-sm' 
-                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5 hover:border-vintage-ink'
-              }`}
+              className={`tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
             >
               Store Campaigns
             </button>
             <button 
+              type="button"
               onClick={() => setActiveTab('coupons')}
-              className={`px-4 py-2 border border-vintage-ink text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-200 cursor-pointer active:scale-95 ${
-                activeTab === 'coupons' 
-                  ? 'bg-vintage-ink text-vintage-paper shadow-sm' 
-                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5 hover:border-vintage-ink'
-              }`}
+              className={`tab-btn ${activeTab === 'coupons' ? 'active' : ''}`}
             >
               Buyer Coupons (Bargain)
             </button>

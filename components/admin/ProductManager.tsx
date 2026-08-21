@@ -235,18 +235,7 @@ const ProductManager = () => {
                     onDrop={() => handleDrop(globalIdx)}
                     className={`border-b border-vintage-ink hover:bg-vintage-ink/5 transition-colors group cursor-grab active:cursor-grabbing ${draggedIdx === globalIdx ? 'opacity-30 border-dashed' : ''}`}
                   >
-                    {/* FEATURED TOGGLE */}
-                    <td className="p-4">
-                      <button 
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handleToggleFeatured(f); }}
-                        className={`transition-all duration-500 cursor-pointer ${f.metadata?.is_featured ? 'text-vintage-accent' : 'text-vintage-ink/10 hover:text-vintage-accent/40'}`}
-                        title={f.metadata?.is_featured ? "Remove from Featured" : "Set as Featured"}
-                      >
-                        <Star size={16} fill={f.metadata?.is_featured ? "currentColor" : "none"} />
-                      </button>
-                    </td>
-
+                    {/* STATUS TOGGLES (FEATURED & HANDPICKED) */}
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <button 
