@@ -292,17 +292,18 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                   >
                     <Link 
                       to="/user/dashboard" 
-                      className="px-4 py-3 text-[10px] font-bold tracking-widest hover:bg-vintage-ink hover:text-vintage-paper transition-colors border-b border-vintage-ink/10"
+                      className="px-4 py-3 text-[10px] font-bold tracking-widest text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper! transition-colors border-b border-vintage-ink/10 block"
                       onClick={() => setIsAccountDropdownOpen(false)}
                     >
                       DASHBOARD
                     </Link>
                     <button 
+                      type="button"
                       onClick={async () => {
                         await supabase.auth.signOut();
                         setIsAccountDropdownOpen(false);
                       }}
-                      className="px-4 py-3 text-[10px] font-bold tracking-widest hover:bg-vintage-ink hover:text-vintage-paper transition-colors text-left w-full"
+                      className="px-4 py-3 text-[10px] font-bold tracking-widest text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper! transition-colors text-left w-full cursor-pointer block"
                     >
                       LOGOUT
                     </button>
