@@ -125,12 +125,12 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
   const handleSelectAllDrive = (type: 'fonts' | 'previews') => {
     if (!driveResults) return;
     if (type === 'fonts') {
-      const unselected = driveResults.fonts.filter(f => !existingFontFiles.includes(f.name || f.id));
-      setExistingFontFiles(prev => [...prev, ...unselected.map(f => f.name || f.id)]);
+      const unselected = driveResults.fonts.filter(f => !existingFontFiles.includes(f.id));
+      setExistingFontFiles(prev => [...prev, ...unselected.map(f => f.id)]);
     } else {
-      const unselected = driveResults.images.filter(img => !existingPreviewImages.includes(img.name || img.id));
+      const unselected = driveResults.images.filter(img => !existingPreviewImages.includes(img.id));
       if (existingPreviewImages.length + previewImages.length + unselected.length > 20) return alert("Maksimal 20 gambar!");
-      setExistingPreviewImages(prev => [...prev, ...unselected.map(img => img.name || img.id)]);
+      setExistingPreviewImages(prev => [...prev, ...unselected.map(img => img.id)]);
     }
   };
 
@@ -625,7 +625,7 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
               <img src={img.url} className="w-full h-full object-cover" alt="drive" />
               <button
                 type="button"
-                onClick={() => setExistingPreviewImages(prev => [...prev, img.name || img.id])}
+                onClick={() => setExistingPreviewImages(prev => [...prev, img.id])}
                 className="absolute inset-0 bg-blue-600/90 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center font-bold text-[8px]"
               >
                 USE DRIVE FILE
