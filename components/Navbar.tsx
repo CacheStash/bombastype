@@ -290,9 +290,9 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute top-full right-0 mt-4 w-40 bg-vintage-paper border border-vintage-ink shadow-xl z-50 flex flex-col overflow-hidden"
                   >
-                    <Link 
+                   <Link 
                       to="/user/dashboard" 
-                      className="px-4 py-3 text-[10px] font-bold tracking-widest text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-colors border-b border-vintage-ink/10 block"
+                      className="px-4 py-3 text-[10px] font-bold tracking-widest text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-colors duration-200 border-b border-vintage-ink/10 block"
                       onClick={() => setIsAccountDropdownOpen(false)}
                     >
                       DASHBOARD
@@ -303,7 +303,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                         await supabase.auth.signOut();
                         setIsAccountDropdownOpen(false);
                       }}
-                      className="px-4 py-3 text-[10px] font-bold tracking-widest text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-colors text-left w-full cursor-pointer block border-none"
+                      className="px-4 py-3 text-[10px] font-bold tracking-widest text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-colors duration-200 text-left w-full cursor-pointer block border-none bg-transparent"
                     >
                       LOGOUT
                     </button>
