@@ -140,7 +140,12 @@ export default function Home() {
     try {
       setLoading(true);
       const { data: featured } = await supabase.from('fonts').select('*').filter('metadata->is_featured', 'eq', true).limit(3);
-      const { data: recent } = await supabase.from('fonts').select('*').order('display_order', { ascending: false }).limit(4);
+      const { data: recent } = await supabase
+        .from('fonts')
+        .select('*')
+        .filter('metadata->is_handpicked', 'eq', true)
+        .order('display_order', { ascending: true })
+        .limit(4);
       const { data: all } = await supabase.from('fonts').select('*').order('name', { ascending: true });
       
       if (featured) setFeaturedFonts(featured);
@@ -211,7 +216,7 @@ export default function Home() {
       {/* Featured Fonts Section */}
       <section className="mb-16 md:mb-24 relative z-10 px-4">
         <div className="divider">
-          <h2 className="text-3xl md:text-5xl font-script capitalize">Featured Fonts</h2>
+          <h2 className="text-3xl md:text-5xl font-script capitalize">Handpicked Fonts</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
           {loading ? (

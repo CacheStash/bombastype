@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Copy, Star } from 'lucide-react';
 import FontUploadForm from './FontUploadForm';
 import { supabase } from '../../lib/supabase';
+import { Sparkles } from 'lucide-react';
 
 const ProductManager = () => {
   const [showForm, setShowForm] = useState(false);
@@ -100,6 +101,34 @@ const ProductManager = () => {
     }
   };
 
+  const handleToggleHandpicked = async (font: any) => {
+    const isHandpicked = font.metadata?.is_handpicked || false;
+    const isFeatured = font.metadata?.is_featured || false;
+    const currentHandpickedCount = fonts.filter(f => f.metadata?.is_handpicked).length;
+
+    if (!isHandpicked && isFeatured) {
+      return alert("Invalid Selection: Font yang sudah berstatus Featured tidak dapat dijadikan Handpicked.");
+    }
+
+    if (!isHandpicked && currentHandpickedCount >= 4) {
+      return alert("Archive Quota Full: Maksimal 4 font yang dapat dijadikan Handpicked.");
+    }
+
+    try {
+      const newMetadata = { ...(font.metadata || {}), is_handpicked: !isHandpicked };
+      const { error } = await supabase
+        .from('fonts')
+        .update({ metadata: newMetadata })
+        .eq('id', font.id);
+
+      if (error) throw error;
+      
+      setFonts(fonts.map(f => f.id === font.id ? { ...f, metadata: newMetadata } : f));
+    } catch (err: any) {
+      alert("Registry Error: " + err.message);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus font ini selamanya?")) return;
     try {
@@ -184,6 +213,13 @@ const ProductManager = () => {
               <th className="p-4 text-[10px] uppercase font-bold tracking-[0.3em] text-right text-vintage-ink/60">Management</th>
             </tr>
           </thead>
+          <thead>
+            <tr className="border-b border-vintage-ink">
+              <th className="p-4 w-20"></th>
+              <th className="p-4 text-[10px] uppercase font-bold tracking-[0.3em] text-vintage-ink/60">Designation</th>
+              <th className="p-4 text-[10px] uppercase font-bold tracking-[0.3em] text-right text-vintage-ink/60">Management</th>
+            </tr>
+          </thead>
           <tbody>
             {loading ? (
               <tr>
@@ -216,6 +252,28 @@ const ProductManager = () => {
                         <Star size={16} fill={f.metadata?.is_featured ? "currentColor" : "none"} />
                       </button>
                     </td>
+
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <button 
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleToggleFeatured(f); }}
+                          className={`transition-all duration-500 cursor-pointer ${f.metadata?.is_featured ? 'text-vintage-accent' : 'text-vintage-ink/10 hover:text-vintage-accent/40'}`}
+                          title={f.metadata?.is_featured ? "Remove from Featured" : "Set as Featured"}
+                        >
+                          <Star size={16} fill={f.metadata?.is_featured ? "currentColor" : "none"} />
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleToggleHandpicked(f); }}
+                          className={`transition-all duration-500 cursor-pointer ${f.metadata?.is_handpicked ? 'text-vintage-accent' : 'text-vintage-ink/10 hover:text-vintage-accent/40'}`}
+                          title={f.metadata?.is_handpicked ? "Remove from Handpicked" : "Set as Handpicked (Max 4)"}
+                        >
+                          <Sparkles size={16} fill={f.metadata?.is_handpicked ? "currentColor" : "none"} />
+                        </button>
+                      </div>
+                    </td>
+                    
                     
                     {/* FONT NAME */}
                     <td className="p-4">
