@@ -1362,7 +1362,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 border-b border-vintage-ink/10">
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${(hasAxes || hasFeatures) ? 'border-b border-vintage-ink/10' : ''}`}>
             <div className="px-8 py-6 flex items-center gap-6 border-b md:border-b-0 md:border-r border-vintage-ink/10">
               <label className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent w-20 shrink-0">Leading</label>
               <input type="range" min="0.8" max="2.0" step="0.1" value={lineHeight} onChange={(e) => setLineHeight(parseFloat(e.target.value))} className="grow accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer" />

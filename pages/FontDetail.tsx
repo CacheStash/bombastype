@@ -277,8 +277,8 @@ const FontDetail: React.FC = () => {
       </AnimatePresence>
 
       {/* 3. TYPE TESTER SECTION */}
-      <section className="w-full mt-24 border-y border-vintage-ink/10 bg-transparent relative z-40">
-        <div className="max-w-full">
+      <section className="w-full mt-24 border-t border-vintage-ink/10 bg-transparent relative z-40">
+      <div className="max-w-full">
           <TypeTester 
             config={{
               ...font,
