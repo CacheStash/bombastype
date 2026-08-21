@@ -13,21 +13,45 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
   // 1. State Dasar Font
   const [fontName, setFontName] = useState(initialData?.name || '');
   const FONT_TAGS_LIBRARY = [
-    // Dasar & Teknis
-    "Sans Serif", "Serif", "Slab Serif", "Monospace", "Variable Font", "Display", "Text", "Stencil", "Blackletter", "Script", "Handwritten",
-    // Sub-Klasifikasi Serif
-    "Didone", "Old Style", "Transitional", "Modern Serif", "Glyphic", "Didot", "Garalde", "Humanist Serif",
-    // Sub-Klasifikasi Sans
-    "Geometric Sans", "Grotesque", "Neo-Grotesque", "Humanist Sans", "Grotesk",
-    // Gaya & Era
-    "Art Deco", "Art Nouveau", "Bauhaus", "Vintage", "Retro", "Victorian", "Mid-Century", "Y2K", "90s", "80s", "Cyberpunk", "Futuristic",
-    // Vibe & Mood
-    "Minimalist", "Brutalism", "Acid", "Experimental", "Liquid", "Distorted", "Elegant", "Luxury", "Classic", "Editorial", "Fashion", "Corporate",
-    // Khusus & Dekoratif
-    "Horror", "Gothic", "Old English", "Fraktur", "Calligraphy", "Signature", "Brush", "Marker", "Comic", "Pixel", "Gaming", "Sports", "Techno",
-    // Karakteristik Fisik
-    "Condensed", "Expanded", "Narrow", "Wide", "Outline", "Inline", "Shadow", "Soft Edges", "Rounded", "Sharp", "High Contrast", "Low Contrast"
-  ].sort();
+    // 1. Klasifikasi Utama & Teknis
+    "Blackletter", "Calligraphy", "Dingbats", "Display", "Experimental", "Fraktur", "Handwritten",
+    "Layered", "Monospace", "OpenType Features", "Pixel", "Rough", "Rustic", "Sans Serif", "Script",
+    "Serif", "Signature", "Slab Serif", "Stencil", "Text", "Variable Font",
+
+    // 2. Sub-Klasifikasi Serif & Sans
+    "Didone", "Didot", "Garalde", "Geometric Sans", "Glyphic", "Grotesk", "Grotesque", "Humanist Sans",
+    "Humanist Serif", "Modern Serif", "Neo-Grotesque", "Old Style", "Rustic Serif", "Square Sans",
+    "Transitional", "Tuscan", "Wedge Serif",
+
+    // 3. Sistem Layered, Chromatic & 3D
+    "Bevel", "Chromatic", "Color Font", "Drop Shadow", "Embossed", "Extrude", "Fill Layer", "Gradient",
+    "Hatch", "Inline", "Layered System", "Multilayer", "Offset", "Ornamental Layer", "Outline", "Ribbon",
+    "Shadow", "Staggered", "Volume",
+
+    // 4. Era, Historis & Vintage Heritage
+    "1800s", "1900s", "1920s", "1930s", "1950s", "1960s", "1970s", "1980s", "1990s", "50s", "60s",
+    "70s", "80s", "90s", "Americana", "Antique", "Art Deco", "Art Nouveau", "Baroque", "Bauhaus",
+    "Circus", "Colonial", "Cyberpunk", "Early American", "Edwardian", "Futuristic", "Gilded Age",
+    "Industrial", "Medieval", "Mid-Century", "Mid-Century Modern", "Nostalgic", "Old West", "Psychedelic",
+    "Renaissance", "Retro", "Steampunk", "Victorian", "Vintage", "Western", "Wild West", "Y2K",
+
+    // 5. Karakteristik Fisik, Geometri & Outline
+    "Clean", "Condensed", "Distressed", "Expanded", "Extra Bold", "Heavy", "High Contrast", "Inktraps",
+    "Light", "Low Contrast", "Medium", "Narrow", "Oblique", "Pencil Stroke", "Reverse Contrast", "Ribbon Cut",
+    "Rounded", "Rough Edges", "Semi Bold", "Sharp", "Soft Edges", "Spurred", "Stamp Effect", "Swash",
+    "Tall", "Textured", "Thin", "Tight Kerning", "Wide",
+
+    // 6. Penggunaan, Vibe & Mood Industri
+    "Acid", "Advertising", "Apparel", "Archival", "Authoritative", "Badges", "Beer Label", "Beverage",
+    "Bold Header", "Book Cover", "Bootleg", "Branding", "Brutalism", "Cafe Menu", "Casual", "Chicano",
+    "Chiseled", "Classic", "Coffee Shop", "Commercial", "Corporate", "Craft", "Cyber", "Editorial",
+    "Elegant", "Emblem", "Esoteric", "Exclusive", "Fairground", "Fashion", "Film Poster", "Gothic",
+    "Hardcore", "Header", "Heritage", "Hero Title", "High End", "Horror", "Label Design", "Letterpress",
+    "Logotype", "Luxury", "Magazine", "Masculine", "Minimalist", "Monogram", "Motorcycle", "Music Poster",
+    "Mystical", "Neoclassical", "Packaging", "Period Piece", "Playful", "Postage Stamp", "Poster",
+    "Premium", "Prohibition", "Pub Sign", "Saloon", "Signage", "Sign Painting", "Streetwear", "Subcultural",
+    "Tattoo", "Theater", "Tiki", "Timeless", "Title", "Typography", "Urban", "Whiskey Label", "Woodcut", "Wood Type"
+  ].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   const [description, setDescription] = useState(initialData?.description || '');
   const [tags, setTags] = useState(initialData?.tags?.join(', ') || ''); 
   
