@@ -286,6 +286,8 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
         uploadedTrialUrl = trialResult[0];
       }
 
+     const totalFontCount = existingFontFiles.length + uploadedFontUrls.length;
+
       const payload = {
         name: fontName,
         price: parseFloat(price),
@@ -300,10 +302,12 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
         has_trial: uploadedTrialUrl !== '',
         metadata: {
           ...initialData?.metadata,
-          primary_font_index: primaryFontIndex,
+          primary_font_index: primaryFontIndex < totalFontCount ? primaryFontIndex : 0,
           is_layered: isLayered,
           layer_font_indices: isLayered 
-            ? (layerFontIndices.length > 0 ? layerFontIndices : Array.from({ length: existingFontFiles.length + fontFiles.length }, (_, i) => i))
+            ? (layerFontIndices.length > 0 
+                ? layerFontIndices.filter(idx => idx < totalFontCount)
+                : Array.from({ length: totalFontCount }, (_, i) => i))
             : []
         }
       };

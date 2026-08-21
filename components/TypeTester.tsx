@@ -73,13 +73,15 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [dynamicFeatures, setDynamicFeatures] = useState<{ tag: string; name: string }[]>([]);
   const availableLayerIndices: number[] = React.useMemo(() => {
     if (!Array.isArray(config.font_files)) return [];
+    const totalFiles = config.font_files.length;
     
-    // 1. Prioritaskan konfigurasi metadata dari Admin
+    // 1. Prioritaskan konfigurasi metadata dari Admin yang valid sesuai jumlah file saat ini
     if (config.metadata?.layer_font_indices && config.metadata.layer_font_indices.length > 0) {
-      return config.metadata.layer_font_indices;
+      const validIndices = config.metadata.layer_font_indices.filter(idx => typeof idx === 'number' && idx >= 0 && idx < totalFiles);
+      if (validIndices.length > 0) return validIndices;
     }
 
-    // 2. Fallback jika metadata belum diset: Tampilkan semua file style
+    // 2. Fallback: Tampilkan semua file style yang ada saat ini
     return config.font_files.map((_, idx) => idx);
   }, [config.font_files, config.metadata?.layer_font_indices]);
 
