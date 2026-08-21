@@ -48,6 +48,27 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
   const [fontFiles, setFontFiles] = useState<File[]>([]);
   const [trialFile, setTrialFile] = useState<File | null>(null);
   const [previewImages, setPreviewImages] = useState<File[]>([]);
+
+const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
+  
+  const activeSuggestion = currentTagQuery.length >= 1
+    ? FONT_TAGS_LIBRARY.find(tag => tag.toLowerCase().startsWith(currentTagQuery.toLowerCase())) || ''
+    : '';
+
+  // Bagian sisa karakter yang ditampilkan sebagai teks bayangan (ghost suffix)
+  const ghostSuffix = (activeSuggestion && activeSuggestion.toLowerCase().startsWith(currentTagQuery.toLowerCase()))
+    ? activeSuggestion.slice(currentTagQuery.length)
+    : '';
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === 'Tab' || e.key === 'Enter') && activeSuggestion) {
+      e.preventDefault();
+      const parts = tags.split(',');
+      parts[parts.length - 1] = (parts[parts.length - 1].startsWith(' ') ? ' ' : '') + activeSuggestion;
+      setTags(parts.join(',') + ', ');
+    }
+  };
+
   const [existingFontFiles, setExistingFontFiles] = useState<string[]>(initialData?.font_files || []);
   const [existingPreviewImages, setExistingPreviewImages] = useState<string[]>(initialData?.preview_images || []);
   const [existingTrialFile, setExistingTrialFile] = useState<string>(initialData?.trial_file_url || '');
@@ -357,20 +378,37 @@ const FontUploadForm = ({ initialData, onSuccess }: { initialData?: any, onSucce
         </div>
 
         <div className="space-y-4">
-          <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">Classification Tags</label>
-          <input 
-            type="text" 
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            list="font-tags-suggestions"
-            className="w-full border-b border-vintage-ink/20 py-4 bg-transparent outline-none font-serif text-lg focus:border-vintage-ink transition-colors" 
-            placeholder="Variable, Serif, Display..." 
-          />
-          <datalist id="font-tags-suggestions">
-            {FONT_TAGS_LIBRARY.map((tag) => (
-              <option key={tag} value={tag} />
-            ))}
-          </datalist>
+          <div className="flex items-center justify-between">
+            <label className="block font-bold text-[10px] uppercase tracking-[0.3em] text-vintage-accent">
+              Classification Tags
+            </label>
+            {activeSuggestion && (
+              <span className="text-[10px] uppercase tracking-widest font-mono text-vintage-accent opacity-80 animate-pulse">
+                Press [TAB] or [ENTER] to complete: "{activeSuggestion}"
+              </span>
+            )}
+          </div>
+
+          <div className="relative w-full border-b border-vintage-ink/20 focus-within:border-vintage-ink transition-colors">
+            {/* Ghost text background overlay */}
+            <div 
+              className="absolute inset-0 py-4 bg-transparent font-serif text-lg pointer-events-none select-none overflow-hidden whitespace-pre flex"
+              aria-hidden="true"
+            >
+              <span className="opacity-0">{tags}</span>
+              <span className="opacity-30 italic">{ghostSuffix}</span>
+            </div>
+
+            {/* Main Interactive Input */}
+            <input 
+              type="text" 
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              onKeyDown={handleTagKeyDown}
+              className="relative z-10 w-full py-4 bg-transparent outline-none font-serif text-lg placeholder:opacity-20 text-vintage-ink" 
+              placeholder="Variable, Serif, Display..." 
+            />
+          </div>
         </div>
       </div>
 
