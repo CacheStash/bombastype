@@ -278,7 +278,7 @@ const Checkout: React.FC = () => {
   };
 
   return (
-    <PayPalScriptProvider options={{ clientId: "AW3HtSermytFGmhSTbMNpacFkkEyTYo19CRismstFmSUT2drz6TBj8nAH18pg4YWPj0esy4-MIzAGhki", currency: "USD", intent: "capture", locale: "en_US" }}>
+    <PayPalScriptProvider options={{ clientId: "BAAl21EWKL0l9jdL9W2fU-Tevct10hnk5HoXW74YiQfjjX5JqjPBVa11vOYqV3aEsW5W6Rz-PUBu0-X20c", currency: "USD", intent: "capture", locale: "en_US" }}>
       <div className="min-h-screen bg-vintage-paper py-12 px-6 md:px-12 flex flex-col items-center text-vintage-ink print:bg-white">
           
         {/* HEADER TOOLS */}
