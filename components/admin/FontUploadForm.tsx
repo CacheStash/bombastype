@@ -108,20 +108,21 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
 
   // Drag and drop reordering untuk Preview Images
   const deleteFromR2 = async (fileName: string) => {
-    if (!fileName || /^[a-zA-Z0-9_-]{25,}$/.test(fileName)) return;
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      await fetch(`/api/admin/delete/${encodeURIComponent(fileName)}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      });
-    } catch (err) {
-      console.error("Gagal menghapus file dari R2:", err);
-    }
-  };
+    if (!fileName || (/^[a-zA-Z0-9_-]{25,}$/.test(fileName) && !fileName.includes('.'))) return;
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    await fetch(`/api/admin/delete/${encodeURIComponent(fileName)}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`
+      }
+    });
+  } catch (err) {
+    console.error("Gagal menghapus file dari R2:", err);
+  }
+};
 
   // Drag and drop reordering untuk Preview Images
   const handleDragStart = (index: number) => setDraggedImgIndex(index);
