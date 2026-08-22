@@ -691,7 +691,8 @@ export default {
         licenseBody += `LICENSEE NAME  : ${buyerName}\n`;
         licenseBody += `ADDRESS        : ${buyerAddress}\n`;
         licenseBody += `ISSUE DATE     : ${issueDate}\n`;
-        licenseBody += `ASSET NAME     : ${cleanFontName}\n`;
+        const displayFontName = txData.actual_name || cleanFontName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        licenseBody += `ASSET NAME     : ${displayFontName}\n`;
         licenseBody += `------------------------------------------------------------------------\n\n`;
 
         licenseBody += `LICENSED USAGE TERMS:\n\n`;
