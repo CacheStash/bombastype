@@ -302,14 +302,22 @@ const PromotionsManager: React.FC = () => {
             <button 
               type="button"
               onClick={() => setActiveTab('campaigns')}
-              className={`tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
+              className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-vintage-ink transition-all duration-300 ${
+                activeTab === 'campaigns' 
+                  ? 'bg-vintage-ink text-vintage-paper shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' 
+                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5'
+              }`}
             >
               Store Campaigns
             </button>
             <button 
               type="button"
               onClick={() => setActiveTab('coupons')}
-              className={`tab-btn ${activeTab === 'coupons' ? 'active' : ''}`}
+              className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-vintage-ink transition-all duration-300 ${
+                activeTab === 'coupons' 
+                  ? 'bg-vintage-ink text-vintage-paper shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' 
+                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5'
+              }`}
             >
               Buyer Coupons (Bargain)
             </button>
