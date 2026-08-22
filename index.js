@@ -319,7 +319,7 @@ export default {
       } catch (e) { return new Response(JSON.stringify({ error: e.message }), { status: 500 }); }
     }
 
-    
+
     if (url.pathname.startsWith('/api/admin/drive-search') && request.method === 'GET') {
       try {
         const authHeader = request.headers.get('Authorization');
@@ -551,16 +551,26 @@ export default {
         // 1b. FALLBACK: VERIFIKASI VIA EMAIL + ORDER ID (Untuk pembeli lama/guest)
         if (!isAuthorized && email && transactionId && serviceRoleKey) {
           const checkRes = await fetch(
-            `${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(transactionId)}&select=id,fontbuyer!inner(email,full_name,address)`,
+            `${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(transactionId)}&select=id,user_id`,
             { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
           );
-          const checkData = await checkRes.json();
-          const record = checkData?.[0];
-          if (record && record.fontbuyer?.email?.toLowerCase() === email.toLowerCase()) {
-            isAuthorized = true;
-            buyerEmail = email;
-            buyerName = record.fontbuyer?.full_name || 'N/A';
-            buyerAddress = record.fontbuyer?.address || 'N/A';
+          const historyRows = await checkRes.json();
+          
+          if (historyRows && historyRows.length > 0 && historyRows[0].user_id) {
+            const targetUserId = historyRows[0].user_id;
+            const buyerRes = await fetch(
+              `${supabaseUrl}/rest/v1/fontbuyer?id=eq.${targetUserId}&select=email,full_name,address`,
+              { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+            );
+            const buyerRows = await buyerRes.json();
+            const record = buyerRows?.[0];
+            
+            if (record && record.email?.toLowerCase().trim() === email.toLowerCase().trim()) {
+              isAuthorized = true;
+              buyerEmail = record.email;
+              buyerName = record.full_name || 'N/A';
+              buyerAddress = record.address || 'N/A';
+            }
           }
         }
 // --- END FIX ---
