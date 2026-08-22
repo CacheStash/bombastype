@@ -20,7 +20,7 @@ binding = "ASSETS"
 [vars]
 VITE_SUPABASE_URL = "https://zuvlxospyjtypwijrxvd.supabase.co"
 VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1dmx4b3NweWp0eXB3aWpyeHZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NTc5NjIsImV4cCI6MjA4OTUzMzk2Mn0.rsRt2muxqc55tqQK8rcyzMXcoPXgdPXpuP6U2SyIHT8"
-GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw9eibNs8cKKMiusDi8aKFp2t2xU_T0gDo_FFlBMM6jZWEiX5ERbR5vF-YlLTM9XlgI/exec, https://script.google.com/macros/s/AKfycbzO1E0IkuoZIdlaM4hRyz1y84VyObjRSJUUuSc2PjQxaTHcz-rJ82cKhUA4KUs3X9c/exec, https://script.google.com/macros/s/AKfycbzgr3nOGCM9QBnaP7BD1MDY-s3uDizcckwYlo2-CkkKo1OxHr_pIjdhvOdlaPOY2tE04Q/exec"
+GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyyJhPgMVxat5Ga2XayS_svv5lBQh9livBeoSCOrF33Z5-a9DiBAriIh2RdZj0bb2uz/exec, https://script.google.com/macros/s/AKfycbzHcgMlJZs3jWYkckCWBkiIK0ErHW7ZWSuf_oxM2ZU2m4nNmTo_XVxvY8V6O4gjmYIZwA/exec, https://script.google.com/macros/s/AKfycbyvEvTl0MaF7S2qoGm6acToUspgXEJctFd0tYLIwDMBRyu7Nn9zGDD8Tn7xcH-VEHXY/exec"
 GAS_DRIVE_SEARCH_URL = "https://script.google.com/macros/s/AKfycbyH2Aj0hvuJ25nOUxnNJXxxI3wZPaMlnc4ZeC3EgC-OOGKpTmKzJg6CU3mAp_m-7HBf/exec"
 
 [[r2_buckets]]
