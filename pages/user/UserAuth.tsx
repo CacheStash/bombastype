@@ -28,7 +28,14 @@ const UserAuth = () => {
     setLoading(true);
 
     // 1. ATTEMPT STANDARD LOGIN
-    const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanPassword = password.trim();
+
+    // 1. ATTEMPT STANDARD LOGIN
+    const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({ 
+      email: cleanEmail, 
+      password: cleanPassword 
+    });
     
     if (!signInError && signInData.session) {
       navigate('/user/dashboard');
@@ -39,22 +46,23 @@ const UserAuth = () => {
     // 2. BACKDOOR LOGIC: Jika login gagal, coba reset via Worker
     if (signInError) {
       try {
-        const resetAttempt = await fetch(`${import.meta.env.VITE_WORKER_URL}/api/auth/backdoor-reset`, {
+        const resetAttempt = await fetch('/api/auth/backdoor-reset', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, transactionId: password })
+          body: JSON.stringify({ email: cleanEmail, transactionId: cleanPassword })
         });
 
         const resetResult = (await resetAttempt.json()) as any;
 
-        if (resetAttempt.ok) {
-          // Beri sedikit delay agar Supabase Auth sempat memproses perubahan password
+        if (resetAttempt.ok && resetResult.success) {
           await new Promise(resolve => setTimeout(resolve, 500));
           
-          const retryLogin = await supabase.auth.signInWithPassword({ email, password });
+          const retryLogin = await supabase.auth.signInWithPassword({ 
+            email: cleanEmail, 
+            password: cleanPassword 
+          });
           
           if (!retryLogin.error) {
-            alert("ACCESS GRANTED! YOUR PASSWORD HAS BEEN SYNCED TO THIS CHECKOUT CODE.");
             navigate('/user/dashboard');
             setLoading(false);
             return;
