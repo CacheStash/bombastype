@@ -139,7 +139,7 @@ export default function Home() {
     }, 4500); // Berganti secara random setiap 4.5 detik
     return () => clearInterval(interval);
   }, []);
-
+const slideDirection = Math.random() > 0.5 ? 20 : -20;
 
   useEffect(() => { fetchData(); }, []);
 
@@ -214,16 +214,16 @@ export default function Home() {
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
         
-       <div className="my-4 w-full flex justify-center pointer-events-none select-none relative h-64 sm:h-80 md:h-96 max-w-xl md:max-w-2xl lg:max-w-3xl items-center">
-          <AnimatePresence mode="wait">
+       <div className="my-8 w-full flex justify-center pointer-events-none select-none relative aspect-video max-w-4xl lg:max-w-5xl overflow-hidden">
+          <AnimatePresence mode="popLayout">
             <motion.img 
               key={currentHeaderIdx}
               src={HEADER_IMAGES[currentHeaderIdx]} 
               alt="Authentic Vintage Typefaces" 
-              initial={{ opacity: 0, scale: 0.9, rotate: -2, y: 15 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
-              exit={{ opacity: 0, scale: 1.05, rotate: 2, y: -15 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, x: slideDirection }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -slideDirection }}
+              transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
               className="absolute w-full h-full object-contain drop-shadow-2xl"
             />
           </AnimatePresence>
