@@ -216,7 +216,7 @@ export default function Home() {
       {/* Featured Fonts Section */}
       <section className="mb-16 md:mb-24 relative z-10 px-4">
         <div className="divider">
-          <h2 className="text-3xl md:text-5xl font-script capitalize">Handpicked Fonts</h2>
+          <h2 className="text-3xl md:text-5xl font-script capitalize">Popular Fonts</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
           {loading ? (
@@ -272,7 +272,7 @@ export default function Home() {
       {/* Recent Fonts Section */}
       <section className="mb-16 md:mb-24 relative z-10 px-4">
         <div className="divider">
-          <h2 className="text-3xl md:text-5xl font-script capitalize">Recent Fonts</h2>
+          <h2 className="text-3xl md:text-5xl font-script capitalize">Handpicked Fonts</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10 items-stretch">
           {!loading && recentFonts.map((font) => (
