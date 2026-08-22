@@ -132,10 +132,34 @@ const ProductManager = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus font ini selamanya?")) return;
     try {
+      const targetFont = fonts.find(f => f.id === id);
+      
+      if (targetFont) {
+        const filesToDelete: string[] = [
+          ...(Array.isArray(targetFont.font_files) ? targetFont.font_files : []),
+          ...(Array.isArray(targetFont.preview_images) ? targetFont.preview_images : []),
+          ...(targetFont.trial_file_url ? [targetFont.trial_file_url] : [])
+        ].filter(f => f && !/^[a-zA-Z0-9_-]{25,}$/.test(f)); // Hanya file R2
+
+        if (filesToDelete.length > 0) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await fetch('/api/admin/delete-batch', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ fileNames: filesToDelete })
+            });
+          }
+        }
+      }
+
       const { error } = await supabase.from('fonts').delete().eq('id', id);
       if (error) throw error;
       setFonts(fonts.filter(f => f.id !== id));
-      alert("Font berhasil dihapus.");
+      alert("Font berhasil dihapus beserta asetnya.");
     } catch (err: any) { 
       alert("Error: " + err.message); 
     }
@@ -282,7 +306,7 @@ const ProductManager = () => {
                         </button>
                         <button 
                           type="button"
-                          onClick={() => handleDelete(f.id)} 
+                          onClick={() => handleDelete(f.id)}
                           className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-1 cursor-pointer"
                         >
                           <Trash2 size={12} /> Remove

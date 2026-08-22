@@ -107,11 +107,29 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
   const [draggedImgIndex, setDraggedImgIndex] = useState<number | null>(null);
 
   // Drag and drop reordering untuk Preview Images
+  const deleteFromR2 = async (fileName: string) => {
+    if (!fileName || /^[a-zA-Z0-9_-]{25,}$/.test(fileName)) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      await fetch(`/api/admin/delete/${encodeURIComponent(fileName)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+    } catch (err) {
+      console.error("Gagal menghapus file dari R2:", err);
+    }
+  };
+
+  // Drag and drop reordering untuk Preview Images
   const handleDragStart = (index: number) => setDraggedImgIndex(index);
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
   };
+
   const handleDrop = (index: number) => {
     if (draggedImgIndex === null) return;
     const newArray = [...existingPreviewImages];
@@ -191,7 +209,11 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
     }
   }, [initialData]);
 
-  const removeExistingFont = (index: number) => {
+  const removeExistingFont = async (index: number) => {
+    const fileToRemove = existingFontFiles[index];
+    if (fileToRemove) {
+      await deleteFromR2(fileToRemove);
+    }
     setExistingFontFiles(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -596,7 +618,10 @@ const currentTagQuery = tags.split(',').pop()?.trimStart() || '';
               {existingTrialFile && !trialFile && (
                 <button 
                   type="button" 
-                  onClick={() => setExistingTrialFile('')}
+                  onClick={async () => {
+                    await deleteFromR2(existingTrialFile);
+                    setExistingTrialFile('');
+                  }}
                   className="text-red-500 font-bold text-[10px] hover:underline"
                 >
                   REMOVE EXISTING ×

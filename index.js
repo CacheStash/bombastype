@@ -195,7 +195,7 @@ export default {
       return new Response(null, {
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
           'Access-Control-Allow-Headers': 'Authorization, apikey, Content-Type, X-Order-ID',
         }
       });
@@ -278,6 +278,48 @@ export default {
       } catch (e) { return new Response(JSON.stringify({ error: e.message }), { status: 500 }); }
     }
 
+    if (url.pathname.startsWith('/api/admin/delete/') && request.method === 'DELETE') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), { status: 403 });
+        }
+
+        const fileName = decodeURIComponent(url.pathname.split('/').pop());
+        if (fileName && !/^[a-zA-Z0-9_-]{25,}$/.test(fileName)) {
+          await env.R2_BUCKET.delete(fileName);
+        }
+
+        return new Response(JSON.stringify({ success: true, deleted: fileName }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (e) { return new Response(JSON.stringify({ error: e.message }), { status: 500 }); }
+    }
+
+    if (url.pathname === '/api/admin/delete-batch' && request.method === 'POST') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), { status: 403 });
+        }
+
+        const { fileNames } = await request.json();
+        if (Array.isArray(fileNames) && fileNames.length > 0) {
+          const deletePromises = fileNames
+            .filter(f => f && !/^[a-zA-Z0-9_-]{25,}$/.test(f))
+            .map(f => env.R2_BUCKET.delete(f));
+          await Promise.all(deletePromises);
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (e) { return new Response(JSON.stringify({ error: e.message }), { status: 500 }); }
+    }
+
+    
     if (url.pathname.startsWith('/api/admin/drive-search') && request.method === 'GET') {
       try {
         const authHeader = request.headers.get('Authorization');
