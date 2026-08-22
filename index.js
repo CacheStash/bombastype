@@ -389,7 +389,7 @@ export default {
         if (userCheckData && userCheckData.length > 0) {
           targetUserId = userCheckData[0].id;
           
-          // A. Reset Password via Admin Auth
+          // A. Update Profil Fontbuyer
           await fetch(`${supabaseUrl}/rest/v1/fontbuyer?id=eq.${targetUserId}`, {
             method: 'PATCH',
             headers: { 
@@ -401,6 +401,17 @@ export default {
               full_name: name || null, 
               address: address || null 
             })
+          });
+
+          // B. Update Password Auth ke Order ID Transaksi Baru
+          await fetch(`${supabaseUrl}/auth/v1/admin/users/${targetUserId}`, {
+            method: 'PUT',
+            headers: { 
+              'apikey': env.SUPABASE_SERVICE_ROLE_KEY, 
+              'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, 
+              'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ password: transactionId })
           });
 
         } else {
