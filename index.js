@@ -220,7 +220,7 @@ export default {
         const headers = new Headers();
         headers.set('Access-Control-Allow-Origin', '*');
         headers.set('Content-Type', fileData.contentType || 'font/otf');
-        headers.set('Cache-Control', 'no-cache, no-store, must-revalidate'); 
+        headers.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
         
         return new Response(fileData.body, { headers });
       } catch (e) { return new Response('Error fetching font', { status: 500 }); }
