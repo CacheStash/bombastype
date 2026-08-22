@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import { Plus, Eye, ChevronLeft, ChevronRight, Shuffle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -117,6 +117,30 @@ export default function Home() {
   const [currentTesterFontIndex, setCurrentTesterFontIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
+  const HEADER_IMAGES = [
+    '/header.webp',
+    '/header2.webp',
+    '/header3.webp',
+    '/header4.webp',
+    '/header5.webp',
+    '/header6.webp'
+  ];
+  const [currentHeaderIdx, setCurrentHeaderIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentHeaderIdx(prev => {
+        let next;
+        do {
+          next = Math.floor(Math.random() * HEADER_IMAGES.length);
+        } while (next === prev && HEADER_IMAGES.length > 1);
+        return next;
+      });
+    }, 4500); // Berganti secara random setiap 4.5 detik
+    return () => clearInterval(interval);
+  }, []);
+
+
   useEffect(() => { fetchData(); }, []);
 
   // Dynamic Font Face Injection untuk Recent Fonts
@@ -190,18 +214,20 @@ export default function Home() {
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
         
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="my-4 w-full flex justify-center pointer-events-none select-none"
-        >
-          <img 
-            src="/header.webp" 
-            alt="Authentic Vintage Typefaces" 
-            className="w-full max-w-xl md:max-w-2xl lg:max-w-3xl h-auto object-contain drop-shadow-2xl"
-          />
-        </motion.div>
+       <div className="my-4 w-full flex justify-center pointer-events-none select-none relative h-64 sm:h-80 md:h-96 max-w-xl md:max-w-2xl lg:max-w-3xl items-center">
+          <AnimatePresence mode="wait">
+            <motion.img 
+              key={currentHeaderIdx}
+              src={HEADER_IMAGES[currentHeaderIdx]} 
+              alt="Authentic Vintage Typefaces" 
+              initial={{ opacity: 0, scale: 0.9, rotate: -2, y: 15 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
+              exit={{ opacity: 0, scale: 1.05, rotate: 2, y: -15 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute w-full h-full object-contain drop-shadow-2xl"
+            />
+          </AnimatePresence>
+        </div>
 
         <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mt-6 mb-8 leading-relaxed">
           Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, & letterpress design.
