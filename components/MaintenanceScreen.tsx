@@ -19,7 +19,7 @@ const MaintenanceScreen: React.FC = () => {
     <div className="min-h-screen bg-vintage-paper text-vintage-ink flex flex-col justify-between p-6 sm:p-12 relative overflow-hidden font-serif selection:bg-vintage-ink selection:text-vintage-paper">
       
       {/* Background Vintage Grid Pattern */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#1a1a1a_1px,transparent_1px)] [background-size:24px_24px]" />
+      <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#1a1a1a_1px,transparent_1px)] bg-size-[24px_24px]" />
 
       {/* Top Header */}
       <div className="relative z-10 flex justify-between items-center border-b border-vintage-ink/20 pb-4">
@@ -73,7 +73,7 @@ const MaintenanceScreen: React.FC = () => {
           </div>
           <div className="flex justify-between border-b border-vintage-ink/10 pb-1">
             <span className="text-vintage-ink/60">Direct Inquiries</span>
-            <a href="mailto:support@bombastype.com" className="underline hover:text-amber-800">support@bombastype.com</a>
+            <a href="mailto:bombastype@gmail.com" className="underline hover:text-amber-800">bombastype@gmail.com</a>
           </div>
           <div className="flex justify-between">
             <span className="text-vintage-ink/60">Core Server</span>
