@@ -201,6 +201,8 @@ const Checkout: React.FC = () => {
     }
   };
 
+
+
   // --- SECURE DOWNLOAD HANDLER ---
   const handleSecureDownload = async (fileName: string, type: 'trial' | 'full' = 'full') => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -277,9 +279,18 @@ const Checkout: React.FC = () => {
     }
   };
 
+  const IS_SANDBOX = true;
+
   return (
-    <PayPalScriptProvider options={{ clientId: "BAAr90ETql33exxbBATrkJlqLOeEDbIvsRKhk6NXu1_e_YNVLv3ykM7WjuAenJdjS1syyLgGHr27h4Qxlg", currency: "USD", intent: "capture", locale: "en_US" }}>
-      <div className="min-h-screen bg-vintage-paper py-12 px-6 md:px-12 flex flex-col items-center text-vintage-ink print:bg-white">
+<PayPalScriptProvider options={{ 
+      clientId: IS_SANDBOX 
+        ? "BAAl21EWKL0l9jdL9W2fU-Tevct10hnk5HoXW74YiQfjjX5JqjPBVa11vOYqV3aEsW5W6Rz-PUBu0-X20c" // Sandbox Client ID
+        : "BAAr90ETql33exxbBATrkJlqLOeEDbIvsRKhk6NXu1_e_YNVLv3ykM7WjuAenJdjS1syyLgGHr27h4Qxlg", // Live Client ID
+      currency: "USD", 
+      intent: "capture", 
+      locale: "en_US" 
+    }}>
+            <div className="min-h-screen bg-vintage-paper py-12 px-6 md:px-12 flex flex-col items-center text-vintage-ink print:bg-white">
           
         {/* HEADER TOOLS */}
         <div className="w-full max-w-5xl mb-12 flex justify-between items-center text-[10px] font-bold print:hidden">
