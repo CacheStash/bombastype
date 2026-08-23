@@ -428,8 +428,8 @@ const Checkout: React.FC = () => {
                     <textarea 
                       value={address} 
                       onChange={(e) => setAddress(e.target.value.replace(/\b\w/g, l => l.toUpperCase()))}
-                      className="w-full p-5 bg-vintage-background font-bold outline-none text-sm placeholder:text-vintage-ink/20 min-h-24 resize-none uppercase" 
-                      placeholder="COMPLETE ADDRESS (STREET, CITY, ZIP CODE)" required 
+                      className="w-full p-5 bg-vintage-background font-bold outline-none text-sm placeholder:text-vintage-ink/20 min-h-24 resize-none" 
+                      placeholder="COMPLETE ADDRESS (STREET, CITY, ZIP CODE) — OPTIONAL" 
                     />
                   </div>
 
@@ -447,7 +447,7 @@ const Checkout: React.FC = () => {
                     <span className="text-[10px] font-bold tracking-widest opacity-60 group-hover:opacity-100 transition-opacity uppercase">Subscribe to newsletter & new releases</span>
                   </label>
 
-                  {total === 0 && name && address && email && trialConflicts.length === 0 && (
+                  {total === 0 && name && email && trialConflicts.length === 0 && (
                     <button onClick={handleFreeTrial} disabled={loading} className="vintage-btn w-full mt-8 py-6 text-xs bg-vintage-ink! text-vintage-background! tracking-[0.4em] hover:opacity-90 transition-all">
                       {loading ? "PROCESSING..." : "CLAIM FREE DEMO ACCESS"}
                     </button>
