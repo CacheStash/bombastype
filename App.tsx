@@ -35,6 +35,9 @@ import Checkout from './pages/shop/Checkout';
 import LicenseReceipt from './pages/user/LicenseReceipt';
 import FontDetail from './pages/FontDetail';
 
+// Maintenance Screen
+import MaintenanceScreen from './components/MaintenanceScreen';
+
 // Sesuai Protokol Heritage: CSS harus di-load PALING AKHIR setelah semua komponen/halaman
 import './index.css';
 
@@ -84,8 +87,24 @@ const App: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [isNavActive, setIsNavActive] = React.useState(false);
   const [isAdmin, setIsAdmin] = React.useState(false);
+  const [isMaintenance, setIsMaintenance] = React.useState(false);
 
   React.useEffect(() => {
+    const fetchMaintenanceStatus = async () => {
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'maintenance_mode')
+          .maybeSingle();
+        if (data) {
+          setIsMaintenance(data.value === true || data.value === 'true');
+        }
+      } catch (err) {
+        console.error("Failed to check maintenance mode:", err);
+      }
+    };
+
     const checkAdminStatus = async (user: any) => {
       if (!user) {
         setIsAdmin(false);
@@ -99,6 +118,8 @@ const App: React.FC = () => {
       setIsAdmin(!!data);
     };
 
+    fetchMaintenanceStatus();
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       checkAdminStatus(session?.user);
@@ -110,7 +131,18 @@ const App: React.FC = () => {
       checkAdminStatus(session?.user);
     });
 
-    return () => subscription.unsubscribe();
+    // Realtime listener untuk status maintenance
+    const maintenanceChannel = supabase
+      .channel('public:site_settings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => {
+        fetchMaintenanceStatus();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(maintenanceChannel);
+    };
   }, []);
 
   if (loading) {
@@ -125,64 +157,87 @@ const App: React.FC = () => {
     <CartProvider>
       <Router>
         <ScrollToHash />
-        {/* Heritage Design: Outer Wrapper Bersih (Tanpa Redundant Background) */}
-        <div className="min-h-screen p-2 sm:p-4 md:p-8 lg:p-12 flex justify-center">
-          
-          {/* Heritage Design: Global Ornate Container (Murni ornate-border sesuai index.css) */}
-          <div className="max-w-7xl w-full ornate-border bg-vintage-paper shadow-2xl relative flex flex-col">
+
+        {isMaintenance && !isAdmin ? (
+          <Routes>
+            <Route 
+              path="/admin" 
+              element={session && isAdmin ? <AdminDashboard /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/admin/*" 
+              element={session && isAdmin ? <AdminDashboard /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/login" 
+              element={!session ? <Login /> : (isAdmin ? <Navigate to="/admin" /> : <Navigate to="/" />)} 
+            />
+            <Route path="*" element={<MaintenanceScreen />} />
+          </Routes>
+        ) : (
+          /* Heritage Design: Outer Wrapper Bersih (Tanpa Redundant Background) */
+          <div className="min-h-screen p-2 sm:p-4 md:p-8 lg:p-12 flex justify-center">
             
-            <Navbar onStateChange={setIsNavActive} />
-            
-            <main className="grow relative z-10">
-              <Routes>
-                {/* Bombastype Functional Routes */}
-                <Route path="/" element={<Home />} />
-                <Route path="/fonts" element={<Fonts />} />
-                <Route path="/license" element={<License />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/policy" element={<Policy />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/insights" element={<Insights />} />
-                <Route path="/insight/:id" element={<InsightDetail />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/font/:id" element={<FontDetail />} />
+            {/* Heritage Design: Global Ornate Container (Murni ornate-border sesuai index.css) */}
+            <div className="max-w-7xl w-full ornate-border bg-vintage-paper shadow-2xl relative flex flex-col">
+              
+              <Navbar onStateChange={setIsNavActive} />
+              
+              <main className="grow relative z-10">
+                <Routes>
+                  {/* Bombastype Functional Routes */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/fonts" element={<Fonts />} />
+                  <Route path="/license" element={<License />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/policy" element={<Policy />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/insights" element={<Insights />} />
+                  <Route path="/insight/:id" element={<InsightDetail />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/font/:id" element={<FontDetail />} />
 
-                {/* Auth & User Routes */}
-                <Route 
-                  path="/user/auth" 
-                  element={!session ? <UserAuth /> : <Navigate to="/user/dashboard" />} 
-                />
-                <Route 
-                  path="/user/dashboard/*" 
-                  element={session && !isAdmin ? <UserDashboard /> : (isAdmin ? <Navigate to="/admin" /> : <Navigate to="/user/auth" />)} 
-                />
-                <Route path="/user/receipt/:orderId" element={<LicenseReceipt />} />
-                
-                {/* Admin Routes */}
-                <Route 
-                  path="/login" 
-                  element={!session ? <Login /> : (isAdmin ? <Navigate to="/admin" /> : <Navigate to="/user/dashboard" />)} 
-                />
-                <Route 
-                  path="/admin/*" 
-                  element={session && isAdmin ? <AdminDashboard /> : <Navigate to="/login" />} 
-                />
+                  {/* Auth & User Routes */}
+                  <Route 
+                    path="/user/auth" 
+                    element={!session ? <UserAuth /> : <Navigate to="/user/dashboard" />} 
+                  />
+                  <Route 
+                    path="/user/dashboard/*" 
+                    element={session && !isAdmin ? <UserDashboard /> : (isAdmin ? <Navigate to="/admin" /> : <Navigate to="/user/auth" />)} 
+                  />
+                  <Route path="/user/receipt/:orderId" element={<LicenseReceipt />} />
+                  
+                  {/* Admin Routes */}
+                  <Route 
+                    path="/login" 
+                    element={!session ? <Login /> : (isAdmin ? <Navigate to="/admin" /> : <Navigate to="/user/dashboard" />)} 
+                  />
+                  <Route 
+                    path="/admin" 
+                    element={session && isAdmin ? <AdminDashboard /> : <Navigate to="/login" />} 
+                  />
+                  <Route 
+                    path="/admin/*" 
+                    element={session && isAdmin ? <AdminDashboard /> : <Navigate to="/login" />} 
+                  />
 
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </main>
+                  <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+              </main>
 
-            <CartConfiguratorModal />
+              <CartConfiguratorModal />
 
-            {!isNavActive && <BackToTop />}
-            
-            <footer className="relative z-50">
-              <Footer />
-            </footer>
+              {!isNavActive && <BackToTop />}
+              
+              <footer className="relative z-50">
+                <Footer />
+              </footer>
+            </div>
           </div>
-        </div>
+        )}
       </Router>
     </CartProvider>
   );

@@ -214,7 +214,7 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
         
-       <div className="my-8 w-full flex justify-center pointer-events-none select-none relative aspect-[16/9] max-w-4xl lg:max-w-5xl">
+       <div className="my-8 w-full flex justify-center pointer-events-none select-none relative aspect-video max-w-4xl lg:max-w-5xl">
           <AnimatePresence mode="popLayout">
             <motion.img 
               key={currentHeaderIdx}

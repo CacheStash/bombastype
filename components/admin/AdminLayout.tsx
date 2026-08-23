@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Type, ShoppingCart, LogOut, 
-  Tag, Menu, X, Mail, FileText 
+  Tag, Menu, X, Mail, FileText, Power, Loader2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -17,12 +17,57 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('products');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isMaintenance, setIsMaintenance] = useState(false);
+  const [updatingMaintenance, setUpdatingMaintenance] = useState(false);
 
   // --- LOGIC ---
 
   useEffect(() => {
     fetchUnreadCount();
+    fetchMaintenanceStatus();
   }, []);
+
+  const fetchMaintenanceStatus = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'maintenance_mode')
+        .maybeSingle();
+      if (data) {
+        setIsMaintenance(data.value === true || data.value === 'true');
+      }
+    } catch (e) {
+      console.error('Failed to fetch maintenance status:', e);
+    }
+  };
+
+  const handleToggleMaintenance = async () => {
+    const nextState = !isMaintenance;
+    const confirmMsg = nextState 
+      ? 'Aktifkan MODE MAINTENANCE? Pengunjung umum tidak akan bisa membuka situs (hanya admin).'
+      : 'Matikan MODE MAINTENANCE? Situs akan kembali dapat diakses oleh publik.';
+    
+    if (!window.confirm(confirmMsg)) return;
+
+    setUpdatingMaintenance(true);
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          key: 'maintenance_mode',
+          value: nextState,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      setIsMaintenance(nextState);
+    } catch (err: any) {
+      alert('Gagal mengubah mode maintenance: ' + err.message);
+    } finally {
+      setUpdatingMaintenance(false);
+    }
+  };
 
   const fetchUnreadCount = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -129,8 +174,33 @@ const AdminDashboard = () => {
           })}
         </nav>
 
-        {/* Footer / Logout */}
-        <div className="p-6 border-t border-vintage-ink">
+        {/* Footer / Logout & Maintenance Toggle */}
+        <div className="p-6 border-t border-vintage-ink space-y-2">
+          <button
+            onClick={handleToggleMaintenance}
+            disabled={updatingMaintenance}
+            className={`w-full flex items-center justify-between px-4 py-3 text-[10px] font-bold tracking-wider transition-all border ${
+              isMaintenance 
+                ? 'bg-amber-600 text-white border-amber-700 hover:bg-amber-700' 
+                : 'bg-vintage-ink/5 text-vintage-ink border-vintage-ink/20 hover:bg-vintage-ink/10'
+            }`}
+            title="Ubah status maintenance situs"
+          >
+            <div className="flex items-center gap-2">
+              {updatingMaintenance ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Power size={14} className={isMaintenance ? 'text-white animate-pulse' : 'opacity-40'} />
+              )}
+              <span>MAINTENANCE</span>
+            </div>
+            <span className={`px-1.5 py-0.5 text-[9px] font-black tracking-widest ${
+              isMaintenance ? 'bg-white text-amber-900' : 'bg-vintage-ink text-vintage-paper'
+            }`}>
+              {isMaintenance ? 'ACTIVE' : 'OFF'}
+            </span>
+          </button>
+
           <button 
             onClick={handleLogout} 
             className="w-full flex items-center gap-4 px-4 py-3 text-[11px] font-bold tracking-wider text-left hover:bg-red-900/10 text-red-900/60 transition-all group"
