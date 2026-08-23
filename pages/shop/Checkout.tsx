@@ -30,6 +30,8 @@ const Checkout: React.FC = () => {
 
   const [isSandbox, setIsSandbox] = useState(false);
 
+ const [isReady, setIsReady] = useState(false);
+
   useEffect(() => {
     const fetchPaypalMode = async () => {
       try {
@@ -43,6 +45,8 @@ const Checkout: React.FC = () => {
         }
       } catch (e) {
         console.error('Failed to load PayPal mode:', e);
+      } finally {
+        setIsReady(true);
       }
     };
     fetchPaypalMode();
@@ -301,15 +305,18 @@ const Checkout: React.FC = () => {
 
 
   return (
-    <PayPalScriptProvider options={{ 
-      clientId: isSandbox 
-        ? "BAAl21EWKL0l9jdL9W2fU-Tevct10hnk5HoXW74YiQfjjX5JqjPBVa11vOYqV3aEsW5W6Rz-PUBu0-X20c" // Sandbox
-        : "BAAr90ETql33exxbBATrkJlqLOeEDbIvsRKhk6NXu1_e_YNVLv3ykM7WjuAenJdjS1syyLgGHr27h4Qxlg", // Live
-      currency: "USD", 
-      intent: "capture", 
-      locale: "en_US" 
-    }}>
-      
+   <PayPalScriptProvider 
+      key={isReady ? (isSandbox ? "paypal-sandbox" : "paypal-live") : "paypal-loading"}
+      options={{ 
+        clientId: isSandbox 
+          ? "BAAl21EWKL0l9jdL9W2fU-Tevct10hnk5HoXW74YiQfjjX5JqjPBVa11vOYqV3aEsW5W6Rz-PUBu0-X20c" // Sandbox
+          : "BAAr90ETql33exxbBATrkJlqLOeEDbIvsRKhk6NXu1_e_YNVLv3ykM7WjuAenJdjS1syyLgGHr27h4Qxlg", // Live
+        currency: "USD", 
+        intent: "capture", 
+        locale: "en_US" 
+      }}
+    >
+
             <div className="min-h-screen bg-vintage-paper py-12 px-6 md:px-12 flex flex-col items-center text-vintage-ink print:bg-white">
           
         {/* HEADER TOOLS */}
