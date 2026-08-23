@@ -28,6 +28,26 @@ const Checkout: React.FC = () => {
   const [purchasedItems, setPurchasedItems] = useState<any[]>([]);
   const [successfulOrderId, setSuccessfulOrderId] = useState<string | null>(null);
 
+  const [isSandbox, setIsSandbox] = useState(false);
+
+  useEffect(() => {
+    const fetchPaypalMode = async () => {
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'paypal_sandbox_mode')
+          .maybeSingle();
+        if (data) {
+          setIsSandbox(data.value === true || data.value === 'true');
+        }
+      } catch (e) {
+        console.error('Failed to load PayPal mode:', e);
+      }
+    };
+    fetchPaypalMode();
+  }, []);
+
   // COUPON STATES
   const [couponCodeInput, setCouponCodeInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
@@ -279,17 +299,17 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const IS_SANDBOX = true;
 
   return (
-<PayPalScriptProvider options={{ 
-      clientId: IS_SANDBOX 
-        ? "BAAl21EWKL0l9jdL9W2fU-Tevct10hnk5HoXW74YiQfjjX5JqjPBVa11vOYqV3aEsW5W6Rz-PUBu0-X20c" // Sandbox Client ID
-        : "BAAr90ETql33exxbBATrkJlqLOeEDbIvsRKhk6NXu1_e_YNVLv3ykM7WjuAenJdjS1syyLgGHr27h4Qxlg", // Live Client ID
+    <PayPalScriptProvider options={{ 
+      clientId: isSandbox 
+        ? "BAAl21EWKL0l9jdL9W2fU-Tevct10hnk5HoXW74YiQfjjX5JqjPBVa11vOYqV3aEsW5W6Rz-PUBu0-X20c" // Sandbox
+        : "BAAr90ETql33exxbBATrkJlqLOeEDbIvsRKhk6NXu1_e_YNVLv3ykM7WjuAenJdjS1syyLgGHr27h4Qxlg", // Live
       currency: "USD", 
       intent: "capture", 
       locale: "en_US" 
     }}>
+      
             <div className="min-h-screen bg-vintage-paper py-12 px-6 md:px-12 flex flex-col items-center text-vintage-ink print:bg-white">
           
         {/* HEADER TOOLS */}
@@ -543,8 +563,8 @@ const Checkout: React.FC = () => {
                       <span className="text-[8px] font-bold tracking-widest text-vintage-accent mt-1 uppercase">Paypal / Credit Card (USD)</span>
                     </div>
 
-                    <div className={`w-full max-w-md transition-all ${(loading || !name || !address || !email || trialConflicts.length > 0) ? 'opacity-10 grayscale pointer-events-none' : 'opacity-100'}`}>
-                      <PayPalButtons 
+<div className={`w-full max-w-md transition-all ${(loading || !name || !email || trialConflicts.length > 0) ? 'opacity-10 grayscale pointer-events-none' : 'opacity-100'}`}>
+                        <PayPalButtons 
                         style={{ 
                           layout: "vertical", 
                           shape: "rect", 
@@ -590,7 +610,7 @@ const Checkout: React.FC = () => {
                     </p>
                     <button 
                       onClick={() => handlePurchaseSuccess(orderId)}
-                      disabled={loading || !name || !address || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || trialConflicts.length > 0}
+                      disabled={loading || !name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || trialConflicts.length > 0}
                       className="vintage-btn w-full py-6 text-xs bg-vintage-ink! text-vintage-background! tracking-[0.4em] hover:opacity-90 transition-all disabled:opacity-30"
                     >
                       {loading ? "PROCESSING..." : "COMPLETE FREE CLAIM"}

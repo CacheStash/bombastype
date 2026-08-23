@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Type, ShoppingCart, LogOut, 
-  Tag, Menu, X, Mail, FileText, Power, Loader2
+  Tag, Menu, X, Mail, FileText, Power, Loader2, CreditCard
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -17,28 +17,38 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('products');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Settings states
   const [isMaintenance, setIsMaintenance] = useState(false);
   const [updatingMaintenance, setUpdatingMaintenance] = useState(false);
+  const [isSandbox, setIsSandbox] = useState(false);
+  const [updatingSandbox, setUpdatingSandbox] = useState(false);
 
   // --- LOGIC ---
 
   useEffect(() => {
     fetchUnreadCount();
-    fetchMaintenanceStatus();
+    fetchSiteSettings();
   }, []);
 
-  const fetchMaintenanceStatus = async () => {
+  const fetchSiteSettings = async () => {
     try {
       const { data } = await supabase
         .from('site_settings')
-        .select('value')
-        .eq('key', 'maintenance_mode')
-        .maybeSingle();
+        .select('key, value');
+      
       if (data) {
-        setIsMaintenance(data.value === true || data.value === 'true');
+        data.forEach((setting: any) => {
+          if (setting.key === 'maintenance_mode') {
+            setIsMaintenance(setting.value === true || setting.value === 'true');
+          }
+          if (setting.key === 'paypal_sandbox_mode') {
+            setIsSandbox(setting.value === true || setting.value === 'true');
+          }
+        });
       }
     } catch (e) {
-      console.error('Failed to fetch maintenance status:', e);
+      console.error('Failed to fetch site settings:', e);
     }
   };
 
@@ -66,6 +76,33 @@ const AdminDashboard = () => {
       alert('Gagal mengubah mode maintenance: ' + err.message);
     } finally {
       setUpdatingMaintenance(false);
+    }
+  };
+
+  const handleToggleSandbox = async () => {
+    const nextState = !isSandbox;
+    const confirmMsg = nextState 
+      ? 'Aktifkan PAYPAL SANDBOX MODE untuk testing transaksi?'
+      : 'Beralih ke PAYPAL LIVE MODE untuk menerima transaksi nyata?';
+    
+    if (!window.confirm(confirmMsg)) return;
+
+    setUpdatingSandbox(true);
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          key: 'paypal_sandbox_mode',
+          value: nextState,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      setIsSandbox(nextState);
+    } catch (err: any) {
+      alert('Gagal mengubah mode PayPal: ' + err.message);
+    } finally {
+      setUpdatingSandbox(false);
     }
   };
 
@@ -174,12 +211,13 @@ const AdminDashboard = () => {
           })}
         </nav>
 
-        {/* Footer / Logout & Maintenance Toggle */}
+        {/* Footer / Logout & Control Toggles */}
         <div className="p-6 border-t border-vintage-ink space-y-2">
+          {/* Maintenance Toggle */}
           <button
             onClick={handleToggleMaintenance}
             disabled={updatingMaintenance}
-            className={`w-full flex items-center justify-between px-4 py-3 text-[10px] font-bold tracking-wider transition-all border ${
+            className={`w-full flex items-center justify-between px-4 py-2.5 text-[10px] font-bold tracking-wider transition-all border ${
               isMaintenance 
                 ? 'bg-amber-600 text-white border-amber-700 hover:bg-amber-700' 
                 : 'bg-vintage-ink/5 text-vintage-ink border-vintage-ink/20 hover:bg-vintage-ink/10'
@@ -198,6 +236,32 @@ const AdminDashboard = () => {
               isMaintenance ? 'bg-white text-amber-900' : 'bg-vintage-ink text-vintage-paper'
             }`}>
               {isMaintenance ? 'ACTIVE' : 'OFF'}
+            </span>
+          </button>
+
+          {/* PayPal Sandbox Toggle */}
+          <button
+            onClick={handleToggleSandbox}
+            disabled={updatingSandbox}
+            className={`w-full flex items-center justify-between px-4 py-2.5 text-[10px] font-bold tracking-wider transition-all border ${
+              isSandbox 
+                ? 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700' 
+                : 'bg-vintage-ink/5 text-vintage-ink border-vintage-ink/20 hover:bg-vintage-ink/10'
+            }`}
+            title="Ubah mode Sandbox / Live PayPal"
+          >
+            <div className="flex items-center gap-2">
+              {updatingSandbox ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <CreditCard size={14} className={isSandbox ? 'text-white' : 'opacity-40'} />
+              )}
+              <span>PAYPAL MODE</span>
+            </div>
+            <span className={`px-1.5 py-0.5 text-[9px] font-black tracking-widest ${
+              isSandbox ? 'bg-white text-blue-900' : 'bg-vintage-ink text-vintage-paper'
+            }`}>
+              {isSandbox ? 'SANDBOX' : 'LIVE'}
             </span>
           </button>
 
