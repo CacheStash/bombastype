@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Loader2, Calendar, Trash2, Edit3, Search, Tag, Calculator } from 'lucide-react';
+import { Plus, X, Loader2, Calendar, Trash2, Edit3, Search, Send, Calculator, MailCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const PromotionsManager: React.FC = () => {
@@ -12,21 +12,30 @@ const PromotionsManager: React.FC = () => {
   const [promos, setPromos] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
   const [fonts, setFonts] = useState<any[]>([]);
+  const [buyersList, setBuyersList] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [isAddingCoupon, setIsAddingCoupon] = useState(false);
+  const [isSendingCoupon, setIsSendingCoupon] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDispatching, setIsDispatching] = useState(false);
 
   // Bargain Calculator State
   const [calcOriginalPrice, setCalcOriginalPrice] = useState<string>('350');
   const [calcTargetPrice, setCalcTargetPrice] = useState<string>('270');
 
-  // Form State Kupon
+  // Form State Kupon Baru
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState('');
   const [couponMaxUses, setCouponMaxUses] = useState('1');
   const [couponEndDate, setCouponEndDate] = useState('');
+
+  // Form State Dispatch Kupon ke Buyer
+  const [searchTxOrEmail, setSearchTxOrEmail] = useState('');
+  const [selectedBuyerEmail, setSelectedBuyerEmail] = useState('');
+  const [selectedBuyerName, setSelectedBuyerName] = useState('');
+  const [selectedCouponId, setSelectedCouponId] = useState('');
 
   // Form State Campaign
   const [editingPromo, setEditingPromo] = useState<any>(null);
@@ -42,6 +51,7 @@ const PromotionsManager: React.FC = () => {
     fetchPromos();
     fetchFonts();
     fetchCoupons();
+    fetchBuyersData();
   }, []);
 
   const fetchPromos = async () => {
@@ -58,6 +68,34 @@ const PromotionsManager: React.FC = () => {
   const fetchFonts = async () => {
     const { data } = await supabase.from('fonts').select('id, name');
     if (data) setFonts(data);
+  };
+
+  const fetchBuyersData = async () => {
+    try {
+      const { data } = await supabase
+        .from('font_history')
+        .select(`
+          transaction_id,
+          created_at,
+          fontbuyer:user_id (
+            email,
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (data) {
+        const mapped = data.map((d: any) => ({
+          transaction_id: d.transaction_id,
+          email: d.fontbuyer?.email || '',
+          name: d.fontbuyer?.full_name || 'Customer'
+        })).filter(b => b.email);
+        setBuyersList(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to load buyers:", e);
+    }
   };
 
   const handleEdit = (p: any) => {
@@ -128,6 +166,66 @@ const PromotionsManager: React.FC = () => {
     if (!confirm("Revoke this coupon permanently?")) return;
     await supabase.from('coupons').delete().eq('id', id);
     fetchCoupons();
+  };
+
+  const handleSelectBuyerSuggestion = (buyer: any) => {
+    setSelectedBuyerEmail(buyer.email);
+    setSelectedBuyerName(buyer.name || 'Customer');
+    setSearchTxOrEmail(buyer.email);
+  };
+
+  const handleOpenSendModal = (coupon?: any) => {
+    if (coupon) {
+      setSelectedCouponId(coupon.id);
+    } else if (coupons.length > 0) {
+      setSelectedCouponId(coupons[0].id);
+    }
+    setIsSendingCoupon(true);
+  };
+
+  const activeCouponData = coupons.find(c => c.id === selectedCouponId);
+
+  const handleDispatchCouponEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBuyerEmail || !activeCouponData) {
+      return alert("Please select a buyer and an active coupon!");
+    }
+
+    setIsDispatching(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const payload = {
+        email: selectedBuyerEmail.trim().toLowerCase(),
+        name: selectedBuyerName.trim() || "Customer",
+        couponCode: activeCouponData.code,
+        discountText: `${activeCouponData.discount_value}% OFF`,
+        validUntil: new Date(activeCouponData.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        usageLimit: `Valid for ${activeCouponData.max_uses || 1} use only`
+      };
+
+      const res = await fetch('/api/admin/send-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': session ? `Bearer ${session.access_token}` : ''
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const resData = await res.json() as any;
+      if (!res.ok) throw new Error(resData.error || "FAILED_TO_SEND");
+
+      alert(`COUPON EMAIL DISPATCHED SUCCESSFULLY TO: ${selectedBuyerEmail}`);
+      setIsSendingCoupon(false);
+      setSearchTxOrEmail('');
+      setSelectedBuyerEmail('');
+      setSelectedBuyerName('');
+    } catch (err: any) {
+      alert("Dispatch error: " + err.message);
+    } finally {
+      setIsDispatching(false);
+    }
   };
 
   const handleSavePromo = async (e: React.FormEvent) => {
@@ -292,7 +390,6 @@ const PromotionsManager: React.FC = () => {
     );
   }
 
-  // --- VIEW: LIST & MODAL ---
   return (
     <div className="space-y-12 pb-20">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-vintage-ink pb-8 gap-6">
@@ -323,21 +420,33 @@ const PromotionsManager: React.FC = () => {
             </button>
           </div>
         </div>
-        {activeTab === 'campaigns' ? (
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="vintage-btn btn-reverse px-10 py-4 text-[11px]"
-          >
-            <Plus size={16} className="inline mr-2" /> New Provision
-          </button>
-        ) : (
-          <button 
-            onClick={() => setIsAddingCoupon(true)}
-            className="vintage-btn btn-reverse px-10 py-4 text-[11px]"
-          >
-            <Plus size={16} className="inline mr-2" /> Generate Coupon
-          </button>
-        )}
+        
+        <div className="flex flex-wrap gap-3">
+          {activeTab === 'campaigns' ? (
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="vintage-btn btn-reverse px-10 py-4 text-[11px]"
+            >
+              <Plus size={16} className="inline mr-2" /> New Provision
+            </button>
+          ) : (
+            <>
+              <button 
+                onClick={() => handleOpenSendModal()}
+                disabled={coupons.length === 0}
+                className="vintage-btn bg-vintage-accent! text-vintage-paper! px-8 py-4 text-[11px] disabled:opacity-30"
+              >
+                <Send size={15} className="inline mr-2" /> Send Coupon to Buyer
+              </button>
+              <button 
+                onClick={() => setIsAddingCoupon(true)}
+                className="vintage-btn btn-reverse px-8 py-4 text-[11px]"
+              >
+                <Plus size={16} className="inline mr-2" /> Generate Coupon
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* TAB 1: CAMPAIGNS */}
@@ -417,12 +526,18 @@ const PromotionsManager: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex gap-6 pt-4 border-t border-vintage-ink/10">
+                  <div className="flex justify-between items-center pt-4 border-t border-vintage-ink/10">
+                    <button 
+                      onClick={() => handleOpenSendModal(c)}
+                      className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent hover:underline flex items-center gap-1.5"
+                    >
+                      <Send size={13} /> Send to Buyer
+                    </button>
                     <button 
                       onClick={() => handleDeleteCoupon(c.id)} 
-                      className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-2"
+                      className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-1.5"
                     >
-                      <Trash2 size={14} /> Revoke Token
+                      <Trash2 size={13} /> Revoke
                     </button>
                   </div>
                 </div>
@@ -432,10 +547,10 @@ const PromotionsManager: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL GENERATOR KUPON & KALKULATOR TAWARAN */}
+      {/* MODAL 1: GENERATOR KUPON & KALKULATOR */}
       {isAddingCoupon && (
         <div className="fixed inset-0 bg-vintage-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-vintage-paper border border-vintage-ink/20 p-8 max-w-lg w-full shadow-2xl text-vintage-ink">
+          <div className="bg-vintage-paper border border-vintage-ink/20 p-8 max-w-lg w-full shadow-2xl text-vintage-ink animate-in zoom-in-95">
             <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
               <div>
                 <span className="text-[9px] font-bold tracking-[0.3em] text-vintage-accent uppercase block mb-1">Coupon Minting</span>
@@ -444,7 +559,7 @@ const PromotionsManager: React.FC = () => {
               <button onClick={() => setIsAddingCoupon(false)} className="p-1 hover:text-vintage-accent transition-colors"><X size={20} /></button>
             </div>
 
-            {/* KALKULATOR TAWAR-MENAWAR */}
+            {/* KALKULATOR */}
             <div className="p-5 bg-vintage-ink/3 border border-vintage-ink/10 mb-6 space-y-4">
               <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-vintage-accent flex items-center gap-2">
                 <Calculator size={14} /> BARGAIN CALCULATOR (Auto Percentage)
@@ -480,7 +595,6 @@ const PromotionsManager: React.FC = () => {
               </button>
             </div>
 
-            {/* FORM KUPON */}
             <form onSubmit={handleSaveCoupon} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -538,6 +652,133 @@ const PromotionsManager: React.FC = () => {
                 className="vintage-btn btn-reverse w-full py-5 text-[10px] tracking-[0.3em] uppercase flex justify-center items-center gap-2 mt-4"
               >
                 {isSaving ? <Loader2 className="animate-spin" size={16} /> : "Save & Activate Token"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: DISPATCH COUPON TO BUYER VIA GAS */}
+      {isSendingCoupon && (
+        <div className="fixed inset-0 bg-vintage-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-vintage-paper border border-vintage-ink max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl text-vintage-ink animate-in zoom-in-95">
+            <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
+              <div>
+                <span className="text-[9px] font-bold tracking-[0.3em] text-vintage-accent uppercase block mb-1">Direct Outreach</span>
+                <h3 className="text-3xl font-display uppercase flex items-center gap-2">
+                  <MailCheck size={26} /> Send Coupon Gift
+                </h3>
+              </div>
+              <button onClick={() => setIsSendingCoupon(false)} className="p-1 hover:text-vintage-accent transition-colors"><X size={20} /></button>
+            </div>
+
+            <form onSubmit={handleDispatchCouponEmail} className="space-y-6">
+              {/* Buyer Selector / Search */}
+              <div className="space-y-2">
+                <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/70">
+                  Search Order ID or Buyer Email
+                </label>
+                <div className="relative">
+                  <input 
+                    type="text"
+                    value={searchTxOrEmail}
+                    onChange={(e) => {
+                      setSearchTxOrEmail(e.target.value);
+                      setSelectedBuyerEmail(e.target.value);
+                    }}
+                    placeholder="Type BT-123456 or buyer@email.com..."
+                    className="w-full border-b border-vintage-ink/20 py-3 bg-transparent text-sm font-bold outline-none focus:border-vintage-ink uppercase placeholder:normal-case placeholder:text-vintage-ink/30"
+                    required
+                  />
+                  <Search className="absolute right-0 top-3 opacity-30" size={16} />
+                </div>
+
+                {/* Suggestions List */}
+                {searchTxOrEmail && buyersList.filter(b => 
+                  b.email.toLowerCase().includes(searchTxOrEmail.toLowerCase()) || 
+                  b.transaction_id?.toLowerCase().includes(searchTxOrEmail.toLowerCase())
+                ).length > 0 && (
+                  <div className="border border-vintage-ink/10 bg-white max-h-32 overflow-y-auto p-2 space-y-1">
+                    {buyersList
+                      .filter(b => 
+                        b.email.toLowerCase().includes(searchTxOrEmail.toLowerCase()) || 
+                        b.transaction_id?.toLowerCase().includes(searchTxOrEmail.toLowerCase())
+                      )
+                      .slice(0, 5)
+                      .map((b, i) => (
+                        <div 
+                          key={i} 
+                          onClick={() => handleSelectBuyerSuggestion(b)}
+                          className="p-2 text-xs hover:bg-vintage-ink/5 cursor-pointer flex justify-between items-center border-b border-vintage-ink/5 last:border-0"
+                        >
+                          <span className="font-bold">{b.email}</span>
+                          <span className="text-[10px] font-mono opacity-50">{b.transaction_id}</span>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recipient Name Field */}
+              <div className="space-y-1">
+                <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/50">Buyer Name</label>
+                <input 
+                  type="text" 
+                  value={selectedBuyerName} 
+                  onChange={e => setSelectedBuyerName(e.target.value)} 
+                  className="w-full border-b border-vintage-ink/20 py-2 bg-transparent font-bold text-sm outline-none focus:border-vintage-ink" 
+                  placeholder="Customer / John Doe" 
+                />
+              </div>
+
+              {/* Coupon Selector */}
+              <div className="space-y-2">
+                <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/70">
+                  Select Active Coupon to Send
+                </label>
+                <select 
+                  value={selectedCouponId}
+                  onChange={e => setSelectedCouponId(e.target.value)}
+                  className="w-full border-b border-vintage-ink/20 py-3 bg-transparent font-bold text-sm outline-none focus:border-vintage-ink uppercase cursor-pointer"
+                  required
+                >
+                  {coupons.map(c => (
+                    <option key={c.id} value={c.id} className="bg-vintage-paper text-vintage-ink font-mono font-bold">
+                      {c.code} — {c.discount_value}% OFF (Expires: {new Date(c.end_date).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Live Preview Box */}
+              {activeCouponData && (
+                <div className="p-4 border border-dashed border-vintage-ink/40 bg-white/70 space-y-2 font-mono text-xs">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent block mb-2">Live Template Data:</span>
+                  <div className="flex justify-between border-b border-vintage-ink/5 pb-1">
+                    <span className="opacity-50">Recipient:</span>
+                    <span className="font-bold">{selectedBuyerEmail || "Pending Selection..."}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-vintage-ink/5 pb-1">
+                    <span className="opacity-50">Coupon Code:</span>
+                    <span className="font-bold bg-gray-100 px-2 py-0.5">{activeCouponData.code}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-vintage-ink/5 pb-1">
+                    <span className="opacity-50">Discount:</span>
+                    <span className="font-bold">{activeCouponData.discount_value}% OFF</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="opacity-50">Valid Until:</span>
+                    <span className="font-bold">{new Date(activeCouponData.end_date).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              )}
+
+              <button 
+                type="submit" 
+                disabled={isDispatching || !selectedBuyerEmail}
+                className="vintage-btn btn-reverse w-full py-5 text-[10px] tracking-[0.3em] uppercase flex justify-center items-center gap-2 mt-4 disabled:opacity-40"
+              >
+                {isDispatching ? <Loader2 className="animate-spin" size={16} /> : "Dispatch Email via GAS"}
               </button>
             </form>
           </div>

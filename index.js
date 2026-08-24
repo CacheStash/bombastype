@@ -516,6 +516,69 @@ export default {
       }
     }
 
+
+    // --- 6B. API Send Manual Coupon to Buyer (Admin Only) ---
+    if (url.pathname === '/api/admin/send-coupon' && request.method === 'POST') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), { status: 403 });
+        }
+
+        const body = await request.json();
+        const { email, name, couponCode, discountText, validUntil, usageLimit } = body;
+
+        const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
+        if (gasUrls.length === 0) throw new Error("GAS_URL_NOT_CONFIGURED");
+
+        const payload = {
+          type: "send_coupon",
+          token: "$emogaAm4n_",
+          email,
+          name: name || "Customer",
+          coupon_code: couponCode,
+          discount_text: discountText,
+          valid_until: validUntil,
+          usage_limit: usageLimit,
+          website_url: "https://bombastype.com",
+          foundry_name: "BombasType"
+        };
+
+        const rotatedUrls = gasUrls.sort(() => Math.random() - 0.5);
+        let isSent = false;
+
+        for (const targetUrl of rotatedUrls) {
+          try {
+            const gasRes = await fetch(targetUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            const resText = await gasRes.text();
+            if (resText === "SUCCESS") {
+              isSent = true;
+              break;
+            }
+          } catch (err) {
+            console.error("GAS_SEND_COUPON_FAILED:", err.message);
+          }
+        }
+
+        if (!isSent) throw new Error("FAILED_TO_DISPATCH_VIA_GAS");
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    
     // --- 7. API Secure ZIP Download (For Buyers) ---
     if (url.pathname.startsWith('/api/download-zip')) {
       const rawFile = url.searchParams.get('file') || ''; // AMBIL PARAM MENTAH
