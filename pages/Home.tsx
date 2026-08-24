@@ -194,19 +194,33 @@ export default function Home() {
 
   const activeTesterFont = allFonts[currentTesterFontIndex] || null;
 
-  // Preset Briswood Layered Mode
+  // Preset Briswood Layered Mode dengan pencocokan font index otomatis
   const isBriswood = activeTesterFont?.name?.toLowerCase().includes('briswood');
-  const briswoodPreset = isBriswood ? {
-    isLayered: true,
-    initialLayers: [
-      { styleName: 'ENGRAVED', color: '#396B1D', visible: true },
-      { styleName: 'REGULAR', color: '#0B3411', visible: true },
-      { styleName: 'CONTOUR', color: '#FDF6E4', visible: true },
-      { styleName: 'EXTRUDE', color: '#83B46A', visible: true },
-      { styleName: 'EXTRUDE TWO', color: '#D1EAB2', visible: true }
-    ],
-    initialRandomAlternates: true
-  } : {};
+  const briswoodPreset = React.useMemo(() => {
+    if (!isBriswood || !Array.isArray(activeTesterFont?.font_files)) return {};
+
+    const findIndexByPattern = (pattern: RegExp, fallback: number) => {
+      const idx = activeTesterFont.font_files.findIndex((f: string) => pattern.test(f.toLowerCase()));
+      return idx !== -1 ? idx : fallback;
+    };
+
+    const engravedIdx = findIndexByPattern(/engrave/i, 0);
+    const regularIdx = findIndexByPattern(/regular|base/i, 1);
+    const contourIdx = findIndexByPattern(/contour|outline/i, 2);
+    const extrudeOneIdx = findIndexByPattern(/extrude.*(one|1)?(\.|$)/i, 3);
+    const extrudeTwoIdx = findIndexByPattern(/extrude.*(two|2)/i, 4);
+
+    return {
+      isLayered: true,
+      initialLayers: [
+        { fontIndex: engravedIdx, color: '#396B1D', visible: true },
+        { fontIndex: regularIdx, color: '#0B3411', visible: true },
+        { fontIndex: contourIdx, color: '#FDF6E4', visible: true },
+        { fontIndex: extrudeOneIdx, color: '#83B46A', visible: true },
+        { fontIndex: extrudeTwoIdx, color: '#D1EAB2', visible: true }
+      ]
+    };
+  }, [isBriswood, activeTesterFont]);
 
   const handleNextFont = () => {
     if (allFonts.length <= 1) return;
@@ -229,47 +243,29 @@ export default function Home() {
 
   return (
      <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
-
      {/* Hero Section */}
-
       <section className="text-center mb-16 w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
-
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-6">
-
           Retro Refinement: Authentic Vintage & Victorian Typefaces
-
         </motion.p>
 
-       
+      
 
         {/* HERO IMAGES (PROPORSIONAL LEBAR & TIDAK OVERLAPPING) */}
 
         <div className="my-8 sm:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-4/3 sm:aspect-16/10 md:aspect-3/2 max-w-5xl overflow-hidden">
-
           <AnimatePresence mode="popLayout">
-
             <motion.img
-
               key={currentHeaderIdx}
-
               src={HEADER_IMAGES[currentHeaderIdx]}
-
               alt="Authentic Vintage Typefaces"
-
               initial={{ opacity: 0, x: slideDirection }}
-
               animate={{ opacity: 1, x: 0 }}
-
               exit={{ opacity: 0, x: -slideDirection }}
-
               transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
-
               className="absolute inset-0 w-full h-full object-contain scale-120 sm:scale-130 md:scale-140"
-
             />
-
           </AnimatePresence>
-
         </div>
 
         <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mt-6 mb-8 leading-relaxed">

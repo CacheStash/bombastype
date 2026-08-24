@@ -48,15 +48,46 @@ const TypeTester: React.FC<TypeTesterProps> = ({
   const [viewMode, setViewMode] = useState<'type' | 'glyphs'>('type');
   
   const isLayeredSupported = !!config.metadata?.is_layered && Array.isArray(config.font_files) && config.font_files.length > 1;
-  const [isLayeredMode, setIsLayeredMode] = useState<boolean>(false);
+  const configAny = config as any;
+  const [isLayeredMode, setIsLayeredMode] = useState<boolean>(() => {
+    return isLayeredSupported && (configAny.isLayered || configAny.metadata?.is_layered_preset_active || false);
+  });
 
-  // Inisialisasi daftar layer (Daftar UI urut dari TOP layer ke BOTTOM layer)
-  const [layers, setLayers] = useState<FontLayerItem[]>([
-   { id: 'layer-top', fontIndex: config.metadata?.primary_font_index || 0, isInverted: false, isVisible: true, color: '#2B2621' },
-    ...(Array.isArray(config.font_files) && config.font_files.length > 1
-      ? [{ id: 'layer-bottom', fontIndex: (config.metadata?.primary_font_index || 0) === 0 ? 1 : 0, isInverted: false, isVisible: true, color: '#8C4A32' }]
-      : [])
-  ]);
+  // Inisialisasi daftar layer (Membaca preset initialLayers dari Home jika tersedia)
+  const [layers, setLayers] = useState<FontLayerItem[]>(() => {
+    if (configAny.initialLayers && Array.isArray(configAny.initialLayers)) {
+      return configAny.initialLayers.map((l: any, i: number) => ({
+        id: `layer-preset-${i}-${Date.now()}`,
+        fontIndex: typeof l.fontIndex === 'number' ? l.fontIndex : 0,
+        isInverted: false,
+        isVisible: l.visible !== false,
+        color: l.color || '#2B2621'
+      }));
+    }
+
+    return [
+      { id: 'layer-top', fontIndex: config.metadata?.primary_font_index || 0, isInverted: false, isVisible: true, color: '#2B2621' },
+      ...(Array.isArray(config.font_files) && config.font_files.length > 1
+        ? [{ id: 'layer-bottom', fontIndex: (config.metadata?.primary_font_index || 0) === 0 ? 1 : 0, isInverted: false, isVisible: true, color: '#8C4A32' }]
+        : [])
+    ];
+  });
+
+  // Sinkronisasi dinamis saat preset config (seperti Briswood di Home) masuk atau berganti font
+  useEffect(() => {
+    if (configAny.isLayered && isLayeredSupported) {
+      setIsLayeredMode(true);
+    }
+    if (configAny.initialLayers && Array.isArray(configAny.initialLayers) && configAny.initialLayers.length > 0) {
+      setLayers(configAny.initialLayers.map((l: any, i: number) => ({
+        id: `layer-preset-${i}-${Date.now()}`,
+        fontIndex: typeof l.fontIndex === 'number' ? l.fontIndex : 0,
+        isInverted: false,
+        isVisible: l.visible !== false,
+        color: l.color || '#2B2621'
+      })));
+    }
+  }, [config.name, configAny.isLayered]);
 
   const [draggedLayerIdx, setDraggedLayerIdx] = useState<number | null>(null);
   const layerContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
