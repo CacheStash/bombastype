@@ -194,7 +194,7 @@ export default function Home() {
 
   const activeTesterFont = allFonts[currentTesterFontIndex] || null;
 
-  // Preset Briswood Layered Mode dengan pencocokan font index otomatis
+  // Preset Briswood Layered Mode dengan pemisahan akurat Extrude & Extrude Two
   const isBriswood = activeTesterFont?.name?.toLowerCase().includes('briswood');
   const briswoodPreset = React.useMemo(() => {
     if (!isBriswood || !Array.isArray(activeTesterFont?.font_files)) return {};
@@ -207,21 +207,23 @@ export default function Home() {
     const engravedIdx = findIndexByPattern(/engrave/i, 0);
     const regularIdx = findIndexByPattern(/regular|base/i, 1);
     const contourIdx = findIndexByPattern(/contour|outline/i, 2);
-    const extrudeOneIdx = findIndexByPattern(/extrude.*(one|1)?(\.|$)/i, 3);
+    const extrudeIdx = findIndexByPattern(/extrude(?!.*two|.*2)/i, 3);
     const extrudeTwoIdx = findIndexByPattern(/extrude.*(two|2)/i, 4);
 
     return {
       isLayered: true,
+      initialRandomAlternates: true,
       initialLayers: [
         { fontIndex: engravedIdx, color: '#396B1D', visible: true },
         { fontIndex: regularIdx, color: '#0B3411', visible: true },
         { fontIndex: contourIdx, color: '#FDF6E4', visible: true },
-        { fontIndex: extrudeOneIdx, color: '#83B46A', visible: true },
+        { fontIndex: extrudeIdx, color: '#83B46A', visible: true },
         { fontIndex: extrudeTwoIdx, color: '#D1EAB2', visible: true }
       ]
     };
   }, [isBriswood, activeTesterFont]);
 
+  
   const handleNextFont = () => {
     if (allFonts.length <= 1) return;
     setCurrentTesterFontIndex((prev) => (prev + 1) % allFonts.length);
