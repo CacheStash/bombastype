@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { Plus, X, Loader2, Calendar, Trash2, Edit3, Search, Send, Calculator, MailCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, X, Loader2, Calendar, Trash2, Edit3, Search, Send, Calculator, MailCheck, UserCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const PromotionsManager: React.FC = () => {
@@ -36,6 +36,8 @@ const PromotionsManager: React.FC = () => {
   const [selectedBuyerEmail, setSelectedBuyerEmail] = useState('');
   const [selectedBuyerName, setSelectedBuyerName] = useState('');
   const [selectedCouponId, setSelectedCouponId] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Form State Campaign
   const [editingPromo, setEditingPromo] = useState<any>(null);
@@ -52,6 +54,17 @@ const PromotionsManager: React.FC = () => {
     fetchFonts();
     fetchCoupons();
     fetchBuyersData();
+  }, []);
+
+  // Handle klik di luar autocomplete dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchPromos = async () => {
@@ -72,26 +85,54 @@ const PromotionsManager: React.FC = () => {
 
   const fetchBuyersData = async () => {
     try {
-      const { data } = await supabase
-        .from('font_history')
-        .select(`
-          transaction_id,
-          created_at,
-          fontbuyer:user_id (
-            email,
-            full_name
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(100);
+      // 1. Ambil data profil fontbuyer (sumber Hello, Full Name)
+      const { data: buyers } = await supabase
+        .from('fontbuyer')
+        .select('id, email, full_name');
 
-      if (data) {
-        const mapped = data.map((d: any) => ({
-          transaction_id: d.transaction_id,
-          email: d.fontbuyer?.email || '',
-          name: d.fontbuyer?.full_name || 'Customer'
-        })).filter(b => b.email);
-        setBuyersList(mapped);
+      // 2. Ambil data history transaksi
+      const { data: history } = await supabase
+        .from('font_history')
+        .select('user_id, transaction_id, created_at')
+        .order('created_at', { ascending: false });
+
+      if (buyers && buyers.length > 0) {
+        const buyerMap: Record<string, { email: string, name: string }> = {};
+        buyers.forEach(b => {
+          buyerMap[b.id] = {
+            email: b.email || '',
+            name: b.full_name || 'Customer'
+          };
+        });
+
+        const combinedList: any[] = [];
+        const seenTx = new Set<string>();
+
+        // Masukkan yang memiliki transaksi
+        (history || []).forEach(h => {
+          const profile = buyerMap[h.user_id];
+          if (profile && profile.email && !seenTx.has(`${profile.email}-${h.transaction_id}`)) {
+            seenTx.add(`${profile.email}-${h.transaction_id}`);
+            combinedList.push({
+              email: profile.email,
+              name: profile.name,
+              transaction_id: h.transaction_id || 'N/A'
+            });
+          }
+        });
+
+        // Masukkan buyer yang belum ada di history list
+        buyers.forEach(b => {
+          if (!combinedList.some(item => item.email.toLowerCase() === b.email.toLowerCase())) {
+            combinedList.push({
+              email: b.email,
+              name: b.full_name || 'Customer',
+              transaction_id: 'REGISTERED_BUYER'
+            });
+          }
+        });
+
+        setBuyersList(combinedList);
       }
     } catch (e) {
       console.error("Failed to load buyers:", e);
@@ -171,7 +212,8 @@ const PromotionsManager: React.FC = () => {
   const handleSelectBuyerSuggestion = (buyer: any) => {
     setSelectedBuyerEmail(buyer.email);
     setSelectedBuyerName(buyer.name || 'Customer');
-    setSearchTxOrEmail(buyer.email);
+    setSearchTxOrEmail(`${buyer.email} (${buyer.transaction_id})`);
+    setShowSuggestions(false);
   };
 
   const handleOpenSendModal = (coupon?: any) => {
@@ -265,6 +307,17 @@ const PromotionsManager: React.FC = () => {
     await supabase.from('promotions').delete().eq('id', id);
     fetchPromos();
   };
+
+  // Filter buyer list berdasarkan input search
+  const filteredBuyers = buyersList.filter(b => {
+    const q = searchTxOrEmail.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      b.email.toLowerCase().includes(q) ||
+      b.name.toLowerCase().includes(q) ||
+      b.transaction_id?.toLowerCase().includes(q)
+    );
+  });
 
   // --- VIEW: FORM CAMPAIGN ---
   if (isAdding) {
@@ -549,8 +602,8 @@ const PromotionsManager: React.FC = () => {
 
       {/* MODAL 1: GENERATOR KUPON & KALKULATOR */}
       {isAddingCoupon && (
-        <div className="fixed inset-0 bg-vintage-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-vintage-paper border border-vintage-ink/20 p-8 max-w-lg w-full shadow-2xl text-vintage-ink animate-in zoom-in-95">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-vintage-paper border border-vintage-ink/20 p-8 max-w-lg w-full shadow-2xl text-vintage-ink animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
               <div>
                 <span className="text-[9px] font-bold tracking-[0.3em] text-vintage-accent uppercase block mb-1">Coupon Minting</span>
@@ -658,9 +711,9 @@ const PromotionsManager: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 2: DISPATCH COUPON TO BUYER VIA GAS */}
+      {/* MODAL 2: DISPATCH COUPON TO BUYER (Z-INDEX 100 & AUTOFILL FULL NAME) */}
       {isSendingCoupon && (
-        <div className="fixed inset-0 bg-vintage-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-vintage-paper border border-vintage-ink max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl text-vintage-ink animate-in zoom-in-95">
             <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
               <div>
@@ -673,8 +726,8 @@ const PromotionsManager: React.FC = () => {
             </div>
 
             <form onSubmit={handleDispatchCouponEmail} className="space-y-6">
-              {/* Buyer Selector / Search */}
-              <div className="space-y-2">
+              {/* Buyer Selector / Search Box */}
+              <div ref={searchContainerRef} className="space-y-2 relative">
                 <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/70">
                   Search Order ID or Buyer Email
                 </label>
@@ -682,52 +735,57 @@ const PromotionsManager: React.FC = () => {
                   <input 
                     type="text"
                     value={searchTxOrEmail}
+                    onFocus={() => setShowSuggestions(true)}
                     onChange={(e) => {
                       setSearchTxOrEmail(e.target.value);
                       setSelectedBuyerEmail(e.target.value);
+                      setShowSuggestions(true);
                     }}
                     placeholder="Type BT-123456 or buyer@email.com..."
-                    className="w-full border-b border-vintage-ink/20 py-3 bg-transparent text-sm font-bold outline-none focus:border-vintage-ink uppercase placeholder:normal-case placeholder:text-vintage-ink/30"
+                    className="w-full border-b border-vintage-ink/20 py-3 bg-transparent text-sm font-bold outline-none focus:border-vintage-ink uppercase placeholder:normal-case placeholder:text-vintage-ink/30 pr-8"
                     required
                   />
-                  <Search className="absolute right-0 top-3 opacity-30" size={16} />
+                  <Search className="absolute right-0 top-3 opacity-30 pointer-events-none" size={16} />
                 </div>
 
-                {/* Suggestions List */}
-                {searchTxOrEmail && buyersList.filter(b => 
-                  b.email.toLowerCase().includes(searchTxOrEmail.toLowerCase()) || 
-                  b.transaction_id?.toLowerCase().includes(searchTxOrEmail.toLowerCase())
-                ).length > 0 && (
-                  <div className="border border-vintage-ink/10 bg-white max-h-32 overflow-y-auto p-2 space-y-1">
-                    {buyersList
-                      .filter(b => 
-                        b.email.toLowerCase().includes(searchTxOrEmail.toLowerCase()) || 
-                        b.transaction_id?.toLowerCase().includes(searchTxOrEmail.toLowerCase())
-                      )
-                      .slice(0, 5)
-                      .map((b, i) => (
-                        <div 
-                          key={i} 
-                          onClick={() => handleSelectBuyerSuggestion(b)}
-                          className="p-2 text-xs hover:bg-vintage-ink/5 cursor-pointer flex justify-between items-center border-b border-vintage-ink/5 last:border-0"
-                        >
-                          <span className="font-bold">{b.email}</span>
-                          <span className="text-[10px] font-mono opacity-50">{b.transaction_id}</span>
+                {/* Suggestions Autocomplete Dropdown */}
+                {showSuggestions && filteredBuyers.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 border border-vintage-ink/20 bg-vintage-paper shadow-2xl max-h-48 overflow-y-auto divide-y divide-vintage-ink/5">
+                    {filteredBuyers.slice(0, 8).map((b, i) => (
+                      <div 
+                        key={i} 
+                        onClick={() => handleSelectBuyerSuggestion(b)}
+                        className="p-3 text-xs hover:bg-vintage-ink/5 cursor-pointer flex justify-between items-center transition-colors group"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-bold text-vintage-ink group-hover:text-vintage-accent transition-colors">{b.email}</span>
+                          <span className="text-[10px] opacity-60 font-serif italic">{b.name}</span>
                         </div>
-                      ))}
+                        <span className="text-[10px] font-mono font-bold bg-vintage-ink/5 px-2 py-0.5 border border-vintage-ink/10">
+                          {b.transaction_id}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* Recipient Name Field */}
+              {/* Recipient Name Field (Autofilled dari database fontbuyer) */}
               <div className="space-y-1">
-                <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/50">Buyer Name</label>
+                <div className="flex justify-between items-center">
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/50">Buyer Name</label>
+                  {selectedBuyerName && (
+                    <span className="text-[9px] text-green-800 font-bold flex items-center gap-1">
+                      <UserCheck size={12} /> Synced with Buyer Record
+                    </span>
+                  )}
+                </div>
                 <input 
                   type="text" 
                   value={selectedBuyerName} 
-                  onChange={e => setSelectedBuyerName(e.target.value)} 
+                  onChange={e => setSelectedBuyerName(e.target.value.replace(/\b\w/g, l => l.toUpperCase()))} 
                   className="w-full border-b border-vintage-ink/20 py-2 bg-transparent font-bold text-sm outline-none focus:border-vintage-ink" 
-                  placeholder="Customer / John Doe" 
+                  placeholder="Customer / Full Name" 
                 />
               </div>
 
@@ -757,6 +815,10 @@ const PromotionsManager: React.FC = () => {
                   <div className="flex justify-between border-b border-vintage-ink/5 pb-1">
                     <span className="opacity-50">Recipient:</span>
                     <span className="font-bold">{selectedBuyerEmail || "Pending Selection..."}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-vintage-ink/5 pb-1">
+                    <span className="opacity-50">Greeting:</span>
+                    <span className="font-bold">Hello {selectedBuyerName || "Customer"},</span>
                   </div>
                   <div className="flex justify-between border-b border-vintage-ink/5 pb-1">
                     <span className="opacity-50">Coupon Code:</span>
