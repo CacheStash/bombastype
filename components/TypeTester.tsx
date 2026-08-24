@@ -1035,7 +1035,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   /* SINGLE STYLE DISPLAY */
                   <div 
                     ref={(el) => { layerContainerRefs.current['single'] = el; }}
-                    className="relative w-full p-10 md:p-14 pb-8 whitespace-pre-wrap wrap-break-word z-25 pointer-events-auto select-none min-h-full"
+                    className="relative w-full p-10 md:p-14 pb-8 whitespace-pre-wrap wrap-break-word z-25 pointer-events-auto select-none min-h-full cursor-text"
                     style={{ 
                       ...commonFontStyle, 
                       fontSize: `${fontSize}px`, 
@@ -1051,7 +1051,12 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   </div>
                 ) : (
                   /* MULTI-LAYER STACKING DISPLAY */
-                  <div className="relative w-full min-h-full">
+                  <div 
+                    className="relative w-full min-h-full cursor-text"
+                    onClick={() => {
+                      if (textareaRef.current) textareaRef.current.focus();
+                    }}
+                  >
                     {layers.map((layer, stackIdx) => {
                       if (!layer.isVisible) return null;
                       const calculatedZIndex = layers.length - stackIdx;
