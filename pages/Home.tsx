@@ -209,13 +209,13 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
   return (
     <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
      {/* Hero Section */}
-      <section className="text-center mb-16 max-w-5xl mx-auto relative z-10 px-4 pt-12 flex flex-col items-center">
+      <section className="text-center mb-16 w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-6">
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
         
-        {/* HERO IMAGES (RESPONSIVE & CLEAN RATIO) */}
-        <div className="my-6 sm:my-8 w-full flex justify-center pointer-events-none select-none relative h-64 sm:h-80 md:h-110 lg:h-125 max-w-5xl overflow-hidden">
+        {/* HERO IMAGES (PROPORSIONAL LEBAR & TIDAK OVERLAPPING) */}
+        <div className="my-8 sm:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-4/3 sm:aspect-16/10 md:aspect-3/2 max-w-5xl overflow-hidden">
           <AnimatePresence mode="popLayout">
             <motion.img 
               key={currentHeaderIdx}
@@ -225,7 +225,7 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -slideDirection }}
               transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="absolute w-full h-full object-contain scale-115 sm:scale-100"
+              className="absolute inset-0 w-full h-full object-contain scale-120 sm:scale-130 md:scale-140"
             />
           </AnimatePresence>
         </div>
