@@ -228,27 +228,48 @@ export default function Home() {
   };
 
   return (
-    <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
-      {/* 1. Hero Section */}
+     <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
+
+     {/* Hero Section */}
+
       <section className="text-center mb-16 w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
+
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-6">
+
           Retro Refinement: Authentic Vintage & Victorian Typefaces
+
         </motion.p>
-        
-        {/* HERO IMAGES (SELEBAR NAVBAR & PROPORSI AUTO) */}
-        <div className="my-6 sm:my-8 w-full flex justify-center pointer-events-none select-none relative h-64 sm:h-96 md:h-125 lg:h-140 max-w-6xl overflow-visible">
+
+       
+
+        {/* HERO IMAGES (PROPORSIONAL LEBAR & TIDAK OVERLAPPING) */}
+
+        <div className="my-8 sm:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-4/3 sm:aspect-16/10 md:aspect-3/2 max-w-5xl overflow-hidden">
+
           <AnimatePresence mode="popLayout">
-            <motion.img 
+
+            <motion.img
+
               key={currentHeaderIdx}
-              src={HEADER_IMAGES[currentHeaderIdx]} 
-              alt="Authentic Vintage Typefaces" 
+
+              src={HEADER_IMAGES[currentHeaderIdx]}
+
+              alt="Authentic Vintage Typefaces"
+
               initial={{ opacity: 0, x: slideDirection }}
+
               animate={{ opacity: 1, x: 0 }}
+
               exit={{ opacity: 0, x: -slideDirection }}
+
               transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="absolute inset-0 w-full h-full object-contain scale-110 sm:scale-120 md:scale-125"
+
+              className="absolute inset-0 w-full h-full object-contain scale-120 sm:scale-130 md:scale-140"
+
             />
+
           </AnimatePresence>
+
         </div>
 
         <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mt-6 mb-8 leading-relaxed">
