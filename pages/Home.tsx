@@ -136,10 +136,10 @@ export default function Home() {
         } while (next === prev && HEADER_IMAGES.length > 1);
         return next;
       });
-    }, 4500); // Berganti secara random setiap 4.5 detik
+    }, 4500);
     return () => clearInterval(interval);
   }, []);
-const slideDirection = Math.random() > 0.5 ? 20 : -20;
+  const slideDirection = Math.random() > 0.5 ? 20 : -20;
 
   useEffect(() => { fetchData(); }, []);
 
@@ -176,7 +176,14 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
       if (recent) setRecentFonts(recent);
       if (all && all.length > 0) {
         setAllFonts(all);
-        setCurrentTesterFontIndex(Math.floor(Math.random() * all.length));
+        
+        // AUTO SET DEFAULT TESTER KE "BRISWOOD"
+        const briswoodIdx = all.findIndex(f => f.name.toLowerCase().includes('briswood'));
+        if (briswoodIdx !== -1) {
+          setCurrentTesterFontIndex(briswoodIdx);
+        } else {
+          setCurrentTesterFontIndex(0);
+        }
       }
     } catch (err) {
       console.error("Data retrieval failed:", err);
@@ -186,6 +193,20 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
   };
 
   const activeTesterFont = allFonts[currentTesterFontIndex] || null;
+
+  // Preset Briswood Layered Mode
+  const isBriswood = activeTesterFont?.name?.toLowerCase().includes('briswood');
+  const briswoodPreset = isBriswood ? {
+    isLayered: true,
+    initialLayers: [
+      { styleName: 'ENGRAVED', color: '#396B1D', visible: true },
+      { styleName: 'REGULAR', color: '#0B3411', visible: true },
+      { styleName: 'CONTOUR', color: '#FDF6E4', visible: true },
+      { styleName: 'EXTRUDE', color: '#83B46A', visible: true },
+      { styleName: 'EXTRUDE TWO', color: '#D1EAB2', visible: true }
+    ],
+    initialRandomAlternates: true
+  } : {};
 
   const handleNextFont = () => {
     if (allFonts.length <= 1) return;
@@ -208,14 +229,14 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
 
   return (
     <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
-     {/* Hero Section */}
+      {/* 1. Hero Section */}
       <section className="text-center mb-16 w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-6">
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
         
-        {/* HERO IMAGES (PROPORSIONAL LEBAR & TIDAK OVERLAPPING) */}
-        <div className="my-8 sm:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-4/3 sm:aspect-16/10 md:aspect-3/2 max-w-5xl overflow-hidden">
+        {/* HERO IMAGES (SELEBAR NAVBAR & PROPORSI AUTO) */}
+        <div className="my-6 sm:my-8 w-full flex justify-center pointer-events-none select-none relative h-64 sm:h-96 md:h-125 lg:h-140 max-w-6xl overflow-visible">
           <AnimatePresence mode="popLayout">
             <motion.img 
               key={currentHeaderIdx}
@@ -225,7 +246,7 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -slideDirection }}
               transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="absolute inset-0 w-full h-full object-contain scale-120 sm:scale-130 md:scale-140"
+              className="absolute inset-0 w-full h-full object-contain scale-110 sm:scale-120 md:scale-125"
             />
           </AnimatePresence>
         </div>
@@ -233,15 +254,15 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
         <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mt-6 mb-8 leading-relaxed">
           Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, & letterpress design.
         </motion.p>
-        <div className="flex justify-center mt-12 w-full max-w-xl mx-auto relative z-30">
+        <div className="flex justify-center mt-8 w-full max-w-xl mx-auto relative z-30">
           <button onClick={() => navigate('/fonts')} className="vintage-btn btn-reverse px-16 py-4 text-sm tracking-[0.3em]">
             EXPLORE OUR FONTS
           </button>
         </div>
       </section>
 
-      {/* Featured Fonts Section */}
-      <section className="mb-16 md:mb-24 relative z-10 px-4">
+      {/* 2. Featured Fonts Section (Popular Fonts) */}
+      <section className="mb-16 md:mb-24 relative z-10 px-4 max-w-7xl mx-auto">
         <div className="divider">
           <h2 className="text-3xl md:text-5xl font-script capitalize">Popular Fonts</h2>
         </div>
@@ -296,26 +317,7 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
         </div>
       </section>
 
-      {/* Recent Fonts Section */}
-      <section className="mb-16 md:mb-24 relative z-10 px-4">
-        <div className="divider">
-          <h2 className="text-3xl md:text-5xl font-script capitalize">Handpicked Fonts</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10 items-stretch">
-          {!loading && recentFonts.map((font) => (
-            <FontCard 
-              key={font.id}
-              fontName={font.name} 
-              price={font.price} 
-              primaryIndex={font.metadata?.primary_font_index || 0}
-              onAdd={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url })}
-              onClick={() => navigate(`/font/${font.id}`)}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Type Yourself Section */}
+      {/* 3. Type Yourself Section (Pindah ke Bawah Popular Fonts) */}
       {activeTesterFont && (
         <section className="mb-20 md:mb-32 relative z-10 px-4 max-w-7xl mx-auto">
           <div className="divider mb-8">
@@ -333,7 +335,7 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
               </h3>
             </div>
 
-            {/* Tombol Controller Berjajar: [ < ] [ RANDOM TYPEFACE ] [ > ] */}
+            {/* Tombol Controller: [ < ] [ RANDOM TYPEFACE ] [ > ] */}
             <div className="flex items-center gap-1.5">
               {allFonts.length > 1 && (
                 <button 
@@ -371,7 +373,7 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
             </div>
           </div>
 
-          {/* Container TypeTester */}
+          {/* Container TypeTester dengan Preset Default Briswood Layered */}
           <div className="relative border border-vintage-ink/20 bg-vintage-paper shadow-sm">
             <TypeTester 
               key={activeTesterFont.id}
@@ -379,7 +381,8 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
                 ...activeTesterFont,
                 family: `"${activeTesterFont.name}"`,
                 styleCount: Array.isArray(activeTesterFont.font_files) ? activeTesterFont.font_files.length : 1,
-                randomText: activeTesterFont.random_text
+                randomText: activeTesterFont.random_text,
+                ...briswoodPreset
               }} 
             />
 
@@ -412,6 +415,25 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
           </div>
         </section>
       )}
+
+      {/* 4. Handpicked Fonts Section (Paling Bawah) */}
+      <section className="mb-16 md:mb-24 relative z-10 px-4 max-w-7xl mx-auto">
+        <div className="divider">
+          <h2 className="text-3xl md:text-5xl font-script capitalize">Handpicked Fonts</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10 items-stretch">
+          {!loading && recentFonts.map((font) => (
+            <FontCard 
+              key={font.id}
+              fontName={font.name} 
+              price={font.price} 
+              primaryIndex={font.metadata?.primary_font_index || 0}
+              onAdd={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url })}
+              onClick={() => navigate(`/font/${font.id}`)}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
