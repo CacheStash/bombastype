@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, X, Loader2, Calendar, Trash2, Edit3, Search, Send, Calculator, MailCheck, UserCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -602,7 +603,7 @@ const PromotionsManager: React.FC = () => {
 
       {/* MODAL 1: GENERATOR KUPON & KALKULATOR */}
       {isAddingCoupon && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4">
           <div className="bg-vintage-paper border border-vintage-ink/20 p-8 max-w-lg w-full shadow-2xl text-vintage-ink animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
               <div>
@@ -713,7 +714,7 @@ const PromotionsManager: React.FC = () => {
 
       {/* MODAL 2: DISPATCH COUPON TO BUYER (Z-INDEX 100 & AUTOFILL FULL NAME) */}
       {isSendingCoupon && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4">
           <div className="bg-vintage-paper border border-vintage-ink max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl text-vintage-ink animate-in zoom-in-95">
             <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
               <div>
