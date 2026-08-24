@@ -169,6 +169,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const isDraggingSelection = useRef(false);
   const dragAnchorIdx = useRef<number | null>(null);
+  const hasRandomizedPreset = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const updateCaretPosition = (pos: number | null) => {
@@ -308,7 +309,8 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
       setSelectedCharIndex(null);
 
       // OTOMATIS RANDOMIZE ALTERNATES KHUSUS PRESET DI HOME
-      if (configAny.initialRandomAlternates && font.tables.gsub?.features && font.tables.gsub?.lookups) {
+      if (configAny.initialRandomAlternates && !hasRandomizedPreset.current && font.tables.gsub?.features && font.tables.gsub?.lookups) {
+        hasRandomizedPreset.current = true;
         const altFeatureTags = [
           'aalt', 'salt', 'swsh', 'titl', 'calt', 'dlig', 'liga',
           ...Array.from({ length: 20 }, (_, i) => `ss${String(i + 1).padStart(2, '0')}`)
@@ -380,7 +382,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
           setCharOverrides(randomCharMap);
         }
       }
-      
+
     });
   }, [config, activeStyleIndex]);
 
