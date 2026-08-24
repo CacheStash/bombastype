@@ -214,7 +214,7 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
         
-       <div className="my-8 w-full flex justify-center pointer-events-none select-none relative aspect-video max-w-4xl lg:max-w-5xl">
+       <div className="my-6 sm:my-8 w-[calc(100%+2rem)] -mx-4 sm:w-full sm:mx-0 flex justify-center pointer-events-none select-none relative h-80 sm:h-96 md:h-[450px] lg:h-[500px] max-w-4xl lg:max-w-5xl overflow-visible">
           <AnimatePresence mode="popLayout">
             <motion.img 
               key={currentHeaderIdx}
@@ -224,7 +224,7 @@ const slideDirection = Math.random() > 0.5 ? 20 : -20;
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -slideDirection }}
               transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="absolute w-full h-full object-contain"
+              className="absolute w-full h-full object-contain scale-135 sm:scale-100"
             />
           </AnimatePresence>
         </div>
