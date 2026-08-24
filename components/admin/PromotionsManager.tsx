@@ -57,7 +57,7 @@ const PromotionsManager: React.FC = () => {
     fetchBuyersData();
   }, []);
 
-  // Handle klik di luar autocomplete dropdown
+  // Tutup autocomplete jika klik di luar search input
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
@@ -86,12 +86,10 @@ const PromotionsManager: React.FC = () => {
 
   const fetchBuyersData = async () => {
     try {
-      // 1. Ambil data profil fontbuyer (sumber Hello, Full Name)
       const { data: buyers } = await supabase
         .from('fontbuyer')
         .select('id, email, full_name');
 
-      // 2. Ambil data history transaksi
       const { data: history } = await supabase
         .from('font_history')
         .select('user_id, transaction_id, created_at')
@@ -109,7 +107,6 @@ const PromotionsManager: React.FC = () => {
         const combinedList: any[] = [];
         const seenTx = new Set<string>();
 
-        // Masukkan yang memiliki transaksi
         (history || []).forEach(h => {
           const profile = buyerMap[h.user_id];
           if (profile && profile.email && !seenTx.has(`${profile.email}-${h.transaction_id}`)) {
@@ -122,7 +119,6 @@ const PromotionsManager: React.FC = () => {
           }
         });
 
-        // Masukkan buyer yang belum ada di history list
         buyers.forEach(b => {
           if (!combinedList.some(item => item.email.toLowerCase() === b.email.toLowerCase())) {
             combinedList.push({
@@ -309,7 +305,6 @@ const PromotionsManager: React.FC = () => {
     fetchPromos();
   };
 
-  // Filter buyer list berdasarkan input search
   const filteredBuyers = buyersList.filter(b => {
     const q = searchTxOrEmail.toLowerCase().trim();
     if (!q) return true;
@@ -601,9 +596,9 @@ const PromotionsManager: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 1: GENERATOR KUPON & KALKULATOR */}
-      {isAddingCoupon && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4">
+      {/* MODAL 1: GENERATOR KUPON & KALKULATOR (PORTAL OUTSIDE SCROLL CONTEXT) */}
+      {isAddingCoupon && createPortal(
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
           <div className="bg-vintage-paper border border-vintage-ink/20 p-8 max-w-lg w-full shadow-2xl text-vintage-ink animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
               <div>
@@ -709,12 +704,13 @@ const PromotionsManager: React.FC = () => {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* MODAL 2: DISPATCH COUPON TO BUYER (Z-INDEX 100 & AUTOFILL FULL NAME) */}
-      {isSendingCoupon && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4">
+      {/* MODAL 2: DISPATCH COUPON TO BUYER (PORTAL OUTSIDE SCROLL CONTEXT) */}
+      {isSendingCoupon && createPortal(
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
           <div className="bg-vintage-paper border border-vintage-ink max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl text-vintage-ink animate-in zoom-in-95">
             <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
               <div>
@@ -845,7 +841,8 @@ const PromotionsManager: React.FC = () => {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
