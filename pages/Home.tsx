@@ -302,21 +302,7 @@ export default function Home() {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105" 
                     />
                   )}
-                  {/* FEATURE BADGES (LAYERED & VARIABLE) */}
-                  <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
-                    {font.metadata?.is_layered && (
-                      <span className="bg-vintage-ink text-vintage-paper px-2.5 py-1 text-[8px] font-bold tracking-[0.2em] uppercase border border-vintage-paper/20 shadow-xs flex items-center gap-1">
-                        <span className="text-vintage-accent">✦</span> LAYERED ENGINE
-                      </span>
-                    )}
-                    {(font.metadata?.is_variable || (Array.isArray(font.axes) && font.axes.length > 0)) && (
-                      <span className="bg-vintage-paper text-vintage-ink px-2.5 py-1 text-[8px] font-bold tracking-[0.2em] uppercase border border-vintage-ink shadow-xs flex items-center gap-1">
-                        <span className="text-vintage-accent">◈</span> VARIABLE AXIS
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink z-10">
+                  <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink">
                     <span className="text-vintage-accent mr-0.5">$</span>{font.price}
                   </div>
                 </div>
