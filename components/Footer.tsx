@@ -43,6 +43,12 @@ export default function Footer() {
     setStatus('loading');
 
     try {
+      const { validateLegitEmail } = await import('../lib/emailValidator');
+      const validation = await validateLegitEmail(email);
+      if (!validation.isValid) {
+        throw new Error(validation.message || "INVALID_EMAIL");
+      }
+
       const { error } = await supabase
         .from('fontsubscribers')
         .insert([{ 
@@ -64,7 +70,7 @@ export default function Footer() {
       setStatus('error');
       alert(err.message === "EMAIL_ALREADY_SUBSCRIBED" 
         ? "You are already subscribed to our archival updates!" 
-        : "Subscription failed. Please check your connection and try again.");
+        : err.message || "Subscription failed. Please check your connection and try again.");
       setTimeout(() => setStatus('idle'), 3000);
     }
   };

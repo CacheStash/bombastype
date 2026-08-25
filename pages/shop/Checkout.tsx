@@ -266,9 +266,10 @@ const Checkout: React.FC = () => {
 
   // --- FREE TRIAL HANDLER ---
   const handleFreeTrial = async () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      alert("PLEASE ENTER A VALID EMAIL ADDRESS");
+    const { validateLegitEmail } = await import('../../lib/emailValidator');
+    const validation = await validateLegitEmail(email);
+    if (!validation.isValid) {
+      alert(validation.message || "PLEASE ENTER A VALID EMAIL ADDRESS");
       return;
     }
 
@@ -578,9 +579,11 @@ const Checkout: React.FC = () => {
                           label: "pay", 
                           height: 50 
                         }}
-                        onClick={(data, actions) => {
-                          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                            alert("PLEASE PROVIDE A VALID RECEIVER EMAIL (BLOCK 00) BEFORE PROCEEDING.");
+                       onClick={async (data, actions) => {
+                          const { validateLegitEmail } = await import('../../lib/emailValidator');
+                          const validation = await validateLegitEmail(email);
+                          if (!validation.isValid) {
+                            alert(validation.message || "PLEASE PROVIDE A VALID RECEIVER EMAIL (BLOCK 00) BEFORE PROCEEDING.");
                             return actions.reject();
                           }
                           return actions.resolve();
@@ -616,7 +619,15 @@ const Checkout: React.FC = () => {
                       No payment gateway required. Proceed to claim your assets directly.
                     </p>
                     <button 
-                      onClick={() => handlePurchaseSuccess(orderId)}
+                      onClick={async () => {
+                        const { validateLegitEmail } = await import('../../lib/emailValidator');
+                        const validation = await validateLegitEmail(email);
+                        if (!validation.isValid) {
+                          alert(validation.message || "PLEASE ENTER A VALID EMAIL ADDRESS (BLOCK 00)");
+                          return;
+                        }
+                        await handlePurchaseSuccess(orderId);
+                      }}
                       disabled={loading || !name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || trialConflicts.length > 0}
                       className="vintage-btn w-full py-6 text-xs bg-vintage-ink! text-vintage-background! tracking-[0.4em] hover:opacity-90 transition-all disabled:opacity-30"
                     >
