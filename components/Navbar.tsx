@@ -172,15 +172,15 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
           {/* SISI KANAN: SEARCH & ACTIONS */}
           <div className="flex-1 flex items-center justify-end gap-4 md:gap-6 text-vintage-ink">
             
-            {/* Search Module */}
-            <div className="relative flex-1 flex justify-end max-w-lg lg:ml-8">
+            {/* Search Module - Desktop Inline / Mobile Trigger Only */}
+            <div className="relative flex-none lg:flex-1 flex justify-end lg:max-w-lg lg:ml-8">
               <AnimatePresence>
                 {isSearchOpen && (
                   <motion.div 
                     initial={{ width: 0, opacity: 0 }}
                     animate={{ width: "100%", opacity: 1 }}
                     exit={{ width: 0, opacity: 0 }}
-                    className="overflow-hidden flex justify-end"
+                    className="hidden lg:flex overflow-hidden justify-end"
                   >
                     <input
                       autoFocus
@@ -193,14 +193,21 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="flex-none hover:text-vintage-accent ml-2 transition-transform active:scale-90">
+              
+              <button 
+                onClick={() => {
+                  setIsSearchOpen(!isSearchOpen);
+                  if (!isSearchOpen) setIsMobileMenuOpen(false);
+                }} 
+                className="flex-none hover:text-vintage-accent transition-transform active:scale-90"
+              >
                 {isSearchOpen ? <X size={18} /> : <Search size={18} />}
               </button>
               
+              {/* DESKTOP SEARCH DROPDOWN */}
               {isSearchOpen && suggestions.length > 0 && (
-                <div className="absolute top-full right-0 mt-4 w-80 md:w-112.5 bg-vintage-paper border border-vintage-ink shadow-2xl p-0 z-50 animate-in fade-in slide-in-from-top-2 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                <div className="hidden lg:block absolute top-full right-0 mt-4 w-112.5 bg-vintage-paper border border-vintage-ink shadow-2xl p-0 z-50 animate-in fade-in slide-in-from-top-2 max-h-[75vh] overflow-y-auto custom-scrollbar">
                   {(() => {
-                    // 1. Logika Grouping Dinamis berdasarkan Path
                     const groups: Record<string, any[]> = {};
                     suggestions.forEach(item => {
                       let category = 'Archive';
@@ -214,12 +221,10 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                       groups[category].push(item);
                     });
 
-                    // 2. Render Groups (Fonts Selalu Pertama)
                     return Object.keys(groups)
                       .sort((a,b) => a === 'Fonts' ? -1 : b === 'Fonts' ? 1 : a.localeCompare(b))
                       .map(groupName => (
                         <div key={groupName} className="flex flex-col border-b border-vintage-ink/10 last:border-b-0">
-                          {/* Label Kategori - Heritage Style */}
                           <div className="bg-vintage-ink/3 px-6 py-2 border-b border-vintage-ink/5">
                             <span className="text-[9px] font-bold tracking-[0.4em] text-vintage-accent uppercase italic">{groupName}</span>
                           </div>
@@ -234,14 +239,12 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                               >
                                 <div className="flex flex-col gap-4">
                                   <div className="flex justify-between items-center">
-                                    {/* Judul tidak lagi uppercase, menggunakan font-display */}
                                     <span className="text-lg md:text-xl font-display leading-none text-vintage-ink group-hover/item:text-vintage-accent transition-colors">
                                       {item.title}
                                     </span>
                                     <ArrowRight size={16} className="opacity-0 group-hover/item:opacity-100 -translate-x-4 group-hover/item:translate-x-0 transition-all text-vintage-accent" />
                                   </div>
                                   
-                                  {/* 3 Thumbnail Heritage Style */}
                                   {item.type === 'font' && (
                                     <div className="flex gap-2 h-16">
                                       {(() => {
@@ -336,6 +339,99 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                   {link.name} <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Link>
               ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {/* Mobile Search Slide Down Panel */}
+        <AnimatePresence>
+          {isSearchOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-full left-0 w-full bg-vintage-paper border-b border-vintage-ink p-4 lg:hidden z-40 shadow-xl"
+            >
+              <div className="flex items-center w-full border border-vintage-ink bg-vintage-paper">
+                <div className="p-3 border-r border-vintage-ink flex items-center justify-center opacity-60">
+                  <Search size={16} />
+                </div>
+                <input
+                  autoFocus
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  placeholder="TYPE TO SEARCH FONTS & ARCHIVE..."
+                  className="w-full p-3 text-[11px] font-bold uppercase tracking-widest bg-transparent outline-none placeholder:text-vintage-ink/40"
+                />
+              </div>
+
+              {/* Mobile Auto-Suggestions */}
+              {suggestions.length > 0 && (
+                <div className="border-x border-b border-vintage-ink bg-vintage-paper divide-y divide-vintage-ink/10 max-h-[60vh] overflow-y-auto mt-[-1px]">
+                  {(() => {
+                    const groups: Record<string, any[]> = {};
+                    suggestions.forEach(item => {
+                      let category = 'Archive';
+                      if (item.type === 'font') {
+                        category = 'Fonts';
+                      } else {
+                        const pathName = item.path.replace(/^\//, '').split('/')[0];
+                        category = pathName ? pathName.charAt(0).toUpperCase() + pathName.slice(1) : 'Studio';
+                      }
+                      if (!groups[category]) groups[category] = [];
+                      groups[category].push(item);
+                    });
+
+                    return Object.keys(groups)
+                      .sort((a,b) => a === 'Fonts' ? -1 : b === 'Fonts' ? 1 : a.localeCompare(b))
+                      .map(groupName => (
+                        <div key={groupName} className="flex flex-col">
+                          <div className="bg-vintage-ink/5 px-4 py-2 border-b border-vintage-ink/5">
+                            <span className="text-[8px] font-bold tracking-[0.3em] text-vintage-accent uppercase italic">{groupName}</span>
+                          </div>
+                          <div className="divide-y divide-vintage-ink/5">
+                            {groups[groupName].map((item, idx) => (
+                              <Link 
+                                key={idx} 
+                                to={item.path} 
+                                className="block p-4 hover:bg-vintage-ink/5 transition-all"
+                                onClick={() => setIsSearchOpen(false)}
+                              >
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-base font-display text-vintage-ink">
+                                      {item.title}
+                                    </span>
+                                    <ArrowRight size={14} className="text-vintage-accent" />
+                                  </div>
+
+                                  {item.type === 'font' && (
+                                    <div className="flex gap-2 h-12">
+                                      {(() => {
+                                        const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+                                        const images = item.font_images || meta?.preview_images || [];
+                                        
+                                        return images.slice(0, 3).map((img: string, i: number) => (
+                                          <div key={i} className="flex-1 bg-white/20 border border-vintage-ink/10 p-1 overflow-hidden">
+                                            <img 
+                                              src={resolvePreviewUrl(img) || ''} 
+                                              className="w-full h-full object-contain" 
+                                              alt="preview" 
+                                            />
+                                          </div>
+                                        ));
+                                      })()}
+                                    </div>
+                                  )}
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ));
+                  })()}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
