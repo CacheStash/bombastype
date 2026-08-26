@@ -361,13 +361,13 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   placeholder="TYPE TO SEARCH FONTS & ARCHIVE..."
-                  className="w-full p-3 text-[11px] font-bold uppercase tracking-widest bg-transparent outline-none placeholder:text-vintage-ink/40"
+                  className="w-full p-3 text-base md:text-sm font-bold uppercase tracking-widest bg-transparent outline-none placeholder:text-vintage-ink/40"
                 />
               </div>
 
               {/* Mobile Auto-Suggestions */}
               {suggestions.length > 0 && (
-                <div className="border-x border-b border-vintage-ink bg-vintage-paper divide-y divide-vintage-ink/10 max-h-[60vh] overflow-y-auto mt-[-1px]">
+                <div className="border-x border-b border-vintage-ink bg-vintage-paper divide-y divide-vintage-ink/10 max-h-[60vh] overflow-y-auto -mt-px">
                   {(() => {
                     const groups: Record<string, any[]> = {};
                     suggestions.forEach(item => {
