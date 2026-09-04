@@ -593,7 +593,7 @@ export default {
 
         const apiToken = env.CF_API_TOKEN;
         const zoneId = env.CF_ZONE_ID || "d3925ef8973fcf257e187601cfb72373";
-        const accountId = env.CF_ACCOUNT_ID || "5ce335e05c30bbab4c880244f839836f";
+        const accountId = env.CF_ACCOUNT_ID || "346e497de742c671b7effa8e76f51832";
 
         if (!apiToken) {
           return new Response(JSON.stringify({ 
