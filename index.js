@@ -578,6 +578,108 @@ export default {
       }
     }
 
+
+    // --- 6C. API Cloudflare Web Analytics (Admin Only) ---
+    if (url.pathname === '/api/admin/analytics' && request.method === 'GET') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), { 
+            status: 403, 
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+          });
+        }
+
+        const apiToken = env.CF_API_TOKEN;
+        const zoneId = env.CF_ZONE_ID || "d3925ef8973fcf257e187601cfb72373";
+        const accountId = env.CF_ACCOUNT_ID || "5ce335e05c30bbab4c880244f839836f";
+
+        if (!apiToken) {
+          return new Response(JSON.stringify({ 
+            error: "CF_API_TOKEN_MISSING", 
+            message: "Harap set CF_API_TOKEN di Cloudflare Worker secrets atau wrangler.toml" 
+          }), { 
+            status: 500, 
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+          });
+        }
+
+        const days = parseInt(url.searchParams.get('days') || '7', 10);
+        const dateSince = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const dateUntil = new Date().toISOString().split('T')[0];
+
+        // Query GraphQL Cloudflare Analytics (Zone + Worker Invocations)
+        const graphqlQuery = {
+          query: `
+            query GetAnalytics($zoneId: String!, $dateSince: String!, $dateUntil: String!, $accountTag: String!) {
+              viewer {
+                zones(filter: { zoneTag: $zoneId }) {
+                  httpRequests1dGroups(limit: 30, filter: { date_geq: $dateSince, date_leq: $dateUntil }, orderBy: [date_DESC]) {
+                    dimensions {
+                      date
+                    }
+                    sum {
+                      requests
+                      bytes
+                      pageViews
+                      countryMap {
+                        clientCountryName
+                        requests
+                      }
+                    }
+                    uniq {
+                      uniques
+                    }
+                  }
+                }
+                accounts(filter: { accountTag: $accountTag }) {
+                  workersInvocationsAdaptive(limit: 30, filter: { scriptName: "font", datetime_geq: "${dateSince}T00:00:00Z" }) {
+                    sum {
+                      subrequests
+                      requests
+                      errors
+                    }
+                    dimensions {
+                      datetimeHour
+                    }
+                  }
+                }
+              }
+            }
+          `,
+          variables: {
+            zoneId: zoneId,
+            accountTag: accountId,
+            dateSince: dateSince,
+            dateUntil: dateUntil
+          }
+        };
+
+        const cfRes = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(graphqlQuery)
+        });
+
+        const cfData = await cfRes.json();
+        return new Response(JSON.stringify(cfData), {
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Access-Control-Allow-Origin': '*' 
+          }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+    
     
     // --- 7. API Secure ZIP Download (For Buyers) ---
     if (url.pathname.startsWith('/api/download-zip')) {

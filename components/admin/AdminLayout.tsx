@@ -4,7 +4,8 @@ import {
   Tag, Menu, X, Mail, FileText, Power, Loader2, CreditCard
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-
+import { Globe } from 'lucide-react';
+import WebAnalytics from './WebAnalytics';
 // Content Components
 import ProductManager from './ProductManager';
 import ContentManager from './ContentManager';
@@ -140,8 +141,10 @@ const AdminDashboard = () => {
     { id: 'promotions', label: 'Promotional Deals', icon: Tag },
     { id: 'orders', label: 'Customer Orders', icon: ShoppingCart },
     { id: 'content', label: 'Site Content', icon: FileText },
+    { id: 'analytics', label: 'Web Analytics', icon: Globe },
   ];
 
+  
   // --- RENDER HELPERS ---
 
   const renderActiveContent = () => {
@@ -152,6 +155,7 @@ const AdminDashboard = () => {
       case 'promotions': return <PromotionsManager />;
       case 'orders': return <Orders />;
       case 'content': return <ContentManager />;
+      case 'analytics': return <WebAnalytics />;
       default: return <ProductManager />;
     }
   };
