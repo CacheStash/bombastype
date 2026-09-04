@@ -612,7 +612,7 @@ export default {
         // Query GraphQL Cloudflare Analytics (Zone + Worker Invocations)
         const graphqlQuery = {
           query: `
-            query GetAnalytics($zoneId: String!, $dateSince: String!, $dateUntil: String!) {
+            query GetAnalytics($zoneId: String!, $dateSince: String!, $dateUntil: String!, $accountTag: String!) {
               viewer {
                 zones(filter: { zoneTag: $zoneId }) {
                   httpRequests1dGroups(limit: 30, filter: { date_geq: $dateSince, date_leq: $dateUntil }, orderBy: [date_DESC]) {
@@ -633,11 +633,24 @@ export default {
                     }
                   }
                 }
+                  accounts(filter: { accountTag: $accountTag }) {
+                  workersInvocationsAdaptive(limit: 30, filter: { scriptName: "font", datetime_geq: "${dateSince}T00:00:00Z" }) {
+                    sum {
+                      subrequests
+                      requests
+                      errors
+                    }
+                    dimensions {
+                      datetimeHour
+                    }
+                  }
+                }
               }
             }
           `,
           variables: {
             zoneId: zoneId,
+            accountTag: accountId,
             dateSince: dateSince,
             dateUntil: dateUntil
           }
