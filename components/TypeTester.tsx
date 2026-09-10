@@ -904,7 +904,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
             isSelected ? 'bg-vintage-ink! text-vintage-paper!' : ''
           }`}
         >
-          {overrideGlyphIdx !== undefined && (!overrideFeature || overrideFeature === 'alt') ? (
+          {overrideGlyphIdx !== undefined ? (
             renderInlineGlyphSvg(overrideGlyphIdx, fontSize, fontIdx) || char
           ) : (
             char
