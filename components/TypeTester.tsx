@@ -600,9 +600,10 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
         ...prev,
         [selectedCharIndex]: alt.glyphIndex
       }));
+      // Simpan karakter representasi asli dari alternate tersebut
       setCharOverrides(prev => ({
         ...prev,
-        [selectedCharIndex]: alt.featureTag || 'alt'
+        [selectedCharIndex]: alt.featureTag || 'salt'
       }));
     }
 
@@ -937,11 +938,15 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
             isSelected ? 'bg-vintage-ink! text-vintage-paper!' : ''
           }`}
         >
-          {overrideGlyphIdx !== undefined ? (
-            renderInlineGlyphSvg(overrideGlyphIdx, fontSize, fontIdx) || char
-          ) : (
-            char
-          )}
+          {(() => {
+            if (overrideGlyphIdx !== undefined && loadedFontObj) {
+              const g = loadedFontObj.glyphs.get(overrideGlyphIdx);
+              if (g && g.unicode) {
+                return String.fromCharCode(g.unicode);
+              }
+            }
+            return char;
+          })()}
         </span>
       );
     });
