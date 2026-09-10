@@ -657,6 +657,31 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
 
     try {
       const pathData = glyph.getPath(0, baselineY, targetSize).toPathData(2);
+      const weightEntry = Object.entries(axesValues).find(([tag]) => {
+        const t = tag.toLowerCase();
+        return t === 'wght' || t === 'weight';
+      });
+      const currentWeight = weightEntry ? weightEntry[1] : 400;
+
+      const matchedAxis = detectedAxes.find((a: any) => {
+        const t = (a.tag || '').toLowerCase();
+        return t === 'wght' || t === 'weight';
+      });
+      const minWeight = matchedAxis?.min ?? 400;
+      const maxWeight = matchedAxis?.max ?? 900;
+      const weightRange = Math.max(1, maxWeight - minWeight);
+      const weightProgress = Math.max(0, (currentWeight - minWeight) / weightRange);
+
+      // Hitung stroke ekstra proporsional terhadap ukuran font (targetSize)
+      const strokeExtra = weightProgress > 0 ? weightProgress * (targetSize * 0.08) : 0;
+
+      // Ambil nilai Slant jika ada (SLNT / slant / ital)
+      const slantEntry = Object.entries(axesValues).find(([tag]) => {
+        const t = tag.toLowerCase();
+        return t === 'slnt' || t === 'slant' || t === 'ital';
+      });
+      const slantVal = slantEntry ? slantEntry[1] : 0;
+
       return (
         <span 
           className="inline relative pointer-events-none select-none"
@@ -675,12 +700,20 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
               position: 'absolute',
               top: `-${baselineY}px`,
               left: 0,
-              overflow: 'visible'
+              overflow: 'visible',
+              transform: slantVal !== 0 ? `skewX(${-slantVal}deg)` : undefined,
+              transformOrigin: `0% ${baselineY}px`
             }} 
             viewBox={`0 0 ${advanceWidth} ${svgHeight}`} 
             className="fill-current pointer-events-none"
           >
-            <path d={pathData} />
+            <path 
+              d={pathData} 
+              stroke="currentColor"
+              strokeWidth={strokeExtra}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
           </svg>
         </span>
       );
