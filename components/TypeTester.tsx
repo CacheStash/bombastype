@@ -471,7 +471,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                 }
               }
 
-              extractedIndices.forEach((altIdx: any) => {
+              extractedIndices.forEach((altIdx: any, idxInFeature: number) => {
                 const numIdx = Number(altIdx);
                 if (isNaN(numIdx) || numIdx === 0 || numIdx === glyphIndex) return;
                 
@@ -482,10 +482,18 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   ? String.fromCharCode(targetGlyph.unicode) 
                   : targetChar;
 
-                const effectiveTag = featureRecord.tag === 'aalt' ? 'salt' : featureRecord.tag;
+                const rawTag = featureRecord.tag === 'aalt' ? 'salt' : featureRecord.tag;
+                // Jika fitur mendukung multi-index seperti salt/swsh, cantumkan nomor urutannya (1, 2, 3...)
+                const effectiveTagWithIndex = (rawTag === 'salt' || rawTag === 'swsh') 
+                  ? `"${rawTag}" ${idxInFeature + 1}`
+                  : `"${rawTag}" 1`;
 
                 if (!alternates.some(a => a.glyphIndex === numIdx)) {
-                  alternates.push({ char: charStr, glyphIndex: numIdx, featureTag: effectiveTag });
+                  alternates.push({ 
+                    char: charStr, 
+                    glyphIndex: numIdx, 
+                    featureTag: effectiveTagWithIndex 
+                  });
                 }
               });
             } catch (e) {
@@ -909,9 +917,13 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
       const overrideGlyphIdx = glyphOverrides[i];
       const overrideFeature = charOverrides[i];
 
-      const activeCharFeatures = overrideFeature && overrideFeature !== 'alt'
-        ? (globalActiveFeatureString === 'normal' ? `"${overrideFeature}" 1` : `"${overrideFeature}" 1, ${globalActiveFeatureString}`)
-        : globalActiveFeatureString;
+      let activeCharFeatures = globalActiveFeatureString;
+      if (overrideFeature && overrideFeature !== 'alt') {
+        const featureStr = overrideFeature.includes('"') ? overrideFeature : `"${overrideFeature}" 1`;
+        activeCharFeatures = globalActiveFeatureString === 'normal' 
+          ? featureStr 
+          : `${featureStr}, ${globalActiveFeatureString}`;
+      }
 
       const isCurrentActiveLayer = fontIdx === (layers[0]?.fontIndex ?? activeStyleIndex);
       const isSelected = selectionRange 
