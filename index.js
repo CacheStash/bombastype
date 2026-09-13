@@ -30,10 +30,19 @@ async function fetchFileBuffer(fileName, env) {
   const object = await env.R2_BUCKET.get(fileName);
   if (object) return { body: await object.arrayBuffer(), contentType: object.httpMetadata?.contentType };
 
- // 2. Jika tidak ada di R2, asumsikan ini adalah Google Drive ID
-  // Tambahkan confirm=t untuk meminimalkan hambatan pada file yang lebih besar
-  const driveUrl = `https://drive.google.com/uc?export=download&id=${fileName}&confirm=t`;
-  const res = await fetch(driveUrl);
+  // 2. Jika tidak ada di R2, asumsikan ini adalah Google Drive ID
+  // Gunakan Google UserContent CDN (lh3) untuk performa lebih cepat dan bebas batas lonjakan trafik/virus HTML
+  const driveUrl = `https://lh3.googleusercontent.com/d/${fileName}`;
+  let res = await fetch(driveUrl);
+
+  // Fallback ke uc?export=download jika lh3 gagal atau dibatasi
+  if (!res.ok || (res.headers.get('content-type') || '').includes('text/html')) {
+    const fallbackUrl = `https://drive.google.com/uc?export=download&id=${fileName}&confirm=t`;
+    const fallbackRes = await fetch(fallbackUrl);
+    if (fallbackRes.ok) {
+      res = fallbackRes;
+    }
+  }
   
   if (res.ok) {
     const contentType = res.headers.get('content-type') || '';
