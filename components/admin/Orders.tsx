@@ -5,7 +5,32 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Search, ChevronLeft, ChevronRight, Download, ShoppingBag, FileText } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Download, ShoppingBag, FileText, ShieldCheck } from 'lucide-react';
+
+const MASTER_TIER_LABELS: Record<string, Record<string, string>> = {
+  desktop: { solo: '1 USER ONLY', team: 'UP TO 30 USER', studio: 'UP TO 100 USER', enterprise: 'UNLIMITED USER' },
+  social_web: { small_50k: '50K VIEWS', medium_500k: '500K VIEWS', large_5m: '2M VIEWS', enterprise_unlimited: 'UNLIMITED VIEWS' },
+  logo_branding: { personal: 'PERSONAL BRANDING', solo: '1-10 EMPLOYEES', team: '11-50 EMPLOYEES', studio: '51-250 EMPLOYEES', enterprise: '251+ EMPLOYEES' },
+  app: { solo: '1 TITLE', team: 'UP TO 10 TITLES', studio: 'UP TO 50 TITLES', enterprise: 'UNLIMITED TITLES' },
+  server: { solo: 'SINGLE', studio: 'UP TO 50 SERVERS', enterprise: 'UNLIMITED' },
+  broadcast: { solo: 'REGIONAL', studio: 'NATIONAL', enterprise: 'WORLDWIDE' }
+};
+
+const TEXT_DB: Record<string, any> = {
+  trial: {
+    title: "01. PERSONAL USE ONLY (DEMO)",
+    grant: "Permitted exclusively for personal, non-commercial use (e.g. educational assignments, portfolio pieces, or non-profit testing).",
+    charSet: "The Demo version is a trial asset and contains a limited glyph set.",
+    restrictions: "Commercial utilization, business promotion, or revenue-generating activities are strictly prohibited."
+  },
+  desktop: "DESKTOP / PRINT: Install on workstations to create static visual content (PNG, JPG, PDF) for digital and print media.",
+  social_web: "DIGITAL MEDIA (SOCIAL/WEB): Specifically for digital platforms, including website embedding and social media advertising.",
+  logo_branding: "LOGO & BRANDING: Utilize the font as a core element of a visual identity system (Logos, Wordmarks).",
+  app: "APP / GAME / EBOOK: Embed font software into mobile applications, software, games, or electronic publications.",
+  broadcast: "BROADCAST: For motion graphics, television, cinema, streaming, and video advertisements.",
+  server: "SERVER: Install on a server to facilitate automated end-user customization (Web-to-Print).",
+  corporate: "CORPORATE ALL-IN-ONE: A comprehensive license covering all categories for an entire organization with no limits on seats or impressions."
+};
 
 const Orders = () => {
   const [orders, setOrders] = useState<any[]>([]);
@@ -14,6 +39,7 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [downloadingTx, setDownloadingTx] = useState<string | null>(null);
   const itemsPerPage = 20;
 
   const [isExporting, setIsExporting] = useState(false);
@@ -111,6 +137,102 @@ const Orders = () => {
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
+  const handleDownloadLicenseTxt = async (order: any) => {
+    setDownloadingTx(order.transaction_id);
+    try {
+      let buyerName = 'N/A';
+      let buyerAddress = 'N/A';
+      let buyerEmail = order.fontbuyer?.email || order.buyer_email || 'N/A';
+
+      // 1. Ambil detail fontbuyer untuk mengisi LICENSE.txt resmi
+      const { data: historyRows } = await supabase
+        .from('font_history')
+        .select(`
+          fontbuyer (
+            full_name,
+            address,
+            email
+          )
+        `)
+        .eq('transaction_id', order.transaction_id)
+        .limit(1);
+
+      if (historyRows && historyRows.length > 0 && historyRows[0].fontbuyer) {
+        const buyer = historyRows[0].fontbuyer as any;
+        if (buyer.full_name) buyerName = buyer.full_name;
+        if (buyer.address) buyerAddress = buyer.address;
+        if (buyer.email) buyerEmail = buyer.email;
+      } else if (buyerEmail && buyerEmail !== 'N/A') {
+        const { data: directBuyer } = await supabase
+          .from('fontbuyer')
+          .select('full_name, address, email')
+          .eq('email', buyerEmail)
+          .maybeSingle();
+
+        if (directBuyer) {
+          if (directBuyer.full_name) buyerName = directBuyer.full_name;
+          if (directBuyer.address) buyerAddress = directBuyer.address;
+          if (directBuyer.email) buyerEmail = directBuyer.email;
+        }
+      }
+
+      const isTrial = (order.download_type || '').toLowerCase() === 'trial' || (order.download_type || '').toLowerCase() === 'demo';
+      const rawTier = (order.tier || 'solo').toLowerCase();
+      const usages: string[] = isTrial ? ['trial'] : (order.usages && order.usages.length > 0 ? order.usages : ['desktop']);
+      const issueDate = order.download_date ? new Date(order.download_date).toLocaleDateString() : new Date().toLocaleDateString();
+      const fontDisplayName = order.fonts?.name || order.font_name || 'Bombastype Font';
+
+      // 2. Susun isi LICENSE.txt sesuai protokol resmi Bombastype
+      let licenseBody = `BOMBASTYPE — OFFICIAL LICENSE CERTIFICATE\n`;
+      licenseBody += `========================================================================\n`;
+      licenseBody += `ORDER ID       : ${order.transaction_id || 'N/A'} (USE AS PASSWORD RESETTER)\n`;
+      licenseBody += `LICENSE HOLDER : ${buyerEmail} (USERNAME)\n`;
+      licenseBody += `LICENSEE NAME  : ${buyerName}\n`;
+      licenseBody += `ADDRESS        : ${buyerAddress}\n`;
+      licenseBody += `ISSUE DATE     : ${issueDate}\n`;
+      licenseBody += `ASSET NAME     : ${fontDisplayName}\n`;
+      licenseBody += `------------------------------------------------------------------------\n\n`;
+
+      licenseBody += `LICENSED USAGE TERMS:\n\n`;
+      usages.forEach((u: string, i: number) => {
+        if (isTrial) {
+          licenseBody += `${i + 1}. ${TEXT_DB.trial.title}:\n`;
+          licenseBody += `${TEXT_DB.trial.grant}\n\n`;
+          licenseBody += `CHARACTER SET: ${TEXT_DB.trial.charSet}\n\n`;
+          licenseBody += `RESTRICTIONS: ${TEXT_DB.trial.restrictions}\n\n`;
+        } else {
+          const specificLabel = MASTER_TIER_LABELS[u]?.[rawTier] || rawTier.toUpperCase();
+          const title = `${u.replace('_', ' & ').toUpperCase()} LICENSE: ( ${specificLabel} )`;
+          licenseBody += `${i + 1}. ${title}\n`;
+          licenseBody += `${TEXT_DB[u] || TEXT_DB.desktop}\n\n`;
+        }
+      });
+
+      licenseBody += `GENERAL RULES:\n`;
+      licenseBody += `1. This license is non-transferable and belongs strictly to the buyer.\n`;
+      licenseBody += `2. You may not sell, rent, sublicense, or redistribute the font files.\n`;
+      licenseBody += `3. The font software remains the sole property of Bombastype.\n\n`;
+      licenseBody += `FULL DIGITAL RECEIPT:\n${window.location.origin}/user/receipt/${order.transaction_id} *LOGIN FIRST TO ACCESS*\n`;
+
+      // 3. Trigger download .txt
+      const blob = new Blob([licenseBody.trim()], { type: 'text/plain;charset=utf-8;' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      const cleanFont = fontDisplayName.replace(/\s+/g, '_');
+      link.download = `LICENSE_${cleanFont}_${order.transaction_id?.slice(0, 10)}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err: any) {
+      console.error("LICENSE_DOWNLOAD_ERROR:", err);
+      alert("Failed to generate license .txt: " + err.message);
+    } finally {
+      setDownloadingTx(null);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-20">
       {/* HEADER */}
@@ -164,15 +286,16 @@ const Orders = () => {
               <th className="p-5">Typeface</th>
               <th className="p-5 text-center">Valuation</th>
               <th className="p-5 text-center">Status</th>
+              <th className="p-5 text-center">License Certificate</th>
               <th className="p-5">Tier & Metrics</th>
               <th className="p-5">License Provisions</th>
             </tr>
           </thead>
           <tbody className="text-[11px] font-serif">
             {loading ? (
-              <tr><td colSpan={8} className="p-20 text-center animate-pulse italic opacity-40">Consulting Archive Ledger...</td></tr>
+              <tr><td colSpan={9} className="p-20 text-center animate-pulse italic opacity-40">Consulting Archive Ledger...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={8} className="p-20 text-center opacity-40 italic">No records found matching "{searchTerm}"</td></tr>
+              <tr><td colSpan={9} className="p-20 text-center opacity-40 italic">No records found matching "{searchTerm}"</td></tr>
             ) : orders.map((order) => (
               <tr key={order.id} className="border-b border-vintage-ink/10 hover:bg-vintage-ink/2 transition-colors">
                 <td className="p-5 font-bold italic">{new Date(order.download_date).toLocaleDateString()}</td>
@@ -184,6 +307,29 @@ const Orders = () => {
                   <span className={`px-3 py-1 text-[8px] font-bold border tracking-widest uppercase ${order.download_type === 'trial' ? 'bg-vintage-paper border-vintage-ink/20 text-vintage-ink/60' : 'bg-vintage-ink text-vintage-paper border-vintage-ink'}`}>
                     {order.download_type || 'N/A'}
                   </span>
+                </td>
+                <td className="p-5 text-center">
+                  <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                    <button 
+                      onClick={() => handleDownloadLicenseTxt(order)}
+                      disabled={downloadingTx === order.transaction_id}
+                      title="Download License (.txt)"
+                      className="px-2.5 py-1 border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper transition-all text-[9px] font-bold tracking-wider uppercase flex items-center gap-1.5 group disabled:opacity-40"
+                    >
+                      <FileText size={12} className="opacity-60 group-hover:opacity-100" />
+                      <span>{downloadingTx === order.transaction_id ? '...' : '.TXT'}</span>
+                    </button>
+                    <a 
+                      href={`/user/receipt/${order.transaction_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="View Web License Certificate"
+                      className="px-2.5 py-1 border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper transition-all text-[9px] font-bold tracking-wider uppercase flex items-center gap-1.5 group"
+                    >
+                      <ShieldCheck size={12} className="opacity-60 group-hover:opacity-100" />
+                      <span>WEB</span>
+                    </a>
+                  </div>
                 </td>
                 <td className="p-5">
                   <div className="flex flex-col gap-1">

@@ -14,18 +14,27 @@ const LicenseReceipt = () => {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState('');
   const [buyerInfo, setBuyerInfo] = useState<{name: string, address: string}>({ name: 'N/A', address: 'N/A' });
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const fetchReceipt = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) setUserEmail(user.email);
+      if (user) {
+        const { data: adminData } = await supabase
+          .from('fontadmin')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+        setIsAdmin(!!adminData);
+      }
 
       const { data, error } = await supabase
         .from('font_history')
         .select(`
           *, 
           fonts(name),
-          fontbuyer(full_name, address)
+          fontbuyer(full_name, address, email)
         `)
         .eq('transaction_id', orderId);
       
@@ -37,6 +46,9 @@ const LicenseReceipt = () => {
             name: buyer.full_name || 'N/A',
             address: buyer.address || 'N/A'
           });
+          if (buyer.email) {
+            setUserEmail(buyer.email);
+          }
         }
       }
       setLoading(false);
@@ -85,8 +97,8 @@ const LicenseReceipt = () => {
 
       {/* TOOLBAR */}
       <div className="max-w-3xl mx-auto mb-10 flex justify-between items-center print-hidden">
-        <Link to="/user/dashboard" className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-vintage-accent hover:text-vintage-ink transition-colors">
-          <ArrowLeft size={14} /> Back to Dashboard
+        <Link to={isAdmin ? "/admin" : "/user/dashboard"} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-vintage-accent hover:text-vintage-ink transition-colors">
+          <ArrowLeft size={14} /> {isAdmin ? "Back to Admin Folio" : "Back to Dashboard"}
         </Link>
         <button 
           onClick={() => window.print()}
