@@ -12,6 +12,7 @@
     "@paypal/react-paypal-js": "^8.9.2",
     "@supabase/supabase-js": "^2.95.3",
     "@tailwindcss/vite": "^4.2.2",
+    "framer-motion": "^13.4.0",
     "hono": "^4.11.8",
     "lucide-react": "^0.563.0",
     "motion": "^12.38.0",

@@ -35,7 +35,7 @@ else
 fi
 
 echo "🔨 Memulai Build..."
-npm run build
+pnpm run build
 
 echo "🚀 Deploy ke Cloudflare..."
 # Otomatis kirim input 'y' jika muncul dialog konfirmasi tanpa merusak CLI argument
@@ -55,3 +55,4 @@ else
 fi
 
 echo "✨ Selesai! Deploy dan sinkronisasi sukses."
+

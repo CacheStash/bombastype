@@ -219,16 +219,58 @@ export default {
       );
     }
 
-    // --- 3. API Fonts (Public Read) ---
+    // --- 3. API Fonts (Protected Read: Allowed Origins Only) ---
     if (url.pathname.startsWith('/api/fonts/')) {
+      const origin = request.headers.get('Origin') || '';
+      const referer = request.headers.get('Referer') || '';
+
+      const isAllowedSource = (val) => {
+        if (!val) return true;
+        try {
+          const parsed = val.startsWith('http://') || val.startsWith('https://')
+            ? new URL(val)
+            : new URL(`https://${val}`);
+          const hostname = parsed.hostname.toLowerCase();
+          return (
+            hostname === 'bombastype.com' ||
+            hostname.endsWith('.bombastype.com') ||
+            hostname === 'subqi.com' ||
+            hostname.endsWith('.subqi.com') ||
+            hostname === 'fontcanvas.pages.dev' ||
+            hostname.endsWith('.fontcanvas.pages.dev') ||
+            hostname === 'localhost' ||
+            hostname === '127.0.0.1'
+          );
+        } catch (_) {
+          return false;
+        }
+      };
+
+      if ((origin && !isAllowedSource(origin)) || (referer && !isAllowedSource(referer))) {
+        return new Response('Access Denied: Hotlinking is not permitted.', {
+          status: 403,
+          headers: {
+            'Content-Type': 'text/plain',
+            'X-Robots-Tag': 'noindex, nofollow, noarchive'
+          }
+        });
+      }
+
       const fontName = decodeURIComponent(url.pathname.split('/').pop());
       try {
         const fileData = await fetchFileBuffer(fontName, env);
         if (!fileData) return new Response(`Font not found`, { status: 404 });
 
+        const allowedOrigin = origin && isAllowedSource(origin) ? origin : '*';
+
         const headers = new Headers();
-        headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Access-Control-Allow-Origin', allowedOrigin);
+        headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        headers.set('Vary', 'Origin');
         headers.set('Content-Type', fileData.contentType || 'font/otf');
+        headers.set('Content-Disposition', 'inline');
+        headers.set('X-Content-Type-Options', 'nosniff');
+        headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         headers.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
         
         return new Response(fileData.body, { headers });
