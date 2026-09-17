@@ -6,8 +6,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight, Layers, Plus, Trash2, ArrowUp, ArrowDown, Eye, EyeOff, Contrast, GripVertical, SlidersHorizontal } from 'lucide-react';
 import { FontConfig } from '../types';
-import * as opentypeModule from 'opentype.js';
-const opentype: any = (opentypeModule as any).default || opentypeModule;
+import opentype from 'opentype.js';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TypeTesterProps {
