@@ -236,8 +236,11 @@ export default {
             hostname.endsWith('.bombastype.com') ||
             hostname === 'subqi.com' ||
             hostname.endsWith('.subqi.com') ||
+            hostname === 'fontcanvas.subqi.workers.dev' ||
+            hostname.endsWith('.subqi.workers.dev') ||
             hostname === 'fontcanvas.pages.dev' ||
             hostname.endsWith('.fontcanvas.pages.dev') ||
+            (hostname.endsWith('.workers.dev') && hostname.includes('fontcanvas')) ||
             hostname === 'localhost' ||
             hostname === '127.0.0.1'
           );
