@@ -163,8 +163,9 @@ const AdminMessages = () => {
             
             <div className="flex bg-vintage-paper/50 border border-vintage-ink p-1">
               <button 
+                type="button"
                 onClick={() => {setTab('inbox'); setCurrentPage(0);}} 
-                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 transition-all relative ${tab === 'inbox' ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
+                className={`admin-dispatch-tab ${tab === 'inbox' ? 'active' : ''}`}
               >
                 <Inbox size={14}/> INBOX
                 {unreadCount > 0 && (
@@ -174,14 +175,16 @@ const AdminMessages = () => {
                 )}
               </button>
               <button 
+                type="button"
                 onClick={() => {setTab('sent'); setCurrentPage(0);}} 
-                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink transition-all ${tab === 'sent' ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
+                className={`admin-dispatch-tab border-l border-vintage-ink ${tab === 'sent' ? 'active' : ''}`}
               >
                 <History size={14}/> SENT
               </button>
               <button 
+                type="button"
                 onClick={() => {setTab('broadcast'); setCurrentPage(0);}} 
-                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink transition-all ${tab === 'broadcast' ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'}`}
+                className={`admin-dispatch-tab border-l border-vintage-ink ${tab === 'broadcast' ? 'active' : ''}`}
               >
                 <Megaphone size={14}/> HUB
               </button>

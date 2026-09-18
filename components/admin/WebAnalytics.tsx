@@ -149,12 +149,13 @@ const WebAnalytics: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex border border-vintage-ink bg-vintage-paper">
-            {(['7', '14', '30'] as const).map(range => (
+            {(['7', '14', '30'] as const).map((range, idx) => (
               <button
+                type="button"
                 key={range}
                 onClick={() => setTimeRange(range)}
-                className={`px-3.5 py-1.5 text-xs font-bold font-mono transition-colors ${
-                  timeRange === range ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/10 text-vintage-ink'
+                className={`admin-range-btn ${idx > 0 ? 'border-l border-vintage-ink' : ''} ${
+                  timeRange === range ? 'active' : ''
                 }`}
               >
                 {range}D
@@ -162,9 +163,10 @@ const WebAnalytics: React.FC = () => {
             ))}
           </div>
           <button
+            type="button"
             onClick={fetchAnalytics}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-1.5 text-xs font-bold border border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-50"
+            className="admin-action-btn disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             <span>SYNC DATA</span>

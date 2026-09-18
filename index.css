@@ -135,6 +135,105 @@
     color: var(--color-vintage-background) !important;
     opacity: 0.9;
   }
+
+  /* Admin Segmented Tabs (Dispatch Hub: Inbox, Sent, Hub) */
+  .admin-dispatch-tab {
+    background-color: transparent !important;
+    color: var(--color-vintage-ink) !important;
+    font-family: var(--font-display), serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    padding: 8px 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    user-select: none;
+    position: relative;
+  }
+
+  .admin-dispatch-tab:hover {
+    background-color: rgba(44, 36, 26, 0.12) !important;
+    color: var(--color-vintage-ink) !important;
+  }
+
+  .admin-dispatch-tab:active {
+    transform: scale(0.96);
+  }
+
+  .admin-dispatch-tab.active {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+  }
+
+  .admin-dispatch-tab.active:hover {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+    opacity: 0.92;
+  }
+
+  /* Admin Analytics Range Pill (7D, 14D, 30D) */
+  .admin-range-btn {
+    background-color: transparent !important;
+    color: var(--color-vintage-ink) !important;
+    font-family: monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .admin-range-btn:hover {
+    background-color: rgba(44, 36, 26, 0.12) !important;
+    color: var(--color-vintage-ink) !important;
+  }
+
+  .admin-range-btn:active {
+    transform: scale(0.96);
+  }
+
+  .admin-range-btn.active {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+  }
+
+  .admin-range-btn.active:hover {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+    opacity: 0.92;
+  }
+
+  /* Admin Action / Sync Button */
+  .admin-action-btn {
+    background-color: var(--color-vintage-paper) !important;
+    color: var(--color-vintage-ink) !important;
+    border: 1px solid var(--color-vintage-ink) !important;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+  }
+
+  .admin-action-btn:hover:not(:disabled) {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+  }
+
+  .admin-action-btn:active:not(:disabled) {
+    transform: scale(0.96);
+  }
   
   /* Dividers */
   .divider {
