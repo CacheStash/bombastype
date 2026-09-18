@@ -165,7 +165,11 @@ const AdminMessages = () => {
               <button 
                 type="button"
                 onClick={() => {setTab('inbox'); setCurrentPage(0);}} 
-                className={`admin-dispatch-tab ${tab === 'inbox' ? 'active' : ''}`}
+                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 transition-all cursor-pointer select-none relative active:scale-[0.97] ${
+                  tab === 'inbox' 
+                    ? 'bg-vintage-ink text-vintage-paper' 
+                    : 'text-vintage-ink hover:bg-vintage-ink/15'
+                }`}
               >
                 <Inbox size={14}/> INBOX
                 {unreadCount > 0 && (
@@ -177,14 +181,22 @@ const AdminMessages = () => {
               <button 
                 type="button"
                 onClick={() => {setTab('sent'); setCurrentPage(0);}} 
-                className={`admin-dispatch-tab border-l border-vintage-ink ${tab === 'sent' ? 'active' : ''}`}
+                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink transition-all cursor-pointer select-none active:scale-[0.97] ${
+                  tab === 'sent' 
+                    ? 'bg-vintage-ink text-vintage-paper' 
+                    : 'text-vintage-ink hover:bg-vintage-ink/15'
+                }`}
               >
                 <History size={14}/> SENT
               </button>
               <button 
                 type="button"
                 onClick={() => {setTab('broadcast'); setCurrentPage(0);}} 
-                className={`admin-dispatch-tab border-l border-vintage-ink ${tab === 'broadcast' ? 'active' : ''}`}
+                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink transition-all cursor-pointer select-none active:scale-[0.97] ${
+                  tab === 'broadcast' 
+                    ? 'bg-vintage-ink text-vintage-paper' 
+                    : 'text-vintage-ink hover:bg-vintage-ink/15'
+                }`}
               >
                 <Megaphone size={14}/> HUB
               </button>
