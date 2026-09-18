@@ -126,12 +126,13 @@ function createMultiZip(files) {
 // FUNGSI BARU: Cek apakah user ada di tabel fontadmin
 async function isUserAdmin(userId, env) {
   try {
+    const authKey = env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_ANON_KEY;
     const res = await fetch(
       `${env.VITE_SUPABASE_URL}/rest/v1/fontadmin?id=eq.${userId}&select=id`,
       { 
         headers: { 
-          'apikey': env.VITE_SUPABASE_ANON_KEY, 
-          'Authorization': `Bearer ${env.VITE_SUPABASE_ANON_KEY}`,
+          'apikey': authKey, 
+          'Authorization': `Bearer ${authKey}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         } 
