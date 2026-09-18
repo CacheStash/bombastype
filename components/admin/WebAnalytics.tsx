@@ -154,10 +154,8 @@ const WebAnalytics: React.FC = () => {
                 type="button"
                 key={range}
                 onClick={() => setTimeRange(range)}
-                className={`px-4 py-1.5 text-xs font-bold font-mono border-r border-vintage-ink last:border-r-0 transition-all cursor-pointer select-none active:scale-[0.97] ${
-                  timeRange === range 
-                    ? 'bg-vintage-ink text-vintage-paper' 
-                    : 'text-vintage-ink hover:bg-vintage-ink/15'
+                className={`px-4 py-1.5 text-xs font-bold font-mono border-r border-vintage-ink last:border-r-0 select-none admin-segmented-btn ${
+                  timeRange === range ? 'active' : ''
                 }`}
               >
                 {range}D

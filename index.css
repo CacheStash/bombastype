@@ -135,6 +135,32 @@
     color: var(--color-vintage-background) !important;
     opacity: 0.9;
   }
+
+  /* Admin Segmented Buttons (Dispatch Hub & Analytics Range) */
+  .admin-segmented-btn {
+    cursor: pointer !important;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease !important;
+  }
+
+  .admin-segmented-btn:hover:not(.active) {
+    background-color: rgba(44, 36, 26, 0.12) !important;
+    color: var(--color-vintage-ink) !important;
+  }
+
+  .admin-segmented-btn:active {
+    transform: scale(0.97) !important;
+  }
+
+  .admin-segmented-btn.active {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+  }
+
+  .admin-segmented-btn.active:hover {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+    opacity: 0.95 !important;
+  }
   
   /* Dividers */
   .divider {

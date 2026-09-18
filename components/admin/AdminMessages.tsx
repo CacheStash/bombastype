@@ -165,10 +165,8 @@ const AdminMessages = () => {
               <button 
                 type="button"
                 onClick={() => {setTab('inbox'); setCurrentPage(0);}} 
-                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 transition-all cursor-pointer select-none relative active:scale-[0.97] ${
-                  tab === 'inbox' 
-                    ? 'bg-vintage-ink text-vintage-paper' 
-                    : 'text-vintage-ink hover:bg-vintage-ink/15'
+                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 relative select-none admin-segmented-btn ${
+                  tab === 'inbox' ? 'active' : ''
                 }`}
               >
                 <Inbox size={14}/> INBOX
@@ -181,10 +179,8 @@ const AdminMessages = () => {
               <button 
                 type="button"
                 onClick={() => {setTab('sent'); setCurrentPage(0);}} 
-                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink transition-all cursor-pointer select-none active:scale-[0.97] ${
-                  tab === 'sent' 
-                    ? 'bg-vintage-ink text-vintage-paper' 
-                    : 'text-vintage-ink hover:bg-vintage-ink/15'
+                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink select-none admin-segmented-btn ${
+                  tab === 'sent' ? 'active' : ''
                 }`}
               >
                 <History size={14}/> SENT
@@ -192,10 +188,8 @@ const AdminMessages = () => {
               <button 
                 type="button"
                 onClick={() => {setTab('broadcast'); setCurrentPage(0);}} 
-                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink transition-all cursor-pointer select-none active:scale-[0.97] ${
-                  tab === 'broadcast' 
-                    ? 'bg-vintage-ink text-vintage-paper' 
-                    : 'text-vintage-ink hover:bg-vintage-ink/15'
+                className={`px-6 py-2 text-[10px] font-bold tracking-widest flex items-center gap-3 border-l border-vintage-ink select-none admin-segmented-btn ${
+                  tab === 'broadcast' ? 'active' : ''
                 }`}
               >
                 <Megaphone size={14}/> HUB
