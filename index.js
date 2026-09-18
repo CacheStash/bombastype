@@ -220,7 +220,7 @@ export default {
       );
     }
 
-    // --- 3. API Fonts (Protected Read: Allowed Origins Only) ---
+    // --- 3. API Fonts (Protected Read: Allowed Origins Only With Cache API) ---
     if (url.pathname.startsWith('/api/fonts/')) {
       const origin = request.headers.get('Origin') || '';
       const referer = request.headers.get('Referer') || '';
@@ -250,6 +250,7 @@ export default {
         }
       };
 
+      // 1. Hotlink security check ALWAYS runs first (even before cache lookup)
       if ((origin && !isAllowedSource(origin)) || (referer && !isAllowedSource(referer))) {
         return new Response('Access Denied: Hotlinking is not permitted.', {
           status: 403,
@@ -261,23 +262,47 @@ export default {
       }
 
       const fontName = decodeURIComponent(url.pathname.split('/').pop());
+      const allowedOrigin = origin && isAllowedSource(origin) ? origin : '*';
+
       try {
+        const cache = caches.default;
+        const cacheKey = new Request(url.toString(), { method: 'GET' });
+        let cachedResponse = await cache.match(cacheKey);
+
+        // 2. Cache Hit: Return cached binary with dynamic CORS & Vary: Origin
+        if (cachedResponse) {
+          const headers = new Headers(cachedResponse.headers);
+          headers.set('Access-Control-Allow-Origin', allowedOrigin);
+          headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+          headers.set('Vary', 'Origin');
+          return new Response(cachedResponse.body, {
+            status: cachedResponse.status,
+            headers
+          });
+        }
+
+        // 3. Cache Miss: Fetch from R2 / Google Drive
         const fileData = await fetchFileBuffer(fontName, env);
         if (!fileData) return new Response(`Font not found`, { status: 404 });
 
-        const allowedOrigin = origin && isAllowedSource(origin) ? origin : '*';
+        // Base headers stored in Cloudflare Worker cache (WITHOUT origin-locked CORS)
+        const baseHeaders = new Headers();
+        baseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        baseHeaders.set('Content-Type', fileData.contentType || 'font/otf');
+        baseHeaders.set('Content-Disposition', 'inline');
+        baseHeaders.set('X-Content-Type-Options', 'nosniff');
+        baseHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        baseHeaders.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
 
-        const headers = new Headers();
-        headers.set('Access-Control-Allow-Origin', allowedOrigin);
-        headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-        headers.set('Vary', 'Origin');
-        headers.set('Content-Type', fileData.contentType || 'font/otf');
-        headers.set('Content-Disposition', 'inline');
-        headers.set('X-Content-Type-Options', 'nosniff');
-        headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
-        headers.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
-        
-        return new Response(fileData.body, { headers });
+        const responseToCache = new Response(fileData.body, { headers: baseHeaders });
+        ctx.waitUntil(cache.put(cacheKey, responseToCache.clone()));
+
+        // Response sent to current requester has specific dynamic CORS
+        const responseHeaders = new Headers(baseHeaders);
+        responseHeaders.set('Access-Control-Allow-Origin', allowedOrigin);
+        responseHeaders.set('Vary', 'Origin');
+
+        return new Response(fileData.body, { headers: responseHeaders });
       } catch (e) { return new Response('Error fetching font', { status: 500 }); }
     }
 
@@ -285,15 +310,19 @@ export default {
     if (url.pathname.startsWith('/api/images/')) {
       try {
         const cache = caches.default;
-        let response = await cache.match(request);
+        const cacheKey = new Request(url.toString(), { method: 'GET' });
+        let response = await cache.match(cacheKey);
         if (response) return response;
+
         const imageName = decodeURIComponent(url.pathname.split('/').pop());
         const fileData = await fetchFileBuffer(imageName, env);
         if (!fileData) return new Response(`Image not found`, { status: 404 });
 
         const headers = new Headers();
         headers.set('Access-Control-Allow-Origin', '*');
-        headers.set('Cache-Control', 'public, max-age=604800, s-maxage=604800');
+        headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        headers.set('X-Content-Type-Options', 'nosniff');
+        headers.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
         
         // Tentukan Content-Type: prioritaskan hasil fetch atau fallback ke ekstensi
         let contentType = fileData.contentType || 'image/jpeg';
@@ -305,7 +334,7 @@ export default {
         headers.set('Content-Type', contentType);
         
         response = new Response(fileData.body, { headers });
-        ctx.waitUntil(cache.put(request, response.clone()));
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
         return response;
       } catch (e) { return new Response('Error fetching image', { status: 500 }); }
     }
