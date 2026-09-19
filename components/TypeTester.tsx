@@ -991,7 +991,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
               <span className="font-bold tracking-[0.2em]">{viewMode === 'type' ? 'GLYPH MAP' : 'TYPE TESTER'}</span>
             </button>
             <a
-              href={`https://canvas.bombastype.com/?font=${encodeURIComponent(config.name)}&font_id=${encodeURIComponent(config.id)}&text=${encodeURIComponent(text)}&style=${activeStyleIndex}&layered=${isLayeredMode ? '1' : '0'}`}
+              href={`https://canvas.bombastype.com/?font=${encodeURIComponent(config.name)}&font_id=${encodeURIComponent(config.id)}&style=${activeStyleIndex}&layered=${isLayeredMode ? '1' : '0'}${isLayeredMode ? `&layers=${encodeURIComponent(JSON.stringify(layers.filter(l => l.isVisible).map(l => ({ fontIndex: l.fontIndex, color: l.color }))))}` : ''}`}
               target="_blank"
               rel="noopener noreferrer"
               className="py-1.5 px-3 text-[9px] font-bold tracking-[0.2em] uppercase border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all flex items-center gap-1.5"
