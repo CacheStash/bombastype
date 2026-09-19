@@ -256,12 +256,15 @@ const CanvasLanding: React.FC = () => {
               <h3 className="text-xl font-display mb-3 tracking-wide">
                 iPad & Tablet Multi-Touch
               </h3>
-              <p className="text-sm leading-relaxed text-vintage-ink/75">
+              <p className="text-sm leading-relaxed text-vintage-ink/75 mb-2">
                 Designed for studio tablets. Fluid two-finger pinch zoom, natural one-finger canvas panning, and tap-and-hold marquee multi-selection for fast object manipulation.
+              </p>
+              <p className="text-xs leading-relaxed text-vintage-ink/90 font-medium bg-vintage-ink/5 p-2 border-l border-vintage-accent">
+                Desktop Recommended: While touch devices are supported, working on a desktop workstation with a larger screen and mouse precision provides the most optimal lettering experience.
               </p>
             </div>
             <div className="pt-6 mt-6 border-t border-vintage-ink/20 text-[10px] uppercase tracking-[0.2em] font-bold text-vintage-accent">
-              HOLD-TO-SELECT & PINCH-ZOOM
+              DESKTOP OPTIMAL • TOUCH READY
             </div>
           </div>
 
@@ -298,13 +301,16 @@ const CanvasLanding: React.FC = () => {
                 </span>
               </div>
               <h2 className="text-2xl sm:text-4xl font-display mb-4">
-                Complimentary Lettering Experimentation
+                Complimentary Lettering & Crucial Pro Workflows
               </h2>
-              <p className="text-sm md:text-base leading-relaxed text-vintage-ink/80 mb-4">
-                FontCanvas Studio is free for designers and typographers to prototype custom lettering, test chromatic layer stacking, and compose layouts directly in your browser.
+              <p className="text-sm md:text-base leading-relaxed text-vintage-ink/80 mb-3">
+                FontCanvas Studio is free for designers and typographers to prototype custom lettering, test chromatic layer stacking, and compose layouts directly in your browser (*).
               </p>
-              <p className="text-sm md:text-base leading-relaxed text-vintage-ink/80">
-                To utilize the resulting lettering, converted vector paths, or font software in commercial products, published book covers, logotypes, or client commissions, an active desktop license from Bombastype is required.
+              <p className="text-sm md:text-base leading-relaxed text-vintage-ink/80 mb-4">
+                To unlock essential production capabilities—including unwatermarked vector SVG & high-res PNG exports, full access to font families, and complete ornamental extras—simply purchase at least one paid font from our collection.
+              </p>
+              <p className="text-xs leading-relaxed text-vintage-ink/65 italic border-l-2 border-vintage-accent pl-3 py-0.5">
+                * Continuous Development & In-Browser Simplicity: We actively maintain and update FontCanvas regularly to resolve critical bugs and introduce refined tools. FontCanvas is intentionally engineered to stay clean, fast, and focused on essential typographic design workflows—allowing our buyers to compose, customize, and export production-ready vector artwork directly in-browser without requiring complex 3rd-party graphic software.
               </p>
             </div>
 
@@ -315,14 +321,14 @@ const CanvasLanding: React.FC = () => {
                 rel="noopener noreferrer"
                 className="bg-vintage-ink !text-vintage-paper hover:bg-vintage-accent hover:!text-white py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2 transition-colors"
               >
-                <span className="!text-vintage-paper">Launch Studio</span>
+                <span className="!text-vintage-paper">Launch FontCanvas Editor</span>
                 <ArrowUpRight size={16} className="!text-vintage-paper" />
               </a>
               <Link
-                to="/license"
-                className="border border-vintage-ink/40 hover:border-vintage-ink bg-transparent py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center transition-colors"
+                to="/fonts"
+                className="bg-vintage-accent text-white hover:bg-vintage-ink py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center transition-colors"
               >
-                Desktop License
+                Buy Now
               </Link>
             </div>
           </div>
