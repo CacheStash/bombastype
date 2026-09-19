@@ -985,8 +985,8 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
         
         {/* TOP TOOLBAR */}
         <div className="flex flex-col lg:flex-row items-stretch border-b border-vintage-ink/20 bg-vintage-paper/50 backdrop-blur-md relative z-50">
-          <div className="hidden lg:flex items-center gap-3 px-6 py-4 border-r border-vintage-ink/20">
-            <button onClick={() => setViewMode(viewMode === 'type' ? 'glyphs' : 'type')} className="vintage-btn py-1.5 px-4 text-[9px] flex items-center gap-2 group/btn">
+          <div className="flex items-center justify-between lg:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b lg:border-b-0 lg:border-r border-vintage-ink/20">
+            <button onClick={() => setViewMode(viewMode === 'type' ? 'glyphs' : 'type')} className="vintage-btn py-1.5 px-3 sm:px-4 text-[9px] flex items-center gap-2 group/btn shrink-0">
               {viewMode === 'type' ? <Grid size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> : <Keyboard size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" />}
               <span className="font-bold tracking-[0.2em]">{viewMode === 'type' ? 'GLYPH MAP' : 'TYPE TESTER'}</span>
             </button>
@@ -994,7 +994,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
               href={`https://canvas.bombastype.com/?font=${encodeURIComponent(config.name)}&font_id=${encodeURIComponent(config.id)}&style=${activeStyleIndex}&layered=${isLayeredMode ? '1' : '0'}${isLayeredMode ? `&layers=${encodeURIComponent(JSON.stringify(layers.filter(l => l.isVisible).map(l => ({ fontIndex: l.fontIndex, color: l.color }))))}` : ''}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="py-1.5 px-3 text-[9px] font-bold tracking-[0.2em] uppercase border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all flex items-center gap-1.5"
+              className="py-1.5 px-3 text-[9px] font-bold tracking-[0.2em] uppercase border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all flex items-center gap-1.5 shrink-0"
               title="Open active font in FontCanvas Atelier"
             >
               <span>CANVAS</span>
