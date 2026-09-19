@@ -35,6 +35,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
 
   const navLinks = [
     { name: "FONTS", href: "/fonts" },
+    { name: "CANVAS", href: "/canvas", isNew: true },
     { name: "LICENSE", href: "/license" },
     { name: "ABOUT", href: "/about" },
     { name: "CONTACT", href: "/contact" },
@@ -162,9 +163,14 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
               <Link 
                 key={link.name} 
                 to={link.href} 
-                className="text-[9px] uppercase tracking-[0.2em] font-bold text-vintage-ink hover:text-vintage-accent transition-colors"
+                className="text-[9px] uppercase tracking-[0.2em] font-bold text-vintage-ink hover:text-vintage-accent transition-colors flex items-center gap-1.5"
               >
-                {link.name}
+                <span>{link.name}</span>
+                {link.isNew && (
+                  <span className="bg-vintage-ink text-vintage-paper text-[8px] px-1 py-0.5 font-bold tracking-normal">
+                    NEW
+                  </span>
+                )}
               </Link>
             ))}
           </div>
@@ -336,7 +342,15 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
             >
               {navLinks.map((link) => (
                 <Link key={link.name} to={link.href} className="text-xs uppercase tracking-[0.3em] font-bold text-vintage-ink flex justify-between items-center group">
-                  {link.name} <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="flex items-center gap-2">
+                    <span>{link.name}</span>
+                    {link.isNew && (
+                      <span className="bg-vintage-ink text-vintage-paper text-[8px] px-1 py-0.5 font-bold tracking-normal">
+                        NEW
+                      </span>
+                    )}
+                  </span>
+                  <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Link>
               ))}
             </motion.div>

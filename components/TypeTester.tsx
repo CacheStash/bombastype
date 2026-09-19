@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, ChevronLeft, ChevronRight, Layers, Plus, Trash2, ArrowUp, ArrowDown, Eye, EyeOff, Contrast, GripVertical, SlidersHorizontal } from 'lucide-react';
 import { FontConfig } from '../types';
 import opentype from 'opentype.js';
@@ -984,11 +985,19 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
         
         {/* TOP TOOLBAR */}
         <div className="flex flex-col lg:flex-row items-stretch border-b border-vintage-ink/20 bg-vintage-paper/50 backdrop-blur-md relative z-50">
-          <div className="hidden lg:flex items-center px-6 py-4 border-r border-vintage-ink/20">
+          <div className="hidden lg:flex items-center gap-3 px-6 py-4 border-r border-vintage-ink/20">
             <button onClick={() => setViewMode(viewMode === 'type' ? 'glyphs' : 'type')} className="vintage-btn py-1.5 px-4 text-[9px] flex items-center gap-2 group/btn">
               {viewMode === 'type' ? <Grid size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> : <Keyboard size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" />}
               <span className="font-bold tracking-[0.2em]">{viewMode === 'type' ? 'GLYPH MAP' : 'TYPE TESTER'}</span>
             </button>
+            <Link
+              to="/canvas"
+              className="py-1.5 px-3 text-[9px] font-bold tracking-[0.2em] uppercase border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all flex items-center gap-1.5"
+              title="Open FontCanvas Atelier"
+            >
+              <span>CANVAS</span>
+              <span className="text-[10px]">↗</span>
+            </Link>
           </div>
 
           {/* COMBINED LAYERED TOGGLE & DYNAMIC FONT STYLE SECTION */}

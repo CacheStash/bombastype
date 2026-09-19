@@ -183,6 +183,10 @@ export default function Footer() {
                   {link.name}
                 </Link>
               ))}
+              <Link to="/canvas" className="hover:text-white transition-colors w-fit flex items-center gap-1.5">
+                <span>CANVAS</span>
+                <span className="bg-vintage-paper text-vintage-ink text-[8px] px-1 py-0.5 rounded-[1px] font-bold">NEW</span>
+              </Link>
             </div>
           </div>
 

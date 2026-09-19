@@ -34,6 +34,7 @@ import CartPage from './pages/shop/CartPage';
 import Checkout from './pages/shop/Checkout'; 
 import LicenseReceipt from './pages/user/LicenseReceipt';
 import FontDetail from './pages/FontDetail';
+import CanvasLanding from './pages/CanvasLanding';
 
 // Maintenance Screen
 import MaintenanceScreen from './components/MaintenanceScreen';
@@ -188,6 +189,7 @@ const App: React.FC = () => {
                   {/* Bombastype Functional Routes */}
                   <Route path="/" element={<Home />} />
                   <Route path="/fonts" element={<Fonts />} />
+                  <Route path="/canvas" element={<CanvasLanding />} />
                   <Route path="/license" element={<License />} />
                   <Route path="/faq" element={<FAQ />} />
                   <Route path="/policy" element={<Policy />} />
