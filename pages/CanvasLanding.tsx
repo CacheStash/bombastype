@@ -77,23 +77,23 @@ const CanvasLanding: React.FC = () => {
       <section className="mb-20 md:mb-28 px-4 max-w-6xl mx-auto">
         <div className="border border-vintage-ink bg-vintage-paper/80 p-4 md:p-8 relative shadow-lg">
           {/* Header Bar */}
-          <div className="flex items-center justify-between border-b border-vintage-ink/30 pb-4 mb-6 text-xs uppercase tracking-widest text-vintage-ink/70">
-            <div className="flex items-center gap-2">
-              <Compass size={16} className="text-vintage-accent" />
-              <span className="font-bold">CANVAS STUDIO WORKSPACE</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-vintage-ink/30 pb-3 sm:pb-4 mb-4 sm:mb-6 text-[10px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-vintage-ink/70">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <Compass size={15} className="text-vintage-accent shrink-0" />
+              <span className="font-bold truncate text-[10px] sm:text-xs">CANVAS STUDIO WORKSPACE</span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] border border-vintage-ink/30 px-2 py-0.5 bg-vintage-ink/5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[9px] sm:text-[10px] border border-vintage-ink/30 px-1.5 sm:px-2 py-0.5 bg-vintage-ink/5 whitespace-nowrap">
                 CHROMATIC SYNC
               </span>
-              <span className="text-[10px] font-bold text-vintage-accent">
+              <span className="text-[9px] sm:text-[10px] font-bold text-vintage-accent whitespace-nowrap">
                 BEZIER ENVELOPE
               </span>
             </div>
           </div>
 
           {/* Canvas Preview Area */}
-          <div className="min-h-[320px] md:min-h-[440px] border border-vintage-ink/40 bg-vintage-background flex flex-col items-center justify-center p-6 md:p-12 relative text-center group cursor-pointer overflow-hidden">
+          <div className="min-h-[280px] sm:min-h-[360px] md:min-h-[440px] border border-vintage-ink/40 bg-vintage-background flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative text-center group cursor-pointer overflow-hidden">
             {/* Victorian Ornamental Grid Background */}
             <div 
               className="absolute inset-0 opacity-10 pointer-events-none"
@@ -110,7 +110,7 @@ const CanvasLanding: React.FC = () => {
             <div className="absolute bottom-3 right-3 text-xs opacity-40 font-serif pointer-events-none">✦</div>
 
             {/* Simulated Envelope Cage */}
-            <div className="absolute inset-10 md:inset-16 border border-dashed border-vintage-ink/20 pointer-events-none">
+            <div className="absolute inset-4 sm:inset-10 md:inset-16 border border-dashed border-vintage-ink/20 pointer-events-none">
               <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-vintage-ink border border-vintage-paper"></div>
               <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-vintage-ink border border-vintage-paper"></div>
               <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-vintage-ink border border-vintage-paper"></div>
@@ -120,14 +120,14 @@ const CanvasLanding: React.FC = () => {
             </div>
 
             {/* Center Typography Artwork */}
-            <div className="relative z-10">
-              <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-vintage-accent block mb-2">
+            <div className="relative z-10 max-w-full px-2">
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.4em] font-bold text-vintage-accent block mb-1.5 sm:mb-2">
                 HERITAGE LETTERPRESS SPECIMEN
               </span>
-              <div className="text-5xl sm:text-7xl md:text-9xl font-display uppercase tracking-tight text-vintage-ink drop-shadow-sm select-none">
+              <div className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-display uppercase tracking-tight text-vintage-ink drop-shadow-sm select-none break-all">
                 BOMBASTYPE
               </div>
-              <div className="text-xl sm:text-3xl md:text-4xl italic font-serif text-vintage-accent -mt-2 md:-mt-4 select-none">
+              <div className="text-base sm:text-2xl md:text-3xl lg:text-4xl italic font-serif text-vintage-accent mt-0.5 sm:-mt-2 select-none">
                 Chromatic Vector Suite
               </div>
             </div>
@@ -139,17 +139,17 @@ const CanvasLanding: React.FC = () => {
               rel="noopener noreferrer"
               className="absolute inset-0 bg-vintage-ink/90 !text-vintage-paper flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 p-4"
             >
-              <span className="text-2xl md:text-3xl font-display tracking-wide mb-2 !text-vintage-paper">
+              <span className="text-xl sm:text-2xl md:text-3xl font-display tracking-wide mb-2 !text-vintage-paper">
                 Open FontCanvas Studio
               </span>
-              <span className="text-xs uppercase tracking-[0.2em] text-vintage-accent font-bold">
+              <span className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-vintage-accent font-bold">
                 Launch canvas.bombastype.com in new tab ↗
               </span>
             </a>
           </div>
 
           {/* Footer Metadata */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 text-[10px] uppercase tracking-widest text-vintage-ink/60 border-t border-vintage-ink/20 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 pt-3 sm:pt-4 text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest text-vintage-ink/60 border-t border-vintage-ink/20 mt-3 sm:mt-4">
             <div>❖ 4-POINT BEZIER ENVELOPE</div>
             <div>❖ LINKED CHROMATIC STACKING</div>
             <div>❖ TEXT-ON-PATH ENGRAVING</div>
