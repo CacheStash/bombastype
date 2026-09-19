@@ -990,14 +990,16 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
               {viewMode === 'type' ? <Grid size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> : <Keyboard size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" />}
               <span className="font-bold tracking-[0.2em]">{viewMode === 'type' ? 'GLYPH MAP' : 'TYPE TESTER'}</span>
             </button>
-            <Link
-              to="/canvas"
+            <a
+              href={`https://canvas.bombastype.com/?font=${encodeURIComponent(config.name)}&font_id=${encodeURIComponent(config.id)}&text=${encodeURIComponent(text)}&style=${activeStyleIndex}&layered=${isLayeredMode ? '1' : '0'}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="py-1.5 px-3 text-[9px] font-bold tracking-[0.2em] uppercase border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper text-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all flex items-center gap-1.5"
-              title="Open FontCanvas Atelier"
+              title="Open active font in FontCanvas Atelier"
             >
               <span>CANVAS</span>
               <span className="text-[10px]">↗</span>
-            </Link>
+            </a>
           </div>
 
           {/* COMBINED LAYERED TOGGLE & DYNAMIC FONT STYLE SECTION */}
