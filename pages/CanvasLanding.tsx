@@ -23,7 +23,7 @@ const CanvasLanding: React.FC = () => {
         >
           <span className="inline-block w-8 h-px bg-vintage-accent/60"></span>
           <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] font-bold text-vintage-accent">
-            Archival Vector Typographic Atelier
+            Online Typography & Vector Studio
           </span>
           <span className="inline-block w-8 h-px bg-vintage-accent/60"></span>
         </motion.div>
@@ -36,7 +36,7 @@ const CanvasLanding: React.FC = () => {
         >
           FONTCANVAS <br />
           <span className="italic font-serif text-3xl sm:text-5xl md:text-7xl opacity-90">
-            Archival Atelier
+            Vector Studio
           </span>
         </motion.h1>
 
@@ -46,7 +46,7 @@ const CanvasLanding: React.FC = () => {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-base sm:text-lg md:text-xl italic text-vintage-ink/70 leading-relaxed max-w-2xl mx-auto mb-10"
         >
-          A digital letterpress workshop crafted to distort, engrave, stack, and sculpt ornate Victorian typefaces with mathematical fidelity right inside your browser.
+          A powerful in-browser vector typography studio designed to test, distort, stack layered fonts, and compose custom lettering with mathematical fidelity.
         </motion.p>
 
         <motion.div
@@ -59,10 +59,10 @@ const CanvasLanding: React.FC = () => {
             href={CANVAS_APP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="vintage-btn py-4 px-8 text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-3 group shadow-md"
+            className="bg-vintage-ink !text-vintage-paper hover:bg-vintage-accent hover:!text-white py-4 px-8 text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-3 group shadow-md transition-colors"
           >
-            <span>Enter FontCanvas Atelier</span>
-            <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            <span className="!text-vintage-paper group-hover:!text-white">Launch FontCanvas Studio</span>
+            <ArrowUpRight size={16} className="!text-vintage-paper group-hover:!text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </a>
           <Link
             to="/fonts"
@@ -73,14 +73,14 @@ const CanvasLanding: React.FC = () => {
         </motion.div>
       </section>
 
-      {/* 2. ATELIER WORKSHOP MOCKUP SHOWCASE */}
+      {/* 2. STUDIO WORKSHOP MOCKUP SHOWCASE */}
       <section className="mb-20 md:mb-28 px-4 max-w-6xl mx-auto">
         <div className="border border-vintage-ink bg-vintage-paper/80 p-4 md:p-8 relative shadow-lg">
           {/* Header Bar */}
           <div className="flex items-center justify-between border-b border-vintage-ink/30 pb-4 mb-6 text-xs uppercase tracking-widest text-vintage-ink/70">
             <div className="flex items-center gap-2">
               <Compass size={16} className="text-vintage-accent" />
-              <span className="font-bold">ATELIER WORKSPACE // 1920 × 1080</span>
+              <span className="font-bold">CANVAS STUDIO WORKSPACE</span>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-[10px] border border-vintage-ink/30 px-2 py-0.5 bg-vintage-ink/5">
@@ -137,10 +137,10 @@ const CanvasLanding: React.FC = () => {
               href={CANVAS_APP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="absolute inset-0 bg-vintage-ink/90 text-vintage-paper flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 p-4"
+              className="absolute inset-0 bg-vintage-ink/90 !text-vintage-paper flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 p-4"
             >
-              <span className="text-2xl md:text-3xl font-display tracking-wide mb-2">
-                Open In-Browser Atelier
+              <span className="text-2xl md:text-3xl font-display tracking-wide mb-2 !text-vintage-paper">
+                Open FontCanvas Studio
               </span>
               <span className="text-xs uppercase tracking-[0.2em] text-vintage-accent font-bold">
                 Launch canvas.bombastype.com in new tab ↗
@@ -158,11 +158,11 @@ const CanvasLanding: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. ATELIER CAPABILITIES & PILLARS */}
+      {/* 3. STUDIO CAPABILITIES & PILLARS */}
       <section className="mb-20 md:mb-28 px-4 max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] font-bold text-vintage-accent mb-3">
-            Atelier Highlights
+            Studio Highlights
           </p>
           <h2 className="text-3xl sm:text-4xl md:text-6xl font-display tracking-tight">
             Craftsmanship Meets Mathematical Rigor
@@ -286,7 +286,7 @@ const CanvasLanding: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. LICENSING & ARCHIVAL POLICY */}
+      {/* 4. LICENSING & STUDIO POLICY */}
       <section className="mb-20 px-4 max-w-6xl mx-auto">
         <div className="border border-vintage-ink bg-vintage-paper/90 p-8 md:p-14 relative">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
@@ -294,14 +294,14 @@ const CanvasLanding: React.FC = () => {
               <div className="flex items-center gap-2 mb-3">
                 <ShieldCheck size={20} className="text-vintage-accent" />
                 <span className="text-[10px] md:text-xs uppercase tracking-[0.25em] font-bold text-vintage-accent">
-                  Atelier Policy & Licensing
+                  Studio Policy & Licensing
                 </span>
               </div>
               <h2 className="text-2xl sm:text-4xl font-display mb-4">
                 Complimentary Lettering Experimentation
               </h2>
               <p className="text-sm md:text-base leading-relaxed text-vintage-ink/80 mb-4">
-                FontCanvas Atelier is free for designers, historians, and art directors to prototype custom Victorian lettering, verify chromatic layer stacking, and draft composition layouts.
+                FontCanvas Studio is free for designers and typographers to prototype custom lettering, test chromatic layer stacking, and compose layouts directly in your browser.
               </p>
               <p className="text-sm md:text-base leading-relaxed text-vintage-ink/80">
                 To utilize the resulting lettering, converted vector paths, or font software in commercial products, published book covers, logotypes, or client commissions, an active desktop license from Bombastype is required.
@@ -313,16 +313,16 @@ const CanvasLanding: React.FC = () => {
                 href={CANVAS_APP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="vintage-btn py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2"
+                className="bg-vintage-ink !text-vintage-paper hover:bg-vintage-accent hover:!text-white py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2 transition-colors"
               >
-                <span>Launch Atelier</span>
-                <ArrowUpRight size={16} />
+                <span className="!text-vintage-paper">Launch Studio</span>
+                <ArrowUpRight size={16} className="!text-vintage-paper" />
               </a>
               <Link
                 to="/license"
                 className="border border-vintage-ink/40 hover:border-vintage-ink bg-transparent py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center transition-colors"
               >
-                Archival License
+                Desktop License
               </Link>
             </div>
           </div>
@@ -334,19 +334,20 @@ const CanvasLanding: React.FC = () => {
         <div className="border border-vintage-ink bg-vintage-ink text-vintage-paper p-10 md:p-20 text-center relative overflow-hidden">
           <div className="relative z-10 max-w-2xl mx-auto">
             <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] font-bold text-vintage-accent block mb-4">
-              Step Into the Workshop
+              Step Into the Studio
             </span>
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-display mb-8 leading-tight">
-              Begin Composing in the FontCanvas Atelier.
+              Begin Composing in FontCanvas Studio.
             </h2>
             <a
               href={CANVAS_APP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-vintage-paper text-vintage-ink hover:bg-vintage-accent hover:text-white transition-all px-9 py-4 font-bold text-xs uppercase tracking-[0.2em] shadow-lg"
+              style={{ backgroundColor: '#fdf6e3', color: '#2c241a' }}
+              className="inline-flex items-center gap-3 bg-[#fdf6e3] !text-[#2c241a] hover:!bg-vintage-accent hover:!text-white transition-all px-9 py-4 font-bold text-xs uppercase tracking-[0.2em] shadow-lg cursor-pointer"
             >
-              <span>Launch FontCanvas Studio</span>
-              <ArrowUpRight size={18} />
+              <span style={{ color: '#2c241a' }} className="font-bold !text-[#2c241a]">Launch FontCanvas Studio</span>
+              <ArrowUpRight size={18} style={{ color: '#2c241a' }} className="!text-[#2c241a]" />
             </a>
           </div>
         </div>

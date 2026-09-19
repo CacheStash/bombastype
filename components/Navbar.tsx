@@ -167,8 +167,8 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
               >
                 <span>{link.name}</span>
                 {link.isNew && (
-                  <span className="bg-vintage-ink text-vintage-paper text-[8px] px-1 py-0.5 font-bold tracking-normal">
-                    NEW
+                  <span className="bg-vintage-ink text-vintage-paper text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start -mt-0.5">
+                    BETA
                   </span>
                 )}
               </Link>
@@ -345,8 +345,8 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                   <span className="flex items-center gap-2">
                     <span>{link.name}</span>
                     {link.isNew && (
-                      <span className="bg-vintage-ink text-vintage-paper text-[8px] px-1 py-0.5 font-bold tracking-normal">
-                        NEW
+                      <span className="bg-vintage-ink text-vintage-paper text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start">
+                        BETA
                       </span>
                     )}
                   </span>

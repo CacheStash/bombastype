@@ -185,7 +185,7 @@ export default function Footer() {
               ))}
               <Link to="/canvas" className="hover:text-white transition-colors w-fit flex items-center gap-1.5">
                 <span>CANVAS</span>
-                <span className="bg-vintage-paper text-vintage-ink text-[8px] px-1 py-0.5 rounded-[1px] font-bold">NEW</span>
+                <span className="bg-vintage-paper text-vintage-ink text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start -mt-0.5">BETA</span>
               </Link>
             </div>
           </div>
