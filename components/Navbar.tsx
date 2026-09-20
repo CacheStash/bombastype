@@ -286,10 +286,21 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
               onMouseEnter={() => user && setIsAccountDropdownOpen(true)}
               onMouseLeave={() => setIsAccountDropdownOpen(false)}
             >
-              <Link to={user ? "/user/dashboard" : "/user/auth"} className="flex-none flex items-center gap-2 hover:text-vintage-accent transition-colors">
-                <User size={18} />
-                <span className="hidden sm:inline text-[9px] font-bold tracking-[0.2em]">{user ? "ACCOUNT" : "LOGIN"}</span>
-              </Link>
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => setIsAccountDropdownOpen((prev) => !prev)}
+                  className="flex-none flex items-center gap-2 hover:text-vintage-accent transition-colors bg-transparent border-none p-0 text-inherit cursor-pointer"
+                >
+                  <User size={18} />
+                  <span className="hidden sm:inline text-[9px] font-bold tracking-[0.2em]">ACCOUNT</span>
+                </button>
+              ) : (
+                <Link to="/user/auth" className="flex-none flex items-center gap-2 hover:text-vintage-accent transition-colors">
+                  <User size={18} />
+                  <span className="hidden sm:inline text-[9px] font-bold tracking-[0.2em]">LOGIN</span>
+                </Link>
+              )}
 
               <AnimatePresence>
                 {user && isAccountDropdownOpen && (
