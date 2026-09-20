@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Copy, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, Copy, Star, Sparkles, Download } from 'lucide-react';
 import FontUploadForm from './FontUploadForm';
 import { supabase } from '../../lib/supabase';
-import { Sparkles } from 'lucide-react';
 
 const ProductManager = () => {
   const [showForm, setShowForm] = useState(false);
@@ -12,6 +11,7 @@ const ProductManager = () => {
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const itemsPerPage = 15;
 
   // --- LOGIC: DATA FETCHING ---
@@ -165,6 +165,49 @@ const ProductManager = () => {
     }
   };
 
+  const handleDownloadZip = async (font: any) => {
+    try {
+      setDownloadingId(font.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert("Session expired, please re-login.");
+        return;
+      }
+
+      const res = await fetch(`/api/admin/download-font-zip?id=${encodeURIComponent(font.id)}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `Download failed (${res.status})`);
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+
+      const disposition = res.headers.get('Content-Disposition');
+      let filename = `BT_${font.name.replace(/\s+/g, '_')}.zip`;
+      if (disposition && disposition.includes('filename=')) {
+        const match = disposition.match(/filename="?([^";]+)"?/);
+        if (match && match[1]) filename = match[1];
+      }
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err: any) {
+      alert("Download error: " + err.message);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   // --- LOGIC: SEARCH & PAGINATION ---
   const filteredFonts = fonts.filter(f => 
     f.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -289,7 +332,17 @@ const ProductManager = () => {
 
                     {/* ACTIONS */}
                     <td className="p-4 text-right">
-                      <div className="flex justify-end gap-6">
+                      <div className="flex justify-end gap-6 items-center">
+                        <button 
+                          type="button"
+                          disabled={downloadingId === f.id}
+                          onClick={() => handleDownloadZip(f)} 
+                          className="text-[10px] font-bold uppercase tracking-widest text-vintage-ink/60 hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-30"
+                          title="Download font files as .zip (verify exact files delivered to buyers, without license.txt)"
+                        >
+                          <Download size={12} className={downloadingId === f.id ? 'animate-bounce' : ''} /> 
+                          {downloadingId === f.id ? 'Zipping...' : 'Download .zip'}
+                        </button>
                         <button 
                           type="button"
                           onClick={() => handleEdit(f)} 

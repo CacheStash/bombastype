@@ -765,6 +765,113 @@ export default {
     }
 
     
+    // --- 6D. API Admin Font ZIP Download (Inspect Buyer Package without license.txt) ---
+    if (url.pathname.startsWith('/api/admin/download-font-zip')) {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const fontId = url.searchParams.get('id');
+        if (!fontId) {
+          return new Response(JSON.stringify({ error: "FONT_ID_REQUIRED" }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+        const fontRes = await fetch(
+          `${supabaseUrl}/rest/v1/fonts?id=eq.${encodeURIComponent(fontId)}&select=id,name,font_files,trial_file_url`,
+          { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+        );
+        const fonts = fontRes.ok ? await fontRes.json() : [];
+        const font = fonts[0];
+        if (!font) {
+          return new Response(JSON.stringify({ error: "FONT_NOT_FOUND" }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const fontFilesToFetch = Array.isArray(font.font_files) && font.font_files.length > 0
+          ? font.font_files
+          : font.trial_file_url
+          ? [font.trial_file_url]
+          : [];
+
+        if (fontFilesToFetch.length === 0) {
+          return new Response(JSON.stringify({ error: "NO_FONT_FILES_IN_FONT" }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const zipFiles = await Promise.all(fontFilesToFetch.map(async (fName, index) => {
+          const fileData = await fetchFileBuffer(fName, env);
+          if (!fileData) return null;
+
+          const isR2File = /^\d{10,}-/.test(fName);
+          let finalFileName = "";
+
+          if (isR2File) {
+            finalFileName = fName.replace(/^\d+-/, '');
+          } else {
+            const ext = fileData.contentType?.includes('ttf') ? 'ttf' : 'otf';
+            const cleanBase = (font.name || "Font").replace(/\s+/g, '_');
+            finalFileName = fontFilesToFetch.length > 1
+              ? `${cleanBase}_${index + 1}.${ext}`
+              : `${cleanBase}.${ext}`;
+          }
+
+          return {
+            name: finalFileName,
+            content: fileData.body
+          };
+        }));
+
+        const validFiles = zipFiles.filter(Boolean);
+        if (validFiles.length === 0) {
+          return new Response(JSON.stringify({ error: "FAILED_TO_FETCH_FONT_FILES" }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const zipBuffer = createMultiZip(validFiles);
+
+        const baseName = (font.name || 'Font')
+          .replace(/(demo|regular|bold|italic|medium|light|thin|black|extrabold|semibold)/gi, '')
+          .trim()
+          .replace(/\s+/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '');
+        const zipName = `BT_${baseName}.zip`;
+
+        return new Response(zipBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/zip',
+            'Content-Disposition': `attachment; filename="${zipName}"`,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Expose-Headers': 'Content-Disposition'
+          }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
     // --- 7. API Secure ZIP Download (For Buyers) ---
     if (url.pathname.startsWith('/api/download-zip')) {
       const rawFile = url.searchParams.get('file') || ''; // AMBIL PARAM MENTAH
