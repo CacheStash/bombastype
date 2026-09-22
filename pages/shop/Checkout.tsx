@@ -655,6 +655,41 @@ const Checkout: React.FC = () => {
                       <Download size={16} /> DOWNLOAD_{item.name.replace(/\s+/g, '_').toUpperCase()}{Number(item.price) === 0 ? '_TRIAL' : ''}_ZIP
                     </button>
                   ))}
+                  {/* FONT CANVAS USER VAULT PERKS */}
+                  {purchasedItems.some(item => Number(item.price) > 0) && (
+                    <div className="mt-8 p-6 md:p-8 border-2 border-vintage-ink bg-vintage-background/80 text-left space-y-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-vintage-ink/20 pb-4">
+                        <div>
+                          <span className="text-[9px] font-bold text-vintage-accent uppercase tracking-[0.3em] block">Exclusive VIP Bonus</span>
+                          <h5 className="text-xl md:text-2xl font-display italic text-vintage-ink">Font Canvas Access & User Vault</h5>
+                        </div>
+                        <a 
+                          href="https://canvas.bombastype.com" 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="vintage-btn btn-reverse px-5 py-2.5 text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 w-fit self-start md:self-auto"
+                        >
+                          OPEN FONT CANVAS ↗
+                        </a>
+                      </div>
+
+                      <div className="bg-white/60 p-4 border border-vintage-ink/20 text-[11px] font-mono space-y-1">
+                        <p><span className="font-bold opacity-60">Portal URL :</span> <a href="https://canvas.bombastype.com" target="_blank" rel="noopener noreferrer" className="underline font-bold text-vintage-ink">https://canvas.bombastype.com</a></p>
+                        <p><span className="font-bold opacity-60">Username   :</span> <span className="font-bold text-vintage-ink">{email}</span></p>
+                        <p><span className="font-bold opacity-60">Access Key :</span> <span className="font-bold text-vintage-ink">{successfulOrderId || orderId}</span> <span className="opacity-50 text-[10px]">(Your Order ID / Password)</span></p>
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent">Your Vault Perks:</p>
+                        <ul className="text-xs space-y-1.5 list-disc list-inside text-vintage-ink/80 italic font-serif">
+                          <li><strong className="not-italic font-bold">Auto-Unlocked Fonts:</strong> All fonts you purchased are automatically unlocked in your Canvas library.</li>
+                          <li><strong className="not-italic font-bold">Free Extras & Ornaments:</strong> Complimentary access to all font extras, ornaments, and exclusive dingbats catalog-wide.</li>
+                          <li><strong className="not-italic font-bold">Full Pro Creator Suite:</strong> Unrestricted access to locked features including high-res export, project save, and custom import.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
                   <Link 
                     to="/user/auth" 
                     className="vintage-btn py-5 mt-6 border-vintage-ink/20 text-vintage-ink/60 hover:bg-vintage-ink! hover:text-vintage-background! flex items-center justify-center gap-4 group"

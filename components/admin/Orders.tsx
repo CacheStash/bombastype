@@ -214,12 +214,15 @@ const Orders = () => {
       licenseBody += `3. The font software remains the sole property of Bombastype.\n\n`;
 
       if (!isTrial) {
-        licenseBody += `FONT CANVAS ACCESS (USER VAULT):\n`;
-        licenseBody += `As a commercial license holder, you are entitled to full access to our Font Canvas suite.\n`;
-        licenseBody += `Log in to the User Vault using your registered email and Order ID:\n`;
+        licenseBody += `FONT CANVAS ACCESS (USER VAULT PERKS):\n`;
+        licenseBody += `Your commercial license unlocks VIP access to our Font Canvas design suite:\n`;
         licenseBody += `• Portal Link : https://canvas.bombastype.com\n`;
         licenseBody += `• Username    : ${buyerEmail}\n`;
-        licenseBody += `• Order ID    : ${order.transaction_id || 'N/A'}\n\n`;
+        licenseBody += `• Order ID    : ${order.transaction_id || 'N/A'} (Use as Password)\n`;
+        licenseBody += `PERKS INCLUDED:\n`;
+        licenseBody += `- Instant Unlock : All fonts you purchased are automatically unlocked in Canvas.\n`;
+        licenseBody += `- Free Extras    : Enjoy free access to all font extras, ornaments & exclusive dingbats catalog-wide.\n`;
+        licenseBody += `- Pro Features   : All creator features unlocked (Export, Save, Import & more).\n\n`;
       }
 
       licenseBody += `FULL DIGITAL RECEIPT:\n${window.location.origin}/user/receipt/${order.transaction_id} *LOGIN FIRST TO ACCESS*\n`;
