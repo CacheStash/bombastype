@@ -1072,6 +1072,16 @@ export default {
         licenseBody += `1. This license is non-transferable and belongs strictly to the buyer.\n`;
         licenseBody += `2. You may not sell, rent, sublicense, or redistribute the font files.\n`;
         licenseBody += `3. The font software remains the sole property of Bombastype.\n\n`;
+
+        if (!isTrial) {
+          licenseBody += `FONT CANVAS ACCESS (USER VAULT):\n`;
+          licenseBody += `As a commercial license holder, you are entitled to full access to our Font Canvas suite.\n`;
+          licenseBody += `Log in to the User Vault using your registered email and Order ID:\n`;
+          licenseBody += `• Portal Link : https://canvas.bombastype.com\n`;
+          licenseBody += `• Username    : ${buyerEmail}\n`;
+          licenseBody += `• Order ID    : ${transactionId || 'N/A'}\n\n`;
+        }
+
         licenseBody += `FULL DIGITAL RECEIPT:\nhttps://font.bombastype.workers.dev/user/receipt/${transactionId} *LOGIN FIRST TO ACCESS*\n`;
 
         const licenseData = new TextEncoder().encode(licenseBody.trim());
