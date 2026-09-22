@@ -312,6 +312,15 @@ const CanvasLanding: React.FC = () => {
               <p className="text-xs leading-relaxed text-vintage-ink/65 italic border-l-2 border-vintage-accent pl-3 py-0.5">
                 * Continuous Development & In-Browser Simplicity: We actively maintain and update FontCanvas regularly to resolve critical bugs and introduce refined tools. FontCanvas is intentionally engineered to stay clean, fast, and focused on essential typographic design workflows—allowing our buyers to compose, customize, and export production-ready vector artwork directly in-browser without requiring complex 3rd-party graphic software.
               </p>
+
+              <div className="mt-4 p-4 border border-vintage-ink/20 bg-vintage-background/60 text-xs leading-relaxed text-vintage-ink/80">
+                <div className="font-bold uppercase tracking-wider text-vintage-accent text-[11px] mb-1 flex items-center gap-1.5">
+                  <span>Direct Website Exclusive Facility</span>
+                </div>
+                <p>
+                  <strong>Please note:</strong> FontCanvas VIP access, full font family unlocking, and creator perks are exclusively reserved for orders placed directly on <strong>bombastype.com</strong>. We sincerely apologize, but purchases made through third-party marketplaces (such as Creative Market, Envato, MyFonts, etc.) are not eligible for this facility, as it is an exclusive benefit created solely for our direct website patrons.
+                </p>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
