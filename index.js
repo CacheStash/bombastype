@@ -467,6 +467,8 @@ export default {
         const action = (url.searchParams.get('action') || 'list').toLowerCase();
         const fileId = url.searchParams.get('id') || '';
         const refresh = url.searchParams.get('refresh') === 'true';
+        const limit = parseInt(url.searchParams.get('limit') || '0', 10);
+        const offset = parseInt(url.searchParams.get('offset') || '0', 10);
         const cache = caches.default;
         
         // Cache key based on url without 'refresh'
@@ -479,7 +481,60 @@ export default {
           if (cached) {
             const h = new Headers(cached.headers);
             h.set('Access-Control-Allow-Origin', '*');
+            if (action === 'get' || url.searchParams.get('raw') === 'true') {
+              h.set('Content-Type', 'image/svg+xml; charset=utf-8');
+            }
             return new Response(cached.body, { status: cached.status, headers: h });
+          }
+        }
+
+        // Fast paginated list support from full list cache
+        if (action === 'list' && limit > 0) {
+          const fullListKey = new Request(`${url.origin}/api/svg-assets?action=list`, { method: 'GET' });
+          let fullListRes = !refresh ? await cache.match(fullListKey) : null;
+          let allData = null;
+
+          if (fullListRes) {
+            try {
+              allData = await fullListRes.json();
+            } catch (_) {}
+          }
+
+          if (!allData || !Array.isArray(allData.items)) {
+            const gasParams = new URLSearchParams();
+            gasParams.set('action', 'list');
+            gasParams.set('token', token);
+            const targetGasUrl = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}${gasParams.toString()}`;
+            const gasRes = await fetch(targetGasUrl);
+            if (gasRes.ok) {
+              const fullText = await gasRes.text();
+              const fullHeaders = new Headers();
+              fullHeaders.set('Content-Type', 'application/json; charset=utf-8');
+              fullHeaders.set('Access-Control-Allow-Origin', '*');
+              fullHeaders.set('Cache-Control', 'public, max-age=604800, s-maxage=604800');
+              ctx.waitUntil(cache.put(fullListKey, new Response(fullText, { headers: fullHeaders })));
+              try {
+                allData = JSON.parse(fullText);
+              } catch (_) {}
+            }
+          }
+
+          if (allData && Array.isArray(allData.items)) {
+            const total = allData.items.length;
+            const items = allData.items.slice(offset, offset + limit);
+            const resBody = JSON.stringify({
+              success: true,
+              total,
+              limit,
+              offset,
+              items
+            });
+            const resHeaders = new Headers();
+            resHeaders.set('Access-Control-Allow-Origin', '*');
+            resHeaders.set('Content-Type', 'application/json; charset=utf-8');
+            resHeaders.set('Cache-Control', 'public, max-age=604800, s-maxage=604800');
+            ctx.waitUntil(cache.put(cacheKey, new Response(resBody, { headers: resHeaders })));
+            return new Response(resBody, { headers: resHeaders });
           }
         }
 
