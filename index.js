@@ -479,12 +479,21 @@ export default {
         if (!refresh) {
           const cached = await cache.match(cacheKey);
           if (cached) {
-            const h = new Headers(cached.headers);
-            h.set('Access-Control-Allow-Origin', '*');
             if (action === 'get' || url.searchParams.get('raw') === 'true') {
-              h.set('Content-Type', 'image/svg+xml; charset=utf-8');
+              const cachedText = await cached.clone().text();
+              const isRealSvg = cachedText.includes('<svg') && (cachedText.includes('</svg>') || cachedText.includes('/>'));
+              if (isRealSvg) {
+                const h = new Headers(cached.headers);
+                h.set('Access-Control-Allow-Origin', '*');
+                h.set('Content-Type', 'image/svg+xml; charset=utf-8');
+                return new Response(cachedText, { status: cached.status, headers: h });
+              }
+              // If cached body was poisoned (e.g. Google Drive HTML error), ignore it and re-fetch!
+            } else {
+              const h = new Headers(cached.headers);
+              h.set('Access-Control-Allow-Origin', '*');
+              return new Response(cached.body, { status: cached.status, headers: h });
             }
-            return new Response(cached.body, { status: cached.status, headers: h });
           }
         }
 
@@ -538,7 +547,8 @@ export default {
           }
         }
 
-        // Fetch from GAS
+        // Fetch from GAS with retry logic
+        const isRawSvgAction = action === 'get' || url.searchParams.get('raw') === 'true';
         const gasParams = new URLSearchParams();
         gasParams.set('action', action);
         gasParams.set('token', token);
@@ -547,28 +557,66 @@ export default {
         if (url.searchParams.get('raw')) gasParams.set('raw', url.searchParams.get('raw'));
 
         const targetGasUrl = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}${gasParams.toString()}`;
-        const gasRes = await fetch(targetGasUrl);
+        
+        let gasRes = null;
+        let gasBody = '';
+        let isRealSvg = false;
 
-        if (!gasRes.ok) {
-          return new Response(await gasRes.text(), {
-            status: gasRes.status,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        // Try up to 2 times for reliability against transient GAS concurrency throttling
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (attempt > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+          try {
+            gasRes = await fetch(targetGasUrl);
+            if (gasRes.ok) {
+              gasBody = await gasRes.text();
+              if (isRawSvgAction) {
+                isRealSvg = gasBody.includes('<svg') && (gasBody.includes('</svg>') || gasBody.includes('/>'));
+                if (isRealSvg) break;
+              } else {
+                break;
+              }
+            }
+          } catch (_) {}
+        }
+
+        if (!gasRes || !gasRes.ok) {
+          return new Response(JSON.stringify({ error: 'GAS_REQUEST_FAILED', id: fileId }), {
+            status: gasRes ? gasRes.status : 502,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'no-cache, no-store, must-revalidate'
+            }
           });
         }
 
-        const gasBody = await gasRes.text();
+        // Strict guard: For SVG actions, NEVER cache or serve HTML errors as image/svg+xml
+        if (isRawSvgAction && !isRealSvg) {
+          return new Response(JSON.stringify({ error: 'INVALID_SVG_CONTENT', id: fileId }), {
+            status: 502,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'no-cache, no-store, must-revalidate'
+            }
+          });
+        }
+
         const resHeaders = new Headers();
         resHeaders.set('Access-Control-Allow-Origin', '*');
         resHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-        if (action === 'get' || url.searchParams.get('raw') === 'true') {
+        if (isRawSvgAction) {
           resHeaders.set('Content-Type', 'image/svg+xml; charset=utf-8');
         } else {
           resHeaders.set('Content-Type', gasRes.headers.get('content-type') || 'application/json');
         }
         resHeaders.set('X-Content-Type-Options', 'nosniff');
-        // Cache list for 7 days (or until refresh), individual SVG content for 1 year
+        
+        // Cache list for 7 days, verified authentic SVG content for 1 year
         const maxAge = action === 'get' ? 31536000 : 604800;
-        resHeaders.set('Cache-Control', `public, max-age=${maxAge}, s-maxage=${maxAge}`);
+        resHeaders.set('Cache-Control', `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=86400`);
 
         const responseToCache = new Response(gasBody, { headers: resHeaders });
         ctx.waitUntil(cache.put(cacheKey, responseToCache.clone()));
