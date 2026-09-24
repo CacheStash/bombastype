@@ -505,7 +505,11 @@ export default {
         const resHeaders = new Headers();
         resHeaders.set('Access-Control-Allow-Origin', '*');
         resHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-        resHeaders.set('Content-Type', gasRes.headers.get('content-type') || 'application/json');
+        if (action === 'get' || url.searchParams.get('raw') === 'true') {
+          resHeaders.set('Content-Type', 'image/svg+xml; charset=utf-8');
+        } else {
+          resHeaders.set('Content-Type', gasRes.headers.get('content-type') || 'application/json');
+        }
         resHeaders.set('X-Content-Type-Options', 'nosniff');
         // Cache list for 7 days (or until refresh), individual SVG content for 1 year
         const maxAge = action === 'get' ? 31536000 : 604800;
