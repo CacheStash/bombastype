@@ -452,6 +452,77 @@ export default {
       }
     }
 
+    // --- 5B. API SVG Assets (Proxy & CDN Cache for FontCanvas Ornaments) ---
+    if (url.pathname.startsWith('/api/svg-assets')) {
+      try {
+        const gasUrl = env.GAS_SVG_URL;
+        const token = env.GAS_TOKEN || "$uperAm4n";
+        if (!gasUrl) {
+          return new Response(JSON.stringify({ error: "GAS_SVG_URL_NOT_CONFIGURED" }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const action = (url.searchParams.get('action') || 'list').toLowerCase();
+        const fileId = url.searchParams.get('id') || '';
+        const refresh = url.searchParams.get('refresh') === 'true';
+        const cache = caches.default;
+        
+        // Cache key based on url without 'refresh'
+        const cacheUrl = new URL(url.toString());
+        cacheUrl.searchParams.delete('refresh');
+        const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
+
+        if (!refresh) {
+          const cached = await cache.match(cacheKey);
+          if (cached) {
+            const h = new Headers(cached.headers);
+            h.set('Access-Control-Allow-Origin', '*');
+            return new Response(cached.body, { status: cached.status, headers: h });
+          }
+        }
+
+        // Fetch from GAS
+        const gasParams = new URLSearchParams();
+        gasParams.set('action', action);
+        gasParams.set('token', token);
+        if (fileId) gasParams.set('id', fileId);
+        if (url.searchParams.get('q')) gasParams.set('q', url.searchParams.get('q'));
+        if (url.searchParams.get('raw')) gasParams.set('raw', url.searchParams.get('raw'));
+
+        const targetGasUrl = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}${gasParams.toString()}`;
+        const gasRes = await fetch(targetGasUrl);
+
+        if (!gasRes.ok) {
+          return new Response(await gasRes.text(), {
+            status: gasRes.status,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const gasBody = await gasRes.text();
+        const resHeaders = new Headers();
+        resHeaders.set('Access-Control-Allow-Origin', '*');
+        resHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        resHeaders.set('Content-Type', gasRes.headers.get('content-type') || 'application/json');
+        resHeaders.set('X-Content-Type-Options', 'nosniff');
+        // Cache list for 7 days (or until refresh), individual SVG content for 1 year
+        const maxAge = action === 'get' ? 31536000 : 604800;
+        resHeaders.set('Cache-Control', `public, max-age=${maxAge}, s-maxage=${maxAge}`);
+
+        const responseToCache = new Response(gasBody, { headers: resHeaders });
+        ctx.waitUntil(cache.put(cacheKey, responseToCache.clone()));
+
+        return new Response(gasBody, { headers: resHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
     // --- 6. API Checkout & Trial (The Resetter Logic) ---
     if ((url.pathname.startsWith('/api/checkout') || url.pathname.startsWith('/api/claim-trial')) && request.method === 'POST') {
       try {
