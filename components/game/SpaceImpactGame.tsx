@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Volume2, VolumeX, Trophy, Heart, RotateCcw, Gamepad2 } from 'lucide-react';
+import { Volume2, VolumeX, Trophy, Heart, RotateCcw, Gamepad2, Lock, Unlock, Smartphone } from 'lucide-react';
 
 interface SpaceImpactGameProps {
   brand?: 'subqi' | 'bombastype';
@@ -219,6 +219,38 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
   const [lives, setLives] = useState(3);
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'gameover'>('idle');
   const [soundMuted, setSoundMuted] = useState(false);
+
+  // Screen scroll lock state (prevents page from shifting up/down while playing on tablets & touchscreens)
+  const [isScreenLocked, setIsScreenLocked] = useState<boolean>(true);
+
+  // Touch controls visibility (auto-enabled on touch devices / tablets, with toggle support)
+  const [showTouchControls, setShowTouchControls] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return (
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        window.innerWidth <= 1024
+      );
+    }
+    return true;
+  });
+
+  // Dedicated touch-move listener to prevent any page bouncing/scroll when screen is locked
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const preventTouch = (e: TouchEvent) => {
+      if (isScreenLocked && e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    container.addEventListener('touchmove', preventTouch, { passive: false });
+    return () => {
+      container.removeEventListener('touchmove', preventTouch);
+    };
+  }, [isScreenLocked]);
 
   const stateRef = useRef({
     score: 0,
@@ -708,7 +740,7 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
         ctx.textAlign = 'center';
 
         ctx.font = 'bold 16px monospace';
-        ctx.fillText('SPACE IMPACT : VINTAGE ATELIER EDITION', W / 2, H / 2 - 28);
+        ctx.fillText('GLYPH STRIKE : VINTAGE ATELIER EDITION', W / 2, H / 2 - 28);
 
         ctx.font = '11px monospace';
         ctx.fillStyle = '#f59e0b';
@@ -716,7 +748,7 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
 
         ctx.font = '10px monospace';
         ctx.fillStyle = '#fdf6e3';
-        ctx.fillText('CONTROLS: ARROWS / WASD = MOVE  •  SPACE = FIRE', W / 2, H / 2 + 32);
+        ctx.fillText('CONTROLS: ARROWS / WASD = MOVE  •  SPACE / TOUCH = FIRE', W / 2, H / 2 + 32);
 
         ctx.textAlign = 'left';
       }
@@ -756,6 +788,18 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
     if (dir === 'right') s.keys.ArrowRight = pressed;
   };
 
+  const handleBtnTouchStart = (dir: 'up' | 'down' | 'left' | 'right', e: React.TouchEvent) => {
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+    handleTouchDir(dir, true);
+  };
+
+  const handleBtnTouchEnd = (dir: 'up' | 'down' | 'left' | 'right', e: React.TouchEvent) => {
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+    handleTouchDir(dir, false);
+  };
+
   const handleTouchFire = (pressed: boolean) => {
     const s = stateRef.current;
     if (pressed) {
@@ -770,22 +814,59 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="w-full relative border-2 border-vintage-ink bg-vintage-paper shadow-md"
+      className={`w-full relative border-2 border-vintage-ink bg-vintage-paper shadow-md select-none ${isScreenLocked ? 'touch-none' : ''}`}
+      style={{
+        touchAction: isScreenLocked ? 'none' : 'auto',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+      }}
     >
       {/* Top Arcade Header Bar */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-vintage-ink/30 bg-vintage-ink text-vintage-paper text-[10px] font-mono uppercase font-bold tracking-widest">
         <div className="flex items-center gap-2">
           <Gamepad2 size={13} className="text-amber-400 animate-pulse" />
-          <span>Space Impact [Heritage 8-Bit]</span>
+          <span className="truncate">Glyph Strike [Heritage 8-Bit]</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Quick Lock Mode Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsScreenLocked(prev => !prev)}
+            className={`px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors text-[9px] border cursor-pointer ${
+              isScreenLocked 
+                ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/50' 
+                : 'bg-white/10 text-vintage-paper/50 border-white/20'
+            }`}
+            title={isScreenLocked ? "In-Game Lock: ON (Screen will not shift or scroll)" : "In-Game Lock: OFF"}
+          >
+            {isScreenLocked ? <Lock size={11} className="text-emerald-400" /> : <Unlock size={11} />}
+            <span className="hidden xs:inline">{isScreenLocked ? 'LOCK' : 'FREE'}</span>
+          </button>
+
+          {/* Quick Touch Controls Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setShowTouchControls(prev => !prev)}
+            className={`px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors text-[9px] border cursor-pointer ${
+              showTouchControls 
+                ? 'bg-amber-600/30 text-amber-300 border-amber-500/50' 
+                : 'bg-white/10 text-vintage-paper/50 border-white/20'
+            }`}
+            title="Toggle On-Screen Touch Buttons (Tablet/Mobile)"
+          >
+            <Smartphone size={11} />
+            <span className="hidden xs:inline">TOUCH</span>
+          </button>
+
+          <div className="flex items-center gap-1 ml-1">
             <Trophy size={12} className="text-amber-400" />
             <span>HI: {highScore}</span>
           </div>
+
           <button
+            type="button"
             onClick={toggleSound}
-            className="hover:opacity-70 p-1 flex items-center gap-1 transition-opacity"
+            className="hover:opacity-70 p-1 flex items-center gap-1 transition-opacity cursor-pointer"
             title={soundMuted ? 'Unmute 8-Bit Audio' : 'Mute 8-Bit Audio'}
           >
             {soundMuted ? <VolumeX size={13} className="text-red-400" /> : <Volume2 size={13} className="text-green-400" />}
@@ -795,7 +876,8 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
 
       {/* Main Canvas Area */}
       <div 
-        className="relative w-full cursor-crosshair overflow-hidden select-none"
+        className="relative w-full cursor-crosshair overflow-hidden select-none touch-none"
+        style={{ touchAction: 'none' }}
         onClick={() => {
           if (gameState === 'idle' || gameState === 'gameover') {
             startGame();
@@ -811,68 +893,137 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
         />
       </div>
 
-      {/* Mobile Touch Controller */}
-      <div className="p-3 border-t border-vintage-ink/20 bg-vintage-ink/5 flex items-center justify-between sm:hidden">
-        <div className="grid grid-cols-3 gap-1 w-28">
-          <div />
-          <button
-            onTouchStart={() => handleTouchDir('up', true)}
-            onTouchEnd={() => handleTouchDir('up', false)}
-            className="w-8 h-8 bg-vintage-ink text-vintage-paper font-bold text-xs flex items-center justify-center rounded active:bg-amber-700"
-          >
-            ▲
-          </button>
-          <div />
-          <button
-            onTouchStart={() => handleTouchDir('left', true)}
-            onTouchEnd={() => handleTouchDir('left', false)}
-            className="w-8 h-8 bg-vintage-ink text-vintage-paper font-bold text-xs flex items-center justify-center rounded active:bg-amber-700"
-          >
-            ◀
-          </button>
-          <button
-            onTouchStart={() => handleTouchDir('down', true)}
-            onTouchEnd={() => handleTouchDir('down', false)}
-            className="w-8 h-8 bg-vintage-ink text-vintage-paper font-bold text-xs flex items-center justify-center rounded active:bg-amber-700"
-          >
-            ▼
-          </button>
-          <button
-            onTouchStart={() => handleTouchDir('right', true)}
-            onTouchEnd={() => handleTouchDir('right', false)}
-            className="w-8 h-8 bg-vintage-ink text-vintage-paper font-bold text-xs flex items-center justify-center rounded active:bg-amber-700"
-          >
-            ▶
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {gameState === 'gameover' && (
+      {/* Tablet & Mobile Touch Controller (Compact & Zero-Scroll Lock Mode) */}
+      {showTouchControls && (
+        <div 
+          className="p-2 sm:p-2.5 border-t border-vintage-ink/20 bg-vintage-ink/5 flex items-center justify-between gap-2 touch-none select-none overscroll-contain"
+          style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
+        >
+          {/* Compact 4-Way D-Pad Buttons */}
+          <div className="grid grid-cols-3 gap-1 w-[105px] shrink-0 touch-none select-none">
+            <div />
             <button
-              onClick={startGame}
-              className="px-3 py-2 bg-vintage-ink text-vintage-paper text-[10px] font-mono font-bold uppercase rounded flex items-center gap-1 active:bg-amber-700"
+              type="button"
+              onTouchStart={(e) => handleBtnTouchStart('up', e)}
+              onTouchEnd={(e) => handleBtnTouchEnd('up', e)}
+              onTouchCancel={(e) => handleBtnTouchEnd('up', e)}
+              onMouseDown={() => handleTouchDir('up', true)}
+              onMouseUp={() => handleTouchDir('up', false)}
+              onMouseLeave={() => handleTouchDir('up', false)}
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 bg-vintage-ink text-vintage-paper font-bold text-xs flex items-center justify-center rounded active:bg-amber-700 active:scale-95 transition-transform cursor-pointer select-none shadow-sm"
+              aria-label="Move Up"
             >
-              <RotateCcw size={12} /> Retry
+              ▲
             </button>
-          )}
-          <button
-            onTouchStart={() => handleTouchFire(true)}
-            onTouchEnd={() => handleTouchFire(false)}
-            onMouseDown={() => handleTouchFire(true)}
-            onMouseUp={() => handleTouchFire(false)}
-            className="w-14 h-14 rounded-full font-black text-xs font-mono uppercase tracking-wider flex items-center justify-center border-2 border-vintage-ink shadow active:scale-95 transition-transform bg-[#b45309] text-white"
-          >
-            FIRE
-          </button>
-        </div>
-      </div>
+            <div />
+            <button
+              type="button"
+              onTouchStart={(e) => handleBtnTouchStart('left', e)}
+              onTouchEnd={(e) => handleBtnTouchEnd('left', e)}
+              onTouchCancel={(e) => handleBtnTouchEnd('left', e)}
+              onMouseDown={() => handleTouchDir('left', true)}
+              onMouseUp={() => handleTouchDir('left', false)}
+              onMouseLeave={() => handleTouchDir('left', false)}
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 bg-vintage-ink text-vintage-paper font-bold text-xs flex items-center justify-center rounded active:bg-amber-700 active:scale-95 transition-transform cursor-pointer select-none shadow-sm"
+              aria-label="Move Left"
+            >
+              ◀
+            </button>
+            <button
+              type="button"
+              onTouchStart={(e) => handleBtnTouchStart('down', e)}
+              onTouchEnd={(e) => handleBtnTouchEnd('down', e)}
+              onTouchCancel={(e) => handleBtnTouchEnd('down', e)}
+              onMouseDown={() => handleTouchDir('down', true)}
+              onMouseUp={() => handleTouchDir('down', false)}
+              onMouseLeave={() => handleTouchDir('down', false)}
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 bg-vintage-ink text-vintage-paper font-bold text-xs flex items-center justify-center rounded active:bg-amber-700 active:scale-95 transition-transform cursor-pointer select-none shadow-sm"
+              aria-label="Move Down"
+            >
+              ▼
+            </button>
+            <button
+              type="button"
+              onTouchStart={(e) => handleBtnTouchStart('right', e)}
+              onTouchEnd={(e) => handleBtnTouchEnd('right', e)}
+              onTouchCancel={(e) => handleBtnTouchEnd('right', e)}
+              onMouseDown={() => handleTouchDir('right', true)}
+              onMouseUp={() => handleTouchDir('right', false)}
+              onMouseLeave={() => handleTouchDir('right', false)}
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 bg-vintage-ink text-vintage-paper font-bold text-xs flex items-center justify-center rounded active:bg-amber-700 active:scale-95 transition-transform cursor-pointer select-none shadow-sm"
+              aria-label="Move Right"
+            >
+              ▶
+            </button>
+          </div>
 
-      <div className="hidden sm:flex items-center justify-between px-3 py-1 text-[9px] font-mono text-vintage-ink/50 bg-vintage-paper">
-        <span>Heritage Arcade Protocol • Press [Space] or [Tap] to play</span>
-        <span>Destroy rogue letterforms & space aliens</span>
+          {/* Center Lock Badge & Status */}
+          <div className="flex flex-col items-center justify-center gap-1 px-1">
+            <button
+              type="button"
+              onClick={() => setIsScreenLocked(prev => !prev)}
+              className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold flex items-center gap-1 transition-colors border cursor-pointer select-none ${
+                isScreenLocked
+                  ? 'bg-emerald-600/20 border-emerald-600/40 text-emerald-800'
+                  : 'bg-vintage-ink/10 border-vintage-ink/20 text-vintage-ink/60'
+              }`}
+              title={isScreenLocked ? "Screen Locked: Page won't shift during game" : "Screen Unlocked"}
+            >
+              {isScreenLocked ? <Lock size={10} className="text-emerald-700" /> : <Unlock size={10} />}
+              <span>{isScreenLocked ? 'LOCKED' : 'FREE'}</span>
+            </button>
+            <span className="text-[9px] font-mono text-vintage-ink/60 hidden sm:inline">
+              TOUCH D-PAD
+            </span>
+          </div>
+
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-2 shrink-0">
+            {gameState === 'gameover' && (
+              <button
+                type="button"
+                onClick={startGame}
+                className="px-2.5 py-2 bg-vintage-ink text-vintage-paper text-[10px] font-mono font-bold uppercase rounded flex items-center gap-1 active:bg-amber-700 cursor-pointer shadow-sm"
+              >
+                <RotateCcw size={12} /> Retry
+              </button>
+            )}
+            <button
+              type="button"
+              onTouchStart={(e) => {
+                if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
+                handleTouchFire(true);
+              }}
+              onTouchEnd={(e) => {
+                if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
+                handleTouchFire(false);
+              }}
+              onTouchCancel={(e) => {
+                if (e.cancelable) e.preventDefault();
+                handleTouchFire(false);
+              }}
+              onMouseDown={() => handleTouchFire(true)}
+              onMouseUp={() => handleTouchFire(false)}
+              onMouseLeave={() => handleTouchFire(false)}
+              className="w-12 h-12 sm:w-13 sm:h-13 rounded-full font-black text-xs font-mono uppercase tracking-wider flex items-center justify-center border-2 border-vintage-ink shadow active:scale-90 transition-transform bg-[#b45309] text-white cursor-pointer select-none"
+              aria-label="Fire Weapon"
+            >
+              FIRE
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Footer Info Hint */}
+      <div className="flex items-center justify-between px-3 py-1 text-[9px] font-mono text-vintage-ink/50 bg-vintage-paper border-t border-vintage-ink/10">
+        <span>Glyph Strike Arcade Protocol • Press [Space] or [Touch Controls] to play</span>
+        <span>Destroy rogue letterforms & vector anomalies</span>
       </div>
     </div>
   );
 };
 
+export const GlyphStrikeGame = SpaceImpactGame;
 export default SpaceImpactGame;
