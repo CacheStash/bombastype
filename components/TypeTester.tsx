@@ -9,6 +9,7 @@ import { AlignLeft, AlignCenter, AlignRight, Grid, Keyboard, ChevronDown, Chevro
 import { FontConfig } from '../types';
 import opentype from 'opentype.js';
 import { motion, AnimatePresence } from 'framer-motion';
+import { loadProtectedFontFace, loadProtectedOpenType } from '../utils/secureFontLoader';
 
 interface TypeTesterProps {
   config: FontConfig & { 
@@ -229,25 +230,20 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
       const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=${version}`;
       const fontNameIdentifier = `${config.name}-${index}`;
 
-      try {
-        const fontFace = new FontFace(fontNameIdentifier, `url("${url}")`);
-        fontFace.load().then((loadedFace) => {
-          document.fonts.add(loadedFace);
-        }).catch((err) => {
-          console.error(`Failed to register FontFace ${fontNameIdentifier}:`, err);
-        });
-      } catch (e) {
-        console.error("FontFace API error:", e);
-      }
+      loadProtectedFontFace(fontNameIdentifier, url).catch((err) => {
+        console.error(`Failed to register FontFace ${fontNameIdentifier}:`, err);
+      });
 
-      opentype.load(url, (err, font) => {
-        if (!err && font) {
+      loadProtectedOpenType(url).then((font) => {
+        if (font) {
           const names = font.names as any;
-          const isVariable = font.tables.fvar?.axes?.length > 0;
+          const isVariable = (font.tables as any).fvar?.axes?.length > 0;
           const detectedName = names.preferredSubfamily?.en || names.fontSubfamily?.en;
           setDetectedStyleNames(prev => ({ ...prev, [index]: isVariable ? "Variable" : detectedName }));
           setLoadedFontsMap(prev => ({ ...prev, [index]: font }));
         }
+      }).catch((err) => {
+        console.warn(`Protected OpenType load error for style ${index}:`, err);
       });
     });
   }, [config.font_files, config.name, config.file_url]);
@@ -262,9 +258,9 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
     targetFile = f.startsWith('http') || f.startsWith('/') ? f : `/api/fonts/${f}?v=${version}`;
 
     setIsLoadingGlyphs(true);
-    opentype.load(targetFile, (err, font) => {
+    loadProtectedOpenType(targetFile).then((font) => {
       setIsLoadingGlyphs(false);
-      if (err || !font) return;
+      if (!font) return;
       
       setLoadedFontObj(font);
       const glyphs = [];
@@ -382,7 +378,9 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
           setCharOverrides(randomCharMap);
         }
       }
-
+    }).catch((err) => {
+      setIsLoadingGlyphs(false);
+      console.warn("loadProtectedOpenType error:", err);
     });
   }, [config, activeStyleIndex]);
 

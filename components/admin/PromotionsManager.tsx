@@ -226,8 +226,9 @@ const PromotionsManager: React.FC = () => {
 
   const handleDispatchCouponEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBuyerEmail || !activeCouponData) {
-      return alert("Please select a buyer and an active coupon!");
+    const cleanEmail = (selectedBuyerEmail || searchTxOrEmail || '').trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@') || !activeCouponData) {
+      return alert("Please enter a valid recipient email address and select an active coupon!");
     }
 
     setIsDispatching(true);
@@ -235,7 +236,7 @@ const PromotionsManager: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       const payload = {
-        email: selectedBuyerEmail.trim().toLowerCase(),
+        email: cleanEmail,
         name: selectedBuyerName.trim() || "Customer",
         couponCode: activeCouponData.code,
         discountText: `${activeCouponData.discount_value}% OFF`,
@@ -726,7 +727,7 @@ const PromotionsManager: React.FC = () => {
               {/* Buyer Selector / Search Box */}
               <div ref={searchContainerRef} className="space-y-2 relative">
                 <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/70">
-                  Search Order ID or Buyer Email
+                  Recipient Email (Prospective Buyer or Search Existing Order ID)
                 </label>
                 <div className="relative">
                   <input 
@@ -738,7 +739,7 @@ const PromotionsManager: React.FC = () => {
                       setSelectedBuyerEmail(e.target.value);
                       setShowSuggestions(true);
                     }}
-                    placeholder="Type BT-123456 or buyer@email.com..."
+                    placeholder="Type buyer@email.com or search BT-123456..."
                     className="w-full border-b border-vintage-ink/20 py-3 bg-transparent text-sm font-bold outline-none focus:border-vintage-ink uppercase placeholder:normal-case placeholder:text-vintage-ink/30 pr-8"
                     required
                   />

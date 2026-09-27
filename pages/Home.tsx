@@ -10,6 +10,7 @@ import { Plus, Eye, ChevronLeft, ChevronRight, Shuffle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import TypeTester from '../components/TypeTester';
+import { loadProtectedFontFace } from '../utils/secureFontLoader';
 
 // --- SUB-COMPONENTS: STYLING ELEMENTS ---
 const SlantedSpacer = () => (
@@ -143,21 +144,17 @@ export default function Home() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Dynamic Font Face Injection untuk Recent Fonts
+  // Protected Font Face Registration untuk Recent Fonts
   useEffect(() => {
     if (recentFonts.length === 0) return;
-    const styleId = "dynamic-fonts-home-registry";
-    let styleTag = document.getElementById(styleId) as HTMLStyleElement || document.createElement("style");
-    styleTag.id = styleId;
-    if (!styleTag.parentElement) document.head.appendChild(styleTag);
-
-    styleTag.textContent = recentFonts.map(f => {
+    recentFonts.forEach(f => {
       const pIdx = f.metadata?.primary_font_index || 0;
       const file = Array.isArray(f.font_files) ? f.font_files[pIdx] : f.file_url;
-      if (!file) return '';
+      if (!file) return;
       const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
-      return `@font-face { font-family: "${f.name}-${pIdx}"; src: url("/api/fonts/${file}?v=${version}"); font-display: block; }`;
-    }).join("\n");
+      const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=${version}`;
+      loadProtectedFontFace(`${f.name}-${pIdx}`, url);
+    });
   }, [recentFonts]);
 
   const fetchData = async () => {

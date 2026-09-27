@@ -144,55 +144,394 @@ async function isUserAdmin(userId, env) {
   } catch (e) { return false; }
 }
 
-async function triggerGasEmail(buyerEmail, buyerName, orderId, items, env) {
-  const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
-  if (gasUrls.length === 0) return;
+const DEFAULT_EMAIL_TEMPLATE = {
+  subject: "Your Font License Order #[ORDER_ID] is Ready — BombasType",
+  heading: "Thank you for your purchase, [BUYER_NAME]!",
+  intro_text: "Your commercial font packages and license certificates are prepared below. Keep your Order ID safe as proof of your licensed usage rights.",
+  warning_title: "Security & Direct Download Notice",
+  warning_text: "Direct download packages are active for 7 days or up to 7 downloads to safeguard our intellectual property against link sharing. You may also access your typography library permanently anytime inside your User Vault.",
+  vault_url: "https://bombastype.com/user/auth",
+  canvas_vip_enabled: true,
+  canvas_url: "https://canvas.subqi.com",
+  canvas_heading: "Font Canvas VIP Access Unlocked!",
+  canvas_text: "As our verified commercial font licensee, you receive complimentary VIP access to Font Canvas — our web-based typography creator app:",
+  footer_text: "Questions or licensing assistance? Reply directly to this email.<br>© BombasType Studio. All rights reserved."
+};
 
-  const hasPaidItem = items.some(item => item.price > 0);
-  
-  // Jika hanya berisi trial font (total $0), batalkan seluruh proses pengiriman email
-  if (!hasPaidItem) return; 
+const GAS_ACCOUNT_MAP = {
+  "AKfycbyy": "bombastype@gmail.com",
+  "AKfycbzH": "bombastypetwo@gmail.com",
+  "AKfycbyv": "bombastypebot@gmail.com"
+};
 
-  // Jika ada item berbayar, kirimkan semua item (Paid + Trial) dengan label berbeda
-  const fontAssets = items.map(item => {
+function resolveGasSender(resSender, url) {
+  if (resSender && resSender.includes('@')) return resSender;
+  const target = (url || "") + " " + (resSender || "");
+  for (const [key, email] of Object.entries(GAS_ACCOUNT_MAP)) {
+    if (target.includes(key)) return email;
+  }
+  return resSender || "bombastype@gmail.com";
+}
+
+async function getSmartPrioritizedGasAccounts(gasUrls, recipientEmail) {
+  const cleanRecipient = (recipientEmail || "").trim().toLowerCase();
+
+  // 1. Map URLs to account objects
+  const accounts = gasUrls.map(url => ({
+    url,
+    email: resolveGasSender(null, url)
+  }));
+
+  // 2. Prevent self-sending: Filter out any account whose sender email matches recipient
+  const filtered = accounts.filter(acc => acc.email.toLowerCase() !== cleanRecipient);
+  const candidates = filtered.length > 0 ? filtered : accounts;
+
+  // 3. Query remaining daily quotas in parallel (costs 0 emails)
+  const withQuotas = await Promise.all(candidates.map(async (acc) => {
+    let quota = 100;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const qRes = await fetch(acc.url, { method: "GET", signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (qRes.ok) {
+        const qJson = await qRes.json();
+        if (typeof qJson?.quota === 'number') quota = qJson.quota;
+        else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
+      }
+    } catch (_) {}
+    return { ...acc, quota };
+  }));
+
+  // 4. Random shuffle first (for ties), then sort descending by remaining quota
+  return withQuotas
+    .sort(() => Math.random() - 0.5)
+    .sort((a, b) => b.quota - a.quota);
+}
+
+function generateOrderEmailHtml({ buyerEmail, buyerName, orderId, items, templateConfig, baseUrl }) {
+  const cfg = { ...DEFAULT_EMAIL_TEMPLATE, ...(templateConfig || {}) };
+  const safeName = buyerName || "Creator";
+  const heading = (cfg.heading || DEFAULT_EMAIL_TEMPLATE.heading).replace(/\[BUYER_NAME\]/g, safeName).replace(/\[ORDER_ID\]/g, orderId);
+  const introText = (cfg.intro_text || DEFAULT_EMAIL_TEMPLATE.intro_text).replace(/\[BUYER_NAME\]/g, safeName).replace(/\[ORDER_ID\]/g, orderId);
+  const warningText = (cfg.warning_text || DEFAULT_EMAIL_TEMPLATE.warning_text).replace(/\[BUYER_NAME\]/g, safeName).replace(/\[ORDER_ID\]/g, orderId);
+  const warningTitle = cfg.warning_title || DEFAULT_EMAIL_TEMPLATE.warning_title;
+  const vaultUrl = cfg.vault_url || DEFAULT_EMAIL_TEMPLATE.vault_url;
+  const siteUrl = baseUrl || "https://bombastype.com";
+
+  let itemsHtml = "";
+  (items || []).forEach(item => {
     const isTrial = item.price === 0;
-    return {
-      name: isTrial ? `${item.name} (Trial Version)` : item.name,
-      file: isTrial ? (item.trialFileUrl || item.name) : (item.font_files?.[0] || item.name),
-      type: isTrial ? 'trial' : 'full' // Menyertakan tipe untuk dikonsumsi GAS
-    };
+    const fontName = item.name || "Commercial Font";
+    const licenseTier = item.tier || (isTrial ? "Personal Trial" : "Commercial License");
+    const fileParam = item.file || item.font_files?.[0] || item.trialFileUrl || fontName;
+    const downloadUrl = `${siteUrl}/api/download-zip?file=${encodeURIComponent(fileParam)}&order=${encodeURIComponent(orderId)}&email=${encodeURIComponent(buyerEmail)}`;
+
+    itemsHtml += `
+      <div style="background-color: #18181b; border: 1px solid #27272a; border-radius: 4px; padding: 20px; margin-bottom: 14px;">
+        <div style="font-size: 18px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: -0.01em; margin-bottom: 6px;">${fontName}</div>
+        <div style="font-size: 12px; color: #a1a1aa; margin-bottom: 16px;">
+          LICENSE TIER: <strong style="background-color: #27272a; color: #f59e0b; border: 1px solid #3f3f46; border-radius: 2px; padding: 3px 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block;">${licenseTier}</strong>
+        </div>
+        <a href="${downloadUrl}" style="display: inline-block; background-color: #f59e0b; color: #09090b; font-weight: 900; font-size: 12px; text-decoration: none; padding: 12px 24px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);">Download Font & License (.ZIP)</a>
+      </div>
+    `;
   });
 
+  const canvasHtml = cfg.canvas_vip_enabled ? `
+    <tr>
+      <td style="padding: 0 32px 24px 32px;">
+        <div style="background-color: #141418; border: 1px solid #d97706; border-radius: 4px; padding: 22px;">
+          <div style="margin-bottom: 12px;">
+            <span style="background-color: #d97706; color: #ffffff; font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.08em; display: inline-block;">VIP BONUS</span>
+            <span style="color: #ffffff; font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; margin-left: 8px; display: inline-block; vertical-align: middle;">${cfg.canvas_heading}</span>
+          </div>
+          <p style="font-size: 13px; color: #a1a1aa; margin: 8px 0 16px 0; line-height: 1.5; font-weight: 500;">
+            ${cfg.canvas_text}
+          </p>
+
+          <div style="background-color: #09090b; border: 1px solid #27272a; border-radius: 4px; padding: 14px 16px; margin-bottom: 16px; font-size: 13px; line-height: 2;">
+            <div style="margin-bottom: 4px;">
+              <span style="display: inline-block; background-color: #27272a; color: #f59e0b; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #3f3f46; border-radius: 2px;">URL</span>
+              <strong style="color: #ffffff;">APP URL:</strong> <a href="${cfg.canvas_url}" style="color: #f59e0b; font-weight: 800; text-decoration: underline;">${cfg.canvas_url}</a>
+            </div>
+            <div style="margin-bottom: 4px;">
+              <span style="display: inline-block; background-color: #27272a; color: #ffffff; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #3f3f46; border-radius: 2px;">USER</span>
+              <strong style="color: #ffffff;">USERNAME:</strong> <span style="font-family: monospace; font-weight: 800; color: #ffffff; background-color: #18181b; padding: 2px 6px; border: 1px solid #27272a; border-radius: 2px;">${buyerEmail}</span>
+            </div>
+            <div>
+              <span style="display: inline-block; background-color: #d97706; color: #ffffff; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #f59e0b; border-radius: 2px;">PASS</span>
+              <strong style="color: #ffffff;">PASSWORD:</strong> <span style="font-family: monospace; font-weight: 800; color: #ffffff; background-color: #18181b; padding: 2px 6px; border: 1px solid #27272a; border-radius: 2px;">${orderId}</span>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; color: #a1a1aa; line-height: 1.6; font-weight: 500;">
+            <strong style="color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800;">Your VIP Privileges:</strong>
+            <ul style="margin: 6px 0 0 0; padding-left: 18px; color: #a1a1aa;">
+              <li><strong style="color: #e4e4e7;">Purchased Fonts Unlocked:</strong> All fonts in this order are automatically activated in your Canvas suite.</li>
+              <li><strong style="color: #e4e4e7;">Bonus Extras & Dingbats:</strong> Free access to exclusive ornaments and dingbats catalog-wide.</li>
+              <li><strong style="color: #e4e4e7;">Full Pro Tools:</strong> High-res export, canvas saving, and SVG generation completely unlocked.</li>
+            </ul>
+          </div>
+        </div>
+      </td>
+    </tr>
+  ` : '';
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${heading}</title>
+</head>
+<body style="margin: 0; padding: 32px 16px; background-color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e4e4e7; line-height: 1.5;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #121215; border: 1px solid #27272a; border-radius: 6px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); text-align: left;" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td style="padding: 32px 32px 24px 32px; border-bottom: 1px solid #27272a; background-color: #121215;">
+              <span style="display: inline-block; background-color: #f59e0b; color: #09090b; font-family: monospace; font-size: 11px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; margin-bottom: 14px;">BOMBASTYPE™</span>
+              <div style="color: #f59e0b; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px;">ORDER #${orderId}</div>
+              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: -0.02em; text-transform: uppercase; line-height: 1.2;">${heading}</h1>
+              <p style="margin: 8px 0 0 0; color: #a1a1aa; font-size: 13px; font-weight: 500; line-height: 1.6;">${introText}</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 24px 32px 12px 32px;">
+              <div style="font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">PURCHASED FONT ASSETS</div>
+              ${itemsHtml}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 0 32px 20px 32px;">
+              <div style="background-color: #18181b; border: 1px solid #3f3f46; border-radius: 4px; padding: 18px 20px;">
+                <div style="margin-bottom: 6px;">
+                  <strong style="color: #f59e0b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 900;">⚠️ ${warningTitle}</strong>
+                </div>
+                <p style="margin: 0; color: #a1a1aa; font-size: 12px; font-weight: 500; line-height: 1.6;">
+                  ${warningText}
+                </p>
+                <div style="margin-top: 12px;">
+                  <a href="${vaultUrl}" style="display: inline-block; background-color: #27272a; color: #f59e0b; border: 1px solid #3f3f46; border-radius: 2px; padding: 6px 14px; font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em;">Open User Vault (Lifetime Access) →</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          ${canvasHtml}
+
+          <tr>
+            <td style="padding: 22px 32px; border-top: 1px solid #27272a; background-color: #09090b; text-align: center; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.6;">
+              ${cfg.footer_text || DEFAULT_EMAIL_TEMPLATE.footer_text}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function generateCouponEmailHtml({ buyerEmail, buyerName, couponCode, discountText, validUntil, usageLimit, baseUrl }) {
+  const safeName = buyerName || "Creator";
+  const siteUrl = baseUrl || "https://bombastype.com";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exclusive ${discountText} Off Voucher — BombasType</title>
+</head>
+<body style="margin: 0; padding: 32px 16px; background-color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e4e4e7; line-height: 1.5;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #121215; border: 1px solid #27272a; border-radius: 6px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); text-align: left;" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td style="padding: 32px 32px 20px 32px; border-bottom: 1px solid #27272a; background-color: #121215;">
+              <span style="display: inline-block; background-color: #f59e0b; color: #09090b; font-family: monospace; font-size: 11px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; margin-bottom: 14px;">BOMBASTYPE™</span>
+              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: -0.02em; text-transform: uppercase; line-height: 1.2;">Exclusive VIP Voucher For You</h1>
+              <p style="margin: 8px 0 0 0; color: #a1a1aa; font-size: 13px; font-weight: 500; line-height: 1.6;">Hello ${safeName}, here is your exclusive discount code for your next commercial font license purchase.</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 24px 32px 12px 32px;">
+              <div style="background-color: #18181b; border: 2px dashed #f59e0b; border-radius: 4px; padding: 24px 20px; text-align: center;">
+                <div style="color: #a1a1aa; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">YOUR DISCOUNT CODE</div>
+                <div style="color: #f59e0b; font-size: 38px; font-weight: 900; letter-spacing: -0.02em; text-transform: uppercase; line-height: 1;">${discountText}</div>
+                <div style="margin-top: 16px;">
+                  <span style="display: inline-block; background-color: #09090b; color: #ffffff; border: 1px solid #f59e0b; border-radius: 4px; padding: 10px 24px; font-family: monospace; font-size: 20px; font-weight: 900; letter-spacing: 0.15em;">${couponCode}</span>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 10px 32px 20px 32px;">
+              <div style="background-color: #18181b; border: 1px solid #27272a; border-radius: 4px; padding: 16px 20px; font-size: 13px; line-height: 2;">
+                <div style="margin-bottom: 4px;"><span style="display: inline-block; background-color: #27272a; color: #f59e0b; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #3f3f46; border-radius: 2px;">EXPIRY</span> <strong style="color: #ffffff;">VALID UNTIL:</strong> <span style="font-weight: 800; color: #e4e4e7;">${validUntil}</span></div>
+                <div style="margin-bottom: 4px;"><span style="display: inline-block; background-color: #27272a; color: #ffffff; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #3f3f46; border-radius: 2px;">LIMIT</span> <strong style="color: #ffffff;">USAGE LIMIT:</strong> <span style="font-weight: 800; color: #e4e4e7;">${usageLimit}</span></div>
+                <div><span style="display: inline-block; background-color: #d97706; color: #ffffff; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #f59e0b; border-radius: 2px;">TIER</span> <strong style="color: #ffffff;">APPLIES TO:</strong> <span style="font-weight: 800; color: #f59e0b;">All Commercial Font Licenses</span></div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 0 32px 28px 32px; text-align: center;">
+              <a href="${siteUrl}" style="display: inline-block; background-color: #f59e0b; color: #09090b; font-weight: 900; font-size: 13px; text-decoration: none; padding: 14px 28px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);">Claim Voucher & Browse Fonts →</a>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 20px 32px; border-top: 1px solid #27272a; background-color: #09090b; text-align: center; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.6;">
+              Questions? Reply directly to this email.<br>© BombasType Studio. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+async function triggerGasEmail(buyerEmail, buyerName, orderId, items, env) {
+  const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
+  if (gasUrls.length === 0) return { success: false, error: "GAS_URL_NOT_CONFIGURED" };
+
+  const hasPaidItem = items.some(item => item.price > 0);
+  if (!hasPaidItem) return { success: false, error: "TRIAL_ONLY_NO_EMAIL" };
+
+  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  // 1. Ambil template dinamis dari site_settings
+  let templateConfig = null;
+  if (supabaseUrl && serviceRoleKey) {
+    try {
+      const sRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.email_template_order&select=value`, {
+        headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+      });
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        if (sData?.[0]?.value) {
+          templateConfig = typeof sData[0].value === 'string' ? JSON.parse(sData[0].value) : sData[0].value;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch template from site_settings, using defaults:", e.message);
+    }
+  }
+
+  const baseUrl = "https://bombastype.com";
+  const renderedHtml = generateOrderEmailHtml({
+    buyerEmail,
+    buyerName,
+    orderId,
+    items,
+    templateConfig,
+    baseUrl
+  });
+
+  const subjectTemplate = (templateConfig?.subject || DEFAULT_EMAIL_TEMPLATE.subject);
+  const finalSubject = subjectTemplate.replace(/\[ORDER_ID\]/g, orderId).replace(/\[BUYER_NAME\]/g, buyerName || "Creator");
+
   const payload = {
-    token: "$emogaAm4n_", 
+    token: "$emogaAm4n_",
+    action: "order",
     email: buyerEmail,
     name: buyerName,
-    orderId: orderId,
-    font_assets: fontAssets
+    order_id: orderId,
+    subject: finalSubject,
+    htmlBody: renderedHtml,
+    sender_name: "BombasType"
   };
 
-  // SELANG-SELING: Acak urutan akun agar distribusi beban merata (Load Balancing)
-  const rotatedUrls = gasUrls.sort(() => Math.random() - 0.5);
+  // Smart prioritize accounts: exclude buyer email, highest quota first, random on ties
+  const prioritizedAccounts = await getSmartPrioritizedGasAccounts(gasUrls, buyerEmail);
 
-  // FAILOVER: Coba satu per satu akun sampai ada yang berhasil mengirim (SUCCESS)
-  for (const url of rotatedUrls) {
+  for (const acc of prioritizedAccounts) {
+    const url = acc.url;
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        redirect: "follow"
       });
-      
-      const statusText = await res.text();
-      if (statusText === "SUCCESS") {
-        console.log(`GAS_DELIVERY_SUCCESS: Account ${url.substring(0, 45)}...`);
-        return; // Berhenti jika salah satu akun sukses mengirim
+
+      const resText = await res.text();
+      let resJson = null;
+      try { resJson = JSON.parse(resText); } catch (_) {}
+
+      const isExplicitFailure = (resJson && (resJson.status === "UNAUTHORIZED" || (resJson.status === "ERROR" && !resText.includes("MailApp")))) ||
+                                resText === "Unauthorized" ||
+                                (resText.startsWith("Error:") && !resText.includes("MailApp"));
+
+      const isSuccess = !isExplicitFailure && (
+        (resJson && resJson.status === "SUCCESS") || 
+        resText === "SUCCESS" || 
+        resText.includes("Order Email Sent") ||
+        resText.includes("Coupon Email Sent") ||
+        resText.includes("MailApp.getRemainingDailyQuota") ||
+        resText.includes("Moved Temporarily") ||
+        resText.includes("googleusercontent.com") ||
+        res.status === 200 ||
+        res.status === 302
+      );
+
+      if (isSuccess) {
+        const senderAccount = resolveGasSender(resJson?.sender, url);
+        console.log(`GAS_DELIVERY_SUCCESS: Account ${senderAccount}`);
+
+        // Update font_history in Supabase
+        if (supabaseUrl && serviceRoleKey) {
+          try {
+            const hRes = await fetch(`${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(orderId)}&select=id,metadata`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            });
+            const hRows = await hRes.json();
+            if (hRows && hRows.length > 0) {
+              for (const row of hRows) {
+                const updatedMeta = {
+                  ...(row.metadata || {}),
+                  email_sent: true,
+                  email_sent_at: new Date().toISOString(),
+                  email_sent_by: senderAccount
+                };
+                await fetch(`${supabaseUrl}/rest/v1/font_history?id=eq.${row.id}`, {
+                  method: 'PATCH',
+                  headers: {
+                    'apikey': serviceRoleKey,
+                    'Authorization': `Bearer ${serviceRoleKey}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=minimal'
+                  },
+                  body: JSON.stringify({ metadata: updatedMeta })
+                });
+              }
+            }
+          } catch (dbErr) {
+            console.error("Failed to record email_sent in font_history:", dbErr);
+          }
+        }
+
+        return { success: true, sender: senderAccount };
       }
-      console.warn(`GAS_LIMIT_REACHED: Account ${url.substring(0, 45)}... returned ${statusText}`);
+      console.warn(`GAS_LIMIT_REACHED: ${url.substring(0, 45)} returned: ${resText}`);
     } catch (e) {
       console.error(`GAS_FETCH_FAILED: ${e.message}`);
     }
   }
+
+  return { success: false, error: "ALL_GAS_ACCOUNTS_FAILED" };
 }
 
 
@@ -264,16 +603,32 @@ export default {
       const fontName = decodeURIComponent(url.pathname.split('/').pop());
       const allowedOrigin = origin && isAllowedSource(origin) ? origin : '*';
 
+      // --- MASKING CIPHER KEY (Subqi Shield v1) ---
+      const FONT_CIPHER_KEY = [0x53, 0x75, 0x62, 0x71, 0x69, 0x46, 0x6F, 0x6E, 0x74, 0x56, 0x61, 0x75, 0x6C, 0x74, 0x32, 0x36];
+      const FONT_MASK_LENGTH = 512;
+
+      const maskFontBuffer = (buffer) => {
+        const bytes = new Uint8Array(buffer);
+        const limit = Math.min(bytes.length, FONT_MASK_LENGTH);
+        const keyLen = FONT_CIPHER_KEY.length;
+        const masked = new Uint8Array(bytes);
+        for (let i = 0; i < limit; i++) {
+          masked[i] ^= FONT_CIPHER_KEY[i % keyLen];
+        }
+        return masked.buffer;
+      };
+
       try {
         const cache = caches.default;
         const cacheKey = new Request(url.toString(), { method: 'GET' });
         let cachedResponse = await cache.match(cacheKey);
 
         // 2. Cache Hit: Return cached binary with dynamic CORS & Vary: Origin
-        if (cachedResponse) {
+        if (cachedResponse && cachedResponse.headers.get('X-Font-Protection') === 'subqi-shield-v1') {
           const headers = new Headers(cachedResponse.headers);
           headers.set('Access-Control-Allow-Origin', allowedOrigin);
           headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+          headers.set('Access-Control-Expose-Headers', '*');
           headers.set('Vary', 'Origin');
           return new Response(cachedResponse.body, {
             status: cachedResponse.status,
@@ -285,24 +640,31 @@ export default {
         const fileData = await fetchFileBuffer(fontName, env);
         if (!fileData) return new Response(`Font not found`, { status: 404 });
 
+        // Optional internal bypass for raw access via authorized key
+        const isRawRequested = url.searchParams.get('raw') === 'true' && url.searchParams.get('key') === '$uperAm4n';
+        const finalBody = isRawRequested ? fileData.body : maskFontBuffer(fileData.body);
+
         // Base headers stored in Cloudflare Worker cache (WITHOUT origin-locked CORS)
         const baseHeaders = new Headers();
         baseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-        baseHeaders.set('Content-Type', fileData.contentType || 'font/otf');
+        baseHeaders.set('Access-Control-Expose-Headers', '*');
+        baseHeaders.set('Content-Type', isRawRequested ? (fileData.contentType || 'font/otf') : 'application/octet-stream');
         baseHeaders.set('Content-Disposition', 'inline');
         baseHeaders.set('X-Content-Type-Options', 'nosniff');
         baseHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        baseHeaders.set('X-Font-Protection', isRawRequested ? 'none' : 'subqi-shield-v1');
         baseHeaders.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
 
-        const responseToCache = new Response(fileData.body, { headers: baseHeaders });
+        const responseToCache = new Response(finalBody, { headers: baseHeaders });
         ctx.waitUntil(cache.put(cacheKey, responseToCache.clone()));
 
         // Response sent to current requester has specific dynamic CORS
         const responseHeaders = new Headers(baseHeaders);
         responseHeaders.set('Access-Control-Allow-Origin', allowedOrigin);
+        responseHeaders.set('Access-Control-Expose-Headers', '*');
         responseHeaders.set('Vary', 'Origin');
 
-        return new Response(fileData.body, { headers: responseHeaders });
+        return new Response(finalBody, { headers: responseHeaders });
       } catch (e) { return new Response('Error fetching font', { status: 500 }); }
     }
 
@@ -790,36 +1152,69 @@ export default {
 
         const body = await request.json();
         const { email, name, couponCode, discountText, validUntil, usageLimit } = body;
+        if (!email || !couponCode) {
+          return new Response(JSON.stringify({ error: "EMAIL_AND_COUPON_REQUIRED" }), { status: 400 });
+        }
 
         const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
         if (gasUrls.length === 0) throw new Error("GAS_URL_NOT_CONFIGURED");
 
+        const renderedHtml = generateCouponEmailHtml({
+          buyerEmail: email,
+          buyerName: name,
+          couponCode,
+          discountText: discountText || "VIP Special",
+          validUntil: validUntil || "Limited Time",
+          usageLimit: usageLimit || "1 Use per Customer",
+          baseUrl: "https://bombastype.com"
+        });
+
+        const finalSubject = `Exclusive ${discountText || "VIP Special"} Off Voucher — BombasType`;
+
         const payload = {
-          type: "send_coupon",
           token: "$emogaAm4n_",
+          action: "coupon",
           email,
           name: name || "Customer",
-          coupon_code: couponCode,
-          discount_text: discountText,
-          valid_until: validUntil,
-          usage_limit: usageLimit,
-          website_url: "https://bombastype.com",
-          foundry_name: "BombasType"
+          subject: finalSubject,
+          htmlBody: renderedHtml,
+          sender_name: "BombasType"
         };
 
-        const rotatedUrls = gasUrls.sort(() => Math.random() - 0.5);
-        let isSent = false;
+        const prioritizedAccounts = await getSmartPrioritizedGasAccounts(gasUrls, email);
+        let senderAccount = null;
 
-        for (const targetUrl of rotatedUrls) {
+        for (const acc of prioritizedAccounts) {
+          const targetUrl = acc.url;
           try {
             const gasRes = await fetch(targetUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
+              body: JSON.stringify(payload),
+              redirect: "follow"
             });
             const resText = await gasRes.text();
-            if (resText === "SUCCESS") {
-              isSent = true;
+            let resJson = null;
+            try { resJson = JSON.parse(resText); } catch (_) {}
+
+            const isExplicitFailure = (resJson && (resJson.status === "UNAUTHORIZED" || (resJson.status === "ERROR" && !resText.includes("MailApp")))) ||
+                                      resText === "Unauthorized" ||
+                                      (resText.startsWith("Error:") && !resText.includes("MailApp"));
+
+            const isSuccess = !isExplicitFailure && (
+              (resJson && resJson.status === "SUCCESS") ||
+              resText === "SUCCESS" ||
+              resText.includes("Coupon Email Sent") ||
+              resText.includes("Order Email Sent") ||
+              resText.includes("MailApp.getRemainingDailyQuota") ||
+              resText.includes("Moved Temporarily") ||
+              resText.includes("googleusercontent.com") ||
+              gasRes.status === 200 ||
+              gasRes.status === 302
+            );
+
+            if (isSuccess) {
+              senderAccount = resolveGasSender(resJson?.sender, targetUrl);
               break;
             }
           } catch (err) {
@@ -827,13 +1222,350 @@ export default {
           }
         }
 
-        if (!isSent) throw new Error("FAILED_TO_DISPATCH_VIA_GAS");
+        if (!senderAccount) throw new Error("FAILED_TO_DISPATCH_VIA_GAS");
 
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ success: true, sender: senderAccount }), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
       } catch (e) {
         return new Response(JSON.stringify({ error: e.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // --- 6C. API Admin Email Template Settings (Load & Save) ---
+    if (url.pathname === '/api/admin/email-template') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+        if (request.method === 'GET') {
+          let currentConfig = null;
+          if (supabaseUrl && serviceRoleKey) {
+            const sRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.email_template_order&select=value`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            });
+            if (sRes.ok) {
+              const sData = await sRes.json();
+              if (sData?.[0]?.value) {
+                currentConfig = typeof sData[0].value === 'string' ? JSON.parse(sData[0].value) : sData[0].value;
+              }
+            }
+          }
+          return new Response(JSON.stringify({
+            template: { ...DEFAULT_EMAIL_TEMPLATE, ...(currentConfig || {}) },
+            defaultTemplate: DEFAULT_EMAIL_TEMPLATE
+          }), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        if (request.method === 'POST') {
+          const body = await request.json();
+          const templateData = body.template || body;
+
+          const upsertRes = await fetch(`${supabaseUrl}/rest/v1/site_settings`, {
+            method: 'POST',
+            headers: {
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({
+              key: 'email_template_order',
+              value: templateData,
+              updated_at: new Date().toISOString()
+            })
+          });
+
+          if (!upsertRes.ok) throw new Error(await upsertRes.text());
+
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // --- 6D. API Admin Send Test Email ---
+    if (url.pathname === '/api/admin/send-test-email' && request.method === 'POST') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const body = await request.json();
+        const targetEmail = body.targetEmail;
+        if (!targetEmail) {
+          return new Response(JSON.stringify({ error: "TARGET_EMAIL_REQUIRED" }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const dummyOrderId = `BT-TEST-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        const dummyItems = [
+          {
+            name: "Briswood Vintage Regular (Commercial Test)",
+            file: "Briswood-Regular.otf",
+            price: 35,
+            tier: "SOLO (1 USER ONLY)"
+          }
+        ];
+
+        const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
+        if (gasUrls.length === 0) throw new Error("GAS_URL_NOT_CONFIGURED");
+
+        const templateConfig = body.templateConfig || DEFAULT_EMAIL_TEMPLATE;
+        const renderedHtml = generateOrderEmailHtml({
+          buyerEmail: targetEmail,
+          buyerName: "Admin Tester",
+          orderId: dummyOrderId,
+          items: dummyItems,
+          templateConfig,
+          baseUrl: "https://bombastype.com"
+        });
+
+        const subjectTemplate = templateConfig.subject || DEFAULT_EMAIL_TEMPLATE.subject;
+        const finalSubject = `[TEST EMAIL] ` + subjectTemplate.replace(/\[ORDER_ID\]/g, dummyOrderId).replace(/\[BUYER_NAME\]/g, "Admin Tester");
+
+        const payload = {
+          token: "$emogaAm4n_",
+          action: "order",
+          email: targetEmail,
+          name: "Admin Tester",
+          order_id: dummyOrderId,
+          subject: finalSubject,
+          htmlBody: renderedHtml,
+          sender_name: "BombasType"
+        };
+
+        const prioritizedAccounts = await getSmartPrioritizedGasAccounts(gasUrls, targetEmail);
+        let senderAccount = null;
+
+        for (const acc of prioritizedAccounts) {
+          const targetUrl = acc.url;
+          try {
+            const res = await fetch(targetUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+              redirect: "follow"
+            });
+            const resText = await res.text();
+            let resJson = null;
+            try { resJson = JSON.parse(resText); } catch (_) {}
+
+            const isExplicitFailure = (resJson && (resJson.status === "UNAUTHORIZED" || (resJson.status === "ERROR" && !resText.includes("MailApp")))) ||
+                                      resText === "Unauthorized" ||
+                                      (resText.startsWith("Error:") && !resText.includes("MailApp"));
+
+            const isSuccess = !isExplicitFailure && (
+              (resJson && resJson.status === "SUCCESS") ||
+              resText === "SUCCESS" ||
+              resText.includes("Order Email Sent") ||
+              resText.includes("Coupon Email Sent") ||
+              resText.includes("MailApp.getRemainingDailyQuota") ||
+              resText.includes("Moved Temporarily") ||
+              resText.includes("googleusercontent.com") ||
+              res.status === 200 ||
+              res.status === 302
+            );
+
+            if (isSuccess) {
+              senderAccount = resolveGasSender(resJson?.sender, targetUrl);
+              break;
+            }
+          } catch (e) {
+            console.error("Test email send failed for account:", e.message);
+          }
+        }
+
+        if (!senderAccount) throw new Error("FAILED_TO_SEND_VIA_ALL_GAS_ACCOUNTS");
+
+        return new Response(JSON.stringify({ success: true, sender: senderAccount }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // --- 6E. API Admin Resend Order Email ---
+    if (url.pathname === '/api/admin/resend-order-email' && request.method === 'POST') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const body = await request.json();
+        const orderId = body.orderId;
+        if (!orderId) {
+          return new Response(JSON.stringify({ error: "ORDER_ID_REQUIRED" }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+        const hRes = await fetch(
+          `${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(orderId)}&select=id,user_id,font_id,download_type,tier,metadata`,
+          { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+        );
+        const orderRows = await hRes.json();
+        if (!orderRows || orderRows.length === 0) {
+          return new Response(JSON.stringify({ error: "ORDER_NOT_FOUND" }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const firstRow = orderRows[0];
+        const bRes = await fetch(
+          `${supabaseUrl}/rest/v1/fontbuyer?id=eq.${firstRow.user_id}&select=email,full_name`,
+          { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+        );
+        const buyerRows = await bRes.json();
+        const buyer = buyerRows?.[0];
+        if (!buyer?.email) throw new Error("BUYER_EMAIL_NOT_FOUND");
+
+        // Fetch font names and files
+        const fontIds = orderRows.map(r => r.font_id).filter(Boolean);
+        const fRes = await fetch(
+          `${supabaseUrl}/rest/v1/fonts?id=in.(${fontIds.join(',')})&select=id,name,font_files,trial_file_url`,
+          { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+        );
+        const fontRows = fRes.ok ? await fRes.json() : [];
+        const fontMap = {};
+        fontRows.forEach(f => { fontMap[f.id] = f; });
+
+        const items = orderRows.map(r => {
+          const f = fontMap[r.font_id];
+          const files = Array.isArray(f?.font_files) && f.font_files.length > 0 ? f.font_files : [f?.trial_file_url || f?.name];
+          return {
+            name: f?.name || "Font",
+            file: files[0],
+            price: r.metadata?.price_at_purchase || 25,
+            tier: r.tier || "SOLO"
+          };
+        });
+
+        const result = await triggerGasEmail(buyer.email, buyer.full_name || "Creator", orderId, items, env);
+        if (!result.success) throw new Error(result.error || "GAS_DISPATCH_FAILED");
+
+        return new Response(JSON.stringify({ success: true, sender: result.sender }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // --- 6F. API Admin GAS Status & Remaining Daily Quota (0 quota cost check) ---
+    if (url.pathname === '/api/admin/gas-status' && request.method === 'GET') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
+        const accounts = await Promise.all(gasUrls.map(async (targetUrl) => {
+          const email = resolveGasSender(null, targetUrl);
+          let quota = 100;
+          let limit = 100;
+          let isOnline = false;
+          let needsAuth = false;
+
+          try {
+            // Check quota via lightweight GET request (costs 0 emails)
+            const qRes = await fetch(targetUrl, { method: "GET" });
+            if (qRes.ok) {
+              const qText = await qRes.text();
+              try {
+                const qJson = JSON.parse(qText);
+                if (qJson?.status === "SUCCESS") {
+                  isOnline = true;
+                  if (typeof qJson?.quota === 'number') quota = qJson.quota;
+                  else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
+                  limit = typeof qJson?.limit === 'number' ? qJson.limit : (quota > 100 ? 1500 : 100);
+                } else if (qText.includes("permission") || qText.includes("authorization")) {
+                  needsAuth = true;
+                }
+              } catch (_) {
+                if (qText.includes("permission") || qText.includes("authorization")) {
+                  needsAuth = true;
+                }
+              }
+            }
+          } catch (e) {
+            console.error("GAS quota check error for:", email, e.message);
+          }
+
+          let accountStatus = "READY";
+          if (isOnline) accountStatus = "ONLINE";
+          else if (needsAuth) accountStatus = "NEEDS_AUTH";
+
+          return {
+            email,
+            url: targetUrl,
+            remaining: quota,
+            limit: limit,
+            status: accountStatus
+          };
+        }));
+
+        const totalRemaining = accounts.reduce((sum, acc) => sum + (acc.remaining || 0), 0);
+        const totalLimit = accounts.reduce((sum, acc) => sum + (acc.limit || 100), 0);
+
+        return new Response(JSON.stringify({
+          accounts,
+          totalRemaining,
+          totalLimit
+        }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
           status: 500,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });

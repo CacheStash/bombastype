@@ -18,6 +18,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { loadProtectedFontFace } from '../utils/secureFontLoader';
 
 // --- HELPERS & CONSTANTS ---
 const resolvePreviewUrl = (filename: string) => {
@@ -205,21 +206,15 @@ const Fonts: React.FC = () => {
 
   useEffect(() => {
     if (fonts.length > 0) {
-      const styleId = 'library-fonts-css';
-      let styleEl = document.getElementById(styleId) as HTMLStyleElement || document.createElement('style');
-      styleEl.id = styleId;
-      document.head.appendChild(styleEl);
-
-      styleEl.innerHTML = fonts.flatMap(f => {
+      fonts.forEach(f => {
         const files = Array.isArray(f.font_files) ? f.font_files : [f.file_url];
-        return files.map((file: string, idx: number) => `
-          @font-face {
-            font-family: "${f.name}-${idx}";
-            src: url("/api/fonts/${file}");
-            font-display: swap;
-          }
-        `);
-      }).join('\n');
+        const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
+        files.forEach((file: string, idx: number) => {
+          if (!file) return;
+          const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=${version}`;
+          loadProtectedFontFace(`${f.name}-${idx}`, url);
+        });
+      });
     }
   }, [fonts]);
 

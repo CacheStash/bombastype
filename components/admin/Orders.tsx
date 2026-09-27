@@ -5,7 +5,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Search, ChevronLeft, ChevronRight, Download, ShoppingBag, FileText, ShieldCheck } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Download, ShoppingBag, FileText, ShieldCheck, Mail } from 'lucide-react';
+
+const formatGasSender = (sender?: string) => {
+  if (!sender) return '';
+  if (sender.includes('@')) return sender;
+  if (sender.includes('AKfycbyy')) return 'bombastype@gmail.com';
+  if (sender.includes('AKfycbzH')) return 'bombastypetwo@gmail.com';
+  if (sender.includes('AKfycbyv')) return 'bombastypebot@gmail.com';
+  return sender;
+};
 
 const MASTER_TIER_LABELS: Record<string, Record<string, string>> = {
   desktop: { solo: '1 USER ONLY', team: 'UP TO 30 USER', studio: 'UP TO 100 USER', enterprise: 'UNLIMITED USER' },
@@ -40,6 +49,7 @@ const Orders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [downloadingTx, setDownloadingTx] = useState<string | null>(null);
+  const [resendingTx, setResendingTx] = useState<string | null>(null);
   const itemsPerPage = 20;
 
   const [isExporting, setIsExporting] = useState(false);
@@ -246,6 +256,58 @@ const Orders = () => {
     }
   };
 
+  const handleResendOrderEmail = async (order: any) => {
+    const targetEmail = order.fontbuyer?.email;
+    if (!targetEmail) {
+      return alert("Buyer email is missing for this order.");
+    }
+
+    if (!window.confirm(`Send / resend order delivery email to ${targetEmail} for Order #${order.transaction_id}?`)) {
+      return;
+    }
+
+    setResendingTx(order.transaction_id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return alert("Session expired. Please login again.");
+
+      const res = await fetch('/api/admin/resend-order-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ orderId: order.transaction_id })
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error || `HTTP ${res.status}`);
+
+      // Optimistically update order metadata in local state
+      setOrders(prev => prev.map(o => {
+        if (o.transaction_id === order.transaction_id) {
+          return {
+            ...o,
+            metadata: {
+              ...o.metadata,
+              email_sent: true,
+              email_sent_at: new Date().toISOString(),
+              email_sent_by: json.sender
+            }
+          };
+        }
+        return o;
+      }));
+
+      alert(`Delivery email dispatched successfully via ${formatGasSender(json.sender)}!`);
+    } catch (err: any) {
+      console.error("RESEND_EMAIL_ERROR:", err);
+      alert("Failed to send email: " + err.message);
+    } finally {
+      setResendingTx(null);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-20">
       {/* HEADER */}
@@ -299,6 +361,7 @@ const Orders = () => {
               <th className="p-5">Typeface</th>
               <th className="p-5 text-center">Valuation</th>
               <th className="p-5 text-center">Status</th>
+              <th className="p-5 text-center">Email Delivery</th>
               <th className="p-5 text-center">License Certificate</th>
               <th className="p-5">Tier & Metrics</th>
               <th className="p-5">License Provisions</th>
@@ -306,9 +369,9 @@ const Orders = () => {
           </thead>
           <tbody className="text-[11px] font-serif">
             {loading ? (
-              <tr><td colSpan={9} className="p-20 text-center animate-pulse italic opacity-40">Consulting Archive Ledger...</td></tr>
+              <tr><td colSpan={10} className="p-20 text-center animate-pulse italic opacity-40">Consulting Archive Ledger...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={9} className="p-20 text-center opacity-40 italic">No records found matching "{searchTerm}"</td></tr>
+              <tr><td colSpan={10} className="p-20 text-center opacity-40 italic">No records found matching "{searchTerm}"</td></tr>
             ) : orders.map((order) => (
               <tr key={order.id} className="border-b border-vintage-ink/10 hover:bg-vintage-ink/2 transition-colors">
                 <td className="p-5 font-bold italic">{new Date(order.download_date).toLocaleDateString()}</td>
@@ -320,6 +383,37 @@ const Orders = () => {
                   <span className={`px-3 py-1 text-[8px] font-bold border tracking-widest uppercase ${order.download_type === 'trial' ? 'bg-vintage-paper border-vintage-ink/20 text-vintage-ink/60' : 'bg-vintage-ink text-vintage-paper border-vintage-ink'}`}>
                     {order.download_type || 'N/A'}
                   </span>
+                </td>
+                <td className="p-5 text-center">
+                  <div className="flex flex-col items-center justify-center gap-1">
+                    <span className={`px-2.5 py-0.5 text-[8px] font-bold border tracking-widest uppercase ${
+                      order.metadata?.email_sent
+                        ? 'bg-vintage-ink text-vintage-paper border-vintage-ink'
+                        : 'bg-vintage-paper text-vintage-ink/60 border-vintage-ink/20'
+                    }`}>
+                      {order.metadata?.email_sent ? 'SENT' : 'PENDING'}
+                    </span>
+                    {order.metadata?.email_sent_by && (() => {
+                      const cleanSender = formatGasSender(order.metadata.email_sent_by);
+                      return (
+                        <span 
+                          className="text-[8px] font-mono lowercase text-vintage-ink/60 max-w-[130px] truncate"
+                          title={cleanSender}
+                        >
+                          {cleanSender}
+                        </span>
+                      );
+                    })()}
+                    <button
+                      onClick={() => handleResendOrderEmail(order)}
+                      disabled={resendingTx === order.transaction_id || order.download_type === 'trial'}
+                      title="Dispatch / Resend order email"
+                      className="mt-1 px-2 py-0.5 border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper transition-all text-[8px] font-bold tracking-wider uppercase flex items-center gap-1 group disabled:opacity-30"
+                    >
+                      <Mail size={10} />
+                      <span>{resendingTx === order.transaction_id ? 'SENDING...' : (order.metadata?.email_sent ? 'RESEND' : 'SEND')}</span>
+                    </button>
+                  </div>
                 </td>
                 <td className="p-5 text-center">
                   <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">

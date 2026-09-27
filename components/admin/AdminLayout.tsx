@@ -11,6 +11,7 @@ import ProductManager from './ProductManager';
 import ContentManager from './ContentManager';
 import PromotionsManager from './PromotionsManager'; 
 import Orders from './Orders';
+import EmailStudio from './EmailStudio';
 import Statistics from './Statistics';
 import AdminMessages from './AdminMessages';
 
@@ -56,8 +57,8 @@ const AdminDashboard = () => {
   const handleToggleMaintenance = async () => {
     const nextState = !isMaintenance;
     const confirmMsg = nextState 
-      ? 'Aktifkan MODE MAINTENANCE? Pengunjung umum tidak akan bisa membuka situs (hanya admin).'
-      : 'Matikan MODE MAINTENANCE? Situs akan kembali dapat diakses oleh publik.';
+      ? 'Enable MAINTENANCE MODE? Public visitors will not be able to access the site (admin only).'
+      : 'Disable MAINTENANCE MODE? The site will become publicly accessible again.';
     
     if (!window.confirm(confirmMsg)) return;
 
@@ -74,7 +75,7 @@ const AdminDashboard = () => {
       if (error) throw error;
       setIsMaintenance(nextState);
     } catch (err: any) {
-      alert('Gagal mengubah mode maintenance: ' + err.message);
+      alert('Failed to update maintenance mode: ' + err.message);
     } finally {
       setUpdatingMaintenance(false);
     }
@@ -83,8 +84,8 @@ const AdminDashboard = () => {
   const handleToggleSandbox = async () => {
     const nextState = !isSandbox;
     const confirmMsg = nextState 
-      ? 'Aktifkan PAYPAL SANDBOX MODE untuk testing transaksi?'
-      : 'Beralih ke PAYPAL LIVE MODE untuk menerima transaksi nyata?';
+      ? 'Enable PAYPAL SANDBOX MODE for testing transactions?'
+      : 'Switch to PAYPAL LIVE MODE to accept real customer transactions?';
     
     if (!window.confirm(confirmMsg)) return;
 
@@ -101,7 +102,7 @@ const AdminDashboard = () => {
       if (error) throw error;
       setIsSandbox(nextState);
     } catch (err: any) {
-      alert('Gagal mengubah mode PayPal: ' + err.message);
+      alert('Failed to update PayPal mode: ' + err.message);
     } finally {
       setUpdatingSandbox(false);
     }
@@ -128,7 +129,7 @@ const AdminDashboard = () => {
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      alert("Gagal keluar: " + error.message);
+      alert("Failed to sign out: " + error.message);
     } else {
       window.location.href = '/login';
     }
@@ -140,6 +141,7 @@ const AdminDashboard = () => {
     { id: 'products', label: 'Typeface Inventory', icon: Type },
     { id: 'promotions', label: 'Promotional Deals', icon: Tag },
     { id: 'orders', label: 'Customer Orders', icon: ShoppingCart },
+    { id: 'email_studio', label: 'Email Studio', icon: Mail },
     { id: 'content', label: 'Site Content', icon: FileText },
     { id: 'analytics', label: 'Web Analytics', icon: Globe },
   ];
@@ -154,6 +156,7 @@ const AdminDashboard = () => {
       case 'products': return <ProductManager />;
       case 'promotions': return <PromotionsManager />;
       case 'orders': return <Orders />;
+      case 'email_studio': return <EmailStudio />;
       case 'content': return <ContentManager />;
       case 'analytics': return <WebAnalytics />;
       default: return <ProductManager />;
