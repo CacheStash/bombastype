@@ -146,16 +146,24 @@ async function isUserAdmin(userId, env) {
 
 const DEFAULT_EMAIL_TEMPLATE = {
   subject: "Your Font License Order #[ORDER_ID] is Ready — BombasType",
-  heading: "Thank you for your purchase, [BUYER_NAME]!",
-  intro_text: "Your commercial font packages and license certificates are prepared below. Keep your Order ID safe as proof of your licensed usage rights.",
+  heading: "Thank you for your purchase, [BUYER_NAME]",
+  intro_text: "Your commercial font packages and license certificates are prepared below. Please keep your Order ID safe as archival proof of your licensed usage rights.",
   warning_title: "Security & Direct Download Notice",
-  warning_text: "Direct download packages are active for 7 days or up to 7 downloads to safeguard our intellectual property against link sharing. You may also access your typography library permanently anytime inside your User Vault.",
+  warning_text: "Direct download packages are active for 7 days or up to 7 downloads to safeguard intellectual property against link sharing. You may also access your typography library permanently anytime inside your User Vault.",
   vault_url: "https://bombastype.com/user/auth",
   canvas_vip_enabled: true,
-  canvas_url: "https://canvas.subqi.com",
+  canvas_url: "https://canvas.bombastype.com",
   canvas_heading: "Font Canvas VIP Access Unlocked!",
   canvas_text: "As our verified commercial font licensee, you receive complimentary VIP access to Font Canvas — our web-based typography creator app:",
-  footer_text: "Questions or licensing assistance? Reply directly to this email.<br>© BombasType Studio. All rights reserved."
+};
+
+const DEFAULT_COUPON_EMAIL_TEMPLATE = {
+  subject: "Exclusive [DISCOUNT] Off Voucher — BombasType",
+  heading: "Exclusive VIP Voucher For You",
+  intro_text: "Hello [BUYER_NAME], here is an exclusive discount code for your next commercial font license acquisition from our foundry catalog.",
+  discount_label: "YOUR PRIVILEGED DISCOUNT",
+  button_text: "Claim Voucher & Browse Catalog →",
+  footer_text: "Questions or special inquiries? Reply directly to this letter.<br>© BombasType Studio. All rights reserved."
 };
 
 const GAS_ACCOUNT_MAP = {
@@ -228,12 +236,12 @@ function generateOrderEmailHtml({ buyerEmail, buyerName, orderId, items, templat
     const downloadUrl = `${siteUrl}/api/download-zip?file=${encodeURIComponent(fileParam)}&order=${encodeURIComponent(orderId)}&email=${encodeURIComponent(buyerEmail)}`;
 
     itemsHtml += `
-      <div style="background-color: #18181b; border: 1px solid #27272a; border-radius: 4px; padding: 20px; margin-bottom: 14px;">
-        <div style="font-size: 18px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: -0.01em; margin-bottom: 6px;">${fontName}</div>
-        <div style="font-size: 12px; color: #a1a1aa; margin-bottom: 16px;">
-          LICENSE TIER: <strong style="background-color: #27272a; color: #f59e0b; border: 1px solid #3f3f46; border-radius: 2px; padding: 3px 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block;">${licenseTier}</strong>
+      <div style="background-color: #ffffff; border: 1px solid #2c241a; padding: 20px; margin-bottom: 14px;">
+        <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 19px; font-weight: 700; color: #2c241a; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">${fontName}</div>
+        <div style="font-size: 12px; color: #6b5c4d; margin-bottom: 16px;">
+          LICENSE TIER: <strong style="background-color: #fdf6e3; color: #2c241a; border: 1px solid #2c241a; padding: 3px 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; display: inline-block;">${licenseTier}</strong>
         </div>
-        <a href="${downloadUrl}" style="display: inline-block; background-color: #f59e0b; color: #09090b; font-weight: 900; font-size: 12px; text-decoration: none; padding: 12px 24px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);">Download Font & License (.ZIP)</a>
+        <a href="${downloadUrl}" style="display: inline-block; background-color: #2c241a; color: #fdf6e3; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 11px; text-decoration: none; padding: 12px 24px; border: 1px solid #2c241a; text-transform: uppercase; letter-spacing: 0.12em;">Download Font & License (.ZIP)</a>
       </div>
     `;
   });
@@ -241,36 +249,36 @@ function generateOrderEmailHtml({ buyerEmail, buyerName, orderId, items, templat
   const canvasHtml = cfg.canvas_vip_enabled ? `
     <tr>
       <td style="padding: 0 32px 24px 32px;">
-        <div style="background-color: #141418; border: 1px solid #d97706; border-radius: 4px; padding: 22px;">
+        <div style="background-color: #fffdf5; border: 1px solid #8b6b4a; padding: 22px;">
           <div style="margin-bottom: 12px;">
-            <span style="background-color: #d97706; color: #ffffff; font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.08em; display: inline-block;">VIP BONUS</span>
-            <span style="color: #ffffff; font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; margin-left: 8px; display: inline-block; vertical-align: middle;">${cfg.canvas_heading}</span>
+            <span style="background-color: #8b6b4a; color: #fffdf5; font-size: 9px; font-weight: 700; padding: 3px 8px; text-transform: uppercase; letter-spacing: 0.15em; display: inline-block;">VIP BONUS</span>
+            <span style="font-family: 'Playfair Display', Georgia, serif; color: #2c241a; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-left: 8px; display: inline-block; vertical-align: middle;">${cfg.canvas_heading}</span>
           </div>
-          <p style="font-size: 13px; color: #a1a1aa; margin: 8px 0 16px 0; line-height: 1.5; font-weight: 500;">
+          <p style="font-family: 'EB Garamond', Georgia, serif; font-size: 14px; color: #4a3c2c; margin: 8px 0 16px 0; line-height: 1.5;">
             ${cfg.canvas_text}
           </p>
 
-          <div style="background-color: #09090b; border: 1px solid #27272a; border-radius: 4px; padding: 14px 16px; margin-bottom: 16px; font-size: 13px; line-height: 2;">
+          <div style="background-color: #ffffff; border: 1px solid #2c241a; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; line-height: 2;">
             <div style="margin-bottom: 4px;">
-              <span style="display: inline-block; background-color: #27272a; color: #f59e0b; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #3f3f46; border-radius: 2px;">URL</span>
-              <strong style="color: #ffffff;">APP URL:</strong> <a href="${cfg.canvas_url}" style="color: #f59e0b; font-weight: 800; text-decoration: underline;">${cfg.canvas_url}</a>
+              <span style="display: inline-block; background-color: #2c241a; color: #fdf6e3; font-family: monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #2c241a;">URL</span>
+              <strong style="color: #2c241a;">APP URL:</strong> <a href="${cfg.canvas_url}" style="color: #8b6b4a; font-weight: 700; text-decoration: underline;">${cfg.canvas_url}</a>
             </div>
             <div style="margin-bottom: 4px;">
-              <span style="display: inline-block; background-color: #27272a; color: #ffffff; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #3f3f46; border-radius: 2px;">USER</span>
-              <strong style="color: #ffffff;">USERNAME:</strong> <span style="font-family: monospace; font-weight: 800; color: #ffffff; background-color: #18181b; padding: 2px 6px; border: 1px solid #27272a; border-radius: 2px;">${buyerEmail}</span>
+              <span style="display: inline-block; background-color: #fdf6e3; color: #2c241a; font-family: monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #4a3c2c;">USER</span>
+              <strong style="color: #2c241a;">USERNAME:</strong> <span style="font-family: monospace; font-weight: 700; color: #2c241a; background-color: #fdf6e3; padding: 2px 6px; border: 1px solid #2c241a;">${buyerEmail}</span>
             </div>
             <div>
-              <span style="display: inline-block; background-color: #d97706; color: #ffffff; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #f59e0b; border-radius: 2px;">PASS</span>
-              <strong style="color: #ffffff;">PASSWORD:</strong> <span style="font-family: monospace; font-weight: 800; color: #ffffff; background-color: #18181b; padding: 2px 6px; border: 1px solid #27272a; border-radius: 2px;">${orderId}</span>
+              <span style="display: inline-block; background-color: #8b6b4a; color: #fffdf5; font-family: monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #8b6b4a;">PASS</span>
+              <strong style="color: #2c241a;">PASSWORD:</strong> <span style="font-family: monospace; font-weight: 700; color: #2c241a; background-color: #fdf6e3; padding: 2px 6px; border: 1px solid #2c241a;">${orderId}</span>
             </div>
           </div>
 
-          <div style="font-size: 12px; color: #a1a1aa; line-height: 1.6; font-weight: 500;">
-            <strong style="color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800;">Your VIP Privileges:</strong>
-            <ul style="margin: 6px 0 0 0; padding-left: 18px; color: #a1a1aa;">
-              <li><strong style="color: #e4e4e7;">Purchased Fonts Unlocked:</strong> All fonts in this order are automatically activated in your Canvas suite.</li>
-              <li><strong style="color: #e4e4e7;">Bonus Extras & Dingbats:</strong> Free access to exclusive ornaments and dingbats catalog-wide.</li>
-              <li><strong style="color: #e4e4e7;">Full Pro Tools:</strong> High-res export, canvas saving, and SVG generation completely unlocked.</li>
+          <div style="font-family: 'EB Garamond', Georgia, serif; font-size: 13px; color: #4a3c2c; line-height: 1.6;">
+            <strong style="font-family: 'Playfair Display', Georgia, serif; color: #2c241a; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Your VIP Privileges:</strong>
+            <ul style="margin: 6px 0 0 0; padding-left: 18px; color: #4a3c2c;">
+              <li><strong style="color: #2c241a;">Purchased Fonts Unlocked:</strong> All fonts in this order are automatically activated in your Canvas suite.</li>
+              <li><strong style="color: #2c241a;">Bonus Extras & Dingbats:</strong> Free access to exclusive ornaments and dingbats catalog-wide.</li>
+              <li><strong style="color: #2c241a;">Full Pro Tools:</strong> High-res export, canvas saving, and SVG generation completely unlocked.</li>
             </ul>
           </div>
         </div>
@@ -285,38 +293,39 @@ function generateOrderEmailHtml({ buyerEmail, buyerName, orderId, items, templat
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${heading}</title>
 </head>
-<body style="margin: 0; padding: 32px 16px; background-color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e4e4e7; line-height: 1.5;">
+<body style="margin: 0; padding: 32px 16px; background-color: #fffdf5; font-family: 'EB Garamond', Georgia, 'Times New Roman', serif; color: #2c241a; line-height: 1.5;">
   <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
     <tr>
       <td align="center">
-        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #121215; border: 1px solid #27272a; border-radius: 6px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); text-align: left;" border="0" cellspacing="0" cellpadding="0">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #fdf6e3; border: 2px solid #2c241a; text-align: left;" border="0" cellspacing="0" cellpadding="0">
           <tr>
-            <td style="padding: 32px 32px 24px 32px; border-bottom: 1px solid #27272a; background-color: #121215;">
-              <span style="display: inline-block; background-color: #f59e0b; color: #09090b; font-family: monospace; font-size: 11px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; margin-bottom: 14px;">BOMBASTYPE™</span>
-              <div style="color: #f59e0b; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px;">ORDER #${orderId}</div>
-              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: -0.02em; text-transform: uppercase; line-height: 1.2;">${heading}</h1>
-              <p style="margin: 8px 0 0 0; color: #a1a1aa; font-size: 13px; font-weight: 500; line-height: 1.6;">${introText}</p>
+            <td style="padding: 32px 32px 24px 32px; border-bottom: 1px solid #2c241a; background-color: #fdf6e3; text-align: center;">
+              <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 24px; font-weight: 900; letter-spacing: 0.25em; text-transform: uppercase; color: #2c241a; margin-bottom: 4px;">— BOMBASTYPE —</div>
+              <div style="font-size: 10px; font-weight: bold; letter-spacing: 0.15em; color: #8b6b4a; text-transform: uppercase; margin-bottom: 14px;">ACQUISITION RECEIPT & LICENSE PROVISIONS</div>
+              <div style="font-family: monospace; color: #2c241a; font-size: 11px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px;">ORDER #${orderId}</div>
+              <h1 style="margin: 0; font-family: 'Playfair Display', Georgia, serif; color: #2c241a; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3;">${heading}</h1>
+              <p style="margin: 10px auto 0 auto; color: #4a3c2c; font-size: 14px; line-height: 1.6; max-width: 480px;">${introText}</p>
             </td>
           </tr>
 
           <tr>
             <td style="padding: 24px 32px 12px 32px;">
-              <div style="font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">PURCHASED FONT ASSETS</div>
+              <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 11px; font-weight: 700; color: #8b6b4a; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px;">PURCHASED FONT ASSETS</div>
               ${itemsHtml}
             </td>
           </tr>
 
           <tr>
             <td style="padding: 0 32px 20px 32px;">
-              <div style="background-color: #18181b; border: 1px solid #3f3f46; border-radius: 4px; padding: 18px 20px;">
+              <div style="background-color: #ffffff; border: 1px solid #2c241a; padding: 18px 20px;">
                 <div style="margin-bottom: 6px;">
-                  <strong style="color: #f59e0b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 900;">⚠️ ${warningTitle}</strong>
+                  <strong style="color: #8C4A32; font-family: 'Playfair Display', Georgia, serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;">⚠️ ${warningTitle}</strong>
                 </div>
-                <p style="margin: 0; color: #a1a1aa; font-size: 12px; font-weight: 500; line-height: 1.6;">
+                <p style="margin: 0; color: #4a3c2c; font-size: 13px; line-height: 1.6;">
                   ${warningText}
                 </p>
                 <div style="margin-top: 12px;">
-                  <a href="${vaultUrl}" style="display: inline-block; background-color: #27272a; color: #f59e0b; border: 1px solid #3f3f46; border-radius: 2px; padding: 6px 14px; font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em;">Open User Vault (Lifetime Access) →</a>
+                  <a href="${vaultUrl}" style="display: inline-block; background-color: #fdf6e3; color: #2c241a; border: 1px solid #2c241a; padding: 6px 14px; font-family: 'Playfair Display', Georgia, serif; font-size: 10px; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 0.1em;">Open User Vault (Permanent Access) →</a>
                 </div>
               </div>
             </td>
@@ -325,7 +334,7 @@ function generateOrderEmailHtml({ buyerEmail, buyerName, orderId, items, templat
           ${canvasHtml}
 
           <tr>
-            <td style="padding: 22px 32px; border-top: 1px solid #27272a; background-color: #09090b; text-align: center; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.6;">
+            <td style="padding: 22px 32px; border-top: 1px solid #2c241a; background-color: #fdf6e3; text-align: center; font-size: 12px; font-style: italic; color: #6b5c4d; line-height: 1.6;">
               ${cfg.footer_text || DEFAULT_EMAIL_TEMPLATE.footer_text}
             </td>
           </tr>
@@ -337,9 +346,16 @@ function generateOrderEmailHtml({ buyerEmail, buyerName, orderId, items, templat
 </html>`;
 }
 
-function generateCouponEmailHtml({ buyerEmail, buyerName, couponCode, discountText, validUntil, usageLimit, baseUrl }) {
+function generateCouponEmailHtml({ buyerEmail, buyerName, couponCode, discountText, validUntil, usageLimit, templateConfig, baseUrl }) {
+  const cfg = { ...DEFAULT_COUPON_EMAIL_TEMPLATE, ...(templateConfig || {}) };
   const safeName = buyerName || "Creator";
   const siteUrl = baseUrl || "https://bombastype.com";
+  const heading = (cfg.heading || DEFAULT_COUPON_EMAIL_TEMPLATE.heading)
+    .replace(/\[BUYER_NAME\]/g, safeName)
+    .replace(/\[DISCOUNT\]/g, discountText || "");
+  const introText = (cfg.intro_text || DEFAULT_COUPON_EMAIL_TEMPLATE.intro_text)
+    .replace(/\[BUYER_NAME\]/g, safeName)
+    .replace(/\[DISCOUNT\]/g, discountText || "");
 
   return `<!DOCTYPE html>
 <html>
@@ -348,26 +364,27 @@ function generateCouponEmailHtml({ buyerEmail, buyerName, couponCode, discountTe
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Exclusive ${discountText} Off Voucher — BombasType</title>
 </head>
-<body style="margin: 0; padding: 32px 16px; background-color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e4e4e7; line-height: 1.5;">
+<body style="margin: 0; padding: 32px 16px; background-color: #fffdf5; font-family: 'EB Garamond', Georgia, 'Times New Roman', serif; color: #2c241a; line-height: 1.5;">
   <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
     <tr>
       <td align="center">
-        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #121215; border: 1px solid #27272a; border-radius: 6px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); text-align: left;" border="0" cellspacing="0" cellpadding="0">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #fdf6e3; border: 2px solid #2c241a; text-align: left;" border="0" cellspacing="0" cellpadding="0">
           <tr>
-            <td style="padding: 32px 32px 20px 32px; border-bottom: 1px solid #27272a; background-color: #121215;">
-              <span style="display: inline-block; background-color: #f59e0b; color: #09090b; font-family: monospace; font-size: 11px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; margin-bottom: 14px;">BOMBASTYPE™</span>
-              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: -0.02em; text-transform: uppercase; line-height: 1.2;">Exclusive VIP Voucher For You</h1>
-              <p style="margin: 8px 0 0 0; color: #a1a1aa; font-size: 13px; font-weight: 500; line-height: 1.6;">Hello ${safeName}, here is your exclusive discount code for your next commercial font license purchase.</p>
+            <td style="padding: 32px 32px 20px 32px; border-bottom: 1px solid #2c241a; background-color: #fdf6e3; text-align: center;">
+              <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 24px; font-weight: 900; letter-spacing: 0.25em; text-transform: uppercase; color: #2c241a; margin-bottom: 4px;">— BOMBASTYPE —</div>
+              <div style="font-size: 10px; font-weight: bold; letter-spacing: 0.15em; color: #8b6b4a; text-transform: uppercase; margin-bottom: 12px;">PATRON EXCLUSIVE PROVISION</div>
+              <h1 style="margin: 0; font-family: 'Playfair Display', Georgia, serif; color: #2c241a; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3;">${heading}</h1>
+              <p style="margin: 8px auto 0 auto; color: #4a3c2c; font-size: 14px; line-height: 1.6; max-width: 480px;">${introText}</p>
             </td>
           </tr>
 
           <tr>
             <td style="padding: 24px 32px 12px 32px;">
-              <div style="background-color: #18181b; border: 2px dashed #f59e0b; border-radius: 4px; padding: 24px 20px; text-align: center;">
-                <div style="color: #a1a1aa; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">YOUR DISCOUNT CODE</div>
-                <div style="color: #f59e0b; font-size: 38px; font-weight: 900; letter-spacing: -0.02em; text-transform: uppercase; line-height: 1;">${discountText}</div>
+              <div style="background-color: #ffffff; border: 2px dashed #2c241a; padding: 24px 20px; text-align: center;">
+                <div style="color: #8b6b4a; font-family: 'Playfair Display', Georgia, serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 6px;">${cfg.discount_label || DEFAULT_COUPON_EMAIL_TEMPLATE.discount_label}</div>
+                <div style="font-family: 'Playfair Display', Georgia, serif; color: #2c241a; font-size: 44px; font-weight: 900; letter-spacing: -0.02em; line-height: 1;">${discountText}</div>
                 <div style="margin-top: 16px;">
-                  <span style="display: inline-block; background-color: #09090b; color: #ffffff; border: 1px solid #f59e0b; border-radius: 4px; padding: 10px 24px; font-family: monospace; font-size: 20px; font-weight: 900; letter-spacing: 0.15em;">${couponCode}</span>
+                  <span style="display: inline-block; background-color: #fdf6e3; color: #2c241a; border: 1px solid #2c241a; padding: 10px 24px; font-family: monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.2em;">${couponCode}</span>
                 </div>
               </div>
             </td>
@@ -375,23 +392,23 @@ function generateCouponEmailHtml({ buyerEmail, buyerName, couponCode, discountTe
 
           <tr>
             <td style="padding: 10px 32px 20px 32px;">
-              <div style="background-color: #18181b; border: 1px solid #27272a; border-radius: 4px; padding: 16px 20px; font-size: 13px; line-height: 2;">
-                <div style="margin-bottom: 4px;"><span style="display: inline-block; background-color: #27272a; color: #f59e0b; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #3f3f46; border-radius: 2px;">EXPIRY</span> <strong style="color: #ffffff;">VALID UNTIL:</strong> <span style="font-weight: 800; color: #e4e4e7;">${validUntil}</span></div>
-                <div style="margin-bottom: 4px;"><span style="display: inline-block; background-color: #27272a; color: #ffffff; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #3f3f46; border-radius: 2px;">LIMIT</span> <strong style="color: #ffffff;">USAGE LIMIT:</strong> <span style="font-weight: 800; color: #e4e4e7;">${usageLimit}</span></div>
-                <div><span style="display: inline-block; background-color: #d97706; color: #ffffff; font-family: monospace; font-size: 9px; font-weight: 900; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #f59e0b; border-radius: 2px;">TIER</span> <strong style="color: #ffffff;">APPLIES TO:</strong> <span style="font-weight: 800; color: #f59e0b;">All Commercial Font Licenses</span></div>
+              <div style="background-color: #ffffff; border: 1px solid #2c241a; padding: 16px 20px; font-size: 13px; line-height: 2;">
+                <div style="margin-bottom: 4px;"><span style="display: inline-block; background-color: #2c241a; color: #fdf6e3; font-family: monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #2c241a;">EXPIRY</span> <strong style="color: #2c241a;">VALID UNTIL:</strong> <span style="font-weight: 700; color: #4a3c2c;">${validUntil}</span></div>
+                <div style="margin-bottom: 4px;"><span style="display: inline-block; background-color: #fdf6e3; color: #2c241a; font-family: monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #2c241a;">LIMIT</span> <strong style="color: #2c241a;">USAGE LIMIT:</strong> <span style="font-weight: 700; color: #4a3c2c;">${usageLimit}</span></div>
+                <div><span style="display: inline-block; background-color: #8b6b4a; color: #fffdf5; font-family: monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; margin-right: 8px; vertical-align: middle; border: 1px solid #8b6b4a;">TIER</span> <strong style="color: #2c241a;">APPLIES TO:</strong> <span style="font-weight: 700; color: #8b6b4a;">All Commercial Font Licenses & Bundles</span></div>
               </div>
             </td>
           </tr>
 
           <tr>
             <td style="padding: 0 32px 28px 32px; text-align: center;">
-              <a href="${siteUrl}" style="display: inline-block; background-color: #f59e0b; color: #09090b; font-weight: 900; font-size: 13px; text-decoration: none; padding: 14px 28px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);">Claim Voucher & Browse Fonts →</a>
+              <a href="${siteUrl}" style="display: inline-block; background-color: #2c241a; color: #fdf6e3; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 11px; text-decoration: none; padding: 14px 28px; border: 1px solid #2c241a; text-transform: uppercase; letter-spacing: 0.15em;">${cfg.button_text || DEFAULT_COUPON_EMAIL_TEMPLATE.button_text}</a>
             </td>
           </tr>
 
           <tr>
-            <td style="padding: 20px 32px; border-top: 1px solid #27272a; background-color: #09090b; text-align: center; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.6;">
-              Questions? Reply directly to this email.<br>© BombasType Studio. All rights reserved.
+            <td style="padding: 20px 32px; border-top: 1px solid #2c241a; background-color: #fdf6e3; text-align: center; font-size: 12px; font-style: italic; color: #6b5c4d; line-height: 1.6;">
+              ${cfg.footer_text || DEFAULT_COUPON_EMAIL_TEMPLATE.footer_text}
             </td>
           </tr>
         </table>
@@ -1159,6 +1176,24 @@ export default {
         const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
         if (gasUrls.length === 0) throw new Error("GAS_URL_NOT_CONFIGURED");
 
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+        let couponTemplateConfig = null;
+        if (supabaseUrl && serviceRoleKey) {
+          try {
+            const sRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.email_template_coupon&select=value`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            });
+            if (sRes.ok) {
+              const sData = await sRes.json();
+              if (sData?.[0]?.value) {
+                couponTemplateConfig = typeof sData[0].value === 'string' ? JSON.parse(sData[0].value) : sData[0].value;
+              }
+            }
+          } catch (_) {}
+        }
+
         const renderedHtml = generateCouponEmailHtml({
           buyerEmail: email,
           buyerName: name,
@@ -1166,10 +1201,15 @@ export default {
           discountText: discountText || "VIP Special",
           validUntil: validUntil || "Limited Time",
           usageLimit: usageLimit || "1 Use per Customer",
+          templateConfig: couponTemplateConfig,
           baseUrl: "https://bombastype.com"
         });
 
-        const finalSubject = `Exclusive ${discountText || "VIP Special"} Off Voucher — BombasType`;
+        const subjectTpl = couponTemplateConfig?.subject || DEFAULT_COUPON_EMAIL_TEMPLATE.subject;
+        const finalSubject = subjectTpl
+          .replace(/\[DISCOUNT\]/g, discountText || "VIP Special")
+          .replace(/\[BUYER_NAME\]/g, name || "Customer")
+          .replace(/\[COUPON_CODE\]/g, couponCode);
 
         const payload = {
           token: "$emogaAm4n_",
@@ -1235,7 +1275,7 @@ export default {
       }
     }
 
-    // --- 6C. API Admin Email Template Settings (Load & Save) ---
+    // --- 6C. API Admin Email Template Settings (Load & Save for Order & Coupon) ---
     if (url.pathname === '/api/admin/email-template') {
       try {
         const authHeader = request.headers.get('Authorization');
@@ -1249,11 +1289,14 @@ export default {
 
         const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
         const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        const tType = url.searchParams.get('type') === 'coupon' ? 'coupon' : 'order';
+        const settingKey = tType === 'coupon' ? 'email_template_coupon' : 'email_template_order';
+        const defaultTpl = tType === 'coupon' ? DEFAULT_COUPON_EMAIL_TEMPLATE : DEFAULT_EMAIL_TEMPLATE;
 
         if (request.method === 'GET') {
           let currentConfig = null;
           if (supabaseUrl && serviceRoleKey) {
-            const sRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.email_template_order&select=value`, {
+            const sRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.${settingKey}&select=value`, {
               headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
             });
             if (sRes.ok) {
@@ -1264,8 +1307,8 @@ export default {
             }
           }
           return new Response(JSON.stringify({
-            template: { ...DEFAULT_EMAIL_TEMPLATE, ...(currentConfig || {}) },
-            defaultTemplate: DEFAULT_EMAIL_TEMPLATE
+            template: { ...defaultTpl, ...(currentConfig || {}) },
+            defaultTemplate: defaultTpl
           }), {
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
           });
@@ -1274,6 +1317,7 @@ export default {
         if (request.method === 'POST') {
           const body = await request.json();
           const templateData = body.template || body;
+          const targetKey = body.type === 'coupon' || tType === 'coupon' ? 'email_template_coupon' : 'email_template_order';
 
           const upsertRes = await fetch(`${supabaseUrl}/rest/v1/site_settings`, {
             method: 'POST',
@@ -1284,7 +1328,7 @@ export default {
               'Prefer': 'resolution=merge-duplicates'
             },
             body: JSON.stringify({
-              key: 'email_template_order',
+              key: targetKey,
               value: templateData,
               updated_at: new Date().toISOString()
             })
@@ -1304,7 +1348,7 @@ export default {
       }
     }
 
-    // --- 6D. API Admin Send Test Email ---
+    // --- 6D. API Admin Send Test Email (Order or Coupon) ---
     if (url.pathname === '/api/admin/send-test-email' && request.method === 'POST') {
       try {
         const authHeader = request.headers.get('Authorization');
@@ -1325,38 +1369,65 @@ export default {
           });
         }
 
-        const dummyOrderId = `BT-TEST-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-        const dummyItems = [
-          {
-            name: "Briswood Vintage Regular (Commercial Test)",
-            file: "Briswood-Regular.otf",
-            price: 35,
-            tier: "SOLO (1 USER ONLY)"
-          }
-        ];
-
         const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
         if (gasUrls.length === 0) throw new Error("GAS_URL_NOT_CONFIGURED");
 
-        const templateConfig = body.templateConfig || DEFAULT_EMAIL_TEMPLATE;
-        const renderedHtml = generateOrderEmailHtml({
-          buyerEmail: targetEmail,
-          buyerName: "Admin Tester",
-          orderId: dummyOrderId,
-          items: dummyItems,
-          templateConfig,
-          baseUrl: "https://bombastype.com"
-        });
+        const isCoupon = body.templateType === 'coupon';
+        let renderedHtml = "";
+        let finalSubject = "";
+        let action = "order";
+        let orderId = "";
 
-        const subjectTemplate = templateConfig.subject || DEFAULT_EMAIL_TEMPLATE.subject;
-        const finalSubject = `[TEST EMAIL] ` + subjectTemplate.replace(/\[ORDER_ID\]/g, dummyOrderId).replace(/\[BUYER_NAME\]/g, "Admin Tester");
+        if (isCoupon) {
+          action = "coupon";
+          const dummyCouponCode = `TESTVIP${Math.floor(10 + Math.random() * 90)}`;
+          const dummyDiscount = "30% OFF";
+          const templateConfig = body.templateConfig || DEFAULT_COUPON_EMAIL_TEMPLATE;
+          renderedHtml = generateCouponEmailHtml({
+            buyerEmail: targetEmail,
+            buyerName: "Admin Tester",
+            couponCode: dummyCouponCode,
+            discountText: dummyDiscount,
+            validUntil: "December 31, 2026",
+            usageLimit: "1 Use only",
+            templateConfig,
+            baseUrl: "https://bombastype.com"
+          });
+          const subjectTpl = templateConfig.subject || DEFAULT_COUPON_EMAIL_TEMPLATE.subject;
+          finalSubject = `[TEST VOUCHER] ` + subjectTpl
+            .replace(/\[DISCOUNT\]/g, dummyDiscount)
+            .replace(/\[BUYER_NAME\]/g, "Admin Tester")
+            .replace(/\[COUPON_CODE\]/g, dummyCouponCode);
+        } else {
+          action = "order";
+          orderId = `BT-TEST-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+          const dummyItems = [
+            {
+              name: "Briswood Vintage Regular (Commercial Test)",
+              file: "Briswood-Regular.otf",
+              price: 35,
+              tier: "SOLO (1 USER ONLY)"
+            }
+          ];
+          const templateConfig = body.templateConfig || DEFAULT_EMAIL_TEMPLATE;
+          renderedHtml = generateOrderEmailHtml({
+            buyerEmail: targetEmail,
+            buyerName: "Admin Tester",
+            orderId,
+            items: dummyItems,
+            templateConfig,
+            baseUrl: "https://bombastype.com"
+          });
+          const subjectTemplate = templateConfig.subject || DEFAULT_EMAIL_TEMPLATE.subject;
+          finalSubject = `[TEST EMAIL] ` + subjectTemplate.replace(/\[ORDER_ID\]/g, orderId).replace(/\[BUYER_NAME\]/g, "Admin Tester");
+        }
 
         const payload = {
           token: "$emogaAm4n_",
-          action: "order",
+          action,
           email: targetEmail,
           name: "Admin Tester",
-          order_id: dummyOrderId,
+          order_id: orderId,
           subject: finalSubject,
           htmlBody: renderedHtml,
           sender_name: "BombasType"
