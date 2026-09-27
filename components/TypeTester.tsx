@@ -1553,7 +1553,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
               {hasAxes && (
                 <div className="lg:col-span-8 p-8 border-b lg:border-b-0 lg:border-r border-vintage-ink/10">
                   <h4 className="text-[9px] font-bold uppercase tracking-[0.4em] text-vintage-accent mb-8 border-b border-vintage-ink/5 pb-2">Variation Axes</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                  <div className="grid grid-cols-1 gap-y-8">
                     {detectedAxes.map((axis: any) => (
                       <div key={axis.tag} className="space-y-3">
                         <div className="flex justify-between items-center"><label className="text-[10px] font-bold uppercase tracking-widest">{axis.name}</label><span className="text-[10px] font-bold opacity-40">{Math.round(axesValues[axis.tag] ?? axis.default)}</span></div>
