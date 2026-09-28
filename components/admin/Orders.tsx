@@ -53,6 +53,7 @@ const Orders = () => {
   const itemsPerPage = 20;
 
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingEmails, setIsExportingEmails] = useState(false);
 
   const handleExportCSV = async () => {
     setIsExporting(true);
@@ -96,6 +97,82 @@ const Orders = () => {
       console.error("EXPORT_ERROR:", err);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportEmails = async () => {
+    setIsExportingEmails(true);
+    try {
+      const fetchColumn = async (table: string, col: string) => {
+        const results: string[] = [];
+        let from = 0;
+        const step = 1000;
+        while (true) {
+          const { data, error } = await supabase
+            .from(table)
+            .select(col)
+            .range(from, from + step - 1);
+          if (error) {
+            console.warn(`Query on ${table}.${col} returned:`, error);
+            break;
+          }
+          if (!data || data.length === 0) break;
+          for (const row of data as any[]) {
+            const raw = row[col];
+            if (raw && typeof raw === 'string') {
+              const clean = raw.trim().toLowerCase();
+              if (clean.includes('@')) {
+                results.push(clean);
+              }
+            }
+          }
+          if (data.length < step) break;
+          from += step;
+        }
+        return results;
+      };
+
+      const [orderBuyerEmails, directBuyerEmails, subEmails] = await Promise.all([
+        fetchColumn('admin_order_view', 'buyer_email'),
+        fetchColumn('fontbuyer', 'email'),
+        fetchColumn('fontsubscribers', 'email')
+      ]);
+
+      const subSet = new Set<string>(subEmails);
+      const buyerSet = new Set<string>([...orderBuyerEmails, ...directBuyerEmails]);
+
+      if (buyerSet.size === 0 && subSet.size === 0) {
+        alert('No patron or subscriber emails found to export.');
+        return;
+      }
+
+      // If a buyer also subscribed, place them into subscriber list and exclude from buyer list
+      const finalBuyers = Array.from(buyerSet).filter(email => !subSet.has(email)).sort();
+      const finalSubscribers = Array.from(subSet).sort();
+
+      const maxRows = Math.max(finalBuyers.length, finalSubscribers.length);
+      const csvRows = ['Email Buyer,Email Subscriber'];
+      for (let i = 0; i < maxRows; i++) {
+        const b = finalBuyers[i] || '';
+        const s = finalSubscribers[i] || '';
+        csvRows.push(`${b},${s}`);
+      }
+
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `AUDIENCE_EMAILS_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("EXPORT_EMAILS_ERROR:", err);
+      alert("Failed to export emails: " + (err.message || 'Unknown error'));
+    } finally {
+      setIsExportingEmails(false);
     }
   };
 
@@ -323,10 +400,19 @@ const Orders = () => {
         <button 
           onClick={handleExportCSV}
           disabled={isExporting || loading}
-          className="vintage-btn btn-reverse px-6 py-2 text-[10px] flex items-center gap-2 whitespace-nowrap"
+          className="vintage-btn btn-reverse px-6 py-2 text-[10px] flex items-center gap-2 whitespace-nowrap cursor-pointer"
         >
           <Download size={14} />
           {isExporting ? 'EXPORTING...' : 'CSV'}
+        </button>
+
+        <button 
+          onClick={handleExportEmails}
+          disabled={isExportingEmails || loading}
+          className="vintage-btn btn-reverse px-6 py-2 text-[10px] flex items-center gap-2 whitespace-nowrap cursor-pointer"
+        >
+          <Mail size={14} />
+          {isExportingEmails ? 'EXPORTING...' : 'EXPORT EMAILS'}
         </button>
 
         <form onSubmit={handleSearchSubmit} className="relative">
