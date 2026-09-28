@@ -210,6 +210,25 @@ export default function BroadcastStudio() {
     fetchFontsList();
   }, []);
 
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch('/api/admin/broadcast-data', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (e) {
+      console.error('Failed fetching broadcast data:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchFontsList = async () => {
     try {
       const { data, error } = await supabase
