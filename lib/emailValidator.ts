@@ -15,10 +15,14 @@ interface GoogleDnsResponse {
 
 const BLOCKED_DOMAINS = new Set([
   'bla.com', 'test.com', 'example.com', 'asdf.com', 'sample.com', 'fake.com',
-  'mailinator.com', 'tempmail.com', '10minutemail.com', 'guerrillamail.com',
+  'mailinator.com', 'tempmail.com', '10minutemail.com', '10minutemail.net', 'guerrillamail.com', 'guerrillamail.org',
   'yopmail.com', 'throwawaymail.com', 'getairmail.com', 'dispostable.com',
   'trashmail.com', 'sharklasers.com', 'nada.ltd', 'mohmal.com', 'mytemp.email',
-  'burnermail.io', 'inboxkitten.com', 'crazymailing.com', 'dropmail.me'
+  'burnermail.io', 'inboxkitten.com', 'crazymailing.com', 'dropmail.me', 'temp-mail.org', 'fakemail.net',
+  // Common bot typo domains that cause high bounce rates
+  'gnail.com', 'gmaill.com', 'gamil.com', 'gmial.com', 'gmai.com',
+  'yaho.com', 'yahooo.com', 'yaho.co',
+  'hotmial.com', 'hotmaill.com', 'putlook.com', 'outlok.com'
 ]);
 
 export async function validateLegitEmail(email: string): Promise<{ isValid: boolean; message?: string }> {

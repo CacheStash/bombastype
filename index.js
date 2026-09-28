@@ -419,6 +419,99 @@ function generateCouponEmailHtml({ buyerEmail, buyerName, couponCode, discountTe
 </html>`;
 }
 
+function generateBroadcastEmailHtml({ preset, title, subtitle, bodyText, bannerUrl, buttonText, buttonUrl, couponCode, baseUrl }) {
+  const siteUrl = baseUrl || "https://bombastype.com";
+  const mainTitle = title || "Studio Dispatch";
+  const formattedBody = (bodyText || "").replace(/\n/g, '<br/>');
+
+  const bannerHtml = bannerUrl ? `
+    <tr>
+      <td style="padding: 0 0 24px 0;">
+        <img src="${bannerUrl}" alt="${mainTitle}" style="width: 100%; max-width: 600px; height: auto; display: block; border-bottom: 1px solid #2c241a;" />
+      </td>
+    </tr>
+  ` : '';
+
+  const couponHtml = couponCode ? `
+    <div style="background-color: #ffffff; border: 2px dashed #8b6b4a; padding: 18px 24px; margin: 24px 0; text-align: center;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #8b6b4a; font-weight: 700; margin-bottom: 6px;">EXCLUSIVE VIP PRIVILEGE</div>
+      <div style="font-family: monospace; font-size: 22px; font-weight: 700; color: #2c241a; letter-spacing: 0.15em; background-color: #fdf6e3; display: inline-block; padding: 6px 16px; border: 1px solid #2c241a;">${couponCode}</div>
+      <div style="font-size: 12px; font-style: italic; color: #6b5c4d; margin-top: 8px;">Apply this token at checkout to claim your archival discount.</div>
+    </div>
+  ` : '';
+
+  const buttonHtml = (buttonText && buttonUrl) ? `
+    <div style="text-align: center; margin: 28px 0 10px 0;">
+      <a href="${buttonUrl}" style="display: inline-block; background-color: #2c241a; color: #fdf6e3; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 12px; text-decoration: none; padding: 14px 32px; border: 1px solid #2c241a; text-transform: uppercase; letter-spacing: 0.15em;">${buttonText}</a>
+    </div>
+  ` : '';
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${mainTitle} — BombasType</title>
+</head>
+<body style="margin: 0; padding: 32px 16px; background-color: #fffdf5; font-family: 'EB Garamond', Georgia, 'Times New Roman', serif; color: #2c241a; line-height: 1.6;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #fdf6e3; border: 2px solid #2c241a; text-align: left;" border="0" cellspacing="0" cellpadding="0">
+          
+          <!-- Header Branding -->
+          <tr>
+            <td style="padding: 24px 32px; border-bottom: 2px solid #2c241a; background-color: #fdf6e3; text-align: center;">
+              <div style="font-size: 10px; font-family: 'Playfair Display', Georgia, serif; letter-spacing: 0.25em; text-transform: uppercase; color: #8b6b4a; font-weight: 700; margin-bottom: 4px;">ARCHIVAL TYPOGRAPHY DISPATCH</div>
+              <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #2c241a;">BOMBASTYPE</div>
+              <div style="font-size: 9px; font-family: monospace; letter-spacing: 0.15em; text-transform: uppercase; color: #6b5c4d; margin-top: 4px;">FOUNDRY &amp; TYPE LAB &bull; EST. MMXXVI</div>
+            </td>
+          </tr>
+
+          ${bannerHtml}
+
+          <!-- Content Body -->
+          <tr>
+            <td style="padding: 32px;">
+              <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #2c241a; margin: 0 0 8px 0; text-align: center; line-height: 1.3;">
+                ${mainTitle}
+              </h1>
+
+              ${subtitle ? `
+              <div style="font-size: 13px; font-style: italic; text-align: center; color: #8b6b4a; margin-bottom: 24px; letter-spacing: 0.05em;">
+                ${subtitle}
+              </div>` : '<div style="margin-bottom: 20px;"></div>'}
+
+              <div style="font-size: 15px; color: #3a2e22; line-height: 1.7; margin-bottom: 16px;">
+                ${formattedBody}
+              </div>
+
+              ${couponHtml}
+              ${buttonHtml}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 32px; border-top: 1px solid #2c241a; background-color: #f7eed8; text-align: center; font-size: 11px; color: #6b5c4d; line-height: 1.7;">
+              <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #2c241a; margin-bottom: 4px;">BombasType Typography Studio</div>
+              <div>You are receiving this communication as an esteemed patron or subscriber.</div>
+              <div style="margin-top: 8px;">
+                <a href="${siteUrl}" style="color: #2c241a; font-weight: 700; text-decoration: underline;">Visit Website</a> &bull; 
+                <a href="${siteUrl}/license" style="color: #2c241a; font-weight: 700; text-decoration: underline;">License Policy</a> &bull;
+                <a href="${siteUrl}/canvas" style="color: #2c241a; font-weight: 700; text-decoration: underline;">FontCanvas</a>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 async function triggerGasEmail(buyerEmail, buyerName, orderId, items, env) {
   const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
   if (gasUrls.length === 0) return { success: false, error: "GAS_URL_NOT_CONFIGURED" };
@@ -1652,6 +1745,368 @@ export default {
           accounts,
           totalRemaining,
           totalLimit
+        }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // --- 6G. API Admin Broadcast Data (Audience, Quota & Campaign State) ---
+    if (url.pathname === '/api/admin/broadcast-data' && request.method === 'GET') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+        // 1. Fetch real-time GAS accounts quota
+        const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
+        const accounts = await Promise.all(gasUrls.map(async (targetUrl) => {
+          const email = resolveGasSender(null, targetUrl);
+          let quota = 100;
+          let limit = 100;
+          let isOnline = false;
+          try {
+            const qRes = await fetch(targetUrl, { method: "GET" });
+            if (qRes.ok) {
+              const qJson = await qRes.json();
+              if (qJson?.status === "SUCCESS") {
+                isOnline = true;
+                if (typeof qJson?.quota === 'number') quota = qJson.quota;
+                else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
+                limit = typeof qJson?.limit === 'number' ? qJson.limit : 100;
+              }
+            }
+          } catch (_) {}
+          return { email, url: targetUrl, remaining: quota, limit, isOnline };
+        }));
+
+        const totalRemaining = accounts.reduce((sum, a) => sum + (a.remaining || 0), 0);
+        const safetyReserve = 15;
+        const allowedToday = Math.max(0, totalRemaining - safetyReserve);
+
+        // 2. Fetch audience numbers from fontbuyer and fontsubscribers
+        let buyers = [];
+        let subscribers = [];
+        let campaigns = [];
+
+        if (supabaseUrl && serviceRoleKey) {
+          const [bRes, sRes, cRes] = await Promise.all([
+            fetch(`${supabaseUrl}/rest/v1/fontbuyer?select=email,full_name`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            }),
+            fetch(`${supabaseUrl}/rest/v1/fontsubscribers?status=eq.active&select=email`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            }),
+            fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.broadcast_campaigns&select=value`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            })
+          ]);
+
+          if (bRes.ok) buyers = await bRes.json();
+          if (sRes.ok) subscribers = await sRes.json();
+          if (cRes.ok) {
+            const cData = await cRes.json();
+            if (cData?.[0]?.value) {
+              campaigns = typeof cData[0].value === 'string' ? JSON.parse(cData[0].value) : cData[0].value;
+            }
+          }
+        }
+
+        const uniqueBuyers = Array.from(new Set((buyers || []).map(b => (b.email || '').trim().toLowerCase()).filter(e => e)));
+        const uniqueSubscribers = Array.from(new Set((subscribers || []).map(s => (s.email || '').trim().toLowerCase()).filter(e => e)));
+        const allUniqueAudience = Array.from(new Set([...uniqueBuyers, ...uniqueSubscribers]));
+
+        return new Response(JSON.stringify({
+          success: true,
+          gas: {
+            accounts,
+            totalRemaining,
+            safetyReserve,
+            allowedToday
+          },
+          audience: {
+            buyersCount: uniqueBuyers.length,
+            subscribersCount: uniqueSubscribers.length,
+            totalUniqueCount: allUniqueAudience.length
+          },
+          campaigns: Array.isArray(campaigns) ? campaigns : []
+        }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // --- 6H. API Admin Broadcast Send (Deduplication, Queue & Load Balancing) ---
+    if (url.pathname === '/api/admin/broadcast-send' && request.method === 'POST') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const body = await request.json();
+        const {
+          campaignId,
+          campaignTitle,
+          audience = 'all',
+          subject,
+          preset = 'custom',
+          templateData = {},
+          maxBatchSize
+        } = body;
+
+        if (!campaignId || !subject) {
+          return new Response(JSON.stringify({ error: "MISSING_REQUIRED_FIELDS" }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+        // 1. Fetch Target Audience
+        let targetEmails = [];
+        if (supabaseUrl && serviceRoleKey) {
+          const promises = [];
+          if (audience === 'all' || audience === 'buyers') {
+            promises.push(
+              fetch(`${supabaseUrl}/rest/v1/fontbuyer?select=email`, {
+                headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+              }).then(r => r.ok ? r.json() : [])
+            );
+          } else {
+            promises.push(Promise.resolve([]));
+          }
+
+          if (audience === 'all' || audience === 'subscribers') {
+            promises.push(
+              fetch(`${supabaseUrl}/rest/v1/fontsubscribers?status=eq.active&select=email`, {
+                headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+              }).then(r => r.ok ? r.json() : [])
+            );
+          } else {
+            promises.push(Promise.resolve([]));
+          }
+
+          const [buyerRows, subRows] = await Promise.all(promises);
+          const emailSet = new Set();
+          (buyerRows || []).forEach(b => { if (b.email) emailSet.add(b.email.trim().toLowerCase()); });
+          (subRows || []).forEach(s => { if (s.email) emailSet.add(s.email.trim().toLowerCase()); });
+          targetEmails = Array.from(emailSet);
+        }
+
+        // 2. Fetch existing campaigns from site_settings
+        let campaigns = [];
+        if (supabaseUrl && serviceRoleKey) {
+          const cRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.broadcast_campaigns&select=value`, {
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+          });
+          if (cRes.ok) {
+            const cData = await cRes.json();
+            if (cData?.[0]?.value) {
+              campaigns = typeof cData[0].value === 'string' ? JSON.parse(cData[0].value) : cData[0].value;
+            }
+          }
+        }
+        if (!Array.isArray(campaigns)) campaigns = [];
+
+        // Find or create this campaign
+        let campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) {
+          campaign = {
+            id: campaignId,
+            title: campaignTitle || subject,
+            subject,
+            preset,
+            audience,
+            templateData,
+            totalTarget: targetEmails.length,
+            sentEmails: [],
+            sentLogs: [],
+            status: 'in_progress',
+            created_at: new Date().toISOString()
+          };
+          campaigns.unshift(campaign);
+        }
+
+        const alreadySentSet = new Set(campaign.sentEmails || []);
+        const pendingEmails = targetEmails.filter(e => !alreadySentSet.has(e));
+
+        if (pendingEmails.length === 0) {
+          campaign.status = 'completed';
+          await fetch(`${supabaseUrl}/rest/v1/site_settings`, {
+            method: 'POST',
+            headers: {
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({ key: 'broadcast_campaigns', value: JSON.stringify(campaigns), updated_at: new Date().toISOString() })
+          });
+
+          return new Response(JSON.stringify({
+            success: true,
+            message: "CAMPAIGN_ALREADY_COMPLETED",
+            sentCount: 0,
+            remainingCount: 0,
+            campaign
+          }), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // 3. Query GAS accounts quota
+        const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
+        const accounts = await Promise.all(gasUrls.map(async (targetUrl) => {
+          const email = resolveGasSender(null, targetUrl);
+          let quota = 100;
+          try {
+            const qRes = await fetch(targetUrl, { method: "GET" });
+            if (qRes.ok) {
+              const qJson = await qRes.json();
+              if (qJson?.status === "SUCCESS") {
+                if (typeof qJson?.quota === 'number') quota = qJson.quota;
+                else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
+              }
+            }
+          } catch (_) {}
+          return { email, url: targetUrl, quota };
+        }));
+
+        const totalRemaining = accounts.reduce((sum, a) => sum + (a.quota || 0), 0);
+        const safetyReserve = 15;
+        const allowedToday = Math.max(0, totalRemaining - safetyReserve);
+
+        if (allowedToday <= 0) {
+          return new Response(JSON.stringify({
+            error: "DAILY_QUOTA_REACHED",
+            message: "Daily quota limit reached (15 emails reserved for customer orders). Please continue tomorrow.",
+            totalRemaining,
+            pendingCount: pendingEmails.length
+          }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // Determine how many to send in this batch
+        const countToSend = Math.min(pendingEmails.length, allowedToday, maxBatchSize || allowedToday);
+        const batchEmails = pendingEmails.slice(0, countToSend);
+
+        // Generate rendered HTML
+        const htmlBody = generateBroadcastEmailHtml({
+          preset,
+          title: templateData.title || subject,
+          subtitle: templateData.subtitle || "",
+          bodyText: templateData.bodyText || "",
+          bannerUrl: templateData.bannerUrl || "",
+          buttonText: templateData.buttonText || "",
+          buttonUrl: templateData.buttonUrl || "",
+          couponCode: templateData.couponCode || "",
+          baseUrl: env.BASE_URL || "https://bombastype.com"
+        });
+
+        // 4. Send emails via GAS with round-robin / load-balancing
+        const activeAccounts = accounts.filter(a => a.quota > 0);
+        const newlySentLogs = [];
+        let accountIdx = 0;
+
+        for (const recipient of batchEmails) {
+          const currentAcc = activeAccounts[accountIdx % activeAccounts.length];
+          accountIdx++;
+
+          const payload = {
+            token: "$emogaAm4n_",
+            action: "broadcast",
+            email: recipient,
+            name: "Creator",
+            subject,
+            htmlBody,
+            sender_name: "BombasType"
+          };
+
+          try {
+            const sendRes = await fetch(currentAcc.url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+              redirect: "follow"
+            });
+            const sendText = await sendRes.text();
+            let isOk = sendRes.ok;
+            try {
+              const sendJson = JSON.parse(sendText);
+              if (sendJson.status === "ERROR") isOk = false;
+            } catch (_) {}
+
+            if (isOk) {
+              campaign.sentEmails.push(recipient);
+              const logEntry = {
+                email: recipient,
+                gas: currentAcc.email,
+                sent_at: new Date().toISOString(),
+                status: 'delivered'
+              };
+              campaign.sentLogs.unshift(logEntry);
+              newlySentLogs.push(logEntry);
+            }
+          } catch (e) {
+            console.error("Failed sending broadcast to:", recipient, e.message);
+          }
+        }
+
+        if (campaign.sentLogs.length > 500) {
+          campaign.sentLogs = campaign.sentLogs.slice(0, 500);
+        }
+
+        campaign.totalTarget = targetEmails.length;
+        campaign.remainingCount = targetEmails.length - campaign.sentEmails.length;
+        campaign.status = campaign.remainingCount <= 0 ? 'completed' : 'in_progress';
+        campaign.last_batch_at = new Date().toISOString();
+
+        // 5. Save updated campaigns to site_settings
+        await fetch(`${supabaseUrl}/rest/v1/site_settings`, {
+          method: 'POST',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({ key: 'broadcast_campaigns', value: JSON.stringify(campaigns), updated_at: new Date().toISOString() })
+        });
+
+        return new Response(JSON.stringify({
+          success: true,
+          sentInBatch: newlySentLogs.length,
+          remainingForCampaign: campaign.remainingCount,
+          totalTarget: campaign.totalTarget,
+          status: campaign.status,
+          campaign
         }), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });

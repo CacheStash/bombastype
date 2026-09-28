@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Type, ShoppingCart, LogOut, 
-  Tag, Menu, X, Mail, FileText, Power, Loader2, CreditCard
+  Tag, Menu, X, Mail, FileText, Power, Loader2, CreditCard, Megaphone
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Globe } from 'lucide-react';
@@ -13,7 +13,7 @@ import PromotionsManager from './PromotionsManager';
 import Orders from './Orders';
 import EmailStudio from './EmailStudio';
 import Statistics from './Statistics';
-import AdminMessages from './AdminMessages';
+import BroadcastStudio from './BroadcastStudio';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('products');
@@ -137,7 +137,7 @@ const AdminDashboard = () => {
 
   const navItems = [
     { id: 'stats', label: 'Dashboard Overview', icon: LayoutDashboard },
-    { id: 'inbox', label: 'Inbox & Messages', icon: Mail, badge: unreadCount },
+    { id: 'broadcast', label: 'Broadcast Studio', icon: Megaphone },
     { id: 'products', label: 'Typeface Inventory', icon: Type },
     { id: 'promotions', label: 'Promotional Deals', icon: Tag },
     { id: 'orders', label: 'Customer Orders', icon: ShoppingCart },
@@ -152,7 +152,8 @@ const AdminDashboard = () => {
   const renderActiveContent = () => {
     switch (activeTab) {
       case 'stats': return <Statistics />;
-      case 'inbox': return <AdminMessages />;
+      case 'broadcast': return <BroadcastStudio />;
+      case 'inbox': return <BroadcastStudio />;
       case 'products': return <ProductManager />;
       case 'promotions': return <PromotionsManager />;
       case 'orders': return <Orders />;

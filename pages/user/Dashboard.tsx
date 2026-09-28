@@ -105,7 +105,6 @@ const UserDashboard = () => {
         <nav className="grow p-6 space-y-3">
           {[
             { id: 'library', label: 'My Library', icon: Library },
-            { id: 'inbox', label: 'Inbox & Support', icon: Mail, badge: unreadCount },
             { id: 'settings', label: 'Settings', icon: Settings }
           ].map((item) => {
             const Icon = item.icon;
@@ -156,7 +155,6 @@ const UserDashboard = () => {
       <main className="grow p-8 md:p-16 overflow-y-auto w-full">
         <div className="max-w-5xl mx-auto animate-in fade-in duration-700">
           {activeTab === 'library' && <MyFontsHistory />}
-          {activeTab === 'inbox' && <UserMessages />}
           {activeTab === 'settings' && <AccountSettings />}
         </div>
       </main>

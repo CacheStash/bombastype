@@ -26,6 +26,7 @@ const BehanceIcon = ({ size = 18, className = "" }: { size?: number, className?:
 
 export default function Footer() {
   const [email, setEmail] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const footerLinks = [
@@ -40,6 +41,13 @@ export default function Footer() {
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (honeypot) {
+      // Silently discard automated spam bot submission
+      setStatus('success');
+      setEmail('');
+      setTimeout(() => setStatus('idle'), 4000);
+      return;
+    }
     setStatus('loading');
 
     try {
@@ -81,7 +89,18 @@ export default function Footer() {
         
         {/* BARIS ATAS: Subscribe Form (Full Width) */}
         <div className="mb-16">
-          <form onSubmit={handleSubscribe} className="flex border border-vintage-paper/10 rounded-sm overflow-hidden bg-vintage-paper/5 w-full">
+          <form onSubmit={handleSubscribe} className="flex border border-vintage-paper/10 rounded-sm overflow-hidden bg-vintage-paper/5 w-full relative">
+            {/* Honeypot field for bot spam prevention */}
+            <input 
+              type="text" 
+              name="b_nickname" 
+              value={honeypot} 
+              onChange={(e) => setHoneypot(e.target.value)} 
+              tabIndex={-1} 
+              autoComplete="off" 
+              aria-hidden="true"
+              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', height: 0, width: 0, zIndex: -1 }} 
+            />
             <input 
               type="email" 
               value={email}
