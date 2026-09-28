@@ -233,9 +233,11 @@ export default function BroadcastStudio() {
     try {
       const { data, error } = await supabase
         .from('fonts')
-        .select('id, name, slug, created_at')
+        .select('id, name, created_at')
         .order('created_at', { ascending: false });
-      if (data && !error) {
+      if (error) {
+        console.error('Failed fetching fonts list:', error);
+      } else if (data) {
         setFontsList(data);
       }
     } catch (e) {
