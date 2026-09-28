@@ -1069,6 +1069,59 @@ export default {
           }
         }
 
+        // High-Speed WebP Thumbnail action for secure raster previews
+        if (action === 'thumb') {
+          if (!fileId) {
+            return new Response(JSON.stringify({ error: 'FILE_ID_REQUIRED' }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': allowedOrigin }
+            });
+          }
+
+          const gasParams = new URLSearchParams();
+          gasParams.set('action', 'thumb');
+          gasParams.set('token', token);
+          gasParams.set('id', fileId);
+          const targetGasUrl = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}${gasParams.toString()}`;
+
+          let gasRes = null;
+          let gasBase64 = '';
+          for (let attempt = 0; attempt < 2; attempt++) {
+            if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
+            try {
+              gasRes = await fetch(targetGasUrl);
+              if (gasRes.ok) {
+                gasBase64 = (await gasRes.text()).trim();
+                if (gasBase64.length > 20) break;
+              }
+            } catch (_) {}
+          }
+
+          if (!gasRes || !gasRes.ok || gasBase64.length < 20) {
+            return new Response(JSON.stringify({ error: 'THUMBNAIL_NOT_FOUND', id: fileId }), {
+              status: 404,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': allowedOrigin }
+            });
+          }
+
+          // Decode base64 to binary WebP buffer
+          const binaryString = atob(gasBase64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+
+          const resHeaders = new Headers();
+          resHeaders.set('Access-Control-Allow-Origin', allowedOrigin);
+          resHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+          resHeaders.set('Content-Type', 'image/webp');
+          resHeaders.set('X-Content-Type-Options', 'nosniff');
+          resHeaders.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=86400');
+
+          ctx.waitUntil(cache.put(cacheKey, new Response(bytes.buffer, { headers: resHeaders })));
+          return new Response(bytes.buffer, { headers: resHeaders });
+        }
+
         // Fast paginated list support from full list cache
         if (action === 'list' && limit > 0) {
           const fullListKey = new Request(`${url.origin}/api/svg-assets?action=list`, { method: 'GET' });
