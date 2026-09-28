@@ -23,3 +23,9 @@
   GRANT SELECT, INSERT, UPDATE, DELETE ON public.<new_table_name> TO anon, authenticated, service_role;
   ```
 - *Note:* Existing tables (`fonts`, `orders`, `coupons`, `settings`, `fontsubscribers`, etc.) retain their grants automatically. Adding new fonts/records to existing tables does NOT require any grants.
+
+## Decoy / Obfuscation Function Naming Policy (Anti-Reverse Engineering)
+- For any sensitive client-side security logic (such as font unmasking, stream transformations, cipher keys, client validation, or token decoding):
+  - **Always use deceptive/decoy function and variable names (nama plesetan)** that sound like ordinary layout, canvas metric, or raster calculations (e.g., `normalizeBufferMetrics`, `METRIC_TRANSFORM_KEYS`, `BUFFER_ALIGNMENT_LIMIT`, `fetchDisplayBuffer`).
+  - **Never use obvious sensitive keywords** like `unmask`, `decrypt`, `cipher`, `shield`, or `deobfuscate` in client-facing function names or variables in compiled bundles.
+  - **Always document the mapping in the `.ts` file** as an internal developer guide comment (in Indonesian) at the top of the file, detailing what each decoy name stands for, so future updates and pair-programming sessions can identify and maintain it easily.
