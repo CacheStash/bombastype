@@ -576,13 +576,30 @@ export default {
       );
     }
 
-    // --- 3. API Fonts (Protected Read: Allowed Origins Only With Cache API) ---
+    // --- 3. API Fonts (Protected Read: Allowed Origins Only With Cache API & Masking Shield) ---
     if (url.pathname.startsWith('/api/fonts/')) {
       const origin = request.headers.get('Origin') || '';
       const referer = request.headers.get('Referer') || '';
+      const secFetchMode = request.headers.get('Sec-Fetch-Mode') || '';
+      const secFetchDest = request.headers.get('Sec-Fetch-Dest') || '';
+      const acceptHeader = request.headers.get('Accept') || '';
+
+      // LAYER 2 (WordPress-style direct link protection):
+      // If accessed directly via browser address bar, new tab, direct navigation, or without valid application referer/origin,
+      // redirect immediately to the homepage!
+      const isDirectNavigation = 
+        secFetchMode === 'navigate' || 
+        secFetchDest === 'document' || 
+        secFetchDest === 'iframe' ||
+        acceptHeader.includes('text/html') ||
+        (!origin && !referer);
+
+      if (isDirectNavigation) {
+        return Response.redirect(`${url.origin}/`, 302);
+      }
 
       const isAllowedSource = (val) => {
-        if (!val) return true;
+        if (!val) return false;
         try {
           const parsed = val.startsWith('http://') || val.startsWith('https://')
             ? new URL(val)
