@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Instagram, Facebook, Globe } from "lucide-react";
+import { Instagram, Facebook, Globe, ChevronDown } from "lucide-react";
 
 // Icon Behance Custom SVG
 const BehanceIcon = ({ size = 18, className = "" }: { size?: number, className?: string }) => (
@@ -28,6 +28,18 @@ export default function Footer() {
   const [email, setEmail] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) {
+        setIsToolsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const footerLinks = [
     { name: "FONTS", href: "/fonts" },
@@ -202,10 +214,44 @@ export default function Footer() {
                   {link.name}
                 </Link>
               ))}
-              <Link to="/canvas" className="hover:text-white transition-colors w-fit flex items-center gap-1.5">
-                <span>CANVAS</span>
-                <span className="bg-vintage-paper text-vintage-ink text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start -mt-0.5">BETA</span>
-              </Link>
+              {/* TOOLS DROPDOWN */}
+              <div className="relative" ref={toolsRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsToolsOpen(!isToolsOpen)}
+                  className="hover:text-white transition-colors w-fit flex items-center gap-1 cursor-pointer select-none"
+                  aria-expanded={isToolsOpen}
+                >
+                  <span>TOOLS</span>
+                  <ChevronDown 
+                    size={11} 
+                    className={`transition-transform duration-200 ${isToolsOpen ? 'rotate-180 text-white' : 'opacity-70'}`} 
+                  />
+                </button>
+
+                {isToolsOpen && (
+                  <div className="absolute bottom-full left-0 mb-2 w-48 bg-[#201D1B] border border-vintage-paper/20 rounded shadow-2xl py-2 px-1 z-50 flex flex-col gap-1 backdrop-blur-md">
+                    <Link 
+                      to="/canvas" 
+                      onClick={() => setIsToolsOpen(false)}
+                      className="px-2.5 py-1.5 hover:bg-vintage-paper/10 text-vintage-paper/90 hover:text-white rounded transition-colors flex items-center justify-between tracking-widest text-[9px]"
+                    >
+                      <span>CANVAS STUDIO</span>
+                      <span className="bg-vintage-paper text-vintage-ink text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px]">BETA</span>
+                    </Link>
+                    <a 
+                      href="https://fontshift.bombastype.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={() => setIsToolsOpen(false)}
+                      className="px-2.5 py-1.5 hover:bg-vintage-paper/10 text-vintage-paper/90 hover:text-white rounded transition-colors flex items-center justify-between tracking-widest text-[9px]"
+                    >
+                      <span>FONTSHIFT</span>
+                      <span className="bg-[#D4A373] text-[#1E1B18] text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px]">FREE</span>
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
