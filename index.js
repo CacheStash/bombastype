@@ -608,9 +608,11 @@ export default {
           return (
             hostname === 'bombastype.com' ||
             hostname.endsWith('.bombastype.com') ||
+            hostname === 'bombastype.workers.dev' ||
+            hostname.endsWith('.bombastype.workers.dev') ||
             hostname === 'subqi.com' ||
             hostname.endsWith('.subqi.com') ||
-            hostname === 'fontcanvas.subqi.workers.dev' ||
+            hostname === 'subqi.workers.dev' ||
             hostname.endsWith('.subqi.workers.dev') ||
             hostname === 'fontcanvas.pages.dev' ||
             hostname.endsWith('.fontcanvas.pages.dev') ||
