@@ -664,6 +664,7 @@ export default {
           headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
           headers.set('Access-Control-Expose-Headers', '*');
           headers.set('Vary', 'Origin');
+          headers.set('Cache-Control', 'public, max-age=0, s-maxage=31536000, must-revalidate');
           return new Response(cachedResponse.body, {
             status: cachedResponse.status,
             headers
@@ -687,7 +688,7 @@ export default {
         baseHeaders.set('X-Content-Type-Options', 'nosniff');
         baseHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         baseHeaders.set('X-Font-Protection', isRawRequested ? 'none' : 'subqi-shield-v1');
-        baseHeaders.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
+        baseHeaders.set('Cache-Control', 'public, max-age=0, s-maxage=31536000, must-revalidate');
 
         const responseToCache = new Response(finalBody, { headers: baseHeaders });
         ctx.waitUntil(cache.put(cacheKey, responseToCache.clone()));

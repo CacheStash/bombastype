@@ -211,7 +211,7 @@ const Fonts: React.FC = () => {
         const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
         files.forEach((file: string, idx: number) => {
           if (!file) return;
-          const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=s1_${version}`;
+          const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=s2_${version}`;
           loadProtectedFontFace(`${f.name}-${idx}`, url);
         });
       });
