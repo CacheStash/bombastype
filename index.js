@@ -2667,13 +2667,28 @@ export default {
       }
     }
 
-    // --- 8. Serve Frontend (SPA Handler) ---
+    // --- 8. Serve Frontend (SPA Handler With Edge Cache Shield) ---
     try {
       let response = await env.ASSETS.fetch(request);
       if (response.status === 404 && !url.pathname.startsWith('/api/')) {
         const indexUrl = new URL('/index.html', request.url);
-        return await env.ASSETS.fetch(new Request(indexUrl));
+        response = await env.ASSETS.fetch(new Request(indexUrl));
       }
+
+      // Layer 2: Edge CDN Cache Shield for HTML documents (Protects Worker CPU from bot crawls)
+      // Browser caches for 60s, Cloudflare Edge caches for 1 hour (s-maxage=3600), with background revalidation
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('text/html') || url.pathname === '/' || !url.pathname.includes('.')) {
+        const newHeaders = new Headers(response.headers);
+        newHeaders.set('Cache-Control', 'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400');
+        newHeaders.set('X-Edge-Cache-Shield', 'Active');
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: newHeaders
+        });
+      }
+
       return response;
     } catch (e) { return new Response(`System Error: ${e.message}`, { status: 500 }); }
   },
