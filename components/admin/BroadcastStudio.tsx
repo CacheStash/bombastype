@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { 
   Send, Megaphone, Users, ShieldAlert, Sparkles, CheckCircle2, 
   AlertCircle, RefreshCw, Eye, History, Clock, ArrowRight, 
-  Tag, HelpCircle, Layers, Mail, Check, Search
+  Tag, HelpCircle, Layers, Mail, Check, Search, Upload, Image as ImageIcon, X
 } from 'lucide-react';
 
 interface GasAccount {
@@ -143,6 +143,67 @@ export default function BroadcastStudio() {
   const [fontsList, setFontsList] = useState<Array<{ id: string; name: string; slug?: string }>>([]);
   const [selectedFontName, setSelectedFontName] = useState('');
   const [fontSearch, setFontSearch] = useState('');
+
+  // Banner Upload & Google Drive Auto-Converter State
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isDraggingBanner, setIsDraggingBanner] = useState(false);
+
+  const convertDriveUrl = (inputUrl: string) => {
+    if (!inputUrl) return '';
+    const trimmed = inputUrl.trim();
+    const match1 = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match1 && match1[1]) {
+      return `https://lh3.googleusercontent.com/d/${match1[1]}`;
+    }
+    const match2 = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (match2 && match2[1]) {
+      return `https://lh3.googleusercontent.com/d/${match2[1]}`;
+    }
+    return trimmed;
+  };
+
+  const handleBannerUrlChange = (val: string) => {
+    const converted = convertDriveUrl(val);
+    setBannerUrl(converted);
+  };
+
+  const handleBannerUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPG, WEBP, SVG).');
+      return;
+    }
+    setIsUploadingBanner(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Session expired. Please log in again.');
+
+      const timestamp = Date.now();
+      const cleanFileName = file.name.replace(/\s+/g, '_');
+      const uniqueFileName = `${timestamp}-${cleanFileName}`;
+
+      const res = await fetch(`/api/admin/upload/${uniqueFileName}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': file.type
+        },
+        body: file
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error || `Upload failed with HTTP ${res.status}`);
+      }
+
+      const publicUrl = `${window.location.origin}/api/images/${uniqueFileName}`;
+      setBannerUrl(publicUrl);
+    } catch (err: any) {
+      console.error('Banner upload error:', err);
+      alert('Failed to upload image: ' + err.message);
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -609,27 +670,106 @@ export default function BroadcastStudio() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* BANNER IMAGE UPLOAD / DRAG & DROP & URL */}
+              <div className="border border-dashed border-vintage-ink/50 p-4 bg-vintage-ink/[0.02] space-y-3 font-mono">
+                <div className="flex items-center justify-between">
+                  <label className="uppercase tracking-widest font-bold text-xs flex items-center gap-2">
+                    <ImageIcon size={14} /> Specimen Banner Image (Optional)
+                  </label>
+                  {bannerUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setBannerUrl('')}
+                      className="text-[10px] font-bold text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <X size={12} /> Remove
+                    </button>
+                  )}
+                </div>
+
+                {bannerUrl ? (
+                  <div className="flex items-center gap-3 bg-vintage-paper p-2 border border-vintage-ink">
+                    <img src={bannerUrl} alt="Banner Preview" className="w-20 h-14 object-cover border border-vintage-ink/40" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-bold text-emerald-800 flex items-center gap-1">
+                        <Check size={12} /> Image Active
+                      </div>
+                      <div className="text-[9px] font-mono opacity-70 truncate" title={bannerUrl}>
+                        {bannerUrl}
+                      </div>
+                    </div>
+                    <label className="vintage-btn btn-reverse px-3 py-1 text-[9px] cursor-pointer">
+                      Change
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleBannerUpload(f);
+                        }}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDraggingBanner(true); }}
+                    onDragLeave={() => setIsDraggingBanner(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDraggingBanner(false);
+                      const f = e.dataTransfer.files?.[0];
+                      if (f) handleBannerUpload(f);
+                    }}
+                    className={`border border-dashed p-4 text-center transition-all cursor-pointer ${
+                      isDraggingBanner ? 'border-vintage-accent bg-vintage-accent/10' : 'border-vintage-ink/40 hover:border-vintage-ink bg-vintage-paper'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      id="bannerFileInputBombas"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleBannerUpload(f);
+                      }}
+                    />
+                    <label htmlFor="bannerFileInputBombas" className="cursor-pointer block">
+                      <Upload size={20} className="mx-auto mb-1 text-vintage-ink/50" />
+                      <div className="font-bold text-xs">
+                        {isUploadingBanner ? 'Uploading to Archival CDN...' : 'Drop image here, or click to browse'}
+                      </div>
+                      <div className="text-[9px] opacity-60 mt-0.5">
+                        PNG, JPG, WEBP, SVG (Auto-uploaded to Cloudflare R2)
+                      </div>
+                    </label>
+                  </div>
+                )}
+
                 <div>
-                  <label className="uppercase tracking-widest font-bold block mb-1">Optional Banner Image URL</label>
+                  <div className="text-[10px] font-bold opacity-70 mb-1">
+                    Or paste direct image URL (Google Drive share links auto-convert):
+                  </div>
                   <input
                     type="url"
                     value={bannerUrl}
-                    onChange={(e) => setBannerUrl(e.target.value)}
-                    placeholder="https://.../banner.png"
-                    className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none"
+                    onChange={(e) => handleBannerUrlChange(e.target.value)}
+                    placeholder="https://... or Google Drive share link"
+                    className="w-full border border-vintage-ink p-2 text-xs bg-vintage-paper outline-none font-mono"
                   />
                 </div>
-                <div>
-                  <label className="uppercase tracking-widest font-bold block mb-1">Promo Coupon Token (Optional)</label>
-                  <input
-                    type="text"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    placeholder="e.g. SPECIAL20"
-                    className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none uppercase"
-                  />
-                </div>
+              </div>
+
+              <div>
+                <label className="uppercase tracking-widest font-bold block mb-1">Promo Coupon Token (Optional)</label>
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  placeholder="e.g. SPECIAL20"
+                  className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none uppercase font-bold"
+                />
               </div>
             </div>
 
