@@ -178,17 +178,56 @@ function resolveGasSender(resSender, url) {
   for (const [key, email] of Object.entries(GAS_ACCOUNT_MAP)) {
     if (target.includes(key)) return email;
   }
-  return resSender || "bombastype@gmail.com";
+  if (url && url.includes('=')) {
+    const parts = url.split('=');
+    if (parts[0].includes('@')) return parts[0].trim();
+  }
+  if (url && url.includes('#')) {
+    const parts = url.split('#');
+    if (parts[1] && parts[1].includes('@')) return parts[1].trim();
+  }
+  return resSender || null;
+}
+
+function parseGasEntry(rawEntry, fallbackIndex = 0) {
+  if (!rawEntry) return { url: "", email: `Account #${fallbackIndex + 1}` };
+  const str = rawEntry.trim();
+  let email = null;
+  let url = str;
+
+  // Format 1: email@domain.com=https://script.google.com/...
+  if (str.includes('=')) {
+    const parts = str.split('=');
+    if (parts[0].includes('@')) {
+      email = parts[0].trim();
+      url = parts.slice(1).join('=').trim();
+    }
+  }
+  // Format 2: https://script.google.com/...#email@domain.com
+  else if (str.includes('#')) {
+    const parts = str.split('#');
+    url = parts[0].trim();
+    if (parts[1] && parts[1].includes('@')) {
+      email = parts[1].trim();
+    }
+  }
+
+  // Format 3: Static Map Fallback
+  if (!email) {
+    email = resolveGasSender(null, url);
+  }
+
+  return {
+    url,
+    email: email || `Account #${fallbackIndex + 1}`
+  };
 }
 
 async function getSmartPrioritizedGasAccounts(gasUrls, recipientEmail) {
   const cleanRecipient = (recipientEmail || "").trim().toLowerCase();
 
-  // 1. Map URLs to account objects
-  const accounts = gasUrls.map(url => ({
-    url,
-    email: resolveGasSender(null, url)
-  }));
+  // 1. Map URLs to account objects with auto-detected aliases
+  const accounts = gasUrls.map((entry, idx) => parseGasEntry(entry, idx));
 
   // 2. Prevent self-sending: Filter out any account whose sender email matches recipient
   const filtered = accounts.filter(acc => acc.email.toLowerCase() !== cleanRecipient);
@@ -1963,9 +2002,11 @@ export default {
         const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
         // 1. Fetch real-time GAS accounts quota
-        const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
-        const accounts = await Promise.all(gasUrls.map(async (targetUrl) => {
-          const email = resolveGasSender(null, targetUrl);
+        const rawGasEntries = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
+        const accounts = await Promise.all(rawGasEntries.map(async (entry, idx) => {
+          const parsed = parseGasEntry(entry, idx);
+          let email = parsed.email;
+          const targetUrl = parsed.url;
           let quota = 100;
           let limit = 100;
           let isOnline = false;
@@ -1978,6 +2019,10 @@ export default {
                 if (typeof qJson?.quota === 'number') quota = qJson.quota;
                 else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
                 limit = typeof qJson?.limit === 'number' ? qJson.limit : 100;
+                // Auto-detect dynamic email from GAS response if Session.getEffectiveUser() is returned
+                if (qJson?.email && qJson.email.includes('@')) {
+                  email = qJson.email.trim();
+                }
               }
             }
           } catch (_) {}
@@ -2171,9 +2216,11 @@ export default {
         }
 
         // 3. Query GAS accounts quota
-        const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
-        const accounts = await Promise.all(gasUrls.map(async (targetUrl) => {
-          const email = resolveGasSender(null, targetUrl);
+        const rawGasEntries = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
+        const accounts = await Promise.all(rawGasEntries.map(async (entry, idx) => {
+          const parsed = parseGasEntry(entry, idx);
+          let email = parsed.email;
+          const targetUrl = parsed.url;
           let quota = 100;
           try {
             const qRes = await fetch(targetUrl, { method: "GET" });
@@ -2182,6 +2229,9 @@ export default {
               if (qJson?.status === "SUCCESS") {
                 if (typeof qJson?.quota === 'number') quota = qJson.quota;
                 else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
+                if (qJson?.email && qJson.email.includes('@')) {
+                  email = qJson.email.trim();
+                }
               }
             }
           } catch (_) {}
