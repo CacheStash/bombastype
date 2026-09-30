@@ -25,7 +25,7 @@ const ContentManager = () => {
   const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
   const [currentCategory, setCurrentCategory] = useState('faq');
 
-  const categories = ['faq', 'license', 'policy', 'about', 'insights'];
+  const categories = ['faq', 'license', 'policy', 'about'];
 
   const [formData, setFormData] = useState<ContentItem>({
     title: '',

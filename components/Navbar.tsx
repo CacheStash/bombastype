@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Search, User, ShoppingCart, ArrowRight } from 'lucide-react';
+import { Menu, X, Search, User, ShoppingCart, ArrowRight, ChevronDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
@@ -29,6 +29,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
   
   const location = useLocation();
   const { cartCount } = useCart();
@@ -41,7 +42,12 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
     { name: "CONTACT", href: "/contact" },
     { name: "POLICY", href: "/policy" },
     { name: "FAQ", href: "/faq" },
-    { name: "INSIGHTS", href: "/insights" },
+  ];
+
+  const toolLinks = [
+    { name: "CANVAS", href: "https://canvas.bombastype.com", badge: "BETA" },
+    { name: "FONTSHIFT", href: "https://fontshift.bombastype.com", badge: "FREE" },
+    { name: "FONTOPSY", href: "https://fontopsy.bombastype.com", badge: "NEW" },
   ];
 
   useEffect(() => {
@@ -158,7 +164,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
           </div>
 
           {/* TENGAH: NAV LINKS */}
-          <div className="hidden lg:flex gap-x-6 flex-none">
+          <div className="hidden lg:flex gap-x-6 flex-none items-center">
             {navLinks.map((link) => (
               <Link 
                 key={link.name} 
@@ -173,6 +179,50 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                 )}
               </Link>
             ))}
+
+            {/* TOOLS DROPDOWN */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsToolsDropdownOpen(true)}
+              onMouseLeave={() => setIsToolsDropdownOpen(false)}
+            >
+              <button
+                type="button"
+                onClick={() => setIsToolsDropdownOpen(prev => !prev)}
+                className="text-[9px] uppercase tracking-[0.2em] font-bold text-vintage-ink hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer select-none"
+              >
+                <span>TOOLS</span>
+                <ChevronDown size={10} className={`transition-transform duration-200 ${isToolsDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {isToolsDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 mt-2 w-44 bg-vintage-paper border border-vintage-ink shadow-2xl p-1.5 z-50 flex flex-col gap-1"
+                  >
+                    {toolLinks.map(tool => (
+                      <a
+                        key={tool.name}
+                        href={tool.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setIsToolsDropdownOpen(false)}
+                        className="px-2.5 py-1.5 hover:bg-vintage-ink hover:text-vintage-paper text-vintage-ink transition-colors flex items-center justify-between tracking-widest text-[9px] font-bold rounded-[2px]"
+                      >
+                        <span>{tool.name}</span>
+                        <span className="bg-vintage-ink text-vintage-paper text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold rounded-[2px]">
+                          {tool.badge}
+                        </span>
+                      </a>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* SISI KANAN: SEARCH & ACTIONS */}
@@ -364,6 +414,30 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                   <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Link>
               ))}
+
+              {/* Mobile Tools Section */}
+              <div className="pt-4 border-t border-vintage-ink/15 flex flex-col gap-3">
+                <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-vintage-accent">TOOLS</span>
+                <div className="flex flex-col gap-2.5 pl-1">
+                  {toolLinks.map(tool => (
+                    <a
+                      key={tool.name}
+                      href={tool.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs uppercase tracking-[0.2em] font-bold text-vintage-ink flex justify-between items-center group py-1"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span>{tool.name}</span>
+                        <span className="bg-vintage-ink text-vintage-paper text-[7px] px-1 py-0 h-3.5 leading-none flex items-center font-bold rounded-[2px]">
+                          {tool.badge}
+                        </span>
+                      </span>
+                      <ArrowRight size={12} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                    </a>
+                  ))}
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
