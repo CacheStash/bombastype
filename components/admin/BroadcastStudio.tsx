@@ -535,135 +535,263 @@ export default function BroadcastStudio() {
 
       {/* TAB 1: COMPOSE BROADCAST */}
       {activeTab === 'compose' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT COLUMN: FORM CONTROLS */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            {/* AUDIENCE SELECTOR CARD */}
-            <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4">
-              <label className="text-xs uppercase tracking-widest font-black flex items-center gap-2">
-                <Users size={14} /> Target Audience
-              </label>
-              <div className="grid grid-cols-3 gap-3 text-xs font-mono">
-                <button
-                  type="button"
-                  onClick={() => setAudience('all')}
-                  className={`p-3 border text-left transition-all ${
-                    audience === 'all' 
-                      ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                      : 'border-vintage-ink/30 hover:border-vintage-ink'
-                  }`}
-                >
-                  <div className="font-bold">ALL AUDIENCE</div>
-                  <div className="text-[10px] opacity-70 mt-1">{data.audience.totalUniqueCount} Unique Emails</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAudience('buyers')}
-                  className={`p-3 border text-left transition-all ${
-                    audience === 'buyers' 
-                      ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                      : 'border-vintage-ink/30 hover:border-vintage-ink'
-                  }`}
-                >
-                  <div className="font-bold">BUYERS ONLY</div>
-                  <div className="text-[10px] opacity-70 mt-1">{data.audience.buyersCount} Verified Patrons</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAudience('subscribers')}
-                  className={`p-3 border text-left transition-all ${
-                    audience === 'subscribers' 
-                      ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                      : 'border-vintage-ink/30 hover:border-vintage-ink'
-                  }`}
-                >
-                  <div className="font-bold">SUBSCRIBERS</div>
-                  <div className="text-[10px] opacity-70 mt-1">{data.audience.subscribersCount} Active Readers</div>
-                </button>
-              </div>
-            </div>
-
-            {/* PRESET SELECTOR */}
-            <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-3">
-              <label className="text-xs uppercase tracking-widest font-black flex items-center justify-between">
-                <span>Template Preset</span>
-                <span className="text-[10px] font-mono font-normal opacity-60">{PRESETS.length} Formats Available</span>
-              </label>
-              <select
-                value={selectedPreset}
-                onChange={(e) => handleApplyPreset(e.target.value)}
-                className="w-full border border-vintage-ink p-3 text-xs uppercase font-mono tracking-wider bg-vintage-paper outline-none cursor-pointer font-bold"
+        <div className="space-y-6 max-w-4xl mx-auto">
+          {/* 1. AUDIENCE SELECTOR CARD */}
+          <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4">
+            <label className="text-xs uppercase tracking-widest font-black flex items-center gap-2">
+              <Users size={14} /> Target Audience
+            </label>
+            <div className="grid grid-cols-3 gap-3 text-xs font-mono">
+              <button
+                type="button"
+                onClick={() => setAudience('all')}
+                className={`p-3 border text-left transition-all cursor-pointer ${
+                  audience === 'all' 
+                    ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
+                    : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
+                }`}
               >
-                {PRESETS.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+                <div className="font-bold">ALL AUDIENCE</div>
+                <div className="text-[10px] opacity-70 mt-1">{data.audience.totalUniqueCount} Unique Emails</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAudience('buyers')}
+                className={`p-3 border text-left transition-all cursor-pointer ${
+                  audience === 'buyers' 
+                    ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
+                    : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
+                }`}
+              >
+                <div className="font-bold">BUYERS ONLY</div>
+                <div className="text-[10px] opacity-70 mt-1">{data.audience.buyersCount} Verified Patrons</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAudience('subscribers')}
+                className={`p-3 border text-left transition-all cursor-pointer ${
+                  audience === 'subscribers' 
+                    ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
+                    : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
+                }`}
+              >
+                <div className="font-bold">SUBSCRIBERS</div>
+                <div className="text-[10px] opacity-70 mt-1">{data.audience.subscribersCount} Active Readers</div>
+              </button>
+            </div>
+          </div>
+
+          {/* 2. PRESET SELECTOR */}
+          <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-3">
+            <label className="text-xs uppercase tracking-widest font-black flex items-center justify-between">
+              <span>Template Preset</span>
+              <span className="text-[10px] font-mono font-normal opacity-60">{PRESETS.length} Formats Available</span>
+            </label>
+            <select
+              value={selectedPreset}
+              onChange={(e) => handleApplyPreset(e.target.value)}
+              className="w-full border border-vintage-ink p-3 text-xs uppercase font-mono tracking-wider bg-vintage-paper outline-none cursor-pointer font-bold"
+            >
+              {PRESETS.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. TYPEFACE SELECTOR (FOR RELEASE & UPDATE PRESETS) */}
+          {(selectedPreset === 'new_release' || selectedPreset === 'update_typeface') && (
+            <div className="border border-vintage-ink p-5 bg-vintage-accent/5 space-y-3 font-mono">
+              <div className="flex items-center justify-between">
+                <label className="text-xs uppercase tracking-widest font-black flex items-center gap-2">
+                  <Sparkles size={14} className="text-vintage-accent" /> Select Target Typeface
+                </label>
+                <span className="text-[10px] opacity-70">
+                  {fontsList.length} Specimens Loaded (Recent First)
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={fontSearch}
+                    onChange={(e) => setFontSearch(e.target.value)}
+                    placeholder="SEARCH SPECIMEN..."
+                    className="w-full border border-vintage-ink pl-8 pr-3 py-2 text-xs bg-vintage-paper outline-none uppercase font-bold"
+                  />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-vintage-ink/40" size={14} />
+                  {fontSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setFontSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold hover:underline"
+                    >
+                      CLEAR
+                    </button>
+                  )}
+                </div>
+
+                <div>
+                  <select
+                    value={selectedFontName}
+                    onChange={(e) => handleSelectFont(e.target.value)}
+                    className="w-full border border-vintage-ink p-2 text-xs uppercase font-mono bg-vintage-paper outline-none cursor-pointer font-bold"
+                  >
+                    <option value="">-- Choose Typeface --</option>
+                    {fontsList
+                      .filter(f => !fontSearch || f.name.toLowerCase().includes(fontSearch.toLowerCase().trim()))
+                      .map(f => (
+                        <option key={f.id} value={f.name}>
+                          {f.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              {selectedFontName ? (
+                <div className="flex items-center gap-2 text-[10px] font-bold text-vintage-ink border border-vintage-ink/40 bg-vintage-ink/5 p-2">
+                  <Check size={12} />
+                  <span>Selected: <strong>{selectedFontName}</strong> — Campaign reference & [FONT_NAME] tokens automatically populated</span>
+                </div>
+              ) : (
+                <div className="text-[10px] italic opacity-70">
+                  Select a typeface specimen above to automatically populate [FONT_NAME] tokens and set campaign title.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4. EMAIL PREVIEW (PLACED PROMINENTLY UNDER PRESET & TYPEFACE SELECTOR) */}
+          <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4">
+            <div className="flex items-center justify-between text-xs uppercase tracking-widest font-black border-b border-vintage-ink pb-2">
+              <span className="flex items-center gap-2">
+                <Eye size={15} /> Archival Email Preview
+              </span>
+              <span className="text-[10px] font-mono font-normal opacity-60">Recipient Live View</span>
             </div>
 
-            {/* TYPEFACE SELECTOR (FOR RELEASE & UPDATE PRESETS) */}
-            {(selectedPreset === 'new_release' || selectedPreset === 'update_typeface') && (
-              <div className="border border-vintage-ink p-5 bg-vintage-accent/5 space-y-3 font-mono">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs uppercase tracking-widest font-black flex items-center gap-2">
-                    <Sparkles size={14} className="text-vintage-accent" /> Select Target Typeface
-                  </label>
-                  <span className="text-[10px] opacity-70">
-                    {fontsList.length} Specimens Loaded (Recent First)
-                  </span>
+            {/* PREVIEW CONTAINER (FULL WIDTH WITH REALISTIC READING WIDTH) */}
+            <div className="max-w-2xl mx-auto border-2 border-vintage-ink bg-[#fdf6e3] shadow-md p-6 sm:p-8 font-serif text-[#2c241a]">
+              {/* Header Branding */}
+              <div className="text-center pb-5 mb-5 border-b-2 border-[#2c241a]">
+                <div className="text-[9px] uppercase tracking-[0.25em] text-[#8b6b4a] font-bold">
+                  ARCHIVAL TYPOGRAPHY DISPATCH
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={fontSearch}
-                      onChange={(e) => setFontSearch(e.target.value)}
-                      placeholder="SEARCH SPECIMEN..."
-                      className="w-full border border-vintage-ink pl-8 pr-3 py-2 text-xs bg-vintage-paper outline-none uppercase font-bold"
-                    />
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-vintage-ink/40" size={14} />
-                    {fontSearch && (
-                      <button
-                        type="button"
-                        onClick={() => setFontSearch('')}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold hover:underline"
-                      >
-                        CLEAR
-                      </button>
-                    )}
-                  </div>
-
-                  <div>
-                    <select
-                      value={selectedFontName}
-                      onChange={(e) => handleSelectFont(e.target.value)}
-                      className="w-full border border-vintage-ink p-2 text-xs uppercase font-mono bg-vintage-paper outline-none cursor-pointer font-bold"
-                    >
-                      <option value="">-- Choose Typeface --</option>
-                      {fontsList
-                        .filter(f => !fontSearch || f.name.toLowerCase().includes(fontSearch.toLowerCase().trim()))
-                        .map(f => (
-                          <option key={f.id} value={f.name}>
-                            {f.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
+                <div className="font-serif font-black text-2xl tracking-wider uppercase mt-1">
+                  BOMBASTYPE
                 </div>
+                <div className="text-[8px] font-mono tracking-widest text-[#6b5c4d] uppercase mt-1">
+                  FOUNDRY &amp; TYPE LAB &bull; EST. MMXXVI
+                </div>
+              </div>
 
-                {selectedFontName ? (
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-vintage-ink border border-vintage-ink/40 bg-vintage-ink/5 p-2">
-                    <Check size={12} />
-                    <span>Selected: <strong>{selectedFontName}</strong> — Campaign reference & [FONT_NAME] tokens automatically populated</span>
-                  </div>
-                ) : (
-                  <div className="text-[10px] italic opacity-70">
-                    Select a typeface specimen above to automatically populate [FONT_NAME] tokens and set campaign title.
-                  </div>
+              {/* Banner Image */}
+              {bannerUrl && (
+                <div className="mb-5 border border-[#2c241a] overflow-hidden">
+                  <img src={bannerUrl} alt="Banner" className="w-full h-auto object-cover" />
+                </div>
+              )}
+
+              {/* Title & Subtitle */}
+              <div className="text-center mb-5">
+                <h2 className="font-serif font-bold text-xl uppercase tracking-wide leading-tight">
+                  {headline || "MAIN HEADLINE"}
+                </h2>
+                {subtitle && (
+                  <p className="text-xs italic text-[#8b6b4a] mt-1 tracking-wide">
+                    {subtitle}
+                  </p>
                 )}
               </div>
-            )}
+
+              {/* Body */}
+              <div className="text-xs leading-relaxed text-[#3a2e22] whitespace-pre-line mb-6 font-serif">
+                {bodyText || "Your broadcast message will appear here in elegant archival formatting."}
+              </div>
+
+              {/* Coupon Box */}
+              {couponCode && (
+                <div className="border-2 border-dashed border-[#8b6b4a] bg-white p-4 text-center my-5">
+                  <div className="text-[9px] uppercase tracking-[0.15em] text-[#8b6b4a] font-bold mb-1">
+                    EXCLUSIVE VIP PRIVILEGE
+                  </div>
+                  <div className="font-mono text-lg font-bold text-[#2c241a] bg-[#fdf6e3] inline-block px-3 py-1 border border-[#2c241a] tracking-widest">
+                    {couponCode}
+                  </div>
+                  <div className="text-[10px] italic text-[#6b5c4d] mt-1">
+                    Apply this token at checkout to claim your archival discount.
+                  </div>
+                </div>
+              )}
+
+              {/* CTA Button */}
+              {buttonText && (
+                <div className="text-center my-6">
+                  <span className="inline-block bg-[#2c241a] text-[#fdf6e3] text-[10px] font-bold uppercase tracking-[0.15em] px-6 py-3 border border-[#2c241a]">
+                    {buttonText}
+                  </span>
+                </div>
+              )}
+
+              {/* Additional Modular Blocks Preview */}
+              {blocks.map((block, idx) => {
+                if (block.type === 'heading') {
+                  return (
+                    <div key={block.id || idx} className="text-center my-6 pt-5 border-t border-[#d1c7b7] border-dashed">
+                      <h3 className="font-serif font-bold text-base uppercase tracking-wide leading-tight text-[#2c241a]">
+                        {block.title || 'SECTION DISPATCH'}
+                      </h3>
+                      {block.subtitle && (
+                        <p className="text-[11px] italic text-[#8b6b4a] tracking-wide mt-1">
+                          {block.subtitle}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+                if (block.type === 'text') {
+                  return (
+                    <div key={block.id || idx} className="text-xs leading-relaxed text-[#3a2e22] whitespace-pre-line my-4 font-serif">
+                      {block.text || 'Message paragraph...'}
+                    </div>
+                  );
+                }
+                if (block.type === 'button') {
+                  return (
+                    <div key={block.id || idx} className="text-center my-5">
+                      <span className="inline-block bg-[#2c241a] text-[#fdf6e3] text-[10px] font-bold uppercase tracking-[0.15em] px-5 py-2.5 border border-[#2c241a]">
+                        {block.buttonText || 'BUTTON'}
+                      </span>
+                    </div>
+                  );
+                }
+                if (block.type === 'image') {
+                  return block.imageUrl ? (
+                    <div key={block.id || idx} className="my-5 text-center">
+                      <div className="border border-[#2c241a] overflow-hidden inline-block w-full">
+                        <img src={block.imageUrl} alt={block.imageCaption || 'Specimen image'} className="w-full h-auto object-cover" />
+                      </div>
+                      {block.imageCaption && (
+                        <div className="text-[10px] font-serif italic text-[#6b5c4d] tracking-wide mt-1">
+                          {block.imageCaption}
+                        </div>
+                      )}
+                    </div>
+                  ) : null;
+                }
+                return null;
+              })}
+
+              {/* Footer */}
+              <div className="text-center pt-4 border-t border-[#2c241a] text-[9px] text-[#6b5c4d] leading-relaxed">
+                <div className="font-bold text-[#2c241a] uppercase tracking-wider mb-0.5">
+                  BombasType Typography Studio
+                </div>
+                <div>You are receiving this communication as an esteemed patron or subscriber.</div>
+              </div>
+            </div>
+          </div>
 
             {/* EMAIL FIELDS */}
             <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4 text-xs font-mono">
@@ -1130,139 +1258,7 @@ export default function BroadcastStudio() {
               </button>
             </div>
           </div>
-
-          {/* RIGHT COLUMN: LIVE VISUAL EMAIL PREVIEW */}
-          <div className="lg:col-span-5 sticky top-20 space-y-3">
-            <div className="flex items-center justify-between text-xs uppercase tracking-widest font-black border-b border-vintage-ink pb-2">
-              <span className="flex items-center gap-2">
-                <Eye size={14} /> Archival Email Preview
-              </span>
-              <span className="text-[10px] font-mono font-normal opacity-60">Recipient View</span>
-            </div>
-
-            {/* PREVIEW CONTAINER */}
-            <div className="border-2 border-vintage-ink bg-[#fdf6e3] shadow-md p-6 font-serif text-[#2c241a] max-h-[750px] overflow-y-auto">
-              {/* Header Branding */}
-              <div className="text-center pb-5 mb-5 border-b-2 border-[#2c241a]">
-                <div className="text-[9px] uppercase tracking-[0.25em] text-[#8b6b4a] font-bold">
-                  ARCHIVAL TYPOGRAPHY DISPATCH
-                </div>
-                <div className="font-serif font-black text-2xl tracking-wider uppercase mt-1">
-                  BOMBASTYPE
-                </div>
-                <div className="text-[8px] font-mono tracking-widest text-[#6b5c4d] uppercase mt-1">
-                  FOUNDRY &amp; TYPE LAB &bull; EST. MMXXVI
-                </div>
-              </div>
-
-              {/* Banner Image */}
-              {bannerUrl && (
-                <div className="mb-5 border border-[#2c241a] overflow-hidden">
-                  <img src={bannerUrl} alt="Banner" className="w-full h-auto object-cover" />
-                </div>
-              )}
-
-              {/* Title & Subtitle */}
-              <div className="text-center mb-5">
-                <h2 className="font-serif font-bold text-xl uppercase tracking-wide leading-tight">
-                  {headline || "MAIN HEADLINE"}
-                </h2>
-                {subtitle && (
-                  <p className="text-xs italic text-[#8b6b4a] mt-1 tracking-wide">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-
-              {/* Body */}
-              <div className="text-xs leading-relaxed text-[#3a2e22] whitespace-pre-line mb-6 font-serif">
-                {bodyText || "Your broadcast message will appear here in elegant archival formatting."}
-              </div>
-
-              {/* Coupon Box */}
-              {couponCode && (
-                <div className="border-2 border-dashed border-[#8b6b4a] bg-white p-4 text-center my-5">
-                  <div className="text-[9px] uppercase tracking-[0.15em] text-[#8b6b4a] font-bold mb-1">
-                    EXCLUSIVE VIP PRIVILEGE
-                  </div>
-                  <div className="font-mono text-lg font-bold text-[#2c241a] bg-[#fdf6e3] inline-block px-3 py-1 border border-[#2c241a] tracking-widest">
-                    {couponCode}
-                  </div>
-                  <div className="text-[10px] italic text-[#6b5c4d] mt-1">
-                    Apply this token at checkout to claim your archival discount.
-                  </div>
-                </div>
-              )}
-
-              {/* CTA Button */}
-              {buttonText && (
-                <div className="text-center my-6">
-                  <span className="inline-block bg-[#2c241a] text-[#fdf6e3] text-[10px] font-bold uppercase tracking-[0.15em] px-6 py-3 border border-[#2c241a]">
-                    {buttonText}
-                  </span>
-                </div>
-              )}
-
-              {/* Additional Modular Blocks Preview */}
-              {blocks.map((block, idx) => {
-                if (block.type === 'heading') {
-                  return (
-                    <div key={block.id || idx} className="text-center my-6 pt-5 border-t border-[#d1c7b7] border-dashed">
-                      <h3 className="font-serif font-bold text-base uppercase tracking-wide leading-tight text-[#2c241a]">
-                        {block.title || 'SECTION DISPATCH'}
-                      </h3>
-                      {block.subtitle && (
-                        <p className="text-[11px] italic text-[#8b6b4a] tracking-wide mt-1">
-                          {block.subtitle}
-                        </p>
-                      )}
-                    </div>
-                  );
-                }
-                if (block.type === 'text') {
-                  return (
-                    <div key={block.id || idx} className="text-xs leading-relaxed text-[#3a2e22] whitespace-pre-line my-4 font-serif">
-                      {block.text || 'Message paragraph...'}
-                    </div>
-                  );
-                }
-                if (block.type === 'button') {
-                  return (
-                    <div key={block.id || idx} className="text-center my-5">
-                      <span className="inline-block bg-[#2c241a] text-[#fdf6e3] text-[10px] font-bold uppercase tracking-[0.15em] px-5 py-2.5 border border-[#2c241a]">
-                        {block.buttonText || 'BUTTON'}
-                      </span>
-                    </div>
-                  );
-                }
-                if (block.type === 'image') {
-                  return block.imageUrl ? (
-                    <div key={block.id || idx} className="my-5 text-center">
-                      <div className="border border-[#2c241a] overflow-hidden inline-block w-full">
-                        <img src={block.imageUrl} alt={block.imageCaption || 'Specimen image'} className="w-full h-auto object-cover" />
-                      </div>
-                      {block.imageCaption && (
-                        <div className="text-[10px] font-serif italic text-[#6b5c4d] tracking-wide mt-1">
-                          {block.imageCaption}
-                        </div>
-                      )}
-                    </div>
-                  ) : null;
-                }
-                return null;
-              })}
-
-              {/* Footer */}
-              <div className="text-center pt-4 border-t border-[#2c241a] text-[9px] text-[#6b5c4d] leading-relaxed">
-                <div className="font-bold text-[#2c241a] uppercase tracking-wider mb-0.5">
-                  BombasType Typography Studio
-                </div>
-                <div>You are receiving this communication as an esteemed patron or subscriber.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
 
       {/* TAB 2: CAMPAIGNS & MULTI-DAY QUEUE */}
       {activeTab === 'campaigns' && (
