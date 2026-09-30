@@ -258,7 +258,7 @@ export default function Footer() {
                       className="px-2.5 py-1.5 hover:bg-vintage-paper/10 text-vintage-paper/90 hover:text-white rounded transition-colors flex items-center justify-between tracking-widest text-[9px]"
                     >
                       <span>FONTOPSY</span>
-                      <span className="bg-[#D4A373] text-[#1E1B18] text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px]">NEW</span>
+                      <span className="bg-[#D4A373] text-[#1E1B18] text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px]">FREE</span>
                     </a>
                   </div>
                 )}

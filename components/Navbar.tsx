@@ -47,7 +47,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
   const toolLinks = [
     { name: "CANVAS", href: "https://canvas.bombastype.com", badge: "BETA" },
     { name: "FONTSHIFT", href: "https://fontshift.bombastype.com", badge: "FREE" },
-    { name: "FONTOPSY", href: "https://fontopsy.bombastype.com", badge: "NEW" },
+    { name: "FONTOPSY", href: "https://fontopsy.bombastype.com", badge: "FREE" },
   ];
 
   useEffect(() => {
