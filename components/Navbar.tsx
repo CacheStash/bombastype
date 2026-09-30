@@ -211,10 +211,12 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => setIsToolsDropdownOpen(false)}
-                        className="px-2.5 py-1.5 hover:bg-vintage-ink hover:text-vintage-paper text-vintage-ink transition-colors flex items-center justify-between tracking-widest text-[9px] font-bold rounded-[2px]"
+                        className="group/tool px-2.5 py-1.5 hover:bg-vintage-ink transition-colors flex items-center justify-between tracking-widest text-[9px] font-bold rounded-[2px]"
                       >
-                        <span>{tool.name}</span>
-                        <span className="bg-vintage-ink text-vintage-paper text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold rounded-[2px]">
+                        <span className="text-vintage-ink group-hover/tool:text-white transition-colors">
+                          {tool.name}
+                        </span>
+                        <span className="bg-vintage-ink text-vintage-paper group-hover/tool:bg-vintage-paper group-hover/tool:text-vintage-ink text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold rounded-[2px] transition-colors">
                           {tool.badge}
                         </span>
                       </a>
