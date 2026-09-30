@@ -1225,9 +1225,9 @@ export default function BroadcastStudio() {
             </div>
 
             {/* LAUNCH BUTTON */}
-            <div className="border border-vintage-ink p-5 bg-vintage-paper flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="border-2 border-[#2c241a] shadow-[4px_4px_0px_#2c241a] p-5 bg-[#fdf6e3] flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="text-xs font-mono">
-                <span className="font-bold text-vintage-ink">Batch Size Today: </span>
+                <span className="font-bold text-[#2c241a]">Batch Size Today: </span>
                 <span className="text-emerald-700 font-bold">
                   {Math.min(getTargetAudienceCount(), data.gas.allowedToday)} emails
                 </span>
@@ -1242,7 +1242,7 @@ export default function BroadcastStudio() {
                 type="button"
                 onClick={() => handleSendBroadcast()}
                 disabled={sending || getTargetAudienceCount() === 0 || data.gas.allowedToday === 0}
-                className="w-full md:w-auto px-8 py-3 bg-vintage-ink text-vintage-paper text-xs uppercase font-bold tracking-widest hover:bg-vintage-ink/90 transition-all disabled:opacity-40 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full md:w-auto px-8 py-3 bg-[#2c241a] text-[#fdf6e3] text-xs uppercase font-bold tracking-widest border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] hover:bg-[#8b6b4a] hover:text-[#fdf6e3] hover:border-[#8b6b4a] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#2c241a] disabled:hover:text-[#fdf6e3] disabled:hover:border-[#2c241a] disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:shadow-[3px_3px_0px_#8b6b4a] flex items-center justify-center gap-2 cursor-pointer"
               >
                 {sending ? (
                   <>
@@ -1311,7 +1311,7 @@ export default function BroadcastStudio() {
                         <button
                           onClick={() => handleSendBroadcast(camp.id)}
                           disabled={sending || !canContinue}
-                          className="px-5 py-2.5 bg-vintage-ink text-vintage-paper text-xs uppercase font-bold tracking-wider hover:bg-vintage-ink/90 transition-all disabled:opacity-40 flex items-center gap-2 cursor-pointer self-start md:self-auto"
+                          className="px-5 py-2.5 bg-[#2c241a] text-[#fdf6e3] text-xs uppercase font-bold tracking-wider border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] hover:bg-[#8b6b4a] hover:text-[#fdf6e3] hover:border-[#8b6b4a] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#2c241a] disabled:hover:text-[#fdf6e3] disabled:hover:border-[#2c241a] disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:shadow-[3px_3px_0px_#8b6b4a] flex items-center gap-2 cursor-pointer self-start md:self-auto"
                         >
                           <Send size={12} />
                           Continue Next Batch ({Math.min(remaining, data.gas.allowedToday)} emails)
