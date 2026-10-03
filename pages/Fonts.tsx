@@ -206,15 +206,32 @@ const Fonts: React.FC = () => {
 
   useEffect(() => {
     if (fonts.length > 0) {
+      // 1. Immediate Phase: Load primary font for each typeface so preview cards render instantly
       fonts.forEach(f => {
         const files = Array.isArray(f.font_files) ? f.font_files : [f.file_url];
+        const pIdx = f.metadata?.primary_font_index || 0;
+        const primaryFile = files[pIdx] || files[0];
+        if (!primaryFile) return;
         const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
-        files.forEach((file: string, idx: number) => {
-          if (!file) return;
-          const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=s2_${version}`;
-          loadProtectedFontFace(`${f.name}-${idx}`, url);
-        });
+        const url = primaryFile.startsWith('http') || primaryFile.startsWith('/') ? primaryFile : `/api/fonts/${primaryFile}?v=s2_${version}`;
+        loadProtectedFontFace(`${f.name}-${pIdx}`, url);
       });
+
+      // 2. Idle Phase: Defer secondary styles to prevent network request congestion
+      const timer = setTimeout(() => {
+        fonts.forEach(f => {
+          const files = Array.isArray(f.font_files) ? f.font_files : [f.file_url];
+          const pIdx = f.metadata?.primary_font_index || 0;
+          const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
+          files.forEach((file: string, idx: number) => {
+            if (!file || idx === pIdx) return;
+            const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=s2_${version}`;
+            loadProtectedFontFace(`${f.name}-${idx}`, url);
+          });
+        });
+      }, 600);
+
+      return () => clearTimeout(timer);
     }
   }, [fonts]);
 

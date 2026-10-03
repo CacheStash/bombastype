@@ -160,22 +160,23 @@ export default function Home() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data: featured } = await supabase.from('fonts').select('*').filter('metadata->is_featured', 'eq', true).limit(3);
-      const { data: recent } = await supabase
+      const { data: all, error } = await supabase
         .from('fonts')
         .select('*')
-        .filter('metadata->is_handpicked', 'eq', true)
-        .order('display_order', { ascending: true })
-        .limit(4);
-      const { data: all } = await supabase.from('fonts').select('*').order('name', { ascending: true });
+        .order('display_order', { ascending: true });
       
-      if (featured) setFeaturedFonts(featured);
-      if (recent) setRecentFonts(recent);
       if (all && all.length > 0) {
-        setAllFonts(all);
+        const featured = all.filter(f => f.metadata?.is_featured).slice(0, 3);
+        const recent = all.filter(f => f.metadata?.is_handpicked).slice(0, 4);
+        
+        setFeaturedFonts(featured.length > 0 ? featured : all.slice(0, 3));
+        setRecentFonts(recent.length > 0 ? recent : all.slice(0, 4));
+        
+        const sortedByName = [...all].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        setAllFonts(sortedByName);
         
         // AUTO SET DEFAULT TESTER KE "BRISWOOD"
-        const briswoodIdx = all.findIndex(f => f.name.toLowerCase().includes('briswood'));
+        const briswoodIdx = sortedByName.findIndex(f => f.name.toLowerCase().includes('briswood'));
         if (briswoodIdx !== -1) {
           setCurrentTesterFontIndex(briswoodIdx);
         } else {

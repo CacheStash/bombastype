@@ -16,6 +16,12 @@ import {
 export interface BroadcastBlock {
   id: string;
   type: 'heading' | 'text' | 'button' | 'image' | 'coupon';
+  dealKind?: 'coupon' | 'promotion';
+  promoId?: string;
+  promoName?: string;
+  promoDiscount?: number;
+  promoEndDate?: string;
+  promoTarget?: 'global' | 'bundle';
   title?: string;
   subtitle?: string;
   text?: string;
@@ -205,9 +211,19 @@ export default function BroadcastStudio() {
   const [targetMode, setTargetMode] = useState<'single' | 'audience'>('single');
   const buyerSearchRef = React.useRef<HTMLDivElement>(null);
 
-  // Seasonal Promotion Event State (for 'new_promotion' preset)
+  // Seasonal Promotion Event State & Supabase 'promotions' Table Integration
+  const [dbPromotions, setDbPromotions] = useState<any[]>([]);
+  const [selectedPromoId, setSelectedPromoId] = useState('');
   const [selectedEventName, setSelectedEventName] = useState('Eid Mubarak');
   const [promoDiscountPercent, setPromoDiscountPercent] = useState('30');
+  const [isCreatingNewPromo, setIsCreatingNewPromo] = useState(false);
+  const [newPromoName, setNewPromoName] = useState('');
+  const [newPromoDiscount, setNewPromoDiscount] = useState('30');
+  const [newPromoTarget, setNewPromoTarget] = useState<'global' | 'bundle'>('global');
+  const [newPromoSelectedFonts, setNewPromoSelectedFonts] = useState<string[]>([]);
+  const [newPromoStartDate, setNewPromoStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newPromoEndDate, setNewPromoEndDate] = useState('');
+  const [isSavingNewPromo, setIsSavingNewPromo] = useState(false);
 
   // Banner Upload & Google Drive Auto-Converter State
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -394,8 +410,123 @@ export default function BroadcastStudio() {
     setBodyText(prev => prev.replace(/\[BUYER_NAME\]/g, name));
   };
 
+  const fetchPromotions = async () => {
+    try {
+      const { data } = await supabase.from('promotions').select('*').order('created_at', { ascending: false });
+      if (data) setDbPromotions(data);
+    } catch (err) {
+      console.warn('Failed fetching promotions:', err);
+    }
+  };
+
+  const handleSelectPromo = (promoId: string) => {
+    setSelectedPromoId(promoId);
+    const promo = dbPromotions.find(p => p.id === promoId);
+    if (!promo) return;
+
+    setSelectedEventName(promo.name);
+    setPromoDiscountPercent(String(promo.discount_percent || 30));
+
+    const scopeText = promo.type === 'global' ? 'Store-Wide on All Archival Typefaces' : 'Special Discount on Selected Archival Specimens';
+    const urgency = promo.end_date ? `Valid until ${new Date(promo.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '';
+
+    setSubject(`[${promo.name}] Celebration: Up to ${promo.discount_percent}% Off ${promo.type === 'global' ? 'Site-Wide' : 'Special Selection'}`);
+    setHeadline(`${promo.name.toUpperCase()} SPECIAL SALE`);
+    setSubtitle(`${promo.discount_percent}% Price Reduction • ${scopeText}`);
+    setBodyText(`In honor of ${promo.name}, we are delighted to announce our limited-time ${promo.type === 'global' ? 'site-wide' : 'curated'} sale. Font licenses ${promo.type === 'global' ? 'across our entire archival catalog' : 'for selected specimens'} are automatically discounted by ${promo.discount_percent}% at checkout — no coupon code required.${urgency ? `\n\nThis promotional privilege concludes on ${urgency}.` : ''}\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`);
+    setButtonText(`EXPLORE ${promo.name.toUpperCase()} DEALS`);
+    setCampaignTitle(`Event Sale - ${promo.name}`);
+
+    // Automatically update or create promotion block in blocks
+    const existingPromoBlock = blocks.find(b => b.type === 'coupon');
+    if (existingPromoBlock) {
+      updateBlock(existingPromoBlock.id, {
+        dealKind: 'promotion',
+        promoId: promo.id,
+        promoName: promo.name,
+        promoDiscount: promo.discount_percent,
+        promoEndDate: promo.end_date,
+        promoTarget: promo.type,
+        couponCode: ''
+      });
+    } else {
+      setBlocks(prev => [...prev, {
+        id: `blk_promo_${Date.now()}`,
+        type: 'coupon',
+        dealKind: 'promotion',
+        promoId: promo.id,
+        promoName: promo.name,
+        promoDiscount: promo.discount_percent,
+        promoEndDate: promo.end_date,
+        promoTarget: promo.type,
+        couponCode: ''
+      }]);
+    }
+  };
+
+  const handleCreateNewPromotion = async (linkToBlockId?: string) => {
+    if (!newPromoName.trim() || !newPromoDiscount || !newPromoEndDate) {
+      alert("Please enter campaign name, discount percentage, and end date!");
+      return;
+    }
+    const discNum = parseFloat(newPromoDiscount);
+    if (isNaN(discNum) || discNum <= 0 || discNum > 100) {
+      alert("Discount must be between 1% and 100%!");
+      return;
+    }
+    if (newPromoTarget === 'bundle' && newPromoSelectedFonts.length === 0) {
+      alert("Please select at least one typeface for specific promo!");
+      return;
+    }
+
+    setIsSavingNewPromo(true);
+    try {
+      const payload = {
+        name: newPromoName.trim(),
+        discount_percent: discNum,
+        type: newPromoTarget,
+        font_ids: newPromoTarget === 'global' ? fontsList.map(f => f.id) : newPromoSelectedFonts,
+        start_date: newPromoStartDate || new Date().toISOString().split('T')[0],
+        end_date: newPromoEndDate,
+        is_active: true
+      };
+
+      const { data: inserted, error } = await supabase.from('promotions').insert([payload]).select();
+      if (error) throw error;
+
+      await fetchPromotions();
+      const createdPromo = inserted?.[0] || payload;
+
+      if (linkToBlockId) {
+        updateBlock(linkToBlockId, {
+          dealKind: 'promotion',
+          promoId: createdPromo.id,
+          promoName: createdPromo.name,
+          promoDiscount: createdPromo.discount_percent,
+          promoEndDate: createdPromo.end_date,
+          promoTarget: createdPromo.type,
+          couponCode: ''
+        });
+      } else {
+        handleSelectPromo(createdPromo.id);
+      }
+
+      setIsCreatingNewPromo(false);
+      setNewPromoName('');
+      setNewPromoDiscount('30');
+      setNewPromoEndDate('');
+      setNewPromoSelectedFonts([]);
+      alert(`Promotion "${createdPromo.name}" successfully commissioned and linked! It is now active in the Promotions menu.`);
+    } catch (err: any) {
+      alert("Failed to save promotion: " + err.message);
+    } finally {
+      setIsSavingNewPromo(false);
+    }
+  };
+
   const handleSelectEvent = (eventName: string) => {
     setSelectedEventName(eventName);
+    setSelectedPromoId('');
     const disc = promoDiscountPercent || '30';
     setSubject(`[${eventName}] Celebration: Up to ${disc}% Off Site-Wide`);
     setHeadline(`${eventName.toUpperCase()} SPECIAL SALE`);
@@ -507,6 +638,8 @@ export default function BroadcastStudio() {
     try {
       const { data: cData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
       if (cData) setDbCoupons(cData);
+
+      await fetchPromotions();
 
       const { data: buyers } = await supabase.from('fontbuyer').select('id, email, full_name');
       const { data: history } = await supabase.from('font_history').select('user_id, transaction_id, created_at').order('created_at', { ascending: false });
@@ -861,47 +994,84 @@ export default function BroadcastStudio() {
         <div className="space-y-6 max-w-4xl mx-auto">
           {/* 1. AUDIENCE SELECTOR CARD */}
           <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4">
-            <label className="text-xs uppercase tracking-widest font-black flex items-center gap-2">
-              <Users size={14} /> Target Audience
-            </label>
-            <div className="grid grid-cols-3 gap-3 text-xs font-mono">
-              <button
-                type="button"
-                onClick={() => setAudience('all')}
-                className={`p-3 border text-left transition-all cursor-pointer ${
-                  audience === 'all' 
-                    ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
-                    : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
-                }`}
-              >
-                <div className="font-bold">ALL AUDIENCE</div>
-                <div className="text-[10px] opacity-70 mt-1">{data.audience.totalUniqueCount} Unique Emails</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAudience('buyers')}
-                className={`p-3 border text-left transition-all cursor-pointer ${
-                  audience === 'buyers' 
-                    ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
-                    : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
-                }`}
-              >
-                <div className="font-bold">BUYERS ONLY</div>
-                <div className="text-[10px] opacity-70 mt-1">{data.audience.buyersCount} Verified Patrons</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAudience('subscribers')}
-                className={`p-3 border text-left transition-all cursor-pointer ${
-                  audience === 'subscribers' 
-                    ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
-                    : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
-                }`}
-              >
-                <div className="font-bold">SUBSCRIBERS</div>
-                <div className="text-[10px] opacity-70 mt-1">{data.audience.subscribersCount} Active Readers</div>
-              </button>
+            <div className="flex items-center justify-between">
+              <label className="text-xs uppercase tracking-widest font-black flex items-center gap-2">
+                <Users size={14} /> Target Audience
+              </label>
+              {selectedPreset === 'new_coupon' && targetMode === 'single' && (
+                <span className="text-[10px] font-mono font-bold uppercase text-emerald-800 bg-emerald-100 px-2 py-0.5 border border-emerald-300">
+                  Single Client Delivery Locked
+                </span>
+              )}
             </div>
+
+            {selectedPreset === 'new_coupon' && targetMode === 'single' ? (
+              <div className="border-2 border-[#8b6b4a] bg-[#8b6b4a]/10 p-4 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start sm:items-center gap-3">
+                    <UserCheck size={22} className="text-[#8b6b4a] shrink-0 mt-0.5 sm:mt-0" />
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wider text-[#2c241a] flex items-center gap-2">
+                        <span>🎯 Single Client Direct Delivery Mode Active</span>
+                        <span className="text-[10px] bg-[#2c241a] text-[#fdf6e3] px-2 py-0.5 font-mono">1 Recipient Only</span>
+                      </div>
+                      <div className="text-xs font-mono text-[#2c241a] mt-1">
+                        Delivering exclusively to: <strong className="text-vintage-accent underline">{selectedBuyerName || 'Patron'}</strong> &lt;{selectedBuyerEmail || 'No recipient selected yet'}&gt;
+                      </div>
+                      <div className="text-[10px] text-[#2c241a]/70 mt-0.5">
+                        Mass audience broadcasting is locked. Only this individual recipient will receive this dispatch.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTargetMode('audience')}
+                    className="px-3 py-1.5 border border-[#2c241a] bg-white text-[#2c241a] text-[10px] font-bold uppercase tracking-wider hover:bg-[#2c241a] hover:text-[#fdf6e3] transition-all cursor-pointer shrink-0 shadow-sm"
+                  >
+                    Switch to Audience Broadcast
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={() => setAudience('all')}
+                  className={`p-3 border text-left transition-all cursor-pointer ${
+                    audience === 'all' 
+                      ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
+                      : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
+                  }`}
+                >
+                  <div className="font-bold">ALL AUDIENCE</div>
+                  <div className="text-[10px] opacity-70 mt-1">{data.audience.totalUniqueCount} Unique Emails</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAudience('buyers')}
+                  className={`p-3 border text-left transition-all cursor-pointer ${
+                    audience === 'buyers' 
+                      ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
+                      : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
+                  }`}
+                >
+                  <div className="font-bold">BUYERS ONLY</div>
+                  <div className="text-[10px] opacity-70 mt-1">{data.audience.buyersCount} Verified Patrons</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAudience('subscribers')}
+                  className={`p-3 border text-left transition-all cursor-pointer ${
+                    audience === 'subscribers' 
+                      ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
+                      : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
+                  }`}
+                >
+                  <div className="font-bold">SUBSCRIBERS</div>
+                  <div className="text-[10px] opacity-70 mt-1">{data.audience.subscribersCount} Active Readers</div>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 2. PRESET SELECTOR */}
@@ -1130,23 +1300,192 @@ export default function BroadcastStudio() {
             </div>
           )}
 
-          {/* 3C. SEASONAL EVENT SELECTOR (FOR NEW_PROMOTION PRESET) */}
+          {/* 3C. SEASONAL EVENT & PROMOTIONS SELECTOR (FOR NEW_PROMOTION PRESET) */}
           {selectedPreset === 'new_promotion' && (
             <div className="border border-vintage-ink p-5 bg-vintage-accent/5 space-y-4">
               <div className="flex items-center justify-between border-b border-vintage-ink/30 pb-2">
                 <div className="flex items-center gap-2">
                   <Sparkles size={15} className="text-[#8b6b4a]" />
                   <span className="text-xs uppercase tracking-widest font-black">
-                    Seasonal Event Selector (Site-Wide Discount)
+                    Seasonal Event &amp; Promotion Selector (Direct Discount)
                   </span>
                 </div>
-                <span className="text-[10px] font-mono opacity-70">Direct Sale (No Token Required)</span>
+                <span className="text-[10px] font-mono opacity-70">Integrated with Promotions Table</span>
               </div>
 
-              {/* QUICK EVENT CHIPS */}
-              <div className="space-y-2">
+              {/* 1. SELECT EXISTING FROM DB PROMOTIONS */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold uppercase tracking-wider block text-vintage-ink">
+                    Load Active Promotion from Database ({dbPromotions.length} Available):
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingNewPromo(!isCreatingNewPromo)}
+                    className="text-[10px] font-bold uppercase tracking-wider text-[#8b6b4a] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus size={12} /> {isCreatingNewPromo ? 'Cancel Promotion Form' : '+ Create New Promotion'}
+                  </button>
+                </div>
+                <select
+                  value={selectedPromoId}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleSelectPromo(e.target.value);
+                    } else {
+                      setSelectedPromoId('');
+                    }
+                  }}
+                  className="w-full border border-vintage-ink p-2 text-xs bg-white outline-none font-bold"
+                >
+                  <option value="">-- Choose Existing Promotion from Database --</option>
+                  {dbPromotions.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — {p.discount_percent}% OFF ({p.type === 'global' ? 'Store-Wide' : 'Specific Fonts'}) {p.end_date ? `[Valid until ${p.end_date}]` : ''}
+                    </option>
+                  ))}
+                </select>
+                {selectedPromoId && (
+                  <div className="text-[10px] font-mono text-emerald-800 bg-emerald-50 border border-emerald-300 p-2 flex items-center justify-between mt-1">
+                    <span>✓ Linked to database promotion: <strong>{selectedEventName}</strong> ({promoDiscountPercent}% OFF)</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPromoId('');
+                        setSelectedEventName('Eid Mubarak');
+                      }}
+                      className="text-xs font-bold text-vintage-ink underline hover:opacity-75"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. INLINE CREATE NEW PROMOTION FORM */}
+              {isCreatingNewPromo && (
+                <div className="border border-vintage-ink p-4 bg-white space-y-3">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink border-b border-vintage-ink/20 pb-1 flex items-center justify-between">
+                    <span>Commission New Promotion in Supabase</span>
+                    <span className="text-[9px] text-[#8b6b4a] font-normal">Auto-syncs with Promotions menu</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] font-bold uppercase block mb-1">Promotion Name</label>
+                      <input
+                        type="text"
+                        value={newPromoName}
+                        onChange={(e) => setNewPromoName(e.target.value)}
+                        placeholder="e.g. Ramadan Kareem Sale"
+                        className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold uppercase block mb-1">Discount (%)</label>
+                      <input
+                        type="number"
+                        value={newPromoDiscount}
+                        onChange={(e) => setNewPromoDiscount(e.target.value)}
+                        placeholder="30"
+                        className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* SCOPE SELECTOR */}
+                  <div>
+                    <label className="text-[9px] font-bold uppercase block mb-1">Target Scope</label>
+                    <div className="flex gap-4 text-xs font-bold uppercase">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="promoScope"
+                          checked={newPromoTarget === 'global'}
+                          onChange={() => setNewPromoTarget('global')}
+                        />
+                        <span>Store-wide (All Typefaces)</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="promoScope"
+                          checked={newPromoTarget === 'bundle'}
+                          onChange={() => setNewPromoTarget('bundle')}
+                        />
+                        <span>Specific Selected Typefaces</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* SPECIFIC FONTS SELECTION */}
+                  {newPromoTarget === 'bundle' && (
+                    <div className="border border-vintage-ink/40 p-3 bg-vintage-paper/50 space-y-2 max-h-48 overflow-y-auto">
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-vintage-ink/70">
+                        Check Target Typefaces ({newPromoSelectedFonts.length} selected):
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {fontsList.map(f => {
+                          const checked = newPromoSelectedFonts.includes(f.id);
+                          return (
+                            <label key={f.id} className="flex items-center gap-1.5 text-[11px] font-mono cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  if (checked) {
+                                    setNewPromoSelectedFonts(prev => prev.filter(id => id !== f.id));
+                                  } else {
+                                    setNewPromoSelectedFonts(prev => [...prev, f.id]);
+                                  }
+                                }}
+                              />
+                              <span className="truncate">{f.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] font-bold uppercase block mb-1">Start Date</label>
+                      <input
+                        type="date"
+                        value={newPromoStartDate}
+                        onChange={(e) => setNewPromoStartDate(e.target.value)}
+                        className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold uppercase block mb-1">End Date (Required)</label>
+                      <input
+                        type="date"
+                        value={newPromoEndDate}
+                        onChange={(e) => setNewPromoEndDate(e.target.value)}
+                        className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleCreateNewPromotion()}
+                      disabled={isSavingNewPromo}
+                      className="px-4 py-2 bg-[#2c241a] text-[#fdf6e3] text-[10px] uppercase font-bold tracking-wider hover:bg-[#8b6b4a] transition-all cursor-pointer disabled:opacity-40"
+                    >
+                      {isSavingNewPromo ? 'Commissioning...' : 'Save & Link to Broadcast'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* QUICK EVENT CHIPS (FALLBACK / MANUAL) */}
+              <div className="space-y-2 pt-1 border-t border-vintage-ink/20">
                 <label className="text-[10px] font-bold uppercase tracking-wider block text-vintage-ink/70">
-                  Select Event Celebration:
+                  Or Quick Preset Celebration:
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -1162,7 +1501,7 @@ export default function BroadcastStudio() {
                       type="button"
                       onClick={() => handleSelectEvent(evt)}
                       className={`px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider border transition-all cursor-pointer ${
-                        selectedEventName === evt
+                        selectedEventName === evt && !selectedPromoId
                           ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]'
                           : 'bg-white text-[#2c241a] border-vintage-ink/40 hover:bg-[#2c241a]/5'
                       }`}
@@ -1176,7 +1515,7 @@ export default function BroadcastStudio() {
               {/* CUSTOM EVENT OR DISCOUNT ADJUSTMENT */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Event Name</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Event Display Name</label>
                   <input
                     type="text"
                     value={selectedEventName}
@@ -1186,7 +1525,7 @@ export default function BroadcastStudio() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Site-wide Discount (%)</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Discount Rate (%)</label>
                   <input
                     type="number"
                     value={promoDiscountPercent}
@@ -1277,6 +1616,33 @@ export default function BroadcastStudio() {
               {/* Additional Modular Blocks Preview */}
               {blocks.map((block, idx) => {
                 if (block.type === 'coupon') {
+                  if (block.dealKind === 'promotion') {
+                    const pName = block.promoName || selectedEventName || 'SPECIAL STORE PROMOTION';
+                    const pDiscount = block.promoDiscount ? `${block.promoDiscount}% OFF` : `${promoDiscountPercent}% OFF`;
+                    const pScope = block.promoTarget === 'bundle' ? 'ON SELECTED ARCHIVAL SPECIMENS' : 'STORE-WIDE ON ALL TYPEFACES';
+                    const pUrgency = block.promoEndDate ? `Valid until ${new Date(block.promoEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '';
+                    return (
+                      <div key={block.id || idx} className="border-2 border-dashed border-[#8b6b4a] bg-white p-6 text-center my-6 shadow-sm">
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-[#8b6b4a] font-bold mb-1">
+                          {pName}
+                        </div>
+                        <div className="font-serif font-black text-3xl text-[#2c241a] my-2">
+                          {pDiscount}
+                        </div>
+                        <div className="text-xs font-bold uppercase tracking-wider text-[#2c241a] mb-1">
+                          {pScope}
+                        </div>
+                        <div className="text-[11px] italic text-[#6b5c4d] mt-1">
+                          No coupon code required &bull; Discount automatically applied at checkout.
+                        </div>
+                        {pUrgency && (
+                          <div className="mt-2.5 text-[10px] font-bold text-[#8b6b4a] bg-[#fffdf5] inline-block px-3 py-1 border border-[#d1c7b7]">
+                            ⏳ {pUrgency}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
                   const cCode = block.couponCode || couponCode || '';
                   const cDiscount = block.couponDiscount ? `${block.couponDiscount}% OFF` : '';
                   const cUrgency = block.couponUrgencyText || '';
@@ -1786,126 +2152,255 @@ export default function BroadcastStudio() {
 
                       {block.type === 'coupon' && (
                         <div className="space-y-4 bg-vintage-accent/5 p-4 border border-vintage-ink/30">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <label className="text-[11px] uppercase font-bold tracking-wider flex items-center gap-1.5 text-vintage-ink">
-                              <Tag size={13} className="text-[#8b6b4a]" /> Select Active Coupon from Database
+                          {/* DEAL KIND TOGGLE: COUPON CODE VS STORE DISCOUNT PROMOTION */}
+                          <div className="flex flex-wrap items-center gap-4 text-xs font-bold uppercase border-b border-vintage-ink/20 pb-2">
+                            <span className="text-[10px] opacity-70">Deal Type:</span>
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`deal_kind_${block.id}`}
+                                checked={block.dealKind !== 'promotion'}
+                                onChange={() => updateBlock(block.id, { dealKind: 'coupon' })}
+                              />
+                              <span>Coupon Token Box (Code required)</span>
                             </label>
-                            <button
-                              type="button"
-                              onClick={() => setIsAddingNewCoupon(isAddingNewCoupon === block.id ? null : block.id)}
-                              className="text-[10px] font-bold uppercase tracking-wider text-[#8b6b4a] hover:underline flex items-center gap-1 cursor-pointer"
-                            >
-                              <Plus size={12} /> {isAddingNewCoupon === block.id ? 'Cancel New Coupon' : 'Create New Coupon'}
-                            </button>
-                          </div>
-
-                          {/* SELECT FROM DB COUPONS */}
-                          <div>
-                            <select
-                              value={block.couponCode || ''}
-                              onChange={(e) => {
-                                const selCode = e.target.value;
-                                const found = dbCoupons.find(c => c.code === selCode);
-                                if (found) {
-                                  const urgency = computeUrgencyText(found);
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`deal_kind_${block.id}`}
+                                checked={block.dealKind === 'promotion'}
+                                onChange={() => {
+                                  const topPromo = dbPromotions[0];
                                   updateBlock(block.id, {
-                                    couponCode: found.code,
-                                    couponDiscount: found.discount_value,
-                                    couponEndDate: found.end_date,
-                                    couponMaxUses: found.max_uses,
-                                    couponUrgencyText: urgency
+                                    dealKind: 'promotion',
+                                    promoId: topPromo ? topPromo.id : undefined,
+                                    promoName: topPromo ? topPromo.name : (selectedEventName || 'Seasonal Promotion'),
+                                    promoDiscount: topPromo ? topPromo.discount_percent : parseFloat(promoDiscountPercent) || 30,
+                                    promoEndDate: topPromo ? topPromo.end_date : undefined,
+                                    promoTarget: topPromo ? topPromo.type : 'global',
+                                    couponCode: ''
                                   });
-                                  setCouponCode(found.code);
-                                } else {
-                                  updateBlock(block.id, { couponCode: selCode });
-                                  setCouponCode(selCode);
-                                }
-                              }}
-                              className="w-full border border-vintage-ink p-2 bg-white outline-none font-bold text-xs"
-                            >
-                              <option value="">-- Choose Coupon from Database ({dbCoupons.length} Active) --</option>
-                              {dbCoupons.map(c => (
-                                <option key={c.id} value={c.code}>
-                                  {c.code} — {c.discount_value}% OFF {c.end_date ? `(Valid until ${c.end_date})` : ''} {c.max_uses ? `[Limit: ${c.max_uses} uses]` : ''}
-                                </option>
-                              ))}
-                            </select>
+                                }}
+                              />
+                              <span>Store Discount Promotion (Direct discount, no code)</span>
+                            </label>
                           </div>
 
-                          {/* INLINE NEW COUPON CREATOR */}
-                          {isAddingNewCoupon === block.id && (
-                            <div className="border border-vintage-ink p-4 bg-white space-y-3 mt-3">
-                              <div className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink border-b border-vintage-ink/20 pb-1 flex items-center justify-between">
-                                <span>Register New Coupon to Supabase</span>
-                                <span className="text-[9px] text-[#8b6b4a] font-normal">Auto-syncs with Promotions menu</span>
+                          {/* OPTION A: STORE DISCOUNT PROMOTION */}
+                          {block.dealKind === 'promotion' ? (
+                            <div className="space-y-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <label className="text-[11px] uppercase font-bold tracking-wider flex items-center gap-1.5 text-vintage-ink">
+                                  <Sparkles size={13} className="text-[#8b6b4a]" /> Select Active Promotion from Database
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsCreatingNewPromo(!isCreatingNewPromo)}
+                                  className="text-[10px] font-bold uppercase tracking-wider text-[#8b6b4a] hover:underline flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Plus size={12} /> {isCreatingNewPromo ? 'Cancel New Promotion' : 'Commission New Promotion'}
+                                </button>
                               </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                              <select
+                                value={block.promoId || ''}
+                                onChange={(e) => {
+                                  const selId = e.target.value;
+                                  const found = dbPromotions.find(p => p.id === selId);
+                                  if (found) {
+                                    updateBlock(block.id, {
+                                      promoId: found.id,
+                                      promoName: found.name,
+                                      promoDiscount: found.discount_percent,
+                                      promoEndDate: found.end_date,
+                                      promoTarget: found.type,
+                                      couponCode: ''
+                                    });
+                                  } else {
+                                    updateBlock(block.id, { promoId: '', couponCode: '' });
+                                  }
+                                }}
+                                className="w-full border border-vintage-ink p-2 bg-white outline-none font-bold text-xs"
+                              >
+                                <option value="">-- Choose Promotion from Database ({dbPromotions.length} Active) --</option>
+                                {dbPromotions.map(p => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name} — {p.discount_percent}% OFF ({p.type === 'global' ? 'Store-Wide' : 'Specific Fonts'}) {p.end_date ? `(Valid until ${p.end_date})` : ''}
+                                  </option>
+                                ))}
+                              </select>
+
+                              {/* PROMOTION CUSTOMIZATION FIELDS */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                                 <div>
-                                  <label className="text-[9px] font-bold uppercase block mb-1">Coupon Token</label>
+                                  <label className="text-[9px] font-bold uppercase block mb-1">Banner Title</label>
                                   <input
                                     type="text"
-                                    value={newCouponCode}
-                                    onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
-                                    placeholder="e.g. VIP25OFF"
-                                    className="w-full border border-vintage-ink p-2 text-xs font-bold uppercase outline-none"
+                                    value={block.promoName || ''}
+                                    onChange={(e) => updateBlock(block.id, { promoName: e.target.value })}
+                                    placeholder="e.g. SPECIAL ARCHIVAL SALE"
+                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none bg-white"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-[9px] font-bold uppercase block mb-1">Discount (%)</label>
+                                  <label className="text-[9px] font-bold uppercase block mb-1">Discount Rate (%)</label>
                                   <input
                                     type="number"
-                                    value={newCouponDiscount}
-                                    onChange={(e) => setNewCouponDiscount(e.target.value)}
-                                    placeholder="25"
-                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
+                                    value={block.promoDiscount || 30}
+                                    onChange={(e) => updateBlock(block.id, { promoDiscount: parseFloat(e.target.value) || 0 })}
+                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none bg-white"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-[9px] font-bold uppercase block mb-1">Max Redemptions / Uses</label>
-                                  <input
-                                    type="number"
-                                    value={newCouponMaxUses}
-                                    onChange={(e) => setNewCouponMaxUses(e.target.value)}
-                                    placeholder="1"
-                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
-                                  />
+                                  <label className="text-[9px] font-bold uppercase block mb-1">Target Scope</label>
+                                  <select
+                                    value={block.promoTarget || 'global'}
+                                    onChange={(e) => updateBlock(block.id, { promoTarget: e.target.value as any })}
+                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none bg-white"
+                                  >
+                                    <option value="global">Store-wide (All Typefaces)</option>
+                                    <option value="bundle">Specific Selected Typefaces</option>
+                                  </select>
                                 </div>
                                 <div>
                                   <label className="text-[9px] font-bold uppercase block mb-1">Expiry Date</label>
                                   <input
                                     type="date"
-                                    value={newCouponEndDate}
-                                    onChange={(e) => setNewCouponEndDate(e.target.value)}
-                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none cursor-pointer"
+                                    value={block.promoEndDate || ''}
+                                    onChange={(e) => updateBlock(block.id, { promoEndDate: e.target.value })}
+                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none bg-white cursor-pointer"
                                   />
                                 </div>
                               </div>
-                              <div className="flex justify-end pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleCreateDbCoupon(block.id)}
-                                  disabled={isSavingNewCoupon}
-                                  className="px-4 py-2 bg-[#2c241a] text-[#fdf6e3] text-[10px] uppercase font-bold tracking-wider hover:bg-[#8b6b4a] transition-all cursor-pointer disabled:opacity-40"
-                                >
-                                  {isSavingNewCoupon ? 'Registering...' : 'Save & Link Coupon'}
-                                </button>
+                              <div className="text-[10px] italic text-[#6b5c4d] bg-white/70 p-2 border border-vintage-ink/20">
+                                ℹ️ This section renders a clean promotional discount banner in the email. No coupon code token box is displayed.
                               </div>
                             </div>
-                          )}
+                          ) : (
+                            /* OPTION B: COUPON CODE TOKEN */
+                            <>
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <label className="text-[11px] uppercase font-bold tracking-wider flex items-center gap-1.5 text-vintage-ink">
+                                  <Tag size={13} className="text-[#8b6b4a]" /> Select Active Coupon from Database
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsAddingNewCoupon(isAddingNewCoupon === block.id ? null : block.id)}
+                                  className="text-[10px] font-bold uppercase tracking-wider text-[#8b6b4a] hover:underline flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Plus size={12} /> {isAddingNewCoupon === block.id ? 'Cancel New Coupon' : 'Create New Coupon'}
+                                </button>
+                              </div>
 
-                          {/* DETECTED URGENCY TEXT */}
-                          <div>
-                            <label className="text-[9px] font-bold uppercase tracking-wider block mb-1 text-vintage-ink/70">
-                              Promotional Urgency Note (Auto-detected from expiry / usage limit)
-                            </label>
-                            <input
-                              type="text"
-                              value={block.couponUrgencyText || ''}
-                              onChange={(e) => updateBlock(block.id, { couponUrgencyText: e.target.value })}
-                              placeholder="e.g. ⏳ Limited Time: Valid until Oct 31 • ⚡ Strictly limited to 1 use"
-                              className="w-full border border-vintage-ink p-2 bg-white outline-none text-xs"
-                            />
-                          </div>
+                              {/* SELECT FROM DB COUPONS */}
+                              <div>
+                                <select
+                                  value={block.couponCode || ''}
+                                  onChange={(e) => {
+                                    const selCode = e.target.value;
+                                    const found = dbCoupons.find(c => c.code === selCode);
+                                    if (found) {
+                                      const urgency = computeUrgencyText(found);
+                                      updateBlock(block.id, {
+                                        couponCode: found.code,
+                                        couponDiscount: found.discount_value,
+                                        couponEndDate: found.end_date,
+                                        couponMaxUses: found.max_uses,
+                                        couponUrgencyText: urgency
+                                      });
+                                      setCouponCode(found.code);
+                                    } else {
+                                      updateBlock(block.id, { couponCode: selCode });
+                                      setCouponCode(selCode);
+                                    }
+                                  }}
+                                  className="w-full border border-vintage-ink p-2 bg-white outline-none font-bold text-xs"
+                                >
+                                  <option value="">-- Choose Coupon from Database ({dbCoupons.length} Active) --</option>
+                                  {dbCoupons.map(c => (
+                                    <option key={c.id} value={c.code}>
+                                      {c.code} — {c.discount_value}% OFF {c.end_date ? `(Valid until ${c.end_date})` : ''} {c.max_uses ? `[Limit: ${c.max_uses} uses]` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* INLINE NEW COUPON CREATOR */}
+                              {isAddingNewCoupon === block.id && (
+                                <div className="border border-vintage-ink p-4 bg-white space-y-3 mt-3">
+                                  <div className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink border-b border-vintage-ink/20 pb-1 flex items-center justify-between">
+                                    <span>Register New Coupon to Supabase</span>
+                                    <span className="text-[9px] text-[#8b6b4a] font-normal">Auto-syncs with Promotions menu</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="text-[9px] font-bold uppercase block mb-1">Coupon Token</label>
+                                      <input
+                                        type="text"
+                                        value={newCouponCode}
+                                        onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+                                        placeholder="e.g. VIP25OFF"
+                                        className="w-full border border-vintage-ink p-2 text-xs font-bold uppercase outline-none"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] font-bold uppercase block mb-1">Discount (%)</label>
+                                      <input
+                                        type="number"
+                                        value={newCouponDiscount}
+                                        onChange={(e) => setNewCouponDiscount(e.target.value)}
+                                        placeholder="25"
+                                        className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] font-bold uppercase block mb-1">Max Redemptions / Uses</label>
+                                      <input
+                                        type="number"
+                                        value={newCouponMaxUses}
+                                        onChange={(e) => setNewCouponMaxUses(e.target.value)}
+                                        placeholder="1"
+                                        className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] font-bold uppercase block mb-1">Expiry Date</label>
+                                      <input
+                                        type="date"
+                                        value={newCouponEndDate}
+                                        onChange={(e) => setNewCouponEndDate(e.target.value)}
+                                        className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none cursor-pointer"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end pt-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCreateDbCoupon(block.id)}
+                                      disabled={isSavingNewCoupon}
+                                      className="px-4 py-2 bg-[#2c241a] text-[#fdf6e3] text-[10px] uppercase font-bold tracking-wider hover:bg-[#8b6b4a] transition-all cursor-pointer disabled:opacity-40"
+                                    >
+                                      {isSavingNewCoupon ? 'Registering...' : 'Save & Link Coupon'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* DETECTED URGENCY TEXT */}
+                              <div>
+                                <label className="text-[9px] font-bold uppercase tracking-wider block mb-1 text-vintage-ink/70">
+                                  Promotional Urgency Note (Auto-detected from expiry / usage limit)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={block.couponUrgencyText || ''}
+                                  onChange={(e) => updateBlock(block.id, { couponUrgencyText: e.target.value })}
+                                  placeholder="e.g. ⏳ Limited Time: Valid until Oct 31 • ⚡ Strictly limited to 1 use"
+                                  className="w-full border border-vintage-ink p-2 bg-white outline-none text-xs"
+                                />
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1917,13 +2412,27 @@ export default function BroadcastStudio() {
             {/* LAUNCH BUTTON */}
             <div className="border-2 border-[#2c241a] shadow-[4px_4px_0px_#2c241a] p-5 bg-[#fdf6e3] flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="text-xs font-mono">
-                <span className="font-bold text-[#2c241a]">Batch Size Today: </span>
-                <span className="text-emerald-700 font-bold">
-                  {Math.min(getTargetAudienceCount(), data.gas.allowedToday)} emails
-                </span>
-                {getTargetAudienceCount() > data.gas.allowedToday && (
-                  <div className="text-[10px] text-amber-800 mt-0.5">
-                    Remaining {getTargetAudienceCount() - data.gas.allowedToday} emails queued for Day 2 continuation.
+                {selectedPreset === 'new_coupon' && targetMode === 'single' ? (
+                  <div>
+                    <span className="font-bold text-[#2c241a]">Delivery Mode: </span>
+                    <span className="text-emerald-700 font-bold">
+                      Direct Single Patron Delivery (1 email)
+                    </span>
+                    <div className="text-[10px] text-[#2c241a]/70 mt-0.5">
+                      Recipient: <strong>{selectedBuyerName || 'Patron'}</strong> ({selectedBuyerEmail || 'no email'})
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="font-bold text-[#2c241a]">Batch Size Today: </span>
+                    <span className="text-emerald-700 font-bold">
+                      {Math.min(getTargetAudienceCount(), data.gas.allowedToday)} emails
+                    </span>
+                    {getTargetAudienceCount() > data.gas.allowedToday && (
+                      <div className="text-[10px] text-amber-800 mt-0.5">
+                        Remaining {getTargetAudienceCount() - data.gas.allowedToday} emails queued for Day 2 continuation.
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1931,18 +2440,26 @@ export default function BroadcastStudio() {
               <button
                 type="button"
                 onClick={() => handleSendBroadcast()}
-                disabled={sending || getTargetAudienceCount() === 0 || data.gas.allowedToday === 0}
+                disabled={
+                  sending || 
+                  data.gas.allowedToday === 0 ||
+                  (selectedPreset === 'new_coupon' && targetMode === 'single' 
+                    ? (!selectedBuyerEmail || !selectedBuyerEmail.includes('@')) 
+                    : getTargetAudienceCount() === 0)
+                }
                 className="w-full md:w-auto px-8 py-3 bg-[#2c241a] text-[#fdf6e3] text-xs uppercase font-bold tracking-widest border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] hover:bg-[#8b6b4a] hover:text-[#fdf6e3] hover:border-[#8b6b4a] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#2c241a] disabled:hover:text-[#fdf6e3] disabled:hover:border-[#2c241a] disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:shadow-[3px_3px_0px_#8b6b4a] flex items-center justify-center gap-2 cursor-pointer"
               >
                 {sending ? (
                   <>
                     <RefreshCw size={14} className="animate-spin" />
-                    Dispatching Batch...
+                    Dispatching {selectedPreset === 'new_coupon' && targetMode === 'single' ? 'Private Deal...' : 'Batch...'}
                   </>
                 ) : (
                   <>
                     <Send size={14} />
-                    Launch Broadcast Batch
+                    {selectedPreset === 'new_coupon' && targetMode === 'single'
+                      ? 'Send Private Voucher Deal (1 Email)'
+                      : 'Launch Broadcast Batch'}
                   </>
                 )}
               </button>

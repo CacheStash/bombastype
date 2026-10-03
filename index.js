@@ -527,6 +527,21 @@ function generateBroadcastEmailHtml({ preset, title, subtitle, bodyText, bannerU
       `;
     }
     if (block.type === 'coupon') {
+      if (block.dealKind === 'promotion') {
+        const promoName = block.promoName || 'SPECIAL STORE PROMOTION';
+        const promoDiscount = block.promoDiscount ? `${block.promoDiscount}% OFF` : 'SPECIAL DISCOUNT';
+        const promoScope = block.promoTarget === 'global' ? 'STORE-WIDE ON ALL TYPEFACES' : 'ON SELECTED TYPEFACES';
+        const promoUrgency = block.promoEndDate ? `Valid until ${new Date(block.promoEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '';
+        return `
+          <div style="background-color: #ffffff; border: 2px dashed #8b6b4a; padding: 22px 24px; margin: 24px 0; text-align: center;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #8b6b4a; font-weight: 700; margin-bottom: 6px;">${promoName}</div>
+            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 32px; font-weight: 900; color: #2c241a; margin: 6px 0;">${promoDiscount}</div>
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #2c241a; margin-bottom: 6px;">${promoScope}</div>
+            <div style="font-size: 12px; font-style: italic; color: #6b5c4d; margin-top: 4px;">No coupon code required &bull; Discount automatically applied at checkout.</div>
+            ${promoUrgency ? `<div style="margin-top: 10px; font-size: 11px; font-weight: 700; color: #8b6b4a; background-color: #fffdf5; display: inline-block; padding: 4px 10px; border: 1px solid #d1c7b7;">⏳ ${promoUrgency}</div>` : ''}
+          </div>
+        `;
+      }
       const cCode = block.couponCode || couponCode || '';
       const cDiscount = block.couponDiscount ? `${block.couponDiscount}% OFF` : '';
       const cUrgency = block.couponUrgencyText || '';
@@ -858,7 +873,7 @@ export default {
           headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
           headers.set('Access-Control-Expose-Headers', '*');
           headers.set('Vary', 'Origin');
-          headers.set('Cache-Control', 'public, max-age=0, s-maxage=31536000, must-revalidate');
+          headers.set('Cache-Control', 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800');
           return new Response(cachedResponse.body, {
             status: cachedResponse.status,
             headers
@@ -882,7 +897,7 @@ export default {
         baseHeaders.set('X-Content-Type-Options', 'nosniff');
         baseHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         baseHeaders.set('X-Font-Protection', isRawRequested ? 'none' : 'subqi-shield-v1');
-        baseHeaders.set('Cache-Control', 'public, max-age=0, s-maxage=31536000, must-revalidate');
+        baseHeaders.set('Cache-Control', 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800');
 
         const responseToCache = new Response(finalBody, { headers: baseHeaders });
         ctx.waitUntil(cache.put(cacheKey, responseToCache.clone()));
