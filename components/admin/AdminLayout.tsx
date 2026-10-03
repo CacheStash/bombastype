@@ -29,8 +29,14 @@ const AdminDashboard = () => {
   // --- LOGIC ---
 
   useEffect(() => {
-    fetchUnreadCount();
-    fetchSiteSettings();
+    // Concurrent initial data loading for minimal dashboard latency
+    Promise.all([fetchUnreadCount(), fetchSiteSettings()]);
+
+    const handleSwitchTab = (e: any) => {
+      if (e.detail) setActiveTab(e.detail);
+    };
+    window.addEventListener('admin-switch-tab', handleSwitchTab);
+    return () => window.removeEventListener('admin-switch-tab', handleSwitchTab);
   }, []);
 
   const fetchSiteSettings = async () => {
@@ -109,7 +115,9 @@ const AdminDashboard = () => {
   };
 
   const fetchUnreadCount = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    // Read local session directly to avoid redundant network round-trip of getUser()
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) return;
 
     const { count } = await supabase
@@ -155,7 +163,7 @@ const AdminDashboard = () => {
       case 'broadcast': return <BroadcastStudio />;
       case 'inbox': return <BroadcastStudio />;
       case 'products': return <ProductManager />;
-      case 'promotions': return <PromotionsManager />;
+      case 'promotions': return <PromotionsManager onNavigateTab={setActiveTab} />;
       case 'orders': return <Orders />;
       case 'email_studio': return <EmailStudio />;
       case 'content': return <ContentManager />;

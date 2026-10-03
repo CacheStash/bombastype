@@ -9,12 +9,13 @@ import {
   Send, Megaphone, Users, ShieldAlert, Sparkles, CheckCircle2, 
   AlertCircle, RefreshCw, Eye, History, Clock, ArrowRight, 
   Tag, HelpCircle, Layers, Mail, Check, Search, Upload, Image as ImageIcon, X,
-  Plus, Trash2, ChevronUp, ChevronDown, Type, AlignLeft, ExternalLink
+  Plus, Trash2, ChevronUp, ChevronDown, Type, AlignLeft, ExternalLink,
+  Calculator, Calendar, Ticket, UserCheck
 } from 'lucide-react';
 
 export interface BroadcastBlock {
   id: string;
-  type: 'heading' | 'text' | 'button' | 'image';
+  type: 'heading' | 'text' | 'button' | 'image' | 'coupon';
   title?: string;
   subtitle?: string;
   text?: string;
@@ -22,6 +23,11 @@ export interface BroadcastBlock {
   buttonUrl?: string;
   imageUrl?: string;
   imageCaption?: string;
+  couponCode?: string;
+  couponDiscount?: number;
+  couponEndDate?: string;
+  couponMaxUses?: number;
+  couponUrgencyText?: string;
 }
 
 interface GasAccount {
@@ -110,6 +116,28 @@ const PRESETS = [
     couponCode: 'BACKLIVE15'
   },
   {
+    id: 'new_coupon',
+    name: 'Exclusive Coupon / Private Buyer Deal',
+    subject: 'Exclusive [DISCOUNT]% Off Privilege — [BUYER_NAME]',
+    title: 'EXCLUSIVE PATRON PRIVILEGE',
+    subtitle: 'Private Typographic Commission Voucher',
+    bodyText: 'Dear [BUYER_NAME],\n\nThank you for reaching out regarding our typographic library. As discussed, we are pleased to extend an exclusive [DISCOUNT]% private privilege voucher for your upcoming projects.\n\nPlease apply your personal token at checkout to enjoy this preferential rate on all font licenses and bundles.',
+    buttonText: 'CLAIM PRIVILEGE & BROWSE CATALOG',
+    buttonUrl: 'https://bombastype.com/fonts',
+    couponCode: 'VIP25OFF'
+  },
+  {
+    id: 'new_promotion',
+    name: 'Seasonal Promotion / Event Sale (Site-wide Discount)',
+    subject: '[EVENT_NAME] Celebration: Up to [DISCOUNT]% Off Site-Wide',
+    title: '[EVENT_NAME] SPECIAL SALE',
+    subtitle: 'Store-Wide Price Reduction Across All Archival Typefaces',
+    bodyText: 'In honor of [EVENT_NAME], we are delighted to announce our limited-time site-wide holiday event. All font licenses and complete family bundles are automatically discounted at checkout — no coupon code required.\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.',
+    buttonText: 'EXPLORE [EVENT_NAME] DEALS',
+    buttonUrl: 'https://bombastype.com/fonts',
+    couponCode: ''
+  },
+  {
     id: 'custom',
     name: 'Custom Announcement',
     subject: 'An Exclusive Dispatch from BombasType',
@@ -157,14 +185,70 @@ export default function BroadcastStudio() {
   const [selectedFontName, setSelectedFontName] = useState('');
   const [fontSearch, setFontSearch] = useState('');
 
+  // Database Coupons State (Integrated with Supabase 'coupons' table)
+  const [dbCoupons, setDbCoupons] = useState<any[]>([]);
+  const [isAddingNewCoupon, setIsAddingNewCoupon] = useState<string | null>(null);
+  const [newCouponCode, setNewCouponCode] = useState('');
+  const [newCouponDiscount, setNewCouponDiscount] = useState('20');
+  const [newCouponMaxUses, setNewCouponMaxUses] = useState('1');
+  const [newCouponEndDate, setNewCouponEndDate] = useState('');
+  const [isSavingNewCoupon, setIsSavingNewCoupon] = useState(false);
+
+  // Private Buyer & Deal Negotiator State (for 'new_coupon' preset)
+  const [buyerSearchQuery, setBuyerSearchQuery] = useState('');
+  const [buyersList, setBuyersList] = useState<any[]>([]);
+  const [selectedBuyerEmail, setSelectedBuyerEmail] = useState('');
+  const [selectedBuyerName, setSelectedBuyerName] = useState('');
+  const [showBuyerSuggestions, setShowBuyerSuggestions] = useState(false);
+  const [calcOriginalPrice, setCalcOriginalPrice] = useState('350');
+  const [calcTargetPrice, setCalcTargetPrice] = useState('270');
+  const [targetMode, setTargetMode] = useState<'single' | 'audience'>('single');
+  const buyerSearchRef = React.useRef<HTMLDivElement>(null);
+
+  // Seasonal Promotion Event State (for 'new_promotion' preset)
+  const [selectedEventName, setSelectedEventName] = useState('Eid Mubarak');
+  const [promoDiscountPercent, setPromoDiscountPercent] = useState('30');
+
   // Banner Upload & Google Drive Auto-Converter State
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [isDraggingBanner, setIsDraggingBanner] = useState(false);
 
+  // Helper to generate promotional urgency text
+  const computeUrgencyText = (c: any) => {
+    const parts: string[] = [];
+    if (c.end_date) {
+      try {
+        const d = new Date(c.end_date);
+        parts.push(`⏳ Limited Time: Valid until ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`);
+      } catch (_) {
+        parts.push(`⏳ Valid until ${c.end_date}`);
+      }
+    }
+    if (c.max_uses && c.max_uses > 0) {
+      parts.push(`⚡ Strictly limited to first ${c.max_uses} redemption${c.max_uses > 1 ? 's' : ''}`);
+    }
+    return parts.length > 0 ? parts.join(' • ') : '⏳ Limited Availability • Claim at Checkout';
+  };
+
   // Email Builder: Modular Content Blocks
   const [blocks, setBlocks] = useState<BroadcastBlock[]>([]);
 
-  const addBlock = (type: 'heading' | 'text' | 'button' | 'image') => {
+  const addBlock = (type: 'heading' | 'text' | 'button' | 'image' | 'coupon') => {
+    let initialCouponCode = couponCode || 'PROMO20';
+    let initialDiscount = 20;
+    let initialEndDate: string | undefined = undefined;
+    let initialMaxUses: number | undefined = 1;
+    let initialUrgency = '⏳ Limited Time Promotion • Apply at Checkout';
+
+    if (type === 'coupon' && dbCoupons.length > 0) {
+      const topCoupon = dbCoupons[0];
+      initialCouponCode = topCoupon.code;
+      initialDiscount = topCoupon.discount_value || 20;
+      initialEndDate = topCoupon.end_date;
+      initialMaxUses = topCoupon.max_uses;
+      initialUrgency = computeUrgencyText(topCoupon);
+    }
+
     const newBlock: BroadcastBlock = {
       id: `blk_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       type,
@@ -175,9 +259,160 @@ export default function BroadcastStudio() {
       buttonUrl: type === 'button' ? 'https://bombastype.com' : undefined,
       imageUrl: type === 'image' ? '' : undefined,
       imageCaption: type === 'image' ? '' : undefined,
+      couponCode: type === 'coupon' ? initialCouponCode : undefined,
+      couponDiscount: type === 'coupon' ? initialDiscount : undefined,
+      couponEndDate: type === 'coupon' ? initialEndDate : undefined,
+      couponMaxUses: type === 'coupon' ? initialMaxUses : undefined,
+      couponUrgencyText: type === 'coupon' ? initialUrgency : undefined,
     };
+    if (type === 'coupon') {
+      setCouponCode(initialCouponCode);
+    }
     setBlocks(prev => [...prev, newBlock]);
   };
+
+  const handleCreateDbCoupon = async (blockId: string) => {
+    if (!newCouponCode || !newCouponDiscount || !newCouponEndDate) {
+      alert('Please complete all coupon fields (Token Code, Discount %, Expiry Date).');
+      return;
+    }
+    setIsSavingNewCoupon(true);
+    try {
+      const codeUpper = newCouponCode.trim().toUpperCase();
+      const discNum = parseFloat(newCouponDiscount) || 20;
+      const usesNum = parseInt(newCouponMaxUses) || 1;
+      const payload = {
+        code: codeUpper,
+        discount_type: 'percentage',
+        discount_value: discNum,
+        max_uses: usesNum,
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: newCouponEndDate,
+        is_active: true
+      };
+
+      const { error } = await supabase.from('coupons').insert([payload]);
+      if (error) throw error;
+
+      alert(`Coupon "${codeUpper}" registered in database! It will appear in the Promotions menu as well.`);
+      const { data: updatedCoupons } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+      if (updatedCoupons) setDbCoupons(updatedCoupons);
+
+      const urgency = computeUrgencyText(payload);
+      updateBlock(blockId, {
+        couponCode: codeUpper,
+        couponDiscount: discNum,
+        couponEndDate: newCouponEndDate,
+        couponMaxUses: usesNum,
+        couponUrgencyText: urgency
+      });
+      setCouponCode(codeUpper);
+      setIsAddingNewCoupon(null);
+      setNewCouponCode('');
+      setNewCouponDiscount('20');
+      setNewCouponEndDate('');
+    } catch (err: any) {
+      alert('Failed to register coupon: ' + err.message);
+    } finally {
+      setIsSavingNewCoupon(false);
+    }
+  };
+
+  const handleComputeDeal = async () => {
+    const orig = parseFloat(calcOriginalPrice) || 0;
+    const target = parseFloat(calcTargetPrice) || 0;
+    if (orig <= 0 || target <= 0 || target >= orig) {
+      alert('Deal target price must be lower than original price!');
+      return;
+    }
+    const percent = Math.round(((orig - target) / orig) * 100);
+    const suggestedCode = `DEAL${percent}OFF`;
+
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    const defaultEndDate = d.toISOString().split('T')[0];
+
+    if (window.confirm(`Computed Discount: ${percent}% OFF\nSuggested Token: ${suggestedCode}\nValid for: 14 days (1 use limit)\n\nRegister this coupon into database and link it to this deal?`)) {
+      try {
+        const payload = {
+          code: suggestedCode,
+          discount_type: 'percentage',
+          discount_value: percent,
+          max_uses: 1,
+          start_date: new Date().toISOString().split('T')[0],
+          end_date: defaultEndDate,
+          is_active: true
+        };
+        const { error } = await supabase.from('coupons').insert([payload]);
+        if (error) throw error;
+
+        const { data: updatedCoupons } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+        if (updatedCoupons) setDbCoupons(updatedCoupons);
+
+        setCouponCode(suggestedCode);
+        setSubject(prev => prev.replace(/\[DISCOUNT\]/g, `${percent}`).replace(/\[COUPON_CODE\]/g, suggestedCode));
+        setHeadline(prev => prev.replace(/\[DISCOUNT\]/g, `${percent}`));
+        setBodyText(prev => prev.replace(/\[DISCOUNT\]/g, `${percent}`));
+
+        // Update or add coupon block
+        const existingCouponBlock = blocks.find(b => b.type === 'coupon');
+        if (existingCouponBlock) {
+          updateBlock(existingCouponBlock.id, {
+            couponCode: suggestedCode,
+            couponDiscount: percent,
+            couponEndDate: defaultEndDate,
+            couponMaxUses: 1,
+            couponUrgencyText: computeUrgencyText(payload)
+          });
+        } else {
+          setBlocks(prev => [...prev, {
+            id: `blk_deal_${Date.now()}`,
+            type: 'coupon',
+            couponCode: suggestedCode,
+            couponDiscount: percent,
+            couponEndDate: defaultEndDate,
+            couponMaxUses: 1,
+            couponUrgencyText: computeUrgencyText(payload)
+          }]);
+        }
+        alert(`Privilege Token "${suggestedCode}" registered and applied!`);
+      } catch (err: any) {
+        alert('Error saving coupon: ' + err.message);
+      }
+    }
+  };
+
+  const handleSelectBuyer = (buyer: any) => {
+    setSelectedBuyerEmail(buyer.email);
+    const name = buyer.name || 'Patron';
+    setSelectedBuyerName(name);
+    setBuyerSearchQuery(`${buyer.email} (${name})`);
+    setShowBuyerSuggestions(false);
+
+    setSubject(prev => prev.replace(/\[BUYER_NAME\]/g, name));
+    setHeadline(prev => prev.replace(/\[BUYER_NAME\]/g, name));
+    setBodyText(prev => prev.replace(/\[BUYER_NAME\]/g, name));
+  };
+
+  const handleSelectEvent = (eventName: string) => {
+    setSelectedEventName(eventName);
+    const disc = promoDiscountPercent || '30';
+    setSubject(`[${eventName}] Celebration: Up to ${disc}% Off Site-Wide`);
+    setHeadline(`${eventName.toUpperCase()} SPECIAL SALE`);
+    setSubtitle('Store-Wide Price Reduction Across All Archival Typefaces');
+    setBodyText(`In honor of ${eventName}, we are delighted to announce our limited-time site-wide holiday event. All font licenses and complete family bundles are automatically discounted at checkout — no coupon code required.\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`);
+    setButtonText(`EXPLORE ${eventName.toUpperCase()} DEALS`);
+  };
+
+  const filteredBuyers = buyersList.filter(b => {
+    const q = buyerSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (b.email || '').toLowerCase().includes(q) ||
+      (b.name || '').toLowerCase().includes(q) ||
+      (b.transaction_id || '').toLowerCase().includes(q)
+    );
+  });
 
   const updateBlock = (id: string, updates: Partial<BroadcastBlock>) => {
     setBlocks(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
@@ -257,7 +492,49 @@ export default function BroadcastStudio() {
   useEffect(() => {
     fetchData();
     fetchFontsList();
+    fetchCouponsAndBuyers();
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (buyerSearchRef.current && !buyerSearchRef.current.contains(e.target as Node)) {
+        setShowBuyerSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const fetchCouponsAndBuyers = async () => {
+    try {
+      const { data: cData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+      if (cData) setDbCoupons(cData);
+
+      const { data: buyers } = await supabase.from('fontbuyer').select('id, email, full_name');
+      const { data: history } = await supabase.from('font_history').select('user_id, transaction_id, created_at').order('created_at', { ascending: false });
+      if (buyers) {
+        const buyerMap: Record<string, { email: string; name: string }> = {};
+        buyers.forEach(b => {
+          buyerMap[b.id] = { email: b.email || '', name: b.full_name || 'Customer' };
+        });
+        const combined: any[] = [];
+        const seen = new Set<string>();
+        (history || []).forEach(h => {
+          const b = buyerMap[h.user_id];
+          if (b && b.email && !seen.has(`${b.email}-${h.transaction_id}`)) {
+            seen.add(`${b.email}-${h.transaction_id}`);
+            combined.push({ email: b.email, name: b.name, transaction_id: h.transaction_id || 'N/A' });
+          }
+        });
+        buyers.forEach(b => {
+          if (b.email && !combined.some(c => c.email.toLowerCase() === b.email.toLowerCase())) {
+            combined.push({ email: b.email, name: b.full_name || 'Customer', transaction_id: 'REGISTERED_BUYER' });
+          }
+        });
+        setBuyersList(combined);
+      }
+    } catch (e) {
+      console.warn('Failed fetching coupons or buyers:', e);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -333,6 +610,8 @@ export default function BroadcastStudio() {
 
     const isRelease = presetId === 'new_release';
     const isUpdate = presetId === 'update_typeface';
+    const isCouponPreset = presetId === 'new_coupon';
+    const isPromoPreset = presetId === 'new_promotion';
 
     let subj = p.subject;
     let head = p.title;
@@ -347,6 +626,38 @@ export default function BroadcastStudio() {
       setCampaignTitle(isRelease ? `${selectedFontName} - Release` : `${selectedFontName} - Update`);
     } else if (isRelease || isUpdate) {
       setCampaignTitle('');
+    } else if (isCouponPreset) {
+      const bName = selectedBuyerName || 'Patron';
+      subj = subj.replace(/\[BUYER_NAME\]/g, bName).replace(/\[DISCOUNT\]/g, '25');
+      head = head.replace(/\[BUYER_NAME\]/g, bName).replace(/\[DISCOUNT\]/g, '25');
+      body = body.replace(/\[BUYER_NAME\]/g, bName).replace(/\[DISCOUNT\]/g, '25');
+      setCampaignTitle(`Private Deal - ${bName}`);
+      setTargetMode('single');
+
+      // Auto ensure a coupon block exists in blocks
+      if (!blocks.some(b => b.type === 'coupon')) {
+        const topCoupon = dbCoupons[0];
+        const newBlk: BroadcastBlock = {
+          id: `blk_coupon_${Date.now()}`,
+          type: 'coupon',
+          couponCode: topCoupon ? topCoupon.code : 'VIP25OFF',
+          couponDiscount: topCoupon ? topCoupon.discount_value : 25,
+          couponEndDate: topCoupon ? topCoupon.end_date : undefined,
+          couponMaxUses: topCoupon ? topCoupon.max_uses : 1,
+          couponUrgencyText: topCoupon ? computeUrgencyText(topCoupon) : '⏳ Limited Time Exclusive • 1 Use Only'
+        };
+        setBlocks(prev => [...prev, newBlk]);
+        setCouponCode(newBlk.couponCode || 'VIP25OFF');
+      }
+    } else if (isPromoPreset) {
+      const evt = selectedEventName || 'Eid Mubarak';
+      const disc = promoDiscountPercent || '30';
+      subj = subj.replace(/\[EVENT_NAME\]/g, evt).replace(/\[DISCOUNT\]/g, disc);
+      head = head.replace(/\[EVENT_NAME\]/g, evt).replace(/\[DISCOUNT\]/g, disc);
+      subt = subt.replace(/\[EVENT_NAME\]/g, evt);
+      body = body.replace(/\[EVENT_NAME\]/g, evt);
+      setCampaignTitle(`Event Sale - ${evt}`);
+      setButtonText(`EXPLORE ${evt.toUpperCase()} DEALS`);
     }
 
     setSubject(subj);
@@ -365,7 +676,15 @@ export default function BroadcastStudio() {
   };
 
   const handleSendBroadcast = async (existingCampaignId?: string) => {
-    const targetCount = getTargetAudienceCount();
+    const isSingleMode = selectedPreset === 'new_coupon' && targetMode === 'single';
+    if (isSingleMode) {
+      if (!selectedBuyerEmail || !selectedBuyerEmail.includes('@')) {
+        alert("Please select or enter a valid recipient email address for this private coupon deal.");
+        return;
+      }
+    }
+
+    const targetCount = isSingleMode ? 1 : getTargetAudienceCount();
     if (targetCount === 0) {
       alert("No recipients found in selected audience.");
       return;
@@ -377,8 +696,10 @@ export default function BroadcastStudio() {
     }
 
     const campId = existingCampaignId || `camp_${Date.now()}`;
-    const willSendCount = Math.min(targetCount, data.gas.allowedToday);
-    const confirmMsg = `Launch Broadcast Batch?\n\n- Sending Today: ${willSendCount} emails\n- Safety Reserve: 15 emails protected for incoming customer orders\n- Audience: ${audience.toUpperCase()}\n- Accounts: Balanced across all active GAS senders\n\nProceed with dispatch?`;
+    const willSendCount = isSingleMode ? 1 : Math.min(targetCount, data.gas.allowedToday);
+    const confirmMsg = isSingleMode
+      ? `Dispatch Private Deal Voucher to:\n${selectedBuyerName || 'Patron'} <${selectedBuyerEmail}>\n\nProceed with dispatch?`
+      : `Launch Broadcast Batch?\n\n- Sending Today: ${willSendCount} emails\n- Safety Reserve: 15 emails protected for incoming customer orders\n- Audience: ${audience.toUpperCase()}\n- Accounts: Balanced across all active GAS senders\n\nProceed with dispatch?`;
 
     if (!window.confirm(confirmMsg)) return;
 
@@ -396,7 +717,9 @@ export default function BroadcastStudio() {
         body: JSON.stringify({
           campaignId: campId,
           campaignTitle: campaignTitle || headline || subject,
-          audience,
+          audience: isSingleMode ? 'single' : audience,
+          recipientEmail: isSingleMode ? selectedBuyerEmail : undefined,
+          recipientName: isSingleMode ? selectedBuyerName : undefined,
           subject,
           preset: selectedPreset,
           templateData: {
@@ -662,6 +985,223 @@ export default function BroadcastStudio() {
             </div>
           )}
 
+          {/* 3B. DIRECT BUYER & DEAL NEGOTIATOR (FOR NEW_COUPON PRESET) */}
+          {selectedPreset === 'new_coupon' && (
+            <div className="border border-vintage-ink p-5 bg-vintage-accent/5 space-y-4">
+              <div className="flex items-center justify-between border-b border-vintage-ink/30 pb-2">
+                <div className="flex items-center gap-2">
+                  <Calculator size={15} className="text-[#8b6b4a]" />
+                  <span className="text-xs uppercase tracking-widest font-black">
+                    Direct Buyer &amp; Deal Negotiator
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono opacity-70">Single Buyer or Broadcast Deal</span>
+              </div>
+
+              {/* TARGET MODE SELECTOR */}
+              <div className="flex flex-wrap gap-4 text-xs font-bold uppercase">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="couponTargetMode"
+                    checked={targetMode === 'single'}
+                    onChange={() => setTargetMode('single')}
+                    className="cursor-pointer"
+                  />
+                  <span>Single Buyer / Prospective Client (Direct 1-on-1)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="couponTargetMode"
+                    checked={targetMode === 'audience'}
+                    onChange={() => setTargetMode('audience')}
+                    className="cursor-pointer"
+                  />
+                  <span>Audience Broadcast (All / Buyers / Subscribers)</span>
+                </label>
+              </div>
+
+              {targetMode === 'single' && (
+                <div className="space-y-3 pt-1">
+                  <div className="relative" ref={buyerSearchRef}>
+                    <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">
+                      Search Existing Buyer or Enter Candidate Email
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={buyerSearchQuery}
+                          onChange={(e) => {
+                            setBuyerSearchQuery(e.target.value);
+                            setSelectedBuyerEmail(e.target.value);
+                            setShowBuyerSuggestions(true);
+                          }}
+                          onFocus={() => setShowBuyerSuggestions(true)}
+                          placeholder="Type customer email, name, or transaction ID..."
+                          className="w-full border border-vintage-ink p-2.5 text-xs bg-white outline-none font-bold"
+                        />
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-vintage-ink/40" size={14} />
+                      </div>
+                      <input
+                        type="text"
+                        value={selectedBuyerName}
+                        onChange={(e) => {
+                          setSelectedBuyerName(e.target.value);
+                          setSubject(prev => prev.replace(/\[BUYER_NAME\]/g, e.target.value));
+                          setHeadline(prev => prev.replace(/\[BUYER_NAME\]/g, e.target.value));
+                          setBodyText(prev => prev.replace(/\[BUYER_NAME\]/g, e.target.value));
+                        }}
+                        placeholder="Recipient Name (e.g. Alex Studio)"
+                        className="w-full sm:w-56 border border-vintage-ink p-2.5 text-xs bg-white outline-none font-bold"
+                      />
+                    </div>
+
+                    {/* AUTOCOMPLETE SUGGESTIONS */}
+                    {showBuyerSuggestions && filteredBuyers.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto border border-vintage-ink bg-white shadow-xl divide-y divide-vintage-ink/10">
+                        {filteredBuyers.slice(0, 10).map((b, i) => (
+                          <div
+                            key={i}
+                            onClick={() => handleSelectBuyer(b)}
+                            className="p-2.5 hover:bg-vintage-ink/5 cursor-pointer text-xs flex justify-between items-center"
+                          >
+                            <div>
+                              <span className="font-bold text-vintage-ink">{b.email}</span>
+                              <span className="text-[10px] text-vintage-ink/60 ml-2 font-mono">({b.name})</span>
+                            </div>
+                            <span className="text-[9px] font-mono text-[#8b6b4a] uppercase bg-[#8b6b4a]/10 px-2 py-0.5">
+                              {b.transaction_id}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* BARGAIN / PRICE REQUEST CALCULATOR */}
+              <div className="border border-vintage-ink/40 bg-white p-4 space-y-3 mt-2">
+                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-vintage-ink border-b border-vintage-ink/10 pb-1">
+                  <span className="flex items-center gap-1.5"><Calculator size={13} /> Price Request / Deal Calculator</span>
+                  <span className="text-[9px] text-[#8b6b4a] font-mono">Negotiate &amp; Generate Token</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-bold uppercase block mb-1">Original Catalog Price ($)</label>
+                    <input
+                      type="number"
+                      value={calcOriginalPrice}
+                      onChange={(e) => setCalcOriginalPrice(e.target.value)}
+                      placeholder="350"
+                      className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold uppercase block mb-1">Agreed Deal Target ($)</label>
+                    <input
+                      type="number"
+                      value={calcTargetPrice}
+                      onChange={(e) => setCalcTargetPrice(e.target.value)}
+                      placeholder="270"
+                      className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pt-1">
+                  <div className="text-xs font-mono">
+                    {parseFloat(calcOriginalPrice) > 0 && parseFloat(calcTargetPrice) > 0 && parseFloat(calcTargetPrice) < parseFloat(calcOriginalPrice) && (
+                      <span className="text-emerald-700 font-bold">
+                        Calculated Deal: {Math.round(((parseFloat(calcOriginalPrice) - parseFloat(calcTargetPrice)) / parseFloat(calcOriginalPrice)) * 100)}% OFF
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleComputeDeal}
+                    className="px-4 py-2 bg-[#2c241a] text-[#fdf6e3] text-[10px] uppercase font-bold tracking-wider hover:bg-[#8b6b4a] transition-all cursor-pointer shadow-sm"
+                  >
+                    Compute &amp; Apply Coupon
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 3C. SEASONAL EVENT SELECTOR (FOR NEW_PROMOTION PRESET) */}
+          {selectedPreset === 'new_promotion' && (
+            <div className="border border-vintage-ink p-5 bg-vintage-accent/5 space-y-4">
+              <div className="flex items-center justify-between border-b border-vintage-ink/30 pb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={15} className="text-[#8b6b4a]" />
+                  <span className="text-xs uppercase tracking-widest font-black">
+                    Seasonal Event Selector (Site-Wide Discount)
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono opacity-70">Direct Sale (No Token Required)</span>
+              </div>
+
+              {/* QUICK EVENT CHIPS */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider block text-vintage-ink/70">
+                  Select Event Celebration:
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    'Eid Mubarak',
+                    'Christmas & Holiday',
+                    'Halloween Specials',
+                    'Black Friday & Cyber Week',
+                    'Summer Studio Sale',
+                    'Foundry Anniversary'
+                  ].map(evt => (
+                    <button
+                      key={evt}
+                      type="button"
+                      onClick={() => handleSelectEvent(evt)}
+                      className={`px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider border transition-all cursor-pointer ${
+                        selectedEventName === evt
+                          ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]'
+                          : 'bg-white text-[#2c241a] border-vintage-ink/40 hover:bg-[#2c241a]/5'
+                      }`}
+                    >
+                      {evt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* CUSTOM EVENT OR DISCOUNT ADJUSTMENT */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Event Name</label>
+                  <input
+                    type="text"
+                    value={selectedEventName}
+                    onChange={(e) => handleSelectEvent(e.target.value)}
+                    placeholder="e.g. Spring Typography Festival"
+                    className="w-full border border-vintage-ink p-2 text-xs bg-white outline-none font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Site-wide Discount (%)</label>
+                  <input
+                    type="number"
+                    value={promoDiscountPercent}
+                    onChange={(e) => {
+                      setPromoDiscountPercent(e.target.value);
+                      setSubject(prev => prev.replace(/\b\d+%\b/, `${e.target.value}%`));
+                    }}
+                    placeholder="30"
+                    className="w-full border border-vintage-ink p-2 text-xs bg-white outline-none font-bold"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 4. EMAIL PREVIEW (PLACED PROMINENTLY UNDER PRESET & TYPEFACE SELECTOR) */}
           <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4">
             <div className="flex items-center justify-between text-xs uppercase tracking-widest font-black border-b border-vintage-ink pb-2">
@@ -710,8 +1250,8 @@ export default function BroadcastStudio() {
                 {bodyText || "Your broadcast message will appear here in elegant archival formatting."}
               </div>
 
-              {/* Coupon Box */}
-              {couponCode && (
+              {/* Default Coupon Box (only if no modular coupon block is added) */}
+              {!blocks.some(b => b.type === 'coupon') && couponCode && (
                 <div className="border-2 border-dashed border-[#8b6b4a] bg-white p-4 text-center my-5">
                   <div className="text-[9px] uppercase tracking-[0.15em] text-[#8b6b4a] font-bold mb-1">
                     EXCLUSIVE VIP PRIVILEGE
@@ -736,6 +1276,35 @@ export default function BroadcastStudio() {
 
               {/* Additional Modular Blocks Preview */}
               {blocks.map((block, idx) => {
+                if (block.type === 'coupon') {
+                  const cCode = block.couponCode || couponCode || '';
+                  const cDiscount = block.couponDiscount ? `${block.couponDiscount}% OFF` : '';
+                  const cUrgency = block.couponUrgencyText || '';
+                  if (!cCode) return null;
+                  return (
+                    <div key={block.id || idx} className="border-2 border-dashed border-[#8b6b4a] bg-white p-5 text-center my-6 shadow-sm">
+                      <div className="text-[9px] uppercase tracking-[0.2em] text-[#8b6b4a] font-bold mb-1">
+                        EXCLUSIVE PRIVILEGE VOUCHER
+                      </div>
+                      {cDiscount && (
+                        <div className="font-serif font-black text-2xl text-[#2c241a] my-1">
+                          {cDiscount}
+                        </div>
+                      )}
+                      <div className="font-mono text-xl font-black text-[#2c241a] bg-[#fdf6e3] inline-block px-4 py-1.5 border border-[#2c241a] tracking-widest my-1">
+                        {cCode}
+                      </div>
+                      <div className="text-[10px] italic text-[#6b5c4d] mt-1.5">
+                        Apply this token at checkout to claim your archival discount.
+                      </div>
+                      {cUrgency && (
+                        <div className="mt-2 text-[9px] font-bold text-[#8b6b4a] bg-[#fffdf5] inline-block px-2.5 py-1 border border-[#d1c7b7]">
+                          {cUrgency}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
                 if (block.type === 'heading') {
                   return (
                     <div key={block.id || idx} className="text-center my-6 pt-5 border-t border-[#d1c7b7] border-dashed">
@@ -959,17 +1528,6 @@ export default function BroadcastStudio() {
                   />
                 </div>
               </div>
-
-              <div>
-                <label className="uppercase tracking-widest font-bold block mb-1">Promo Coupon Token (Optional)</label>
-                <input
-                  type="text"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  placeholder="e.g. SPECIAL20"
-                  className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none uppercase font-bold"
-                />
-              </div>
             </div>
 
             {/* EMAIL BUILDER: MODULAR ADDITIONAL CONTENT SECTIONS */}
@@ -980,7 +1538,7 @@ export default function BroadcastStudio() {
                     <Layers size={14} className="text-[#8b6b4a]" /> Additional Sections (Email Builder)
                   </label>
                   <p className="text-[10px] text-vintage-ink/70 font-sans mt-0.5">
-                    Add extra announcements, messages, secondary CTAs, or imagery to this dispatch
+                    Add extra announcements, messages, secondary CTAs, imagery, or promotional vouchers to this dispatch
                   </p>
                 </div>
                 <span className="text-[10px] font-bold bg-vintage-ink text-vintage-paper px-2 py-0.5 uppercase">
@@ -989,7 +1547,7 @@ export default function BroadcastStudio() {
               </div>
 
               {/* ACTION TOOLBAR: ADD BUTTONS */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 <button
                   type="button"
                   onClick={() => addBlock('heading')}
@@ -1017,6 +1575,13 @@ export default function BroadcastStudio() {
                   className="p-2 border border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper font-bold text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <ImageIcon size={13} /> + Image
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addBlock('coupon')}
+                  className="p-2 border border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper font-bold text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm col-span-2 sm:col-span-1"
+                >
+                  <Tag size={13} /> + Coupon
                 </button>
               </div>
 
@@ -1214,6 +1779,131 @@ export default function BroadcastStudio() {
                               onChange={(e) => updateBlock(block.id, { imageCaption: e.target.value })}
                               placeholder="e.g. Archival wood type impression"
                               className="w-full border border-vintage-ink p-2 bg-vintage-paper outline-none font-serif italic"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {block.type === 'coupon' && (
+                        <div className="space-y-4 bg-vintage-accent/5 p-4 border border-vintage-ink/30">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <label className="text-[11px] uppercase font-bold tracking-wider flex items-center gap-1.5 text-vintage-ink">
+                              <Tag size={13} className="text-[#8b6b4a]" /> Select Active Coupon from Database
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setIsAddingNewCoupon(isAddingNewCoupon === block.id ? null : block.id)}
+                              className="text-[10px] font-bold uppercase tracking-wider text-[#8b6b4a] hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Plus size={12} /> {isAddingNewCoupon === block.id ? 'Cancel New Coupon' : 'Create New Coupon'}
+                            </button>
+                          </div>
+
+                          {/* SELECT FROM DB COUPONS */}
+                          <div>
+                            <select
+                              value={block.couponCode || ''}
+                              onChange={(e) => {
+                                const selCode = e.target.value;
+                                const found = dbCoupons.find(c => c.code === selCode);
+                                if (found) {
+                                  const urgency = computeUrgencyText(found);
+                                  updateBlock(block.id, {
+                                    couponCode: found.code,
+                                    couponDiscount: found.discount_value,
+                                    couponEndDate: found.end_date,
+                                    couponMaxUses: found.max_uses,
+                                    couponUrgencyText: urgency
+                                  });
+                                  setCouponCode(found.code);
+                                } else {
+                                  updateBlock(block.id, { couponCode: selCode });
+                                  setCouponCode(selCode);
+                                }
+                              }}
+                              className="w-full border border-vintage-ink p-2 bg-white outline-none font-bold text-xs"
+                            >
+                              <option value="">-- Choose Coupon from Database ({dbCoupons.length} Active) --</option>
+                              {dbCoupons.map(c => (
+                                <option key={c.id} value={c.code}>
+                                  {c.code} — {c.discount_value}% OFF {c.end_date ? `(Valid until ${c.end_date})` : ''} {c.max_uses ? `[Limit: ${c.max_uses} uses]` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* INLINE NEW COUPON CREATOR */}
+                          {isAddingNewCoupon === block.id && (
+                            <div className="border border-vintage-ink p-4 bg-white space-y-3 mt-3">
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink border-b border-vintage-ink/20 pb-1 flex items-center justify-between">
+                                <span>Register New Coupon to Supabase</span>
+                                <span className="text-[9px] text-[#8b6b4a] font-normal">Auto-syncs with Promotions menu</span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="text-[9px] font-bold uppercase block mb-1">Coupon Token</label>
+                                  <input
+                                    type="text"
+                                    value={newCouponCode}
+                                    onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+                                    placeholder="e.g. VIP25OFF"
+                                    className="w-full border border-vintage-ink p-2 text-xs font-bold uppercase outline-none"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] font-bold uppercase block mb-1">Discount (%)</label>
+                                  <input
+                                    type="number"
+                                    value={newCouponDiscount}
+                                    onChange={(e) => setNewCouponDiscount(e.target.value)}
+                                    placeholder="25"
+                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] font-bold uppercase block mb-1">Max Redemptions / Uses</label>
+                                  <input
+                                    type="number"
+                                    value={newCouponMaxUses}
+                                    onChange={(e) => setNewCouponMaxUses(e.target.value)}
+                                    placeholder="1"
+                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] font-bold uppercase block mb-1">Expiry Date</label>
+                                  <input
+                                    type="date"
+                                    value={newCouponEndDate}
+                                    onChange={(e) => setNewCouponEndDate(e.target.value)}
+                                    className="w-full border border-vintage-ink p-2 text-xs font-bold outline-none cursor-pointer"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex justify-end pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCreateDbCoupon(block.id)}
+                                  disabled={isSavingNewCoupon}
+                                  className="px-4 py-2 bg-[#2c241a] text-[#fdf6e3] text-[10px] uppercase font-bold tracking-wider hover:bg-[#8b6b4a] transition-all cursor-pointer disabled:opacity-40"
+                                >
+                                  {isSavingNewCoupon ? 'Registering...' : 'Save & Link Coupon'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* DETECTED URGENCY TEXT */}
+                          <div>
+                            <label className="text-[9px] font-bold uppercase tracking-wider block mb-1 text-vintage-ink/70">
+                              Promotional Urgency Note (Auto-detected from expiry / usage limit)
+                            </label>
+                            <input
+                              type="text"
+                              value={block.couponUrgencyText || ''}
+                              onChange={(e) => updateBlock(block.id, { couponUrgencyText: e.target.value })}
+                              placeholder="e.g. ⏳ Limited Time: Valid until Oct 31 • ⚡ Strictly limited to 1 use"
+                              className="w-full border border-vintage-ink p-2 bg-white outline-none text-xs"
                             />
                           </div>
                         </div>

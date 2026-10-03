@@ -526,6 +526,21 @@ function generateBroadcastEmailHtml({ preset, title, subtitle, bodyText, bannerU
         </div>
       `;
     }
+    if (block.type === 'coupon') {
+      const cCode = block.couponCode || couponCode || '';
+      const cDiscount = block.couponDiscount ? `${block.couponDiscount}% OFF` : '';
+      const cUrgency = block.couponUrgencyText || '';
+      if (!cCode) return '';
+      return `
+        <div style="background-color: #ffffff; border: 2px dashed #8b6b4a; padding: 22px 24px; margin: 24px 0; text-align: center;">
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #8b6b4a; font-weight: 700; margin-bottom: 6px;">EXCLUSIVE PRIVILEGE VOUCHER</div>
+          ${cDiscount ? `<div style="font-family: 'Playfair Display', Georgia, serif; font-size: 32px; font-weight: 900; color: #2c241a; margin-bottom: 8px;">${cDiscount}</div>` : ''}
+          <div style="font-family: monospace; font-size: 22px; font-weight: 700; color: #2c241a; letter-spacing: 0.15em; background-color: #fdf6e3; display: inline-block; padding: 6px 18px; border: 1px solid #2c241a;">${cCode}</div>
+          <div style="font-size: 12px; font-style: italic; color: #6b5c4d; margin-top: 8px;">Apply this token at checkout to claim your archival discount.</div>
+          ${cUrgency ? `<div style="margin-top: 10px; font-size: 11px; font-weight: 700; color: #8b6b4a; background-color: #fffdf5; display: inline-block; padding: 4px 10px; border: 1px solid #d1c7b7;">${cUrgency}</div>` : ''}
+        </div>
+      `;
+    }
     return '';
   }).join('');
 
@@ -2107,6 +2122,8 @@ export default {
           campaignId,
           campaignTitle,
           audience = 'all',
+          recipientEmail,
+          recipientName,
           subject,
           preset = 'custom',
           templateData = {},
@@ -2125,7 +2142,9 @@ export default {
 
         // 1. Fetch Target Audience
         let targetEmails = [];
-        if (supabaseUrl && serviceRoleKey) {
+        if (audience === 'single' && recipientEmail) {
+          targetEmails = [recipientEmail.trim().toLowerCase()];
+        } else if (supabaseUrl && serviceRoleKey) {
           const promises = [];
           if (audience === 'all' || audience === 'buyers') {
             promises.push(
@@ -2285,7 +2304,7 @@ export default {
             token: "$emogaAm4n_",
             action: "broadcast",
             email: recipient,
-            name: "Creator",
+            name: recipientName || "Creator",
             subject,
             htmlBody,
             sender_name: "BombasType"

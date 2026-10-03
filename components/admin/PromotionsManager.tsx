@@ -8,7 +8,11 @@ import { createPortal } from 'react-dom';
 import { Plus, X, Loader2, Calendar, Trash2, Edit3, Search, Send, Calculator, MailCheck, UserCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-const PromotionsManager: React.FC = () => {
+interface PromotionsManagerProps {
+  onNavigateTab?: (tab: string) => void;
+}
+
+const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) => {
   const [activeTab, setActiveTab] = useState<'campaigns' | 'coupons'>('campaigns');
   const [promos, setPromos] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -482,11 +486,13 @@ const PromotionsManager: React.FC = () => {
           ) : (
             <>
               <button 
-                onClick={() => handleOpenSendModal()}
-                disabled={coupons.length === 0}
-                className="vintage-btn bg-vintage-accent! text-vintage-paper! px-8 py-4 text-[11px] disabled:opacity-30"
+                onClick={() => {
+                  if (onNavigateTab) onNavigateTab('broadcast');
+                  else window.dispatchEvent(new CustomEvent('admin-switch-tab', { detail: 'broadcast' }));
+                }}
+                className="vintage-btn bg-vintage-accent! text-vintage-paper! px-8 py-4 text-[11px] cursor-pointer"
               >
-                <Send size={15} className="inline mr-2" /> Send Coupon to Buyer
+                <Send size={15} className="inline mr-2" /> Send in Broadcast Studio
               </button>
               <button 
                 onClick={() => setIsAddingCoupon(true)}
@@ -551,7 +557,28 @@ const PromotionsManager: React.FC = () => {
 
       {/* TAB 2: COUPONS */}
       {activeTab === 'coupons' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          <div className="border border-vintage-ink/30 p-5 bg-vintage-paper/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+            <div>
+              <span className="font-bold text-vintage-ink uppercase tracking-wider block text-xs mb-1">
+                Visual Email Dispatch in Broadcast Studio
+              </span>
+              <span className="text-vintage-ink/70 text-[11px] leading-relaxed">
+                Send personal negotiated discount vouchers to individual clients or customer segments with live email preview and price request calculator.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (onNavigateTab) onNavigateTab('broadcast');
+                else window.dispatchEvent(new CustomEvent('admin-switch-tab', { detail: 'broadcast' }));
+              }}
+              className="px-5 py-2.5 bg-[#2c241a] text-[#fdf6e3] text-[10px] uppercase font-bold tracking-wider hover:bg-[#8b6b4a] transition-all whitespace-nowrap cursor-pointer shadow-sm self-start sm:self-auto"
+            >
+              Open in Broadcast Studio &rarr;
+            </button>
+          </div>
+
           <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Exclusive Bargain & Promo Tokens</h3>
           {coupons.length === 0 ? (
             <div className="p-20 border border-dashed border-vintage-ink/20 text-center">
