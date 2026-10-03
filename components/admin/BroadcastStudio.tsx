@@ -156,6 +156,207 @@ const PRESETS = [
   }
 ];
 
+export const getDefaultPresetBlocks = (
+  presetId: string,
+  fontName = '',
+  buyerName = '',
+  eventName = '',
+  discount = ''
+): BroadcastBlock[] => {
+  const fName = fontName || '[FONT_NAME]';
+  const bName = buyerName || '[BUYER_NAME]';
+  const eName = eventName || '[EVENT_NAME]';
+  const disc = discount || '25';
+
+  switch (presetId) {
+    case 'new_release':
+      return [
+        {
+          id: `blk_head_${Date.now()}_1`,
+          type: 'heading',
+          title: `NEW TYPEFACE RELEASE: ${fName}`,
+          subtitle: 'A Majestic Historical Specimen by BombasType'
+        },
+        {
+          id: `blk_text_${Date.now()}_2`,
+          type: 'text',
+          text: `We are thrilled to unveil our latest archival creation, ${fName}. Meticulously revived and expanded with comprehensive OpenType features, alternates, and multi-layer chromatic styles ready for your editorial masterworks.`
+        },
+        {
+          id: `blk_btn_${Date.now()}_3`,
+          type: 'button',
+          buttonText: 'TEST IN TYPETESTER & BUY',
+          buttonUrl: 'https://bombastype.com/fonts'
+        }
+      ];
+
+    case 'update_typeface':
+      return [
+        {
+          id: `blk_head_${Date.now()}_1`,
+          type: 'heading',
+          title: `TYPEFACE UPDATE: ${fName}`,
+          subtitle: 'Expanded Glyphs, Historic Alternates & Master Refinements'
+        },
+        {
+          id: `blk_text_${Date.now()}_2`,
+          type: 'text',
+          text: `We are delighted to release a major update for ${fName}. This revised specimen introduces enriched historical alternates, extensive multilingual kerning corrections, and optimized vector outlines for editorial prints and digital media.`
+        },
+        {
+          id: `blk_btn_${Date.now()}_3`,
+          type: 'button',
+          buttonText: 'VIEW UPDATE IN CATALOG',
+          buttonUrl: 'https://bombastype.com/fonts'
+        }
+      ];
+
+    case 'new_feature':
+      return [
+        {
+          id: `blk_head_${Date.now()}_1`,
+          type: 'heading',
+          title: 'INTRODUCING FONTCANVAS',
+          subtitle: 'Our In-Browser Visual Composition Playground'
+        },
+        {
+          id: `blk_text_${Date.now()}_2`,
+          type: 'text',
+          text: 'Design, stack chromatic layers, and craft authentic vintage typographic layouts directly in your browser. FontCanvas is now live with high-resolution export, vector generator, and full catalog access.'
+        },
+        {
+          id: `blk_btn_${Date.now()}_3`,
+          type: 'button',
+          buttonText: 'LAUNCH FONTCANVAS',
+          buttonUrl: 'https://bombastype.com/canvas'
+        }
+      ];
+
+    case 'maintenance':
+      return [
+        {
+          id: `blk_head_${Date.now()}_1`,
+          type: 'heading',
+          title: 'SCHEDULED MAINTENANCE NOTICE',
+          subtitle: 'Temporary System Optimization'
+        },
+        {
+          id: `blk_text_${Date.now()}_2`,
+          type: 'text',
+          text: 'Please be advised that BombasType digital catalog and licensing systems will undergo scheduled maintenance to enhance edge speed and security. The brief maintenance window will conclude shortly.'
+        },
+        {
+          id: `blk_btn_${Date.now()}_3`,
+          type: 'button',
+          buttonText: 'CHECK STATUS',
+          buttonUrl: 'https://bombastype.com'
+        }
+      ];
+
+    case 'back_live':
+      return [
+        {
+          id: `blk_head_${Date.now()}_1`,
+          type: 'heading',
+          title: 'WE ARE BACK ONLINE',
+          subtitle: 'Infrastructure Enhancements Successfully Completed'
+        },
+        {
+          id: `blk_text_${Date.now()}_2`,
+          type: 'text',
+          text: 'Our scheduled maintenance is officially complete. All systems, TypeTesters, license vaults, and FontCanvas are fully operational with enhanced edge delivery worldwide. Thank you for your patience.'
+        },
+        {
+          id: `blk_btn_${Date.now()}_3`,
+          type: 'button',
+          buttonText: 'EXPLORE CATALOG',
+          buttonUrl: 'https://bombastype.com/fonts'
+        }
+      ];
+
+    case 'new_coupon':
+      return [
+        {
+          id: `blk_head_${Date.now()}_1`,
+          type: 'heading',
+          title: 'EXCLUSIVE PATRON PRIVILEGE',
+          subtitle: 'Private Typographic Commission Voucher'
+        },
+        {
+          id: `blk_text_${Date.now()}_2`,
+          type: 'text',
+          text: `Dear ${bName},\n\nThank you for reaching out regarding our typographic library. As discussed, we are pleased to extend an exclusive ${disc}% private privilege voucher for your upcoming projects.\n\nPlease apply your personal token at checkout to enjoy this preferential rate on all font licenses and bundles.`
+        },
+        {
+          id: `blk_coup_${Date.now()}_3`,
+          type: 'coupon',
+          dealKind: 'coupon',
+          couponCode: 'VIP25OFF',
+          couponDiscount: parseFloat(disc) || 25,
+          couponUrgencyText: '⏳ Limited Time Exclusive • 1 Use Only'
+        },
+        {
+          id: `blk_btn_${Date.now()}_4`,
+          type: 'button',
+          buttonText: 'CLAIM PRIVILEGE & BROWSE CATALOG',
+          buttonUrl: 'https://bombastype.com/fonts'
+        }
+      ];
+
+    case 'new_promotion':
+      return [
+        {
+          id: `blk_head_${Date.now()}_1`,
+          type: 'heading',
+          title: `${(eName || 'SEASONAL').toUpperCase()} SPECIAL SALE`,
+          subtitle: 'Store-Wide Price Reduction Across All Archival Typefaces'
+        },
+        {
+          id: `blk_text_${Date.now()}_2`,
+          type: 'text',
+          text: `In honor of ${eName || 'the season'}, we are delighted to announce our limited-time site-wide holiday event. All font licenses and complete family bundles are automatically discounted — no coupon code required.\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`
+        },
+        {
+          id: `blk_coup_${Date.now()}_3`,
+          type: 'coupon',
+          dealKind: 'promotion',
+          promoName: eName || 'Seasonal Promotion',
+          promoDiscount: parseFloat(disc) || 30,
+          promoTarget: 'global',
+          couponCode: ''
+        },
+        {
+          id: `blk_btn_${Date.now()}_4`,
+          type: 'button',
+          buttonText: `EXPLORE ${(eName || 'SALE').toUpperCase()} DEALS`,
+          buttonUrl: 'https://bombastype.com/fonts'
+        }
+      ];
+
+    case 'custom':
+    default:
+      return [
+        {
+          id: `blk_head_${Date.now()}_1`,
+          type: 'heading',
+          title: 'STUDIO DISPATCH',
+          subtitle: 'News & Updates from the Type Foundry'
+        },
+        {
+          id: `blk_text_${Date.now()}_2`,
+          type: 'text',
+          text: 'Dear patron,\n\nWe are pleased to share the latest updates, design notes, and exclusive offers crafted for our typography community.'
+        },
+        {
+          id: `blk_btn_${Date.now()}_3`,
+          type: 'button',
+          buttonText: 'VISIT ARCHIVE',
+          buttonUrl: 'https://bombastype.com'
+        }
+      ];
+  }
+};
+
 export default function BroadcastStudio() {
   const [activeTab, setActiveTab] = useState<'compose' | 'campaigns' | 'logs'>('compose');
   const [loading, setLoading] = useState(true);
@@ -175,13 +376,6 @@ export default function BroadcastStudio() {
   const [audience, setAudience] = useState<'all' | 'buyers' | 'subscribers'>('all');
   const [campaignTitle, setCampaignTitle] = useState('');
   const [subject, setSubject] = useState(PRESETS[0].subject);
-  const [headline, setHeadline] = useState(PRESETS[0].title);
-  const [subtitle, setSubtitle] = useState(PRESETS[0].subtitle);
-  const [bodyText, setBodyText] = useState(PRESETS[0].bodyText);
-  const [bannerUrl, setBannerUrl] = useState('');
-  const [buttonText, setButtonText] = useState(PRESETS[0].buttonText);
-  const [buttonUrl, setButtonUrl] = useState(PRESETS[0].buttonUrl);
-  const [couponCode, setCouponCode] = useState('');
 
   // Search & Filter
   const [logSearch, setLogSearch] = useState('');
@@ -225,10 +419,6 @@ export default function BroadcastStudio() {
   const [newPromoEndDate, setNewPromoEndDate] = useState('');
   const [isSavingNewPromo, setIsSavingNewPromo] = useState(false);
 
-  // Banner Upload & Google Drive Auto-Converter State
-  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
-  const [isDraggingBanner, setIsDraggingBanner] = useState(false);
-
   // Helper to generate promotional urgency text
   const computeUrgencyText = (c: any) => {
     const parts: string[] = [];
@@ -246,12 +436,12 @@ export default function BroadcastStudio() {
     return parts.length > 0 ? parts.join(' • ') : '⏳ Limited Availability • Claim at Checkout';
   };
 
-  // Email Builder: Modular Content Blocks
-  const [blocks, setBlocks] = useState<BroadcastBlock[]>([]);
+  // Email Builder: 100% Modular Content Blocks Initialized from Preset
+  const [blocks, setBlocks] = useState<BroadcastBlock[]>(() => getDefaultPresetBlocks('new_release'));
 
   const addBlock = (type: 'heading' | 'text' | 'button' | 'image' | 'coupon') => {
-    let initialCouponCode = couponCode || 'PROMO20';
-    let initialDiscount = 20;
+    let initialCouponCode = 'VIP25OFF';
+    let initialDiscount = 25;
     let initialEndDate: string | undefined = undefined;
     let initialMaxUses: number | undefined = 1;
     let initialUrgency = '⏳ Limited Time Promotion • Apply at Checkout';
@@ -259,7 +449,7 @@ export default function BroadcastStudio() {
     if (type === 'coupon' && dbCoupons.length > 0) {
       const topCoupon = dbCoupons[0];
       initialCouponCode = topCoupon.code;
-      initialDiscount = topCoupon.discount_value || 20;
+      initialDiscount = topCoupon.discount_value || 25;
       initialEndDate = topCoupon.end_date;
       initialMaxUses = topCoupon.max_uses;
       initialUrgency = computeUrgencyText(topCoupon);
@@ -268,22 +458,20 @@ export default function BroadcastStudio() {
     const newBlock: BroadcastBlock = {
       id: `blk_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       type,
-      title: type === 'heading' ? 'NEW SECTION DISPATCH' : undefined,
-      subtitle: type === 'heading' ? 'Archival Section Subtitle' : undefined,
-      text: type === 'text' ? 'Write additional dispatch notes, editorial commentary, or specimen details here...' : undefined,
-      buttonText: type === 'button' ? 'LEARN MORE' : undefined,
+      title: type === 'heading' ? 'NEW ARCHIVAL HEADING' : undefined,
+      subtitle: type === 'heading' ? 'Section Subtitle' : undefined,
+      text: type === 'text' ? 'Write announcement or dispatch notes here...' : undefined,
+      buttonText: type === 'button' ? 'EXPLORE CATALOG' : undefined,
       buttonUrl: type === 'button' ? 'https://bombastype.com' : undefined,
       imageUrl: type === 'image' ? '' : undefined,
       imageCaption: type === 'image' ? '' : undefined,
+      dealKind: type === 'coupon' ? 'coupon' : undefined,
       couponCode: type === 'coupon' ? initialCouponCode : undefined,
       couponDiscount: type === 'coupon' ? initialDiscount : undefined,
       couponEndDate: type === 'coupon' ? initialEndDate : undefined,
       couponMaxUses: type === 'coupon' ? initialMaxUses : undefined,
       couponUrgencyText: type === 'coupon' ? initialUrgency : undefined,
     };
-    if (type === 'coupon') {
-      setCouponCode(initialCouponCode);
-    }
     setBlocks(prev => [...prev, newBlock]);
   };
 
@@ -316,13 +504,13 @@ export default function BroadcastStudio() {
 
       const urgency = computeUrgencyText(payload);
       updateBlock(blockId, {
+        dealKind: 'coupon',
         couponCode: codeUpper,
         couponDiscount: discNum,
         couponEndDate: newCouponEndDate,
         couponMaxUses: usesNum,
         couponUrgencyText: urgency
       });
-      setCouponCode(codeUpper);
       setIsAddingNewCoupon(null);
       setNewCouponCode('');
       setNewCouponDiscount('20');
@@ -365,15 +553,13 @@ export default function BroadcastStudio() {
         const { data: updatedCoupons } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
         if (updatedCoupons) setDbCoupons(updatedCoupons);
 
-        setCouponCode(suggestedCode);
         setSubject(prev => prev.replace(/\[DISCOUNT\]/g, `${percent}`).replace(/\[COUPON_CODE\]/g, suggestedCode));
-        setHeadline(prev => prev.replace(/\[DISCOUNT\]/g, `${percent}`));
-        setBodyText(prev => prev.replace(/\[DISCOUNT\]/g, `${percent}`));
 
         // Update or add coupon block
         const existingCouponBlock = blocks.find(b => b.type === 'coupon');
         if (existingCouponBlock) {
           updateBlock(existingCouponBlock.id, {
+            dealKind: 'coupon',
             couponCode: suggestedCode,
             couponDiscount: percent,
             couponEndDate: defaultEndDate,
@@ -384,6 +570,7 @@ export default function BroadcastStudio() {
           setBlocks(prev => [...prev, {
             id: `blk_deal_${Date.now()}`,
             type: 'coupon',
+            dealKind: 'coupon',
             couponCode: suggestedCode,
             couponDiscount: percent,
             couponEndDate: defaultEndDate,
@@ -406,8 +593,23 @@ export default function BroadcastStudio() {
     setShowBuyerSuggestions(false);
 
     setSubject(prev => prev.replace(/\[BUYER_NAME\]/g, name));
-    setHeadline(prev => prev.replace(/\[BUYER_NAME\]/g, name));
-    setBodyText(prev => prev.replace(/\[BUYER_NAME\]/g, name));
+    setCampaignTitle(`Private Deal - ${name}`);
+
+    // Update tokens in blocks
+    setBlocks(prev => prev.map(b => {
+      const replacer = (val?: string) => {
+        if (!val) return val;
+        if (val.includes('[BUYER_NAME]')) return val.replace(/\[BUYER_NAME\]/g, name);
+        if (selectedBuyerName && val.includes(selectedBuyerName)) return val.split(selectedBuyerName).join(name);
+        return val;
+      };
+      return {
+        ...b,
+        title: replacer(b.title),
+        subtitle: replacer(b.subtitle),
+        text: replacer(b.text)
+      };
+    }));
   };
 
   const fetchPromotions = async () => {
@@ -427,41 +629,60 @@ export default function BroadcastStudio() {
     setSelectedEventName(promo.name);
     setPromoDiscountPercent(String(promo.discount_percent || 30));
 
-    const scopeText = promo.type === 'global' ? 'Store-Wide on All Archival Typefaces' : 'Special Discount on Selected Archival Specimens';
+    const scopeText = promo.type === 'global' ? 'Store-Wide Across All Archival Typefaces' : 'Special Discount on Selected Archival Specimens';
     const urgency = promo.end_date ? `Valid until ${new Date(promo.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '';
 
     setSubject(`[${promo.name}] Celebration: Up to ${promo.discount_percent}% Off ${promo.type === 'global' ? 'Site-Wide' : 'Special Selection'}`);
-    setHeadline(`${promo.name.toUpperCase()} SPECIAL SALE`);
-    setSubtitle(`${promo.discount_percent}% Price Reduction • ${scopeText}`);
-    setBodyText(`In honor of ${promo.name}, we are delighted to announce our limited-time ${promo.type === 'global' ? 'site-wide' : 'curated'} sale. Font licenses ${promo.type === 'global' ? 'across our entire archival catalog' : 'for selected specimens'} are automatically discounted by ${promo.discount_percent}% — no coupon code required.${urgency ? `\n\nThis promotional privilege concludes on ${urgency}.` : ''}\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`);
-    setButtonText(`EXPLORE ${promo.name.toUpperCase()} DEALS`);
     setCampaignTitle(`Event Sale - ${promo.name}`);
 
-    // Automatically update or create promotion block in blocks
-    const existingPromoBlock = blocks.find(b => b.type === 'coupon');
-    if (existingPromoBlock) {
-      updateBlock(existingPromoBlock.id, {
-        dealKind: 'promotion',
-        promoId: promo.id,
-        promoName: promo.name,
-        promoDiscount: promo.discount_percent,
-        promoEndDate: promo.end_date,
-        promoTarget: promo.type,
-        couponCode: ''
+    const promoHead = `${promo.name.toUpperCase()} SPECIAL SALE`;
+    const promoSub = `${promo.discount_percent}% Price Reduction • ${scopeText}`;
+    const promoBody = `In honor of ${promo.name}, we are delighted to announce our limited-time ${promo.type === 'global' ? 'site-wide' : 'curated'} sale. Font licenses ${promo.type === 'global' ? 'across our entire archival catalog' : 'for selected specimens'} are automatically discounted by ${promo.discount_percent}% — no coupon code required.${urgency ? `\n\nThis promotional privilege concludes on ${urgency}.` : ''}\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`;
+    const promoBtn = `EXPLORE ${promo.name.toUpperCase()} DEALS`;
+
+    // Automatically update blocks
+    setBlocks(prev => {
+      const hasCoupon = prev.some(b => b.type === 'coupon');
+      const updated = prev.map(b => {
+        if (b.type === 'heading') {
+          return { ...b, title: promoHead, subtitle: promoSub };
+        }
+        if (b.type === 'text') {
+          return { ...b, text: promoBody };
+        }
+        if (b.type === 'button') {
+          return { ...b, buttonText: promoBtn };
+        }
+        if (b.type === 'coupon') {
+          return {
+            ...b,
+            dealKind: 'promotion' as const,
+            promoId: promo.id,
+            promoName: promo.name,
+            promoDiscount: promo.discount_percent,
+            promoEndDate: promo.end_date,
+            promoTarget: promo.type,
+            couponCode: ''
+          };
+        }
+        return b;
       });
-    } else {
-      setBlocks(prev => [...prev, {
-        id: `blk_promo_${Date.now()}`,
-        type: 'coupon',
-        dealKind: 'promotion',
-        promoId: promo.id,
-        promoName: promo.name,
-        promoDiscount: promo.discount_percent,
-        promoEndDate: promo.end_date,
-        promoTarget: promo.type,
-        couponCode: ''
-      }]);
-    }
+
+      if (!hasCoupon) {
+        updated.push({
+          id: `blk_promo_${Date.now()}`,
+          type: 'coupon',
+          dealKind: 'promotion',
+          promoId: promo.id,
+          promoName: promo.name,
+          promoDiscount: promo.discount_percent,
+          promoEndDate: promo.end_date,
+          promoTarget: promo.type,
+          couponCode: ''
+        });
+      }
+      return updated;
+    });
   };
 
   const handleCreateNewPromotion = async (linkToBlockId?: string) => {
@@ -529,10 +750,37 @@ export default function BroadcastStudio() {
     setSelectedPromoId('');
     const disc = promoDiscountPercent || '30';
     setSubject(`[${eventName}] Celebration: Up to ${disc}% Off Site-Wide`);
-    setHeadline(`${eventName.toUpperCase()} SPECIAL SALE`);
-    setSubtitle('Store-Wide Price Reduction Across All Archival Typefaces');
-    setBodyText(`In honor of ${eventName}, we are delighted to announce our limited-time site-wide holiday event. All font licenses and complete family bundles are automatically discounted — no coupon code required.\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`);
-    setButtonText(`EXPLORE ${eventName.toUpperCase()} DEALS`);
+    setCampaignTitle(`Event Sale - ${eventName}`);
+
+    setBlocks(prev => prev.map(b => {
+      if (b.type === 'heading') {
+        return {
+          ...b,
+          title: `${eventName.toUpperCase()} SPECIAL SALE`,
+          subtitle: 'Store-Wide Price Reduction Across All Archival Typefaces'
+        };
+      }
+      if (b.type === 'text') {
+        return {
+          ...b,
+          text: `In honor of ${eventName}, we are delighted to announce our limited-time site-wide holiday event. All font licenses and complete family bundles are automatically discounted — no coupon code required.\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`
+        };
+      }
+      if (b.type === 'button') {
+        return {
+          ...b,
+          buttonText: `EXPLORE ${eventName.toUpperCase()} DEALS`
+        };
+      }
+      if (b.type === 'coupon' && b.dealKind === 'promotion') {
+        return {
+          ...b,
+          promoName: eventName,
+          promoDiscount: parseFloat(disc) || 30
+        };
+      }
+      return b;
+    }));
   };
 
   const filteredBuyers = buyersList.filter(b => {
@@ -577,17 +825,11 @@ export default function BroadcastStudio() {
     return trimmed;
   };
 
-  const handleBannerUrlChange = (val: string) => {
-    const converted = convertDriveUrl(val);
-    setBannerUrl(converted);
-  };
-
-  const handleBannerUpload = async (file: File) => {
+  const handleBlockImageUpload = async (blockId: string, file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('Please select a valid image file (PNG, JPG, WEBP, SVG).');
       return;
     }
-    setIsUploadingBanner(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Session expired. Please log in again.');
@@ -611,12 +853,10 @@ export default function BroadcastStudio() {
       }
 
       const publicUrl = `${window.location.origin}/api/images/${uniqueFileName}`;
-      setBannerUrl(publicUrl);
+      updateBlock(blockId, { imageUrl: publicUrl });
     } catch (err: any) {
-      console.error('Banner upload error:', err);
+      console.error('Image upload error:', err);
       alert('Failed to upload image: ' + err.message);
-    } finally {
-      setIsUploadingBanner(false);
     }
   };
 
@@ -731,9 +971,23 @@ export default function BroadcastStudio() {
     };
 
     setSubject(prev => replaceToken(prev, currentPresetObj.subject));
-    setHeadline(prev => replaceToken(prev, currentPresetObj.title));
-    setSubtitle(prev => replaceToken(prev, currentPresetObj.subtitle));
-    setBodyText(prev => replaceToken(prev, currentPresetObj.bodyText));
+
+    // Update tokens across blocks
+    setBlocks(prev => prev.map(b => {
+      const replacer = (val?: string) => {
+        if (!val) return val;
+        if (val.includes('[FONT_NAME]')) return val.replace(/\[FONT_NAME\]/g, fontName);
+        if (selectedFontName && val.includes(selectedFontName)) return val.split(selectedFontName).join(fontName);
+        return val;
+      };
+      return {
+        ...b,
+        title: replacer(b.title),
+        subtitle: replacer(b.subtitle),
+        text: replacer(b.text),
+        buttonText: replacer(b.buttonText)
+      };
+    }));
   };
 
   const handleApplyPreset = (presetId: string) => {
@@ -747,59 +1001,64 @@ export default function BroadcastStudio() {
     const isPromoPreset = presetId === 'new_promotion';
 
     let subj = p.subject;
-    let head = p.title;
-    let subt = p.subtitle;
-    let body = p.bodyText;
 
     if ((isRelease || isUpdate) && selectedFontName) {
       subj = subj.replace(/\[FONT_NAME\]/g, selectedFontName);
-      head = head.replace(/\[FONT_NAME\]/g, selectedFontName);
-      subt = subt.replace(/\[FONT_NAME\]/g, selectedFontName);
-      body = body.replace(/\[FONT_NAME\]/g, selectedFontName);
       setCampaignTitle(isRelease ? `${selectedFontName} - Release` : `${selectedFontName} - Update`);
     } else if (isRelease || isUpdate) {
       setCampaignTitle('');
     } else if (isCouponPreset) {
       const bName = selectedBuyerName || 'Patron';
       subj = subj.replace(/\[BUYER_NAME\]/g, bName).replace(/\[DISCOUNT\]/g, '25');
-      head = head.replace(/\[BUYER_NAME\]/g, bName).replace(/\[DISCOUNT\]/g, '25');
-      body = body.replace(/\[BUYER_NAME\]/g, bName).replace(/\[DISCOUNT\]/g, '25');
       setCampaignTitle(`Private Deal - ${bName}`);
       setTargetMode('single');
-
-      // Auto ensure a coupon block exists in blocks
-      if (!blocks.some(b => b.type === 'coupon')) {
-        const topCoupon = dbCoupons[0];
-        const newBlk: BroadcastBlock = {
-          id: `blk_coupon_${Date.now()}`,
-          type: 'coupon',
-          couponCode: topCoupon ? topCoupon.code : 'VIP25OFF',
-          couponDiscount: topCoupon ? topCoupon.discount_value : 25,
-          couponEndDate: topCoupon ? topCoupon.end_date : undefined,
-          couponMaxUses: topCoupon ? topCoupon.max_uses : 1,
-          couponUrgencyText: topCoupon ? computeUrgencyText(topCoupon) : '⏳ Limited Time Exclusive • 1 Use Only'
-        };
-        setBlocks(prev => [...prev, newBlk]);
-        setCouponCode(newBlk.couponCode || 'VIP25OFF');
-      }
     } else if (isPromoPreset) {
       const evt = selectedEventName || 'Eid Mubarak';
       const disc = promoDiscountPercent || '30';
       subj = subj.replace(/\[EVENT_NAME\]/g, evt).replace(/\[DISCOUNT\]/g, disc);
-      head = head.replace(/\[EVENT_NAME\]/g, evt).replace(/\[DISCOUNT\]/g, disc);
-      subt = subt.replace(/\[EVENT_NAME\]/g, evt);
-      body = body.replace(/\[EVENT_NAME\]/g, evt);
       setCampaignTitle(`Event Sale - ${evt}`);
-      setButtonText(`EXPLORE ${evt.toUpperCase()} DEALS`);
     }
 
     setSubject(subj);
-    setHeadline(head);
-    setSubtitle(subt);
-    setBodyText(body);
-    setButtonText(p.buttonText);
-    setButtonUrl(p.buttonUrl);
-    setCouponCode(p.couponCode);
+
+    // Populate modular blocks from preset
+    const presetBlocks = getDefaultPresetBlocks(
+      presetId,
+      selectedFontName,
+      selectedBuyerName || 'Patron',
+      selectedEventName,
+      isCouponPreset ? '25' : promoDiscountPercent
+    );
+
+    // If new_coupon and DB coupons exist, attach first DB coupon
+    if (isCouponPreset && dbCoupons.length > 0) {
+      const topCoupon = dbCoupons[0];
+      const couponBlock = presetBlocks.find(b => b.type === 'coupon');
+      if (couponBlock) {
+        couponBlock.couponCode = topCoupon.code;
+        couponBlock.couponDiscount = topCoupon.discount_value;
+        couponBlock.couponEndDate = topCoupon.end_date;
+        couponBlock.couponMaxUses = topCoupon.max_uses;
+        couponBlock.couponUrgencyText = computeUrgencyText(topCoupon);
+      }
+    }
+
+    // If new_promotion and DB promotions exist, attach selected or first DB promo
+    if (isPromoPreset && dbPromotions.length > 0) {
+      const promoToUse = dbPromotions.find(p => p.id === selectedPromoId) || dbPromotions[0];
+      const promoBlock = presetBlocks.find(b => b.type === 'coupon');
+      if (promoBlock && promoToUse) {
+        promoBlock.dealKind = 'promotion';
+        promoBlock.promoId = promoToUse.id;
+        promoBlock.promoName = promoToUse.name;
+        promoBlock.promoDiscount = promoToUse.discount_percent;
+        promoBlock.promoEndDate = promoToUse.end_date;
+        promoBlock.promoTarget = promoToUse.type;
+        promoBlock.couponCode = '';
+      }
+    }
+
+    setBlocks(presetBlocks);
   };
 
   const getTargetAudienceCount = () => {
@@ -841,6 +1100,12 @@ export default function BroadcastStudio() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
+      const firstHeading = blocks.find(b => b.type === 'heading');
+      const firstText = blocks.find(b => b.type === 'text');
+      const firstBtn = blocks.find(b => b.type === 'button');
+      const firstImg = blocks.find(b => b.type === 'image');
+      const firstCoupon = blocks.find(b => b.type === 'coupon' && b.dealKind !== 'promotion');
+
       const res = await fetch('/api/admin/broadcast-send', {
         method: 'POST',
         headers: {
@@ -849,20 +1114,20 @@ export default function BroadcastStudio() {
         },
         body: JSON.stringify({
           campaignId: campId,
-          campaignTitle: campaignTitle || headline || subject,
+          campaignTitle: campaignTitle || firstHeading?.title || subject,
           audience: isSingleMode ? 'single' : audience,
           recipientEmail: isSingleMode ? selectedBuyerEmail : undefined,
           recipientName: isSingleMode ? selectedBuyerName : undefined,
           subject,
           preset: selectedPreset,
           templateData: {
-            title: headline,
-            subtitle,
-            bodyText,
-            bannerUrl,
-            buttonText,
-            buttonUrl,
-            couponCode,
+            title: firstHeading?.title || subject,
+            subtitle: firstHeading?.subtitle || '',
+            bodyText: firstText?.text || '',
+            bannerUrl: firstImg?.imageUrl || '',
+            buttonText: firstBtn?.buttonText || '',
+            buttonUrl: firstBtn?.buttonUrl || '',
+            couponCode: firstCoupon?.couponCode || '',
             blocks
           }
         })
@@ -1218,10 +1483,18 @@ export default function BroadcastStudio() {
                         type="text"
                         value={selectedBuyerName}
                         onChange={(e) => {
-                          setSelectedBuyerName(e.target.value);
-                          setSubject(prev => prev.replace(/\[BUYER_NAME\]/g, e.target.value));
-                          setHeadline(prev => prev.replace(/\[BUYER_NAME\]/g, e.target.value));
-                          setBodyText(prev => prev.replace(/\[BUYER_NAME\]/g, e.target.value));
+                          const val = e.target.value;
+                          setSelectedBuyerName(val);
+                          setSubject(prev => prev.replace(/\[BUYER_NAME\]/g, val));
+                          setBlocks(prev => prev.map(b => {
+                            const replacer = (s?: string) => s ? s.replace(/\[BUYER_NAME\]/g, val) : s;
+                            return {
+                              ...b,
+                              title: replacer(b.title),
+                              subtitle: replacer(b.subtitle),
+                              text: replacer(b.text)
+                            };
+                          }));
                         }}
                         placeholder="Recipient Name (e.g. Alex Studio)"
                         className="w-full sm:w-56 border border-vintage-ink p-2.5 text-xs bg-white outline-none font-bold"
@@ -1565,145 +1838,125 @@ export default function BroadcastStudio() {
                 </div>
               </div>
 
-              {/* Banner Image */}
-              {bannerUrl && (
-                <div className="mb-5 border border-[#2c241a] overflow-hidden">
-                  <img src={bannerUrl} alt="Banner" className="w-full h-auto object-cover" />
+              {/* Modular Blocks Preview (Stacked in Exact Order) */}
+              {blocks.length === 0 ? (
+                <div className="text-center py-8 text-xs font-mono text-vintage-ink/40">
+                  No content sections added yet. Add sections in the builder below.
                 </div>
-              )}
-
-              {/* Title & Subtitle */}
-              <div className="text-center mb-5">
-                <h2 className="font-serif font-bold text-xl uppercase tracking-wide leading-tight">
-                  {headline || "MAIN HEADLINE"}
-                </h2>
-                {subtitle && (
-                  <p className="text-xs italic text-[#8b6b4a] mt-1 tracking-wide">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-
-              {/* Body */}
-              <div className="text-xs leading-relaxed text-[#3a2e22] whitespace-pre-line mb-6 font-serif">
-                {bodyText || "Your broadcast message will appear here in elegant archival formatting."}
-              </div>
-
-              {/* CTA Button */}
-              {buttonText && (
-                <div className="text-center my-6">
-                  <span className="inline-block bg-[#2c241a] text-[#fdf6e3] text-[10px] font-bold uppercase tracking-[0.15em] px-6 py-3 border border-[#2c241a]">
-                    {buttonText}
-                  </span>
-                </div>
-              )}
-
-              {/* Additional Modular Blocks Preview */}
-              {blocks.map((block, idx) => {
-                if (block.type === 'coupon') {
-                  if (block.dealKind === 'promotion') {
-                    const pName = block.promoName || selectedEventName || 'SPECIAL STORE PROMOTION';
-                    const pDiscount = block.promoDiscount ? `${block.promoDiscount}% OFF` : `${promoDiscountPercent}% OFF`;
-                    const pScope = block.promoTarget === 'bundle' ? 'ON SELECTED ARCHIVAL SPECIMENS' : 'STORE-WIDE ON ALL TYPEFACES';
-                    const pUrgency = block.promoEndDate ? `Valid until ${new Date(block.promoEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '';
+              ) : (
+                blocks.map((block, idx) => {
+                  if (block.type === 'heading') {
                     return (
-                      <div key={block.id || idx} className="border-2 border-[#8b6b4a]/60 bg-[#fffdf8] p-6 text-center my-6 shadow-sm">
-                        <div className="text-[10px] uppercase tracking-[0.25em] text-[#8b6b4a] font-bold mb-3 font-serif">
-                          {pName}
+                      <div key={block.id || idx} className="text-center my-6">
+                        <h2 className="font-serif font-bold text-xl uppercase tracking-wide leading-tight">
+                          {block.title || "MAIN HEADLINE"}
+                        </h2>
+                        {block.subtitle && (
+                          <p className="text-xs italic text-[#8b6b4a] mt-1 tracking-wide">
+                            {block.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (block.type === 'text') {
+                    return (
+                      <div key={block.id || idx} className="text-xs leading-relaxed text-[#3a2e22] whitespace-pre-line my-4 font-serif">
+                        {block.text || "Your broadcast message will appear here in elegant archival formatting."}
+                      </div>
+                    );
+                  }
+
+                  if (block.type === 'button') {
+                    return (
+                      <div key={block.id || idx} className="text-center my-6">
+                        <span className="inline-block bg-[#2c241a] text-[#fdf6e3] text-[10px] font-bold uppercase tracking-[0.15em] px-6 py-3 border border-[#2c241a]">
+                          {block.buttonText || "EXPLORE ARCHIVE"} &rarr;
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  if (block.type === 'image') {
+                    return block.imageUrl ? (
+                      <div key={block.id || idx} className="my-6 text-center">
+                        <div className="border border-[#2c241a] overflow-hidden inline-block w-full">
+                          <img src={block.imageUrl} alt={block.imageCaption || "Specimen image"} className="w-full h-auto object-cover" />
                         </div>
-                        <div>
-                          <div className="inline-block bg-[#2c241a] text-[#fdf6e3] border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] px-6 py-2.5 font-serif font-black text-3xl sm:text-4xl tracking-tight leading-none">
-                            {pDiscount}
+                        {block.imageCaption && (
+                          <div className="text-[10px] font-serif italic text-[#6b5c4d] tracking-wide mt-1">
+                            {block.imageCaption}
                           </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div key={block.id || idx} className="my-4 border border-dashed border-vintage-ink/30 p-6 text-center text-xs font-mono text-vintage-ink/40">
+                        [Image placeholder: Upload or paste URL in section editor below]
+                      </div>
+                    );
+                  }
+
+                  if (block.type === 'coupon') {
+                    if (block.dealKind === 'promotion') {
+                      const pName = block.promoName || selectedEventName || 'SPECIAL STORE PROMOTION';
+                      const pDiscount = block.promoDiscount ? `${block.promoDiscount}% OFF` : `${promoDiscountPercent}% OFF`;
+                      const pScope = block.promoTarget === 'bundle' ? 'ON SELECTED ARCHIVAL SPECIMENS' : 'STORE-WIDE ON ALL TYPEFACES';
+                      const pUrgency = block.promoEndDate ? `Valid until ${new Date(block.promoEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '';
+                      return (
+                        <div key={block.id || idx} className="border-2 border-[#8b6b4a]/60 bg-[#fffdf8] p-6 text-center my-6 shadow-sm">
+                          <div className="text-[10px] uppercase tracking-[0.25em] text-[#8b6b4a] font-bold mb-3 font-serif">
+                            {pName}
+                          </div>
+                          <div>
+                            <div className="inline-block bg-[#2c241a] text-[#fdf6e3] border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] px-6 py-2.5 font-serif font-black text-3xl sm:text-4xl tracking-tight leading-none">
+                              {pDiscount}
+                            </div>
+                          </div>
+                          <div className="text-xs font-bold uppercase tracking-wider text-[#2c241a] mt-3.5 mb-1 font-serif">
+                            {pScope}
+                          </div>
+                          <div className="text-[11px] font-mono font-bold text-[#8b6b4a] mt-1 uppercase tracking-wide">
+                            No coupon code required.
+                          </div>
+                          {pUrgency && (
+                            <div className="mt-3 text-[10px] font-bold text-[#2c241a] bg-[#f5ede0] inline-block px-3 py-1 border border-[#8b6b4a]">
+                              ⏳ {pUrgency}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-xs font-bold uppercase tracking-wider text-[#2c241a] mt-3.5 mb-1 font-serif">
-                          {pScope}
+                      );
+                    }
+                    const cCode = block.couponCode || 'VIP25OFF';
+                    const cDiscount = block.couponDiscount ? `${block.couponDiscount}% OFF` : '';
+                    const cUrgency = block.couponUrgencyText || '';
+                    return (
+                      <div key={block.id || idx} className="border-2 border-dashed border-[#8b6b4a] bg-white p-5 text-center my-6 shadow-sm">
+                        <div className="text-[9px] uppercase tracking-[0.2em] text-[#8b6b4a] font-bold mb-1">
+                          EXCLUSIVE PRIVILEGE VOUCHER
                         </div>
-                        <div className="text-[11px] font-mono font-bold text-[#8b6b4a] mt-1 uppercase tracking-wide">
-                          No coupon code required.
+                        {cDiscount && (
+                          <div className="font-serif font-black text-2xl text-[#2c241a] my-1">
+                            {cDiscount}
+                          </div>
+                        )}
+                        <div className="font-mono text-xl font-black text-[#2c241a] bg-[#fdf6e3] inline-block px-4 py-1.5 border border-[#2c241a] tracking-widest my-1">
+                          {cCode}
                         </div>
-                        {pUrgency && (
-                          <div className="mt-3 text-[10px] font-bold text-[#2c241a] bg-[#f5ede0] inline-block px-3 py-1 border border-[#8b6b4a]">
-                            ⏳ {pUrgency}
+                        <div className="text-[10px] italic text-[#6b5c4d] mt-1.5">
+                          Apply this token at checkout to claim your archival discount.
+                        </div>
+                        {cUrgency && (
+                          <div className="mt-2 text-[9px] font-bold text-[#8b6b4a] bg-[#fffdf5] inline-block px-2.5 py-1 border border-[#d1c7b7]">
+                            {cUrgency}
                           </div>
                         )}
                       </div>
                     );
                   }
-                  const cCode = block.couponCode || couponCode || '';
-                  const cDiscount = block.couponDiscount ? `${block.couponDiscount}% OFF` : '';
-                  const cUrgency = block.couponUrgencyText || '';
-                  if (!cCode) return null;
-                  return (
-                    <div key={block.id || idx} className="border-2 border-dashed border-[#8b6b4a] bg-white p-5 text-center my-6 shadow-sm">
-                      <div className="text-[9px] uppercase tracking-[0.2em] text-[#8b6b4a] font-bold mb-1">
-                        EXCLUSIVE PRIVILEGE VOUCHER
-                      </div>
-                      {cDiscount && (
-                        <div className="font-serif font-black text-2xl text-[#2c241a] my-1">
-                          {cDiscount}
-                        </div>
-                      )}
-                      <div className="font-mono text-xl font-black text-[#2c241a] bg-[#fdf6e3] inline-block px-4 py-1.5 border border-[#2c241a] tracking-widest my-1">
-                        {cCode}
-                      </div>
-                      <div className="text-[10px] italic text-[#6b5c4d] mt-1.5">
-                        Apply this token at checkout to claim your archival discount.
-                      </div>
-                      {cUrgency && (
-                        <div className="mt-2 text-[9px] font-bold text-[#8b6b4a] bg-[#fffdf5] inline-block px-2.5 py-1 border border-[#d1c7b7]">
-                          {cUrgency}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                if (block.type === 'heading') {
-                  return (
-                    <div key={block.id || idx} className="text-center my-6 pt-5 border-t border-[#d1c7b7] border-dashed">
-                      <h3 className="font-serif font-bold text-base uppercase tracking-wide leading-tight text-[#2c241a]">
-                        {block.title || 'SECTION DISPATCH'}
-                      </h3>
-                      {block.subtitle && (
-                        <p className="text-[11px] italic text-[#8b6b4a] tracking-wide mt-1">
-                          {block.subtitle}
-                        </p>
-                      )}
-                    </div>
-                  );
-                }
-                if (block.type === 'text') {
-                  return (
-                    <div key={block.id || idx} className="text-xs leading-relaxed text-[#3a2e22] whitespace-pre-line my-4 font-serif">
-                      {block.text || 'Message paragraph...'}
-                    </div>
-                  );
-                }
-                if (block.type === 'button') {
-                  return (
-                    <div key={block.id || idx} className="text-center my-5">
-                      <span className="inline-block bg-[#2c241a] text-[#fdf6e3] text-[10px] font-bold uppercase tracking-[0.15em] px-5 py-2.5 border border-[#2c241a]">
-                        {block.buttonText || 'BUTTON'}
-                      </span>
-                    </div>
-                  );
-                }
-                if (block.type === 'image') {
-                  return block.imageUrl ? (
-                    <div key={block.id || idx} className="my-5 text-center">
-                      <div className="border border-[#2c241a] overflow-hidden inline-block w-full">
-                        <img src={block.imageUrl} alt={block.imageCaption || 'Specimen image'} className="w-full h-auto object-cover" />
-                      </div>
-                      {block.imageCaption && (
-                        <div className="text-[10px] font-serif italic text-[#6b5c4d] tracking-wide mt-1">
-                          {block.imageCaption}
-                        </div>
-                      )}
-                    </div>
-                  ) : null;
-                }
-                return null;
-              })}
+                  return null;
+                })
+              )}
 
               {/* Footer */}
               <div className="text-center pt-4 border-t border-[#2c241a] text-[9px] text-[#6b5c4d] leading-relaxed">
@@ -1715,8 +1968,15 @@ export default function BroadcastStudio() {
             </div>
           </div>
 
-            {/* EMAIL FIELDS */}
-            <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4 text-xs font-mono">
+          {/* 4. CAMPAIGN METADATA & MODULAR EMAIL BUILDER */}
+          <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4 text-xs font-mono">
+            <div className="flex items-center justify-between border-b border-vintage-ink pb-2">
+              <span className="uppercase tracking-widest font-black text-xs flex items-center gap-2">
+                <Megaphone size={14} className="text-[#8b6b4a]" /> Campaign Subject & Reference
+              </span>
+              <span className="text-[10px] font-mono opacity-60">Email Metadata</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="uppercase tracking-widest font-bold block mb-1">Campaign Reference Name</label>
                 <input
@@ -1724,180 +1984,37 @@ export default function BroadcastStudio() {
                   value={campaignTitle}
                   onChange={(e) => setCampaignTitle(e.target.value)}
                   placeholder="e.g. Briswood Release - Sept 2026"
-                  className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none"
+                  className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none font-bold"
                 />
               </div>
-
               <div>
                 <label className="uppercase tracking-widest font-bold block mb-1">Email Subject Line</label>
                 <input
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none font-sans text-sm"
+                  className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none font-sans font-bold text-sm"
                   required
                 />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="uppercase tracking-widest font-bold block mb-1">Main Heading</label>
-                  <input
-                    type="text"
-                    value={headline}
-                    onChange={(e) => setHeadline(e.target.value)}
-                    className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="uppercase tracking-widest font-bold block mb-1">Subtitle / Tagline</label>
-                  <input
-                    type="text"
-                    value={subtitle}
-                    onChange={(e) => setSubtitle(e.target.value)}
-                    className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="uppercase tracking-widest font-bold block mb-1">Message Body</label>
-                <textarea
-                  rows={6}
-                  value={bodyText}
-                  onChange={(e) => setBodyText(e.target.value)}
-                  className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none font-serif text-sm leading-relaxed"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="uppercase tracking-widest font-bold block mb-1">Call-To-Action Button Label</label>
-                  <input
-                    type="text"
-                    value={buttonText}
-                    onChange={(e) => setButtonText(e.target.value)}
-                    className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="uppercase tracking-widest font-bold block mb-1">Target Action URL</label>
-                  <input
-                    type="url"
-                    value={buttonUrl}
-                    onChange={(e) => setButtonUrl(e.target.value)}
-                    className="w-full border border-vintage-ink p-2.5 bg-vintage-paper outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* BANNER IMAGE UPLOAD / DRAG & DROP & URL */}
-              <div className="border border-dashed border-vintage-ink/50 p-4 bg-vintage-ink/[0.02] space-y-3 font-mono">
-                <div className="flex items-center justify-between">
-                  <label className="uppercase tracking-widest font-bold text-xs flex items-center gap-2">
-                    <ImageIcon size={14} /> Specimen Banner Image (Optional)
-                  </label>
-                  {bannerUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setBannerUrl('')}
-                      className="text-[10px] font-bold text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <X size={12} /> Remove
-                    </button>
-                  )}
-                </div>
-
-                {bannerUrl ? (
-                  <div className="flex items-center gap-3 bg-vintage-paper p-2 border border-vintage-ink">
-                    <img src={bannerUrl} alt="Banner Preview" className="w-20 h-14 object-cover border border-vintage-ink/40" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-bold text-emerald-800 flex items-center gap-1">
-                        <Check size={12} /> Image Active
-                      </div>
-                      <div className="text-[9px] font-mono opacity-70 truncate" title={bannerUrl}>
-                        {bannerUrl}
-                      </div>
-                    </div>
-                    <label className="vintage-btn btn-reverse px-3 py-1 text-[9px] cursor-pointer">
-                      Change
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleBannerUpload(f);
-                        }}
-                      />
-                    </label>
-                  </div>
-                ) : (
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDraggingBanner(true); }}
-                    onDragLeave={() => setIsDraggingBanner(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDraggingBanner(false);
-                      const f = e.dataTransfer.files?.[0];
-                      if (f) handleBannerUpload(f);
-                    }}
-                    className={`border border-dashed p-4 text-center transition-all cursor-pointer ${
-                      isDraggingBanner ? 'border-vintage-accent bg-vintage-accent/10' : 'border-vintage-ink/40 hover:border-vintage-ink bg-vintage-paper'
-                    }`}
-                  >
-                    <input
-                      type="file"
-                      id="bannerFileInputBombas"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleBannerUpload(f);
-                      }}
-                    />
-                    <label htmlFor="bannerFileInputBombas" className="cursor-pointer block">
-                      <Upload size={20} className="mx-auto mb-1 text-vintage-ink/50" />
-                      <div className="font-bold text-xs">
-                        {isUploadingBanner ? 'Uploading to Archival CDN...' : 'Drop image here, or click to browse'}
-                      </div>
-                      <div className="text-[9px] opacity-60 mt-0.5">
-                        PNG, JPG, WEBP, SVG (Auto-uploaded to Cloudflare R2)
-                      </div>
-                    </label>
-                  </div>
-                )}
-
-                <div>
-                  <div className="text-[10px] font-bold opacity-70 mb-1">
-                    Or paste direct image URL (Google Drive share links auto-convert):
-                  </div>
-                  <input
-                    type="url"
-                    value={bannerUrl}
-                    onChange={(e) => handleBannerUrlChange(e.target.value)}
-                    placeholder="https://... or Google Drive share link"
-                    className="w-full border border-vintage-ink p-2 text-xs bg-vintage-paper outline-none font-mono"
-                  />
-                </div>
-              </div>
             </div>
+          </div>
 
-            {/* EMAIL BUILDER: MODULAR ADDITIONAL CONTENT SECTIONS */}
-            <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4 text-xs font-mono">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-vintage-ink/30 gap-2">
-                <div>
-                  <label className="uppercase tracking-widest font-bold text-xs flex items-center gap-2">
-                    <Layers size={14} className="text-[#8b6b4a]" /> Additional Sections (Email Builder)
-                  </label>
-                  <p className="text-[10px] text-vintage-ink/70 font-sans mt-0.5">
-                    Add extra announcements, messages, secondary CTAs, imagery, or promotional vouchers to this dispatch
-                  </p>
-                </div>
-                <span className="text-[10px] font-bold bg-vintage-ink text-vintage-paper px-2 py-0.5 uppercase">
-                  {blocks.length} {blocks.length === 1 ? 'Section' : 'Sections'}
-                </span>
+          {/* EMAIL BUILDER: 100% CUSTOMIZABLE CONTENT SECTIONS */}
+          <div className="border border-vintage-ink p-5 bg-vintage-paper space-y-4 text-xs font-mono">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-vintage-ink/30 gap-2">
+              <div>
+                <label className="uppercase tracking-widest font-bold text-xs flex items-center gap-2">
+                  <Layers size={14} className="text-[#8b6b4a]" /> Email Content Sections (100% Customizable Builder)
+                </label>
+                <p className="text-[10px] text-vintage-ink/70 font-sans mt-0.5">
+                  Preset sections are loaded below. Reorder (▲ / ▼), edit inline, delete (🗑️), or append any section to customize email layout.
+                </p>
               </div>
+              <span className="text-[10px] font-bold bg-vintage-ink text-vintage-paper px-2 py-0.5 uppercase">
+                {blocks.length} {blocks.length === 1 ? 'Section' : 'Sections'}
+              </span>
+            </div>
 
               {/* ACTION TOOLBAR: ADD BUTTONS */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
