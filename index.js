@@ -533,12 +533,14 @@ function generateBroadcastEmailHtml({ preset, title, subtitle, bodyText, bannerU
         const promoScope = block.promoTarget === 'global' ? 'STORE-WIDE ON ALL TYPEFACES' : 'ON SELECTED TYPEFACES';
         const promoUrgency = block.promoEndDate ? `Valid until ${new Date(block.promoEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '';
         return `
-          <div style="background-color: #ffffff; border: 2px dashed #8b6b4a; padding: 22px 24px; margin: 24px 0; text-align: center;">
-            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #8b6b4a; font-weight: 700; margin-bottom: 6px;">${promoName}</div>
-            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 32px; font-weight: 900; color: #2c241a; margin: 6px 0;">${promoDiscount}</div>
-            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #2c241a; margin-bottom: 6px;">${promoScope}</div>
-            <div style="font-size: 12px; font-style: italic; color: #6b5c4d; margin-top: 4px;">No coupon code required &bull; Discount automatically applied at checkout.</div>
-            ${promoUrgency ? `<div style="margin-top: 10px; font-size: 11px; font-weight: 700; color: #8b6b4a; background-color: #fffdf5; display: inline-block; padding: 4px 10px; border: 1px solid #d1c7b7;">⏳ ${promoUrgency}</div>` : ''}
+          <div style="background-color: #ffffff; border: 2px solid #8b6b4a; padding: 24px 20px; margin: 24px 0; text-align: center;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #8b6b4a; font-weight: 700; margin-bottom: 12px; font-family: 'Playfair Display', Georgia, serif;">${promoName}</div>
+            <div style="margin: 8px 0 12px 0;">
+              <div style="display: inline-block; background-color: #2c241a; color: #fdf6e3; border: 2px solid #2c241a; box-shadow: 3px 3px 0px #8b6b4a; padding: 8px 28px; font-family: 'Playfair Display', Georgia, serif; font-size: 36px; font-weight: 900; line-height: 1;">${promoDiscount}</div>
+            </div>
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #2c241a; margin: 12px 0 4px 0; font-family: 'Playfair Display', Georgia, serif;">${promoScope}</div>
+            <div style="font-size: 11px; font-family: monospace; font-weight: 700; color: #8b6b4a; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px;">NO COUPON CODE REQUIRED.</div>
+            ${promoUrgency ? `<div style="margin-top: 12px; font-size: 11px; font-weight: 700; color: #2c241a; background-color: #f5ede0; display: inline-block; padding: 4px 12px; border: 1px solid #8b6b4a;">⏳ ${promoUrgency}</div>` : ''}
           </div>
         `;
       }

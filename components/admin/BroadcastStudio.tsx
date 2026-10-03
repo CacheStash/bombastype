@@ -138,7 +138,7 @@ const PRESETS = [
     subject: '[EVENT_NAME] Celebration: Up to [DISCOUNT]% Off Site-Wide',
     title: '[EVENT_NAME] SPECIAL SALE',
     subtitle: 'Store-Wide Price Reduction Across All Archival Typefaces',
-    bodyText: 'In honor of [EVENT_NAME], we are delighted to announce our limited-time site-wide holiday event. All font licenses and complete family bundles are automatically discounted at checkout — no coupon code required.\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.',
+    bodyText: 'In honor of [EVENT_NAME], we are delighted to announce our limited-time site-wide holiday event. All font licenses and complete family bundles are automatically discounted — no coupon code required.\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.',
     buttonText: 'EXPLORE [EVENT_NAME] DEALS',
     buttonUrl: 'https://bombastype.com/fonts',
     couponCode: ''
@@ -433,7 +433,7 @@ export default function BroadcastStudio() {
     setSubject(`[${promo.name}] Celebration: Up to ${promo.discount_percent}% Off ${promo.type === 'global' ? 'Site-Wide' : 'Special Selection'}`);
     setHeadline(`${promo.name.toUpperCase()} SPECIAL SALE`);
     setSubtitle(`${promo.discount_percent}% Price Reduction • ${scopeText}`);
-    setBodyText(`In honor of ${promo.name}, we are delighted to announce our limited-time ${promo.type === 'global' ? 'site-wide' : 'curated'} sale. Font licenses ${promo.type === 'global' ? 'across our entire archival catalog' : 'for selected specimens'} are automatically discounted by ${promo.discount_percent}% at checkout — no coupon code required.${urgency ? `\n\nThis promotional privilege concludes on ${urgency}.` : ''}\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`);
+    setBodyText(`In honor of ${promo.name}, we are delighted to announce our limited-time ${promo.type === 'global' ? 'site-wide' : 'curated'} sale. Font licenses ${promo.type === 'global' ? 'across our entire archival catalog' : 'for selected specimens'} are automatically discounted by ${promo.discount_percent}% — no coupon code required.${urgency ? `\n\nThis promotional privilege concludes on ${urgency}.` : ''}\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`);
     setButtonText(`EXPLORE ${promo.name.toUpperCase()} DEALS`);
     setCampaignTitle(`Event Sale - ${promo.name}`);
 
@@ -531,7 +531,7 @@ export default function BroadcastStudio() {
     setSubject(`[${eventName}] Celebration: Up to ${disc}% Off Site-Wide`);
     setHeadline(`${eventName.toUpperCase()} SPECIAL SALE`);
     setSubtitle('Store-Wide Price Reduction Across All Archival Typefaces');
-    setBodyText(`In honor of ${eventName}, we are delighted to announce our limited-time site-wide holiday event. All font licenses and complete family bundles are automatically discounted at checkout — no coupon code required.\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`);
+    setBodyText(`In honor of ${eventName}, we are delighted to announce our limited-time site-wide holiday event. All font licenses and complete family bundles are automatically discounted — no coupon code required.\n\nTake this opportunity to acquire timeless specimens for your forthcoming editorial and identity works.`);
     setButtonText(`EXPLORE ${eventName.toUpperCase()} DEALS`);
   };
 
@@ -1622,21 +1622,23 @@ export default function BroadcastStudio() {
                     const pScope = block.promoTarget === 'bundle' ? 'ON SELECTED ARCHIVAL SPECIMENS' : 'STORE-WIDE ON ALL TYPEFACES';
                     const pUrgency = block.promoEndDate ? `Valid until ${new Date(block.promoEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '';
                     return (
-                      <div key={block.id || idx} className="border-2 border-dashed border-[#8b6b4a] bg-white p-6 text-center my-6 shadow-sm">
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-[#8b6b4a] font-bold mb-1">
+                      <div key={block.id || idx} className="border-2 border-[#8b6b4a]/60 bg-[#fffdf8] p-6 text-center my-6 shadow-sm">
+                        <div className="text-[10px] uppercase tracking-[0.25em] text-[#8b6b4a] font-bold mb-3 font-serif">
                           {pName}
                         </div>
-                        <div className="font-serif font-black text-3xl text-[#2c241a] my-2">
-                          {pDiscount}
+                        <div>
+                          <div className="inline-block bg-[#2c241a] text-[#fdf6e3] border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] px-6 py-2.5 font-serif font-black text-3xl sm:text-4xl tracking-tight leading-none">
+                            {pDiscount}
+                          </div>
                         </div>
-                        <div className="text-xs font-bold uppercase tracking-wider text-[#2c241a] mb-1">
+                        <div className="text-xs font-bold uppercase tracking-wider text-[#2c241a] mt-3.5 mb-1 font-serif">
                           {pScope}
                         </div>
-                        <div className="text-[11px] italic text-[#6b5c4d] mt-1">
-                          No coupon code required &bull; Discount automatically applied at checkout.
+                        <div className="text-[11px] font-mono font-bold text-[#8b6b4a] mt-1 uppercase tracking-wide">
+                          No coupon code required.
                         </div>
                         {pUrgency && (
-                          <div className="mt-2.5 text-[10px] font-bold text-[#8b6b4a] bg-[#fffdf5] inline-block px-3 py-1 border border-[#d1c7b7]">
+                          <div className="mt-3 text-[10px] font-bold text-[#2c241a] bg-[#f5ede0] inline-block px-3 py-1 border border-[#8b6b4a]">
                             ⏳ {pUrgency}
                           </div>
                         )}
