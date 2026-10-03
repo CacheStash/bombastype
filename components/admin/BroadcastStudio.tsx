@@ -75,7 +75,7 @@ const PRESETS = [
     bodyText: 'We are thrilled to unveil our latest archival creation, [FONT_NAME]. Meticulously revived and expanded with comprehensive OpenType features, alternates, and multi-layer chromatic styles ready for your editorial masterworks.',
     buttonText: 'TEST IN TYPETESTER & BUY',
     buttonUrl: 'https://bombastype.com/fonts',
-    couponCode: 'RELEASE20'
+    couponCode: ''
   },
   {
     id: 'update_typeface',
@@ -86,7 +86,7 @@ const PRESETS = [
     bodyText: 'We are delighted to release a major update for [FONT_NAME]. This revised specimen introduces enriched historical alternates, extensive multilingual kerning corrections, and optimized vector outlines for editorial prints and digital media.',
     buttonText: 'VIEW UPDATE IN CATALOG',
     buttonUrl: 'https://bombastype.com/fonts',
-    couponCode: 'UPDATE20'
+    couponCode: ''
   },
   {
     id: 'new_feature',
@@ -119,7 +119,7 @@ const PRESETS = [
     bodyText: 'Our scheduled maintenance is officially complete. All systems, TypeTesters, license vaults, and FontCanvas are fully operational with enhanced edge delivery worldwide. Thank you for your patience.',
     buttonText: 'EXPLORE CATALOG',
     buttonUrl: 'https://bombastype.com/fonts',
-    couponCode: 'BACKLIVE15'
+    couponCode: ''
   },
   {
     id: 'new_coupon',
@@ -181,7 +181,7 @@ export default function BroadcastStudio() {
   const [bannerUrl, setBannerUrl] = useState('');
   const [buttonText, setButtonText] = useState(PRESETS[0].buttonText);
   const [buttonUrl, setButtonUrl] = useState(PRESETS[0].buttonUrl);
-  const [couponCode, setCouponCode] = useState(PRESETS[0].couponCode);
+  const [couponCode, setCouponCode] = useState('');
 
   // Search & Filter
   const [logSearch, setLogSearch] = useState('');
@@ -1588,21 +1588,6 @@ export default function BroadcastStudio() {
               <div className="text-xs leading-relaxed text-[#3a2e22] whitespace-pre-line mb-6 font-serif">
                 {bodyText || "Your broadcast message will appear here in elegant archival formatting."}
               </div>
-
-              {/* Default Coupon Box (only if no modular coupon block is added) */}
-              {!blocks.some(b => b.type === 'coupon') && couponCode && (
-                <div className="border-2 border-dashed border-[#8b6b4a] bg-white p-4 text-center my-5">
-                  <div className="text-[9px] uppercase tracking-[0.15em] text-[#8b6b4a] font-bold mb-1">
-                    EXCLUSIVE VIP PRIVILEGE
-                  </div>
-                  <div className="font-mono text-lg font-bold text-[#2c241a] bg-[#fdf6e3] inline-block px-3 py-1 border border-[#2c241a] tracking-widest">
-                    {couponCode}
-                  </div>
-                  <div className="text-[10px] italic text-[#6b5c4d] mt-1">
-                    Apply this token at checkout to claim your archival discount.
-                  </div>
-                </div>
-              )}
 
               {/* CTA Button */}
               {buttonText && (

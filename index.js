@@ -601,7 +601,6 @@ function generateBroadcastEmailHtml({ preset, title, subtitle, bodyText, bannerU
                 ${formattedBody}
               </div>
 
-              ${couponHtml}
               ${buttonHtml}
               ${blocksHtml}
             </td>
