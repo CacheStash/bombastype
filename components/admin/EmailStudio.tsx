@@ -123,12 +123,24 @@ export default function EmailStudio() {
   const [modalPreviewDevice, setModalPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const sentItemsPerPage = 10;
 
-  const fetchGasPool = async () => {
+  // Lock background scroll when sent order preview modal is open
+  useEffect(() => {
+    if (selectedSentOrder) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedSentOrder]);
+
+  const fetchGasPool = async (forceRefresh = false) => {
     setCheckingGas(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const res = await fetch('/api/admin/gas-status', {
+      const res = await fetch(`/api/admin/gas-status${forceRefresh ? '?refresh=true' : ''}`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       if (res.ok) {
@@ -144,7 +156,7 @@ export default function EmailStudio() {
 
   useEffect(() => {
     fetchTemplates();
-    fetchGasPool();
+    fetchGasPool(false);
     fetchSentOrders();
   }, []);
 
@@ -789,7 +801,7 @@ export default function EmailStudio() {
               </div>
             )}
             <button
-              onClick={fetchGasPool}
+              onClick={() => fetchGasPool(true)}
               disabled={checkingGas}
               className="px-2.5 py-1 text-[10px] font-bold uppercase border border-vintage-ink/30 bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper flex items-center gap-1 cursor-pointer transition-all"
             >
@@ -1470,7 +1482,7 @@ export default function EmailStudio() {
       {/* MODAL: LIVE DESIGN EMAIL PREVIEW WITH BUYER INFO */}
       {/* ========================================================================= */}
       {selectedSentOrder && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden">
           <div className="bg-vintage-paper border-2 border-vintage-ink shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in duration-200">
             
             {/* Modal Header */}

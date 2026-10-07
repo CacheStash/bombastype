@@ -223,37 +223,208 @@ function parseGasEntry(rawEntry, fallbackIndex = 0) {
   };
 }
 
-async function getSmartPrioritizedGasAccounts(gasUrls, recipientEmail) {
+async function getSmartPrioritizedGasAccounts(gasUrls, recipientEmail, env) {
   const cleanRecipient = (recipientEmail || "").trim().toLowerCase();
-
-  // 1. Map URLs to account objects with auto-detected aliases
   const accounts = gasUrls.map((entry, idx) => parseGasEntry(entry, idx));
-
-  // 2. Prevent self-sending: Filter out any account whose sender email matches recipient
   const filtered = accounts.filter(acc => acc.email.toLowerCase() !== cleanRecipient);
   const candidates = filtered.length > 0 ? filtered : accounts;
 
-  // 3. Query remaining daily quotas in parallel (costs 0 emails)
-  const withQuotas = await Promise.all(candidates.map(async (acc) => {
-    let quota = 100;
+  // Use cached quota if env is provided to avoid latency
+  let cachedData = null;
+  if (env) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
-      const qRes = await fetch(acc.url, { method: "GET", signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (qRes.ok) {
-        const qJson = await qRes.json();
-        if (typeof qJson?.quota === 'number') quota = qJson.quota;
-        else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
-      }
+      cachedData = await getCachedGasQuota(gasUrls, env, false);
     } catch (_) {}
-    return { ...acc, quota };
-  }));
+  }
 
-  // 4. Random shuffle first (for ties), then sort descending by remaining quota
+  const withQuotas = candidates.map(acc => {
+    let quota = 100;
+    if (cachedData?.accounts) {
+      const match = cachedData.accounts.find(c => c.url === acc.url || c.email === acc.email);
+      if (match && typeof match.remaining === 'number') {
+        quota = match.remaining;
+      }
+    }
+    return { ...acc, quota };
+  });
+
   return withQuotas
     .sort(() => Math.random() - 0.5)
     .sort((a, b) => b.quota - a.quota);
+}
+
+async function fetchAndSaveGasQuotaCache(gasUrls, env) {
+  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  const accounts = await Promise.all(gasUrls.map(async (rawEntry, idx) => {
+    const parsed = parseGasEntry(rawEntry, idx);
+    let email = parsed.email;
+    const targetUrl = parsed.url;
+    let quota = 100;
+    let limit = 100;
+    let isOnline = false;
+    let needsAuth = false;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const qRes = await fetch(targetUrl, { method: "GET", signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (qRes.ok) {
+        const qText = await qRes.text();
+        try {
+          const qJson = JSON.parse(qText);
+          if (qJson?.status === "SUCCESS") {
+            isOnline = true;
+            if (typeof qJson?.quota === 'number') quota = qJson.quota;
+            else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
+            limit = typeof qJson?.limit === 'number' ? qJson.limit : (quota > 100 ? 1500 : 100);
+            if (qJson?.email && qJson.email.includes('@')) {
+              email = qJson.email.trim();
+            }
+          } else if (qText.includes("permission") || qText.includes("authorization")) {
+            needsAuth = true;
+          }
+        } catch (_) {
+          if (qText.includes("permission") || qText.includes("authorization")) {
+            needsAuth = true;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("GAS live quota fetch failed for account:", email, e.message);
+    }
+
+    let accountStatus = "READY";
+    if (isOnline) accountStatus = "ONLINE";
+    else if (needsAuth) accountStatus = "NEEDS_AUTH";
+
+    return {
+      email,
+      url: targetUrl,
+      remaining: quota,
+      limit,
+      status: accountStatus,
+      isOnline
+    };
+  }));
+
+  const totalRemaining = accounts.reduce((sum, acc) => sum + (acc.remaining || 0), 0);
+  const totalLimit = accounts.reduce((sum, acc) => sum + (acc.limit || 100), 0);
+  const safetyReserve = 15;
+  const allowedToday = Math.max(0, totalRemaining - safetyReserve);
+
+  const cachePayload = {
+    accounts,
+    totalRemaining,
+    totalLimit,
+    safetyReserve,
+    allowedToday,
+    cached_date: new Date().toISOString().split('T')[0],
+    updated_at: new Date().toISOString()
+  };
+
+  if (supabaseUrl && serviceRoleKey) {
+    try {
+      await fetch(`${supabaseUrl}/rest/v1/site_settings`, {
+        method: 'POST',
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          key: 'gas_quota_cache',
+          value: JSON.stringify(cachePayload),
+          updated_at: new Date().toISOString()
+        })
+      });
+    } catch (dbErr) {
+      console.warn("Failed saving gas_quota_cache to site_settings:", dbErr.message);
+    }
+  }
+
+  return cachePayload;
+}
+
+async function getCachedGasQuota(gasUrls, env, forceRefresh = false) {
+  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  const today = new Date().toISOString().split('T')[0];
+
+  if (!forceRefresh && supabaseUrl && serviceRoleKey) {
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.gas_quota_cache&select=value`, {
+        headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows?.[0]?.value) {
+          const cached = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+          // Valid cache if from today and contains accounts
+          if (cached && cached.cached_date === today && Array.isArray(cached.accounts) && cached.accounts.length > 0) {
+            return cached;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Failed reading gas_quota_cache from site_settings:", e.message);
+    }
+  }
+
+  return await fetchAndSaveGasQuotaCache(gasUrls, env);
+}
+
+async function decrementGasQuotaCache(senderAccount, env, count = 1) {
+  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) return;
+
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.gas_quota_cache&select=value`, {
+      headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+    });
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!rows?.[0]?.value) return;
+
+    const cached = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+    if (!cached || !Array.isArray(cached.accounts)) return;
+
+    let modified = false;
+    cached.accounts = cached.accounts.map(acc => {
+      if (!senderAccount || acc.email === senderAccount || (acc.url && senderAccount.includes(acc.email))) {
+        acc.remaining = Math.max(0, (acc.remaining || 0) - count);
+        modified = true;
+      }
+      return acc;
+    });
+
+    if (modified) {
+      cached.totalRemaining = cached.accounts.reduce((sum, acc) => sum + (acc.remaining || 0), 0);
+      cached.allowedToday = Math.max(0, cached.totalRemaining - (cached.safetyReserve || 15));
+      cached.updated_at = new Date().toISOString();
+
+      await fetch(`${supabaseUrl}/rest/v1/site_settings`, {
+        method: 'POST',
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          key: 'gas_quota_cache',
+          value: JSON.stringify(cached),
+          updated_at: new Date().toISOString()
+        })
+      });
+    }
+  } catch (e) {
+    console.warn("Failed decrementing gas_quota_cache:", e.message);
+  }
 }
 
 function generateOrderEmailHtml({ buyerEmail, buyerName, orderId, items, templateConfig, baseUrl }) {
@@ -683,7 +854,7 @@ async function triggerGasEmail(buyerEmail, buyerName, orderId, items, env) {
   };
 
   // Smart prioritize accounts: exclude buyer email, highest quota first, random on ties
-  const prioritizedAccounts = await getSmartPrioritizedGasAccounts(gasUrls, buyerEmail);
+  const prioritizedAccounts = await getSmartPrioritizedGasAccounts(gasUrls, buyerEmail, env);
 
   for (const acc of prioritizedAccounts) {
     const url = acc.url;
@@ -718,6 +889,9 @@ async function triggerGasEmail(buyerEmail, buyerName, orderId, items, env) {
       if (isSuccess) {
         const senderAccount = resolveGasSender(resJson?.sender, url);
         console.log(`GAS_DELIVERY_SUCCESS: Account ${senderAccount}`);
+
+        // Update cached quota in site_settings
+        await decrementGasQuotaCache(senderAccount, env, 1);
 
         // Update font_history in Supabase
         if (supabaseUrl && serviceRoleKey) {
@@ -1810,7 +1984,7 @@ export default {
           sender_name: "BombasType"
         };
 
-        const prioritizedAccounts = await getSmartPrioritizedGasAccounts(gasUrls, targetEmail);
+        const prioritizedAccounts = await getSmartPrioritizedGasAccounts(gasUrls, targetEmail, env);
         let senderAccount = null;
 
         for (const acc of prioritizedAccounts) {
@@ -1844,6 +2018,7 @@ export default {
 
             if (isSuccess) {
               senderAccount = resolveGasSender(resJson?.sender, targetUrl);
+              await decrementGasQuotaCache(senderAccount, env, 1);
               break;
             }
           } catch (e) {
@@ -1944,7 +2119,7 @@ export default {
       }
     }
 
-    // --- 6F. API Admin GAS Status & Remaining Daily Quota (0 quota cost check) ---
+    // --- 6F. API Admin GAS Status & Remaining Daily Quota (Cached & Zero-Cost Check) ---
     if (url.pathname === '/api/admin/gas-status' && request.method === 'GET') {
       try {
         const authHeader = request.headers.get('Authorization');
@@ -1956,60 +2131,11 @@ export default {
           });
         }
 
+        const forceRefresh = url.searchParams.get('refresh') === 'true';
         const gasUrls = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
-        const accounts = await Promise.all(gasUrls.map(async (targetUrl) => {
-          const email = resolveGasSender(null, targetUrl);
-          let quota = 100;
-          let limit = 100;
-          let isOnline = false;
-          let needsAuth = false;
+        const quotaData = await getCachedGasQuota(gasUrls, env, forceRefresh);
 
-          try {
-            // Check quota via lightweight GET request (costs 0 emails)
-            const qRes = await fetch(targetUrl, { method: "GET" });
-            if (qRes.ok) {
-              const qText = await qRes.text();
-              try {
-                const qJson = JSON.parse(qText);
-                if (qJson?.status === "SUCCESS") {
-                  isOnline = true;
-                  if (typeof qJson?.quota === 'number') quota = qJson.quota;
-                  else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
-                  limit = typeof qJson?.limit === 'number' ? qJson.limit : (quota > 100 ? 1500 : 100);
-                } else if (qText.includes("permission") || qText.includes("authorization")) {
-                  needsAuth = true;
-                }
-              } catch (_) {
-                if (qText.includes("permission") || qText.includes("authorization")) {
-                  needsAuth = true;
-                }
-              }
-            }
-          } catch (e) {
-            console.error("GAS quota check error for:", email, e.message);
-          }
-
-          let accountStatus = "READY";
-          if (isOnline) accountStatus = "ONLINE";
-          else if (needsAuth) accountStatus = "NEEDS_AUTH";
-
-          return {
-            email,
-            url: targetUrl,
-            remaining: quota,
-            limit: limit,
-            status: accountStatus
-          };
-        }));
-
-        const totalRemaining = accounts.reduce((sum, acc) => sum + (acc.remaining || 0), 0);
-        const totalLimit = accounts.reduce((sum, acc) => sum + (acc.limit || 100), 0);
-
-        return new Response(JSON.stringify({
-          accounts,
-          totalRemaining,
-          totalLimit
-        }), {
+        return new Response(JSON.stringify(quotaData), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
       } catch (err) {
@@ -2034,38 +2160,16 @@ export default {
 
         const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
         const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        const forceRefresh = url.searchParams.get('refresh') === 'true';
 
-        // 1. Fetch real-time GAS accounts quota
+        // 1. Fetch GAS accounts quota via Smart Cache
         const rawGasEntries = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
-        const accounts = await Promise.all(rawGasEntries.map(async (entry, idx) => {
-          const parsed = parseGasEntry(entry, idx);
-          let email = parsed.email;
-          const targetUrl = parsed.url;
-          let quota = 100;
-          let limit = 100;
-          let isOnline = false;
-          try {
-            const qRes = await fetch(targetUrl, { method: "GET" });
-            if (qRes.ok) {
-              const qJson = await qRes.json();
-              if (qJson?.status === "SUCCESS") {
-                isOnline = true;
-                if (typeof qJson?.quota === 'number') quota = qJson.quota;
-                else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
-                limit = typeof qJson?.limit === 'number' ? qJson.limit : 100;
-                // Auto-detect dynamic email from GAS response if Session.getEffectiveUser() is returned
-                if (qJson?.email && qJson.email.includes('@')) {
-                  email = qJson.email.trim();
-                }
-              }
-            }
-          } catch (_) {}
-          return { email, url: targetUrl, remaining: quota, limit, isOnline };
-        }));
+        const quotaData = await getCachedGasQuota(rawGasEntries, env, forceRefresh);
 
-        const totalRemaining = accounts.reduce((sum, a) => sum + (a.remaining || 0), 0);
-        const safetyReserve = 15;
-        const allowedToday = Math.max(0, totalRemaining - safetyReserve);
+        const accounts = quotaData.accounts || [];
+        const totalRemaining = quotaData.totalRemaining || 0;
+        const safetyReserve = quotaData.safetyReserve || 15;
+        const allowedToday = quotaData.allowedToday ?? Math.max(0, totalRemaining - safetyReserve);
 
         // 2. Fetch audience numbers from fontbuyer and fontsubscribers
         let buyers = [];
@@ -2253,31 +2357,17 @@ export default {
           });
         }
 
-        // 3. Query GAS accounts quota
+        // 3. Query GAS accounts quota (Smart Cache)
         const rawGasEntries = (env.GAS_WEBAPP_URL || "").split(',').map(u => u.trim()).filter(u => u);
-        const accounts = await Promise.all(rawGasEntries.map(async (entry, idx) => {
-          const parsed = parseGasEntry(entry, idx);
-          let email = parsed.email;
-          const targetUrl = parsed.url;
-          let quota = 100;
-          try {
-            const qRes = await fetch(targetUrl, { method: "GET" });
-            if (qRes.ok) {
-              const qJson = await qRes.json();
-              if (qJson?.status === "SUCCESS") {
-                if (typeof qJson?.quota === 'number') quota = qJson.quota;
-                else if (typeof qJson?.remainingDailyQuota === 'number') quota = qJson.remainingDailyQuota;
-                if (qJson?.email && qJson.email.includes('@')) {
-                  email = qJson.email.trim();
-                }
-              }
-            }
-          } catch (_) {}
-          return { email, url: targetUrl, quota };
+        const quotaData = await getCachedGasQuota(rawGasEntries, env, false);
+        const accounts = (quotaData.accounts || []).map(a => ({
+          email: a.email,
+          url: a.url,
+          quota: a.remaining ?? 100
         }));
 
-        const totalRemaining = accounts.reduce((sum, a) => sum + (a.quota || 0), 0);
-        const safetyReserve = 15;
+        const totalRemaining = quotaData.totalRemaining ?? accounts.reduce((sum, a) => sum + (a.quota || 0), 0);
+        const safetyReserve = quotaData.safetyReserve ?? 15;
         const allowedToday = Math.max(0, totalRemaining - safetyReserve);
 
         if (allowedToday <= 0) {
@@ -2353,6 +2443,8 @@ export default {
               };
               campaign.sentLogs.unshift(logEntry);
               newlySentLogs.push(logEntry);
+              // Decrement cached quota per sent email
+              await decrementGasQuotaCache(currentAcc.email, env, 1);
             }
           } catch (e) {
             console.error("Failed sending broadcast to:", recipient, e.message);

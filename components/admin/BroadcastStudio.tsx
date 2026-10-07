@@ -379,6 +379,26 @@ export default function BroadcastStudio() {
 
   // Search & Filter
   const [logSearch, setLogSearch] = useState('');
+  const [selectedLog, setSelectedLog] = useState<{
+    email: string;
+    gas: string;
+    sent_at: string;
+    campaignTitle: string;
+    campaignId: string;
+  } | null>(null);
+  const [logPreviewDevice, setLogPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+
+  // Lock background page scroll when sent delivery audit modal is open
+  useEffect(() => {
+    if (selectedLog) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedLog]);
 
   // Font Selection State for Typeface Presets
   const [fontsList, setFontsList] = useState<Array<{ id: string; name: string; slug?: string }>>([]);
@@ -909,12 +929,12 @@ export default function BroadcastStudio() {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (forceRefresh = false) => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const res = await fetch('/api/admin/broadcast-data', {
+      const res = await fetch(`/api/admin/broadcast-data${forceRefresh ? '?refresh=true' : ''}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1185,10 +1205,10 @@ export default function BroadcastStudio() {
           </div>
           <div className="h-8 w-px bg-vintage-ink/20" />
           <button 
-            onClick={fetchData} 
+            onClick={() => fetchData(true)} 
             disabled={loading}
             title="Refresh Real-Time Quota"
-            className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-50"
+            className="p-2 border border-vintage-ink hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           </button>
@@ -2681,19 +2701,25 @@ export default function BroadcastStudio() {
                   <th className="p-3">Campaign</th>
                   <th className="p-3">Recipient Email</th>
                   <th className="p-3">Sender Account</th>
-                  <th className="p-3 text-right">Delivery Status</th>
+                  <th className="p-3 text-center">Delivery Status</th>
+                  <th className="p-3 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-vintage-ink/10">
                 {filteredLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center opacity-50">
+                    <td colSpan={6} className="p-8 text-center opacity-50">
                       NO DELIVERY LOGS MATCHING CRITERIA.
                     </td>
                   </tr>
                 ) : (
                   filteredLogs.map((log, i) => (
-                    <tr key={i} className="hover:bg-vintage-ink/5">
+                    <tr 
+                      key={i} 
+                      onClick={() => setSelectedLog(log)}
+                      className="hover:bg-vintage-ink/5 cursor-pointer transition-colors"
+                      title="Click to preview exact delivered email design"
+                    >
                       <td className="p-3 whitespace-nowrap opacity-70">
                         {new Date(log.sent_at).toLocaleString()}
                       </td>
@@ -2706,10 +2732,24 @@ export default function BroadcastStudio() {
                       <td className="p-3 text-vintage-ink/70">
                         {log.gas}
                       </td>
-                      <td className="p-3 text-right whitespace-nowrap">
+                      <td className="p-3 text-center whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 border border-emerald-300 rounded-[2px] font-black text-[10px]">
                           <Check size={11} /> DELIVERED
                         </span>
+                      </td>
+                      <td className="p-3 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLog(log);
+                          }}
+                          className="px-2.5 py-1 border border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper text-[9px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                          title="View live broadcast email preview"
+                        >
+                          <Eye size={12} />
+                          <span>View Email</span>
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -2719,6 +2759,239 @@ export default function BroadcastStudio() {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: LIVE BROADCAST DISPATCH EMAIL PREVIEW */}
+      {/* ========================================================================= */}
+      {selectedLog && (() => {
+        const camp = (data.campaigns || []).find(c => c.id === selectedLog.campaignId);
+        const tData = camp?.templateData || {};
+        const pPreset = camp?.preset || 'custom';
+        const pBlocks: BroadcastBlock[] = Array.isArray(tData.blocks) && tData.blocks.length > 0 
+          ? tData.blocks 
+          : getDefaultPresetBlocks(pPreset);
+
+        return (
+          <div className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+            <div className="bg-vintage-paper border-2 border-vintage-ink shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in duration-200">
+              
+              {/* Modal Header */}
+              <div className="p-4 sm:p-5 border-b-2 border-vintage-ink bg-vintage-ink text-vintage-paper flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-vintage-accent text-vintage-paper font-bold">
+                      DELIVERED BROADCAST
+                    </span>
+                    <span className="font-mono text-xs font-bold tracking-wider">
+                      {selectedLog.campaignTitle}
+                    </span>
+                  </div>
+                  <div className="text-xs font-serif mt-1 opacity-90 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span>Recipient: <strong>{selectedLog.email}</strong></span>
+                    <span>•</span>
+                    <span>Sender: <strong>{selectedLog.gas}</strong></span>
+                    <span>•</span>
+                    <span>Sent: <strong>{new Date(selectedLog.sent_at).toLocaleString()}</strong></span>
+                  </div>
+                </div>
+
+                {/* View Controls & Close */}
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <div className="flex items-center border border-vintage-paper/40 p-0.5 bg-vintage-paper/10">
+                    <button
+                      type="button"
+                      onClick={() => setLogPreviewDevice('desktop')}
+                      className={`px-2.5 py-1 text-[10px] uppercase font-bold transition-all cursor-pointer ${
+                        logPreviewDevice === 'desktop'
+                          ? 'bg-vintage-paper text-vintage-ink'
+                          : 'text-vintage-paper/70 hover:text-vintage-paper'
+                      }`}
+                    >
+                      Desktop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLogPreviewDevice('mobile')}
+                      className={`px-2.5 py-1 text-[10px] uppercase font-bold transition-all cursor-pointer ${
+                        logPreviewDevice === 'mobile'
+                          ? 'bg-vintage-paper text-vintage-ink'
+                          : 'text-vintage-paper/70 hover:text-vintage-paper'
+                      }`}
+                    >
+                      Mobile
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedLog(null)}
+                    className="p-1.5 hover:bg-vintage-paper/20 rounded transition-colors text-vintage-paper cursor-pointer ml-1"
+                    title="Close preview"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body: Authentic Rendered Broadcast Container */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-white/20 flex justify-center min-h-[500px]">
+                <div 
+                  className={`transition-all duration-300 shadow-xl border border-vintage-ink/30 bg-[#fdf6e3] p-6 sm:p-8 font-serif text-[#2c241a] ${
+                    logPreviewDevice === 'desktop' ? 'w-full max-w-[620px]' : 'w-[375px]'
+                  }`}
+                >
+                  {/* Header Branding */}
+                  <div className="text-center pb-5 mb-5 border-b-2 border-[#2c241a]">
+                    <div className="text-[9px] uppercase tracking-[0.25em] text-[#8b6b4a] font-bold">
+                      ARCHIVAL TYPOGRAPHY DISPATCH
+                    </div>
+                    <div className="font-serif font-black text-2xl tracking-wider uppercase mt-1">
+                      BOMBASTYPE
+                    </div>
+                    <div className="text-[8px] font-mono tracking-widest text-[#6b5c4d] uppercase mt-1">
+                      FOUNDRY &amp; TYPE LAB &bull; EST. MMXXVI
+                    </div>
+                  </div>
+
+                  {/* Rendered Modular Blocks */}
+                  {pBlocks.map((block, idx) => {
+                    if (block.type === 'heading') {
+                      return (
+                        <div key={block.id || idx} className="text-center my-6">
+                          <h2 className="font-serif font-bold text-xl uppercase tracking-wide leading-tight">
+                            {block.title || tData.title || "MAIN HEADLINE"}
+                          </h2>
+                          {(block.subtitle || tData.subtitle) && (
+                            <p className="text-xs italic text-[#8b6b4a] mt-1 tracking-wide">
+                              {block.subtitle || tData.subtitle}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (block.type === 'text') {
+                      return (
+                        <div key={block.id || idx} className="text-xs leading-relaxed text-[#3a2e22] whitespace-pre-line my-4 font-serif">
+                          {block.text || tData.bodyText || "Broadcast message content."}
+                        </div>
+                      );
+                    }
+
+                    if (block.type === 'button') {
+                      return (
+                        <div key={block.id || idx} className="text-center my-6">
+                          <span className="inline-block bg-[#2c241a] text-[#fdf6e3] text-[10px] font-bold uppercase tracking-[0.15em] px-6 py-3 border border-[#2c241a]">
+                            {block.buttonText || tData.buttonText || "EXPLORE ARCHIVE"} &rarr;
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    if (block.type === 'image') {
+                      const img = block.imageUrl || tData.bannerUrl;
+                      return img ? (
+                        <div key={block.id || idx} className="my-6 text-center">
+                          <div className="border border-[#2c241a] overflow-hidden inline-block w-full">
+                            <img src={img} alt={block.imageCaption || "Specimen image"} className="w-full h-auto object-cover" />
+                          </div>
+                          {block.imageCaption && (
+                            <div className="text-[10px] font-serif italic text-[#6b5c4d] tracking-wide mt-1">
+                              {block.imageCaption}
+                            </div>
+                          )}
+                        </div>
+                      ) : null;
+                    }
+
+                    if (block.type === 'coupon') {
+                      if (block.dealKind === 'promotion') {
+                        const pName = block.promoName || 'SPECIAL STORE PROMOTION';
+                        const pDiscount = block.promoDiscount ? `${block.promoDiscount}% OFF` : 'SPECIAL DISCOUNT';
+                        const pScope = block.promoTarget === 'bundle' ? 'ON SELECTED ARCHIVAL SPECIMENS' : 'STORE-WIDE ON ALL TYPEFACES';
+                        const pUrgency = block.promoEndDate ? `Valid until ${new Date(block.promoEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '';
+                        return (
+                          <div key={block.id || idx} className="border-2 border-[#8b6b4a]/60 bg-[#fffdf8] p-6 text-center my-6 shadow-sm">
+                            <div className="text-[10px] uppercase tracking-[0.25em] text-[#8b6b4a] font-bold mb-3 font-serif">
+                              {pName}
+                            </div>
+                            <div>
+                              <div className="inline-block bg-[#2c241a] text-[#fdf6e3] border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] px-6 py-2.5 font-serif font-black text-3xl sm:text-4xl tracking-tight leading-none">
+                                {pDiscount}
+                              </div>
+                            </div>
+                            <div className="text-xs font-bold uppercase tracking-wider text-[#2c241a] mt-3.5 mb-1 font-serif">
+                              {pScope}
+                            </div>
+                            <div className="text-[11px] font-mono font-bold text-[#8b6b4a] mt-1 uppercase tracking-wide">
+                              No coupon code required.
+                            </div>
+                            {pUrgency && (
+                              <div className="mt-3 text-[10px] font-bold text-[#2c241a] bg-[#f5ede0] inline-block px-3 py-1 border border-[#8b6b4a]">
+                                ⏳ {pUrgency}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      const cCode = block.couponCode || tData.couponCode || 'VIP25OFF';
+                      const cDiscount = block.couponDiscount ? `${block.couponDiscount}% OFF` : '';
+                      const cUrgency = block.couponUrgencyText || '';
+                      return (
+                        <div key={block.id || idx} className="border-2 border-dashed border-[#8b6b4a] bg-white p-5 text-center my-6 shadow-sm">
+                          <div className="text-[9px] uppercase tracking-[0.2em] text-[#8b6b4a] font-bold mb-1">
+                            EXCLUSIVE PRIVILEGE VOUCHER
+                          </div>
+                          {cDiscount && (
+                            <div className="font-serif font-black text-2xl text-[#2c241a] my-1">
+                              {cDiscount}
+                            </div>
+                          )}
+                          <div className="font-mono text-xl font-black text-[#2c241a] bg-[#fdf6e3] inline-block px-4 py-1.5 border border-[#2c241a] tracking-widest my-1">
+                            {cCode}
+                          </div>
+                          <div className="text-[10px] italic text-[#6b5c4d] mt-1.5">
+                            Apply this token at checkout to claim your archival discount.
+                          </div>
+                          {cUrgency && (
+                            <div className="mt-2 text-[9px] font-bold text-[#8b6b4a] bg-[#fffdf5] inline-block px-2.5 py-1 border border-[#d1c7b7]">
+                              {cUrgency}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  {/* Footer */}
+                  <div className="text-center pt-4 border-t border-[#2c241a] text-[9px] text-[#6b5c4d] leading-relaxed">
+                    <div className="font-bold text-[#2c241a] uppercase tracking-wider mb-0.5">
+                      BombasType Typography Studio
+                    </div>
+                    <div>You are receiving this communication as an esteemed patron or subscriber.</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer info */}
+              <div className="p-3 border-t border-vintage-ink/20 bg-vintage-paper/80 text-[10px] font-mono text-vintage-ink/60 flex items-center justify-between">
+                <div>
+                  Delivered To: <strong className="text-vintage-ink">{selectedLog.email}</strong> •{' '}
+                  Via Relay: <strong className="text-vintage-ink">{selectedLog.gas}</strong>
+                </div>
+                <button
+                  onClick={() => setSelectedLog(null)}
+                  className="text-vintage-ink font-bold hover:underline cursor-pointer uppercase tracking-wider"
+                >
+                  Close Viewer ✕
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
