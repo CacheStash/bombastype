@@ -1346,17 +1346,13 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                         <button
                           type="button"
                           onClick={() => applyAlternate({ char: text.charAt(selectedCharIndex), glyphIndex: 0, featureTag: '' })}
-                          className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center border transition-all group shrink-0 ${
-                            !charOverrides[selectedCharIndex] 
-                              ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                              : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper bg-transparent text-vintage-ink'
+                          className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center shrink-0 alt-popover-btn ${
+                            !charOverrides[selectedCharIndex] ? 'active' : ''
                           }`}
                           title="Default Style"
                         >
                           <div className="h-6 flex items-center justify-center">
-                            <div className={`flex items-center justify-center transition-all ${
-                              !charOverrides[selectedCharIndex] ? 'invert' : 'group-hover:invert'
-                            }`}>
+                            <div className="flex items-center justify-center alt-glyph-preview">
                               {renderGlyphSvg(loadedFontObj ? loadedFontObj.charToGlyphIndex(text.charAt(selectedCharIndex)) : 0, 22) || (
                                 <span style={{ ...commonFontStyle, fontSize: '18px', fontFeatureSettings: 'normal' }} className="leading-none">
                                   {text.charAt(selectedCharIndex)}
@@ -1364,7 +1360,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                               )}
                             </div>
                           </div>
-                          <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">DEFAULT</span>
+                          <span className="text-[7px] uppercase font-sans mt-0.5 alt-label">DEFAULT</span>
                         </button>
 
                         {/* List Alternate Feature */}
@@ -1375,17 +1371,13 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                               key={idx}
                               type="button"
                               onClick={() => applyAlternate(alt)}
-                              className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center border transition-all group shrink-0 ${
-                                isSelected 
-                                  ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                                  : 'border-vintage-ink/20 hover:bg-vintage-ink hover:text-vintage-paper bg-transparent text-vintage-ink'
+                              className={`h-11 min-w-11 px-2 flex flex-col items-center justify-center shrink-0 alt-popover-btn ${
+                                isSelected ? 'active' : ''
                               }`}
                               title={`Glyph #${alt.glyphIndex} (${alt.featureTag.toUpperCase()})`}
                             >
                               <div className="h-6 flex items-center justify-center">
-                                <div className={`flex items-center justify-center transition-all ${
-                                  isSelected ? 'invert' : 'group-hover:invert'
-                                }`}>
+                                <div className="flex items-center justify-center alt-glyph-preview">
                                   {renderGlyphSvg(alt.glyphIndex, 22) || (
                                     <span 
                                       style={{ 
@@ -1400,7 +1392,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                                   )}
                                 </div>
                               </div>
-                              <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">
+                              <span className="text-[7px] uppercase font-sans mt-0.5 alt-label">
                                 {alt.featureTag === 'aalt' ? 'SALT' : alt.featureTag.toUpperCase()}
                               </span>
                             </button>

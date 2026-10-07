@@ -161,6 +161,50 @@
     color: var(--color-vintage-paper) !important;
     opacity: 0.95 !important;
   }
+
+  /* Alternate Popover Buttons in TypeTester */
+  .alt-popover-btn {
+    background-color: transparent !important;
+    color: var(--color-vintage-ink) !important;
+    border: 1px solid rgba(44, 36, 26, 0.25) !important;
+    transition: all 0.15s ease-in-out;
+  }
+  .alt-popover-btn .alt-glyph-preview {
+    color: var(--color-vintage-ink);
+    filter: none;
+    transition: filter 0.15s ease-in-out;
+  }
+  .alt-popover-btn .alt-label {
+    color: var(--color-vintage-ink);
+    opacity: 0.5;
+    transition: opacity 0.15s ease-in-out, color 0.15s ease-in-out;
+  }
+
+  .alt-popover-btn:hover {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+    border-color: var(--color-vintage-ink) !important;
+  }
+  .alt-popover-btn:hover .alt-glyph-preview {
+    filter: invert(1) !important;
+  }
+  .alt-popover-btn:hover .alt-label {
+    color: var(--color-vintage-paper) !important;
+    opacity: 1 !important;
+  }
+
+  .alt-popover-btn.active {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+    border-color: var(--color-vintage-ink) !important;
+  }
+  .alt-popover-btn.active .alt-glyph-preview {
+    filter: invert(1) !important;
+  }
+  .alt-popover-btn.active .alt-label {
+    color: var(--color-vintage-paper) !important;
+    opacity: 0.9 !important;
+  }
   
   /* Dividers */
   .divider {
