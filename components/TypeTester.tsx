@@ -73,7 +73,7 @@ const RasterMetricTile: React.FC<RasterMetricTileProps> = React.memo(({
     <canvas
       ref={canvasRef}
       style={{ width: `${size}px`, height: `${size}px` }}
-      className={`pointer-events-none group-hover:invert transition-all ${className}`}
+      className={`pointer-events-none transition-all ${className}`}
     />
   );
 });
@@ -1354,11 +1354,15 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                           title="Default Style"
                         >
                           <div className="h-6 flex items-center justify-center">
-                            {renderGlyphSvg(loadedFontObj ? loadedFontObj.charToGlyphIndex(text.charAt(selectedCharIndex)) : 0, 22) || (
-                              <span style={{ ...commonFontStyle, fontSize: '18px', fontFeatureSettings: 'normal' }} className="leading-none">
-                                {text.charAt(selectedCharIndex)}
-                              </span>
-                            )}
+                            <div className={`flex items-center justify-center transition-all ${
+                              !charOverrides[selectedCharIndex] ? 'invert' : 'group-hover:invert'
+                            }`}>
+                              {renderGlyphSvg(loadedFontObj ? loadedFontObj.charToGlyphIndex(text.charAt(selectedCharIndex)) : 0, 22) || (
+                                <span style={{ ...commonFontStyle, fontSize: '18px', fontFeatureSettings: 'normal' }} className="leading-none">
+                                  {text.charAt(selectedCharIndex)}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">DEFAULT</span>
                         </button>
@@ -1379,18 +1383,22 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                               title={`Glyph #${alt.glyphIndex} (${alt.featureTag.toUpperCase()})`}
                             >
                               <div className="h-6 flex items-center justify-center">
-                                {renderGlyphSvg(alt.glyphIndex, 22) || (
-                                  <span 
-                                    style={{ 
-                                      ...commonFontStyle, 
-                                      fontSize: '18px', 
-                                      fontFeatureSettings: `"${alt.featureTag}" 1` 
-                                    }} 
-                                    className="leading-none"
-                                  >
-                                    {alt.char}
-                                  </span>
-                                )}
+                                <div className={`flex items-center justify-center transition-all ${
+                                  isSelected ? 'invert' : 'group-hover:invert'
+                                }`}>
+                                  {renderGlyphSvg(alt.glyphIndex, 22) || (
+                                    <span 
+                                      style={{ 
+                                        ...commonFontStyle, 
+                                        fontSize: '18px', 
+                                        fontFeatureSettings: `"${alt.featureTag}" 1` 
+                                      }} 
+                                      className="leading-none"
+                                    >
+                                      {alt.char}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <span className="text-[7px] opacity-40 uppercase font-sans group-hover:opacity-100 mt-0.5">
                                 {alt.featureTag === 'aalt' ? 'SALT' : alt.featureTag.toUpperCase()}
@@ -1420,7 +1428,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                       className={`aspect-square flex items-center justify-center border-b ${isRightEdge ? '' : 'border-r'} border-vintage-ink/10 hover:bg-vintage-ink hover:text-vintage-paper transition-all cursor-default group relative p-2`}
                       title={item.name ? `${item.name} (#${item.index})` : `Glyph #${item.index}`}
                     >
-                      <div className="w-9 h-9 flex items-center justify-center pointer-events-none">
+                      <div className="w-9 h-9 flex items-center justify-center pointer-events-none group-hover:invert transition-all">
                         {renderGlyphSvg(item.index, 36) || (
                           item.char ? (
                             <span style={{ ...commonFontStyle, fontSize: '28px' }}>{item.char}</span>
