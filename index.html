@@ -10,6 +10,11 @@
     background-image: radial-gradient(circle, #e5e7eb 1px, transparent 1px);
     background-size: 20px 20px;
   }
+  @media print {
+    body {
+      display: none !important;
+    }
+  }
 </style>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -44,6 +49,11 @@
           return false;
         }
         if (isCtrlOrCmd && !e.shiftKey && !e.altKey && key === 'S') {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+        if (isCtrlOrCmd && !e.shiftKey && !e.altKey && key === 'P') {
           e.preventDefault();
           e.stopPropagation();
           return false;
