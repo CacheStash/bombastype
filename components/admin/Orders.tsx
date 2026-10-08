@@ -570,7 +570,7 @@ const Orders = () => {
                       onClick={() => handleResendOrderEmail(order)}
                       disabled={resendingTx === order.transaction_id || order.download_type === 'trial'}
                       title="Dispatch / Resend order email"
-                      className="mt-1 px-2 py-0.5 border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper transition-all text-[8px] font-bold tracking-wider uppercase flex items-center gap-1 group disabled:opacity-30"
+                      className="mt-1 admin-order-action-btn !text-[8px] !px-2 !py-0.5"
                     >
                       <Mail size={10} />
                       <span>{resendingTx === order.transaction_id ? 'SENDING...' : (order.metadata?.email_sent ? 'RESEND' : 'SEND')}</span>
@@ -583,18 +583,18 @@ const Orders = () => {
                       onClick={() => handleDownloadPackageZip(order)}
                       disabled={downloadingZipTx === order.transaction_id}
                       title="Download Buyer Package (.zip)"
-                      className="px-2.5 py-1 border border-vintage-ink bg-vintage-ink text-vintage-paper hover:bg-vintage-accent hover:text-white transition-all text-[9px] font-bold tracking-wider uppercase flex items-center gap-1.5 group disabled:opacity-40"
+                      className="admin-order-action-btn"
                     >
-                      <Download size={12} className="opacity-80 group-hover:opacity-100" />
+                      <Download size={12} />
                       <span>{downloadingZipTx === order.transaction_id ? '...' : '.ZIP'}</span>
                     </button>
                     <button 
                       onClick={() => handleDownloadLicenseTxt(order)}
                       disabled={downloadingTx === order.transaction_id}
                       title="Download License (.txt)"
-                      className="px-2.5 py-1 border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper transition-all text-[9px] font-bold tracking-wider uppercase flex items-center gap-1.5 group disabled:opacity-40"
+                      className="admin-order-action-btn"
                     >
-                      <FileText size={12} className="opacity-60 group-hover:opacity-100" />
+                      <FileText size={12} />
                       <span>{downloadingTx === order.transaction_id ? '...' : '.TXT'}</span>
                     </button>
                     <a 
@@ -602,9 +602,9 @@ const Orders = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       title="View Web License Certificate"
-                      className="px-2.5 py-1 border border-vintage-ink/30 hover:border-vintage-ink bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper transition-all text-[9px] font-bold tracking-wider uppercase flex items-center gap-1.5 group"
+                      className="admin-order-action-btn"
                     >
-                      <ShieldCheck size={12} className="opacity-60 group-hover:opacity-100" />
+                      <ShieldCheck size={12} />
                       <span>WEB</span>
                     </a>
                   </div>

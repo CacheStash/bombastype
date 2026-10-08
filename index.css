@@ -259,4 +259,60 @@
     border-color: var(--color-vintage-ink) !important;
     color: var(--color-vintage-ink) !important;
   }
+
+  /* Admin Order Action Buttons (.ZIP, .TXT, WEB) */
+  .admin-order-action-btn {
+    background-color: var(--color-vintage-paper) !important;
+    color: var(--color-vintage-ink) !important;
+    border: 1px solid var(--color-vintage-ink) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 4px 10px !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease-in-out !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+  }
+
+  .admin-order-action-btn svg {
+    color: var(--color-vintage-ink) !important;
+    stroke: currentColor !important;
+    transition: color 0.2s ease-in-out, stroke 0.2s ease-in-out !important;
+  }
+
+  .admin-order-action-btn span {
+    color: var(--color-vintage-ink) !important;
+    transition: color 0.2s ease-in-out !important;
+  }
+
+  .admin-order-action-btn:hover:not(:disabled) {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+    border-color: var(--color-vintage-ink) !important;
+  }
+
+  .admin-order-action-btn:hover:not(:disabled) svg {
+    color: var(--color-vintage-paper) !important;
+    stroke: currentColor !important;
+  }
+
+  .admin-order-action-btn:hover:not(:disabled) span {
+    color: var(--color-vintage-paper) !important;
+  }
+
+  .admin-order-action-btn:active:not(:disabled) {
+    transform: scale(0.96) !important;
+  }
+
+  .admin-order-action-btn:disabled {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+  }
 }
