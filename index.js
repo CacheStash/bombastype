@@ -978,6 +978,28 @@ async function triggerGasEmail(buyerEmail, buyerName, orderId, items, env) {
   return { success: false, error: "ALL_GAS_ACCOUNTS_FAILED" };
 }
 
+// Web Crypto HMAC helpers for ephemeral token verification
+const textEncoder = new TextEncoder();
+async function signHMAC(secret, message) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    textEncoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, textEncoder.encode(message));
+  return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyHMAC(secret, message, expectedHex) {
+  try {
+    const actual = await signHMAC(secret, message);
+    return actual === expectedHex;
+  } catch {
+    return false;
+  }
+}
 
 export default {
   async fetch(request, env, ctx) {
@@ -1001,6 +1023,30 @@ export default {
         `CRITICAL ERROR: env.ASSETS is missing!\n\nAvailable Bindings:\n${availableBindings}`,
         { status: 500 }
       );
+    }
+
+    // --- 2.5. API Ephemeral Font Token Issuance (/api/ft) ---
+    if (url.pathname === '/api/ft' && request.method === 'GET') {
+      const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+      if (!checkResetRateLimit(`ft_${clientIp}`, 40, 300000)) {
+        return new Response(JSON.stringify({ error: "TOO_MANY_REQUESTS" }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
+      const fontTokenSecret = env.FONT_TOKEN_SECRET || env.ADMIN_SECRET || 'SubqiVaultHMACSecret2026';
+      const exp = Math.floor(Date.now() / 1000) + 600; // 10 minutes
+      const sig = await signHMAC(fontTokenSecret, String(exp));
+
+      return new Response(JSON.stringify({ t: `${exp}.${sig}` }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache, max-age=0',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
 
     // --- 3. API Fonts (Protected Read: Allowed Origins Only With Cache API & Masking Shield) ---
@@ -1046,8 +1092,20 @@ export default {
         userAgent.includes('aria2') ||
         userAgent.includes('postman');
 
-      // Modern in-app font fetch MUST have Sec-Fetch-Mode: cors & Sec-Fetch-Dest: empty
-      const isLegitFetch = (secFetchMode === 'cors' && secFetchDest === 'empty') || requestedWith === 'FontMetricsClient';
+      // 2.1 VERIFY EPHEMERAL HMAC TOKEN (X-FT)
+      const fontTokenSecret = env.FONT_TOKEN_SECRET || env.ADMIN_SECRET || 'SubqiVaultHMACSecret2026';
+      const ftHeader = request.headers.get('X-FT') || '';
+      let isTokenValid = false;
+      if (ftHeader && ftHeader.includes('.')) {
+        const [expStr, sig] = ftHeader.split('.');
+        const exp = parseInt(expStr, 10);
+        if (exp && sig && (Date.now() / 1000 < exp)) {
+          isTokenValid = await verifyHMAC(fontTokenSecret, expStr, sig);
+        }
+      }
+
+      // Modern in-app font fetch MUST have valid HMAC token OR valid CORS fetch
+      const isLegitFetch = isTokenValid || (secFetchMode === 'cors' && secFetchDest === 'empty') || requestedWith === 'FontMetricsClient';
 
       if (isKnownDownloader || !isLegitFetch || (!origin && !referer)) {
         return new Response('Access Denied: Direct font binary downloads are restricted.', {

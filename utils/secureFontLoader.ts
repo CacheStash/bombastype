@@ -67,10 +67,42 @@ export function normalizeBufferMetrics(buffer: ArrayBuffer): ArrayBuffer {
 export const unmaskFontBuffer = normalizeBufferMetrics;
 
 const fontPromiseCache = new Map<string, Promise<ArrayBuffer>>();
-const loadedFamilies = new Set<string>();
+const facePromises = new Map<string, Promise<FontFace | void>>();
+
+let cachedToken: { token: string; exp: number } | null = null;
+let tokenPromise: Promise<string> | null = null;
 
 /**
- * Fetches and normalizes font buffer in memory
+ * Mengambil ephemeral HMAC token berumur 10 menit untuk otorisasi fetch font
+ */
+async function getFontAccessToken(): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedToken && cachedToken.exp - now > 60) {
+    return cachedToken.token;
+  }
+  if (tokenPromise) return tokenPromise;
+
+  tokenPromise = (async () => {
+    try {
+      const res = await fetch('/api/ft');
+      if (!res.ok) return '';
+      const data = await res.json();
+      const exp = parseInt(data.t?.split('.')[0], 10) || (now + 600);
+      cachedToken = { token: data.t, exp };
+      return data.t;
+    } catch {
+      cachedToken = null;
+      return '';
+    } finally {
+      tokenPromise = null;
+    }
+  })();
+
+  return tokenPromise;
+}
+
+/**
+ * Fetches and normalizes font buffer in memory with HMAC auth
  */
 export async function fetchDisplayBuffer(url: string): Promise<ArrayBuffer> {
   if (fontPromiseCache.has(url)) {
@@ -79,11 +111,15 @@ export async function fetchDisplayBuffer(url: string): Promise<ArrayBuffer> {
 
   const promise = (async () => {
     try {
-      const res = await fetch(url, {
-        headers: {
-          'X-Requested-With': 'FontMetricsClient'
-        }
-      });
+      const token = await getFontAccessToken();
+      const headers: Record<string, string> = {
+        'X-Requested-With': 'FontMetricsClient'
+      };
+      if (token) {
+        headers['X-FT'] = token;
+      }
+
+      const res = await fetch(url, { headers });
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -101,23 +137,26 @@ export async function fetchDisplayBuffer(url: string): Promise<ArrayBuffer> {
 
 /**
  * Loads font into document.fonts using native FontFace(familyName, ArrayBuffer).
+ * Safe from race-conditions and concurrent duplicate loads.
  */
-export async function loadProtectedFontFace(familyName: string, url: string): Promise<void> {
+export function loadProtectedFontFace(familyName: string, url: string): Promise<FontFace | void> {
   const cacheKey = `${familyName}::${url}`;
-  if (loadedFamilies.has(cacheKey)) return;
-
-  try {
-    const buffer = await fetchDisplayBuffer(url);
-    const cleanBuffer = buffer.slice(0);
-    const fontFace = new FontFace(familyName, cleanBuffer, {
-      display: 'swap'
-    });
-    const loadedFace = await fontFace.load();
-    document.fonts.add(loadedFace);
-    loadedFamilies.add(cacheKey);
-  } catch (err) {
-    console.error(`Failed to register FontFace: ${familyName}`, err);
+  let p = facePromises.get(cacheKey);
+  if (!p) {
+    p = (async () => {
+      const buffer = await fetchDisplayBuffer(url);
+      const cleanBuffer = buffer.slice(0);
+      const fontFace = new FontFace(familyName, cleanBuffer, {
+        display: 'swap'
+      });
+      const loadedFace = await fontFace.load();
+      document.fonts.add(loadedFace);
+      return loadedFace;
+    })();
+    p.catch(() => facePromises.delete(cacheKey));
+    facePromises.set(cacheKey, p);
   }
+  return p;
 }
 
 /**
