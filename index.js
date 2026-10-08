@@ -24,6 +24,25 @@ function calculateCRC32(data) {
   return (crc ^ 0xFFFFFFFF) >>> 0;
 }
 
+// In-memory rate limiter for sensitive authentication & recovery endpoints
+const resetRateLimitMap = new Map();
+function checkResetRateLimit(ip, limit = 5, windowMs = 900000) {
+  const now = Date.now();
+  const record = resetRateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
+  if (now > record.resetTime) {
+    record.count = 1;
+    record.resetTime = now + windowMs;
+    resetRateLimitMap.set(ip, record);
+    return true;
+  }
+  if (record.count >= limit) {
+    return false;
+  }
+  record.count++;
+  resetRateLimitMap.set(ip, record);
+  return true;
+}
+
 
 async function fetchFileBuffer(fileName, env) {
   // 1. Coba ambil dari R2
@@ -1056,6 +1075,21 @@ export default {
       }
 
       const fontName = decodeURIComponent(url.pathname.split('/').pop());
+      const lowerFontName = fontName.toLowerCase();
+      const allowedFontExtensions = ['.ttf', '.otf', '.woff2', '.woff'];
+      const hasAllowedExtension = allowedFontExtensions.some(ext => lowerFontName.endsWith(ext));
+      const isDriveId = !fontName.includes('.') && /^[a-zA-Z0-9_-]{25,45}$/.test(fontName);
+
+      if (!hasAllowedExtension && !isDriveId) {
+        return new Response('Access Denied: Only font web preview files are permitted.', {
+          status: 403,
+          headers: {
+            'Content-Type': 'text/plain',
+            'X-Robots-Tag': 'noindex, nofollow, noarchive'
+          }
+        });
+      }
+
       const allowedOrigin = origin && isAllowedSource(origin) ? origin : '*';
 
       // --- MASKING CIPHER KEY (Subqi Shield v1) ---
@@ -1100,7 +1134,8 @@ export default {
         if (!fileData) return new Response(`Font not found`, { status: 404 });
 
         // Optional internal bypass for raw access via authorized key
-        const isRawRequested = url.searchParams.get('raw') === 'true' && url.searchParams.get('key') === '$uperAm4n';
+        const rawSecret = env.RAW_BYPASS_KEY || env.ADMIN_SECRET || env.GAS_TOKEN;
+        const isRawRequested = Boolean(rawSecret && url.searchParams.get('raw') === 'true' && url.searchParams.get('key') === rawSecret);
         const finalBody = isRawRequested ? fileData.body : maskFontBuffer(fileData.body);
 
         // Base headers stored in Cloudflare Worker cache (WITHOUT origin-locked CORS)
@@ -2786,13 +2821,41 @@ export default {
         // 1b. FALLBACK: VERIFIKASI VIA EMAIL + ORDER ID (Untuk pembeli lama/guest)
         if (!isAuthorized && email && transactionId && serviceRoleKey) {
           const checkRes = await fetch(
-            `${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(transactionId)}&select=id,user_id`,
+            `${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(transactionId)}&select=id,user_id,created_at,metadata`,
             { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
           );
           const historyRows = await checkRes.json();
           
           if (historyRows && historyRows.length > 0 && historyRows[0].user_id) {
-            const targetUserId = historyRows[0].user_id;
+            const hRow = historyRows[0];
+            
+            // Proteksi 1: Batas 7 hari untuk direct email link
+            const createdDate = hRow.created_at ? new Date(hRow.created_at) : null;
+            const isExpired = createdDate && (Date.now() - createdDate.getTime() > 7 * 24 * 60 * 60 * 1000);
+            if (isExpired) {
+              return new Response(
+                JSON.stringify({ 
+                  error: "LINK_EXPIRED", 
+                  message: "Direct download links expire after 7 days. Please sign in to your User Vault at https://bombastype.com/user/auth for lifetime access." 
+                }),
+                { status: 410, headers: { 'Content-Type': 'application/json' } }
+              );
+            }
+
+            // Proteksi 2: Batas 7 kali unduhan untuk direct email link
+            const currentMeta = (hRow.metadata && typeof hRow.metadata === 'object') ? hRow.metadata : {};
+            const downloadCount = currentMeta.download_count || 0;
+            if (downloadCount >= 7) {
+              return new Response(
+                JSON.stringify({ 
+                  error: "DOWNLOAD_LIMIT_REACHED", 
+                  message: "Direct download limit reached (7/7). Please sign in to your User Vault at https://bombastype.com/user/auth for permanent access." 
+                }),
+                { status: 403, headers: { 'Content-Type': 'application/json' } }
+              );
+            }
+
+            const targetUserId = hRow.user_id;
             const buyerRes = await fetch(
               `${supabaseUrl}/rest/v1/fontbuyer?id=eq.${targetUserId}&select=email,full_name,address`,
               { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
@@ -2805,6 +2868,20 @@ export default {
               buyerEmail = record.email;
               buyerName = record.full_name || 'N/A';
               buyerAddress = record.address || 'N/A';
+
+              // Catat & naikkan counter unduhan secara asynchronous di database
+              const updatedMeta = { ...currentMeta, download_count: downloadCount + 1, last_downloaded_at: new Date().toISOString() };
+              ctx.waitUntil(
+                fetch(`${supabaseUrl}/rest/v1/font_history?id=eq.${hRow.id}`, {
+                  method: 'PATCH',
+                  headers: {
+                    'apikey': serviceRoleKey,
+                    'Authorization': `Bearer ${serviceRoleKey}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ metadata: updatedMeta })
+                }).catch(() => {})
+              );
             }
           }
         }
@@ -2908,15 +2985,19 @@ export default {
 
         // 4. Susun isi LICENSE.txt
         const issueDate = new Date().toLocaleDateString();
+        // Provenance watermark verification hash for tracking authenticity
+        const watermarkSig = calculateCRC32(new TextEncoder().encode(`${transactionId}-${buyerEmail}-BOMBASTYPE-VAULT`)).toString(16).toUpperCase().padStart(8, '0');
+
         let licenseBody = `BOMBASTYPE — OFFICIAL LICENSE CERTIFICATE\n`;
         licenseBody += `========================================================================\n`;
-        licenseBody += `ORDER ID       : ${transactionId || 'N/A'} (USE AS PASSWORD RESETTER)\n`;
-        licenseBody += `LICENSE HOLDER : ${buyerEmail} (USERNAME)\n`;
+        licenseBody += `ORDER ID       : ${transactionId || 'N/A'}\n`;
+        licenseBody += `LICENSE HOLDER : ${buyerEmail}\n`;
         licenseBody += `LICENSEE NAME  : ${buyerName}\n`;
         licenseBody += `ADDRESS        : ${buyerAddress}\n`;
         licenseBody += `ISSUE DATE     : ${issueDate}\n`;
         const displayFontName = txData.actual_name || cleanFontName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
         licenseBody += `ASSET NAME     : ${displayFontName}\n`;
+        licenseBody += `SECURITY HASH  : BT-SIG-${watermarkSig}\n`;
         licenseBody += `------------------------------------------------------------------------\n\n`;
 
         licenseBody += `LICENSED USAGE TERMS:\n\n`;
@@ -2942,18 +3023,18 @@ export default {
         licenseBody += `3. The font software remains the sole property of Bombastype.\n\n`;
 
         if (!isTrial) {
-          licenseBody += `FONT CANVAS ACCESS (USER VAULT PERKS):\n`;
-          licenseBody += `Your commercial license unlocks VIP access to our Font Canvas design suite:\n`;
+          licenseBody += `FONT CANVAS ACCESS (CREATOR PERKS):\n`;
+          licenseBody += `Your verified commercial license unlocks VIP access to Font Canvas:\n`;
           licenseBody += `• Portal Link : https://canvas.bombastype.com\n`;
-          licenseBody += `• Username    : ${buyerEmail}\n`;
-          licenseBody += `• Order ID    : ${transactionId || 'N/A'} (Use as Password)\n`;
+          licenseBody += `• Licensee    : ${buyerEmail}\n`;
+          licenseBody += `• Order Ref   : ${transactionId || 'N/A'}\n`;
           licenseBody += `PERKS INCLUDED:\n`;
           licenseBody += `- Instant Unlock : All fonts you purchased are automatically unlocked in Canvas.\n`;
           licenseBody += `- Free Extras    : Enjoy free access to all font extras, ornaments & exclusive dingbats catalog-wide.\n`;
           licenseBody += `- Pro Features   : All creator features unlocked (Export, Save, Import & more).\n\n`;
         }
 
-        licenseBody += `FULL DIGITAL RECEIPT:\nhttps://font.bombastype.workers.dev/user/receipt/${transactionId} *LOGIN FIRST TO ACCESS*\n`;
+        licenseBody += `FULL DIGITAL RECEIPT:\nhttps://bombastype.com/user/receipt/${transactionId}\n`;
 
         const licenseData = new TextEncoder().encode(licenseBody.trim());
 
@@ -3003,11 +3084,25 @@ export default {
       } catch (e) { return new Response("Download Failed", { status: 500 }); }
     }
 
-   // --- 9. API Backdoor Password Reset (Transaction ID as Key) ---
+    // --- 9. API Backdoor Password Reset (Transaction ID as Key) ---
     if (url.pathname === '/api/auth/backdoor-reset' && request.method === 'POST') {
+      const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+      if (!checkResetRateLimit(clientIp, 5, 900000)) {
+        return new Response(JSON.stringify({ error: "TOO_MANY_REQUESTS", message: "Too many reset attempts from this IP. Please try again after 15 minutes." }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
       console.log("BACKDOOR_RESET_REQUEST_RECEIVED"); // Tambahkan log di dashboard Cloudflare
       try {
         const { email, transactionId } = await request.json();
+        if (!email || !transactionId || typeof email !== 'string' || typeof transactionId !== 'string' || transactionId.length < 6) {
+          return new Response(JSON.stringify({ error: "INVALID_PARAMETERS" }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
         const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
         const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY; 
 
