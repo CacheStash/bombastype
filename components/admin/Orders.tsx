@@ -41,6 +41,28 @@ const TEXT_DB: Record<string, any> = {
   corporate: "CORPORATE ALL-IN-ONE: A comprehensive license covering all categories for an entire organization with no limits on seats or impressions."
 };
 
+const CRC_TABLE = new Uint32Array(256);
+for (let i = 0; i < 256; i++) {
+  let c = i;
+  for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+  CRC_TABLE[i] = c;
+}
+
+function calculateCRC32(data: Uint8Array): number {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < data.length; i++) crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ data[i]) & 0xFF];
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+export function deriveLicenseKey(transactionId?: string): string {
+  if (!transactionId) return '';
+  const hash = calculateCRC32(new TextEncoder().encode(`${transactionId}-BOMBASTYPE`))
+    .toString(16)
+    .toUpperCase()
+    .padStart(8, '0');
+  return `BT-LIC-${hash}`;
+}
+
 const Orders = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +84,25 @@ const Orders = () => {
       let query = supabase.from('admin_order_view').select('*');
       
       if (searchTerm) {
-        query = query.or(`transaction_id.ilike.%${searchTerm}%,buyer_email.ilike.%${searchTerm}%,font_name.ilike.%${searchTerm}%,tier.ilike.%${searchTerm}%`);
+        const cleanTerm = searchTerm.trim().toUpperCase();
+        const isLicenseKeySearch = cleanTerm.includes('BT-LIC-') || cleanTerm.includes('BT-') || /^[A-F0-9]{8}$/i.test(cleanTerm);
+
+        if (isLicenseKeySearch) {
+          const { data: allTxs } = await supabase.from('admin_order_view').select('transaction_id').limit(2000);
+          const matchedTx = allTxs?.find(row => {
+            if (!row.transaction_id) return false;
+            const lk = deriveLicenseKey(row.transaction_id);
+            return lk.includes(cleanTerm) || cleanTerm.includes(lk) || lk.replace(/^BT-LIC-/, '').includes(cleanTerm);
+          })?.transaction_id;
+
+          if (matchedTx) {
+            query = query.eq('transaction_id', matchedTx);
+          } else {
+            query = query.or(`transaction_id.ilike.%${searchTerm}%,buyer_email.ilike.%${searchTerm}%,font_name.ilike.%${searchTerm}%,tier.ilike.%${searchTerm}%,metadata->>license_key.ilike.%${searchTerm}%`);
+          }
+        } else {
+          query = query.or(`transaction_id.ilike.%${searchTerm}%,buyer_email.ilike.%${searchTerm}%,font_name.ilike.%${searchTerm}%,tier.ilike.%${searchTerm}%,metadata->>license_key.ilike.%${searchTerm}%`);
+        }
       }
 
       const { data, error } = await query.order('download_date', { ascending: false });
@@ -196,7 +236,25 @@ const Orders = () => {
       let query = supabase.from('admin_order_view').select('*', { count: 'exact' });
 
       if (searchTerm) {
-        query = query.or(`transaction_id.ilike.%${searchTerm}%,buyer_email.ilike.%${searchTerm}%,font_name.ilike.%${searchTerm}%,tier.ilike.%${searchTerm}%`);
+        const cleanTerm = searchTerm.trim().toUpperCase();
+        const isLicenseKeySearch = cleanTerm.includes('BT-LIC-') || cleanTerm.includes('BT-') || /^[A-F0-9]{8}$/i.test(cleanTerm);
+
+        if (isLicenseKeySearch) {
+          const { data: allTxs } = await supabase.from('admin_order_view').select('transaction_id').limit(2000);
+          const matchedTx = allTxs?.find(row => {
+            if (!row.transaction_id) return false;
+            const lk = deriveLicenseKey(row.transaction_id);
+            return lk.includes(cleanTerm) || cleanTerm.includes(lk) || lk.replace(/^BT-LIC-/, '').includes(cleanTerm);
+          })?.transaction_id;
+
+          if (matchedTx) {
+            query = query.eq('transaction_id', matchedTx);
+          } else {
+            query = query.or(`transaction_id.ilike.%${searchTerm}%,buyer_email.ilike.%${searchTerm}%,font_name.ilike.%${searchTerm}%,tier.ilike.%${searchTerm}%,metadata->>license_key.ilike.%${searchTerm}%`);
+          }
+        } else {
+          query = query.or(`transaction_id.ilike.%${searchTerm}%,buyer_email.ilike.%${searchTerm}%,font_name.ilike.%${searchTerm}%,tier.ilike.%${searchTerm}%,metadata->>license_key.ilike.%${searchTerm}%`);
+        }
       }
 
       const { data, error, count } = await query
@@ -494,7 +552,7 @@ const Orders = () => {
         <form onSubmit={handleSearchSubmit} className="relative">
           <input 
             type="text" 
-            placeholder="SEARCH ID/EMAIL/FONT..." 
+            placeholder="SEARCH ID/EMAIL/FONT/LICENSE..." 
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="bg-transparent border-b border-vintage-ink/30 px-10 py-2 text-[10px] font-bold tracking-widest outline-none focus:border-vintage-ink transition-all w-full md:w-80 placeholder:opacity-30"
@@ -518,7 +576,7 @@ const Orders = () => {
           <thead>
             <tr className="bg-vintage-ink/5 border-b border-vintage-ink text-[10px] font-bold tracking-widest text-vintage-ink/60 uppercase">
               <th className="p-5">Registry Date</th>
-              <th className="p-5">Identifier</th>
+              <th className="p-5">Order & License Ref</th>
               <th className="p-5">Client Identity</th>
               <th className="p-5">Typeface</th>
               <th className="p-5 text-center">Valuation</th>
@@ -537,7 +595,14 @@ const Orders = () => {
             ) : orders.map((order) => (
               <tr key={order.id} className="border-b border-vintage-ink/10 hover:bg-vintage-ink/2 transition-colors">
                 <td className="p-5 font-bold italic">{new Date(order.download_date).toLocaleDateString()}</td>
-                <td className="p-5 font-mono text-[9px] opacity-60">#{order.transaction_id.slice(0, 12)}</td>
+                <td className="p-5">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-mono text-[9px] opacity-60">#{order.transaction_id.slice(0, 12)}</span>
+                    <span className="font-mono text-[8px] font-bold text-vintage-accent tracking-tight" title="Stealth Font License Key">
+                      {deriveLicenseKey(order.transaction_id)}
+                    </span>
+                  </div>
+                </td>
                 <td className="p-5 lowercase text-vintage-ink">{order.fontbuyer?.email || 'N/A'}</td>
                 <td className="p-5 font-display text-lg tracking-wide text-vintage-ink">{order.fonts?.name || 'Unknown'}</td>
                 <td className="p-5 text-center font-bold">${order.metadata?.price_at_purchase ?? (order.download_type === 'trial' ? '0' : '—')}</td>

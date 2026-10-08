@@ -3474,9 +3474,9 @@ export default {
           let finalContent = fileData.body;
           if (finalFileName.endsWith('.otf') || finalFileName.endsWith('.ttf')) {
             finalContent = stampFontMetadata(fileData.body, {
-              uniqueId: `BombasType Commercial License [${licenseKey}]`,
-              licenseDescription: `Official Commercial License granted to ${buyerName || 'Verified Licensee'}. License Key: ${licenseKey}. Verification Hash: BT-SIG-${watermarkSig}. Authorized commercial font software. Unauthorized redistribution prohibited.`,
-              trademark: `Licensed to: ${buyerName || 'Verified Licensee'}`,
+              uniqueId: `1.000;BT;${cleanBase};${licenseKey}`,
+              licenseDescription: `Commercial Typeface Software. Build Ref: ${licenseKey}. BombasType Foundry.`,
+              trademark: `BombasType is a trademark of BombasType Foundry.`,
               vendorUrl: `https://bombastype.com`,
               licenseUrl: `https://bombastype.com/licenses`
             });
@@ -3490,6 +3490,28 @@ export default {
         validFiles.push({ name: 'LICENSE.txt', content: licenseData });
 
         const zipData = createMultiZip(validFiles);
+
+        // Simpan license_key ke font_history.metadata untuk pencarian instan di Admin Orders
+        if (transactionId && serviceRoleKey) {
+          ctx.waitUntil(
+            (async () => {
+              try {
+                const getRow = await fetch(`${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(transactionId)}&select=id,metadata`, {
+                  headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+                });
+                const rows = await getRow.json();
+                if (rows?.[0] && (!rows[0].metadata?.license_key || rows[0].metadata?.license_key !== licenseKey)) {
+                  const newMeta = { ...(rows[0].metadata || {}), license_key: licenseKey };
+                  await fetch(`${supabaseUrl}/rest/v1/font_history?id=eq.${rows[0].id}`, {
+                    method: 'PATCH',
+                    headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ metadata: newMeta })
+                  });
+                }
+              } catch (_) {}
+            })()
+          );
+        }
 
         const headers = new Headers();
         headers.set('Content-Type', 'application/zip');
