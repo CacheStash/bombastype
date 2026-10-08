@@ -570,6 +570,12 @@ const Orders = () => {
         </form>
       </div>
 
+      {searchTerm && searchTerm.toUpperCase().includes('SPEC-W01') && (
+        <div className="mb-4 p-4 border border-amber-600/40 bg-amber-500/10 text-[10px] tracking-wider uppercase font-bold text-amber-900 flex items-center justify-between">
+          <span>⚠️ {searchTerm.toUpperCase()}: Web Specimen Tag (TypeTester Engine Asset). This build tag is generated for live online testing and is not associated with any commercial purchase order.</span>
+        </div>
+      )}
+
       {/* ORDERS DATA TABLE */}
       <div className="overflow-x-auto border border-vintage-ink bg-white/40">
         <table className="w-full text-left border-collapse min-w-250">

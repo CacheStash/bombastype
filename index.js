@@ -1513,11 +1513,13 @@ export default {
         
         let processedBody = fileData.body;
         if (!isRawRequested && (lowerFontName.endsWith('.otf') || lowerFontName.endsWith('.ttf'))) {
+          const cleanBase = fontName.replace(/\.[^/.]+$/, "");
           processedBody = stampFontMetadata(processedBody, {
-            uniqueId: "BombasType Web Tester Engine - Not For Commercial Use",
-            licenseDescription: "Web Preview Tester Only. Unauthorized distribution or commercial extraction is strictly prohibited. BombasType Studio - https://bombastype.com",
-            vendorUrl: "https://bombastype.com",
-            licenseUrl: "https://bombastype.com"
+            uniqueId: `1.000;BT;${cleanBase};BT-SPEC-W01`,
+            licenseDescription: `Digital Specimen Typeface Software. Build Ref: BT-SPEC-W01. BombasType Foundry.`,
+            trademark: `BombasType is a trademark of BombasType Foundry.`,
+            vendorUrl: `https://bombastype.com`,
+            licenseUrl: `https://bombastype.com/licenses`
           });
         }
         const finalBody = isRawRequested ? processedBody : maskFontBuffer(processedBody);
