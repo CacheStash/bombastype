@@ -168,7 +168,7 @@ export const ContextMenu: React.FC = () => {
     <div
       ref={menuRef}
       role="menu"
-      className="fixed z-[999999] bg-white border-2 border-black shadow-[4px_4px_0px_0px_#000] p-1.5 min-w-[210px] text-xs font-mono select-none animate-in fade-in zoom-in-95 duration-100"
+      className="fixed z-[999999] bg-vintage-paper border border-vintage-ink shadow-2xl p-1.5 min-w-[210px] text-[9px] uppercase tracking-[0.18em] font-bold text-vintage-ink select-none rounded-[2px] animate-in fade-in zoom-in-95 duration-100"
       style={{ left: `${menu.x}px`, top: `${menu.y}px` }}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -178,15 +178,15 @@ export const ContextMenu: React.FC = () => {
           <button
             type="button"
             onClick={handleSearch}
-            className="w-full px-2 py-1.5 hover:bg-black hover:text-white rounded-none flex items-center justify-between transition-colors cursor-pointer text-left group"
+            className="w-full px-2.5 py-1.5 hover:bg-vintage-ink hover:text-vintage-paper rounded-[2px] flex items-center justify-between transition-colors cursor-pointer text-left group"
           >
             <span className="flex items-center gap-2 truncate max-w-[130px]">
-              <Search size={12} className="shrink-0" />
+              <Search size={11} className="shrink-0 stroke-[1.5]" />
               <span className="truncate">Search "{menu.selectedText}"</span>
             </span>
-            <span className="text-[10px] text-neutral-400 group-hover:text-neutral-200">Web</span>
+            <span className="text-[8px] tracking-widest text-vintage-accent group-hover:text-vintage-paper/80 font-mono">Web</span>
           </button>
-          <div className="border-b border-neutral-200 my-1" />
+          <div className="border-b border-vintage-ink/20 my-1" />
         </>
       )}
 
@@ -196,17 +196,17 @@ export const ContextMenu: React.FC = () => {
           type="button"
           disabled={!menu.hasSelection}
           onClick={handleCut}
-          className={`w-full px-2 py-1.5 rounded-none flex items-center justify-between transition-colors text-left group ${
+          className={`w-full px-2.5 py-1.5 rounded-[2px] flex items-center justify-between transition-colors text-left group ${
             menu.hasSelection
-              ? 'hover:bg-black hover:text-white cursor-pointer'
+              ? 'hover:bg-vintage-ink hover:text-vintage-paper cursor-pointer'
               : 'opacity-35 cursor-not-allowed'
           }`}
         >
           <span className="flex items-center gap-2">
-            <Scissors size={12} />
+            <Scissors size={11} className="stroke-[1.5]" />
             <span>Cut</span>
           </span>
-          <span className="text-[10px] text-neutral-400 group-hover:text-neutral-200">Ctrl+X</span>
+          <span className="text-[8px] tracking-widest text-vintage-accent group-hover:text-vintage-paper/80 font-mono">Ctrl+X</span>
         </button>
       )}
 
@@ -215,17 +215,17 @@ export const ContextMenu: React.FC = () => {
         type="button"
         disabled={!menu.hasSelection}
         onClick={handleCopy}
-        className={`w-full px-2 py-1.5 rounded-none flex items-center justify-between transition-colors text-left group ${
+        className={`w-full px-2.5 py-1.5 rounded-[2px] flex items-center justify-between transition-colors text-left group ${
           menu.hasSelection
-            ? 'hover:bg-black hover:text-white cursor-pointer'
+            ? 'hover:bg-vintage-ink hover:text-vintage-paper cursor-pointer'
             : 'opacity-35 cursor-not-allowed'
         }`}
       >
         <span className="flex items-center gap-2">
-          <Copy size={12} />
+          <Copy size={11} className="stroke-[1.5]" />
           <span>Copy</span>
         </span>
-        <span className="text-[10px] text-neutral-400 group-hover:text-neutral-200">Ctrl+C</span>
+        <span className="text-[8px] tracking-widest text-vintage-accent group-hover:text-vintage-paper/80 font-mono">Ctrl+C</span>
       </button>
 
       {/* Paste (only in input) */}
@@ -233,13 +233,13 @@ export const ContextMenu: React.FC = () => {
         <button
           type="button"
           onClick={handlePaste}
-          className="w-full px-2 py-1.5 hover:bg-black hover:text-white rounded-none flex items-center justify-between transition-colors cursor-pointer text-left group"
+          className="w-full px-2.5 py-1.5 hover:bg-vintage-ink hover:text-vintage-paper rounded-[2px] flex items-center justify-between transition-colors cursor-pointer text-left group"
         >
           <span className="flex items-center gap-2">
-            <ClipboardPaste size={12} />
+            <ClipboardPaste size={11} className="stroke-[1.5]" />
             <span>Paste</span>
           </span>
-          <span className="text-[10px] text-neutral-400 group-hover:text-neutral-200">Ctrl+V</span>
+          <span className="text-[8px] tracking-widest text-vintage-accent group-hover:text-vintage-paper/80 font-mono">Ctrl+V</span>
         </button>
       )}
 
@@ -247,52 +247,52 @@ export const ContextMenu: React.FC = () => {
       <button
         type="button"
         onClick={handleSelectAll}
-        className="w-full px-2 py-1.5 hover:bg-black hover:text-white rounded-none flex items-center justify-between transition-colors cursor-pointer text-left group"
+        className="w-full px-2.5 py-1.5 hover:bg-vintage-ink hover:text-vintage-paper rounded-[2px] flex items-center justify-between transition-colors cursor-pointer text-left group"
       >
         <span className="flex items-center gap-2">
-          <CheckSquare size={12} />
+          <CheckSquare size={11} className="stroke-[1.5]" />
           <span>Select All</span>
         </span>
-        <span className="text-[10px] text-neutral-400 group-hover:text-neutral-200">Ctrl+A</span>
+        <span className="text-[8px] tracking-widest text-vintage-accent group-hover:text-vintage-paper/80 font-mono">Ctrl+A</span>
       </button>
 
-      <div className="border-b border-neutral-200 my-1" />
+      <div className="border-b border-vintage-ink/20 my-1" />
 
       {/* Navigation: Back, Forward, Reload */}
       <button
         type="button"
         onClick={handleBack}
-        className="w-full px-2 py-1.5 hover:bg-black hover:text-white rounded-none flex items-center justify-between transition-colors cursor-pointer text-left group"
+        className="w-full px-2.5 py-1.5 hover:bg-vintage-ink hover:text-vintage-paper rounded-[2px] flex items-center justify-between transition-colors cursor-pointer text-left group"
       >
         <span className="flex items-center gap-2">
-          <ArrowLeft size={12} />
+          <ArrowLeft size={11} className="stroke-[1.5]" />
           <span>Back</span>
         </span>
-        <span className="text-[10px] text-neutral-400 group-hover:text-neutral-200">Alt+←</span>
+        <span className="text-[8px] tracking-widest text-vintage-accent group-hover:text-vintage-paper/80 font-mono">Alt+←</span>
       </button>
 
       <button
         type="button"
         onClick={handleForward}
-        className="w-full px-2 py-1.5 hover:bg-black hover:text-white rounded-none flex items-center justify-between transition-colors cursor-pointer text-left group"
+        className="w-full px-2.5 py-1.5 hover:bg-vintage-ink hover:text-vintage-paper rounded-[2px] flex items-center justify-between transition-colors cursor-pointer text-left group"
       >
         <span className="flex items-center gap-2">
-          <ArrowRight size={12} />
+          <ArrowRight size={11} className="stroke-[1.5]" />
           <span>Forward</span>
         </span>
-        <span className="text-[10px] text-neutral-400 group-hover:text-neutral-200">Alt+→</span>
+        <span className="text-[8px] tracking-widest text-vintage-accent group-hover:text-vintage-paper/80 font-mono">Alt+→</span>
       </button>
 
       <button
         type="button"
         onClick={handleReload}
-        className="w-full px-2 py-1.5 hover:bg-black hover:text-white rounded-none flex items-center justify-between transition-colors cursor-pointer text-left group"
+        className="w-full px-2.5 py-1.5 hover:bg-vintage-ink hover:text-vintage-paper rounded-[2px] flex items-center justify-between transition-colors cursor-pointer text-left group"
       >
         <span className="flex items-center gap-2">
-          <RotateCw size={12} />
+          <RotateCw size={11} className="stroke-[1.5]" />
           <span>Reload</span>
         </span>
-        <span className="text-[10px] text-neutral-400 group-hover:text-neutral-200">Ctrl+R</span>
+        <span className="text-[8px] tracking-widest text-vintage-accent group-hover:text-vintage-paper/80 font-mono">Ctrl+R</span>
       </button>
     </div>
   );
