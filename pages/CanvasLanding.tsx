@@ -316,16 +316,16 @@ const CanvasLanding: React.FC = () => {
                 href={CANVAS_APP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-vintage-ink !text-vintage-paper hover:bg-vintage-accent hover:!text-white py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2 transition-colors"
+                className="group bg-vintage-ink text-vintage-paper border-2 border-vintage-ink hover:bg-transparent hover:border-vintage-ink py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <span className="!text-vintage-paper">Launch FontCanvas Editor</span>
-                <ArrowUpRight size={16} className="!text-vintage-paper" />
+                <span className="text-vintage-paper group-hover:text-vintage-ink transition-colors">Launch FontCanvas Editor</span>
+                <ArrowUpRight size={16} className="text-vintage-paper group-hover:text-vintage-ink transition-colors" />
               </a>
               <Link
                 to="/fonts"
-                className="bg-vintage-accent text-white hover:bg-vintage-ink py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center transition-colors"
+                className="group bg-vintage-accent text-white border-2 border-vintage-accent hover:bg-transparent hover:border-vintage-ink py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center transition-all cursor-pointer"
               >
-                Buy Now
+                <span className="text-white group-hover:text-vintage-ink transition-colors">Buy Now</span>
               </Link>
             </div>
           </div>
