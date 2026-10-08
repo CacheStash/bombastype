@@ -289,10 +289,13 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
 
   useEffect(() => {
     const files = Array.isArray(config.font_files) ? config.font_files : (config.file_url ? [config.file_url] : []);
+    if (files.length === 0) return;
     const configAny = config as any;
     const version = new Date(configAny.updated_at || configAny.created_at || Date.now()).getTime();
 
-    files.forEach((file, index) => {
+    // 1. PRIORITAS UTAMA: Muat style yang sedang aktif langsung agar teks instan muncul
+    const loadStyle = (index: number) => {
+      const file = files[index];
       if (!file) return;
       const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=s2_${version}`;
       const fontNameIdentifier = `${config.name}-${index}`;
@@ -300,6 +303,8 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
       loadProtectedFontFace(fontNameIdentifier, url).catch((err) => {
         console.error(`Failed to register FontFace ${fontNameIdentifier}:`, err);
       });
+
+      if (detectedStyleNames[index] && loadedFontsMap[index]) return;
 
       loadProtectedOpenType(url).then((font) => {
         if (font) {
@@ -312,8 +317,21 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
       }).catch((err) => {
         console.warn(`Protected OpenType load error for style ${index}:`, err);
       });
-    });
-  }, [config.font_files, config.name, config.file_url]);
+    };
+
+    loadStyle(activeStyleIndex);
+
+    // 2. LAZY LOAD: Tunda muat style sekunder agar tidak membebani jaringan di awal
+    const idleTimer = setTimeout(() => {
+      files.forEach((_, idx) => {
+        if (idx !== activeStyleIndex) {
+          loadStyle(idx);
+        }
+      });
+    }, isLayeredMode ? 100 : 1800);
+
+    return () => clearTimeout(idleTimer);
+  }, [config.font_files, config.name, config.file_url, activeStyleIndex, isLayeredMode]);
 
   useEffect(() => {
     let targetFile = '';

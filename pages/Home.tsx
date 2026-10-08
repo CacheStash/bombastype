@@ -142,7 +142,29 @@ export default function Home() {
   }, []);
   const slideDirection = Math.random() > 0.5 ? 20 : -20;
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    // 1. Coba baca cache cepat dari sessionStorage jika tersedia agar instan tanpa loading screen
+    try {
+      const cached = sessionStorage.getItem('bombastype_collection_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.all && parsed.all.length > 0) {
+          const all = parsed.all;
+          const featured = all.filter((f: any) => f.metadata?.is_featured).slice(0, 3);
+          const recent = all.filter((f: any) => f.metadata?.is_handpicked).slice(0, 4);
+          setFeaturedFonts(featured.length > 0 ? featured : all.slice(0, 3));
+          setRecentFonts(recent.length > 0 ? recent : all.slice(0, 4));
+          const sortedByName = [...all].sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
+          setAllFonts(sortedByName);
+          const briswoodIdx = sortedByName.findIndex((f: any) => f.name.toLowerCase().includes('briswood'));
+          setCurrentTesterFontIndex(briswoodIdx !== -1 ? briswoodIdx : 0);
+          setLoading(false);
+        }
+      }
+    } catch (_) {}
+
+    fetchData();
+  }, []);
 
   // Protected Font Face Registration untuk Recent Fonts
   useEffect(() => {
@@ -159,13 +181,19 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      setLoading(true);
+      if (!sessionStorage.getItem('bombastype_collection_cache')) {
+        setLoading(true);
+      }
       const { data: all, error } = await supabase
         .from('fonts')
         .select('*')
         .order('display_order', { ascending: true });
       
       if (all && all.length > 0) {
+        try {
+          sessionStorage.setItem('bombastype_collection_cache', JSON.stringify({ all }));
+        } catch (_) {}
+
         const featured = all.filter(f => f.metadata?.is_featured).slice(0, 3);
         const recent = all.filter(f => f.metadata?.is_handpicked).slice(0, 4);
         

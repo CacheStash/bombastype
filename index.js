@@ -968,19 +968,40 @@ export default {
       const secFetchMode = request.headers.get('Sec-Fetch-Mode') || '';
       const secFetchDest = request.headers.get('Sec-Fetch-Dest') || '';
       const acceptHeader = request.headers.get('Accept') || '';
+      const requestedWith = request.headers.get('X-Requested-With') || '';
+      const userAgent = (request.headers.get('User-Agent') || '').toLowerCase();
 
-      // LAYER 2 (WordPress-style direct link protection):
-      // If accessed directly via browser address bar, new tab, direct navigation, or without valid application referer/origin,
-      // redirect immediately to the homepage!
+      // 1. DETECT DIRECT BROWSER NAVIGATION (Address Bar, Open in New Tab, DevTools Open)
       const isDirectNavigation = 
         secFetchMode === 'navigate' || 
         secFetchDest === 'document' || 
         secFetchDest === 'iframe' ||
-        acceptHeader.includes('text/html') ||
-        (!origin && !referer);
+        acceptHeader.includes('text/html');
 
       if (isDirectNavigation) {
         return Response.redirect(`${url.origin}/`, 302);
+      }
+
+      // 2. BLOCK EXTERNAL DOWNLOAD MANAGERS & CLIPBOARD CAPTURES (IDM, curl, wget, aria2)
+      const isKnownDownloader = 
+        userAgent.includes('idm') || 
+        userAgent.includes('downloadaction') ||
+        userAgent.includes('curl') || 
+        userAgent.includes('wget') || 
+        userAgent.includes('aria2') ||
+        userAgent.includes('postman');
+
+      // Modern in-app font fetch MUST have Sec-Fetch-Mode: cors & Sec-Fetch-Dest: empty
+      const isLegitFetch = (secFetchMode === 'cors' && secFetchDest === 'empty') || requestedWith === 'FontMetricsClient';
+
+      if (isKnownDownloader || !isLegitFetch || (!origin && !referer)) {
+        return new Response('Access Denied: Direct font binary downloads are restricted.', {
+          status: 403,
+          headers: {
+            'Content-Type': 'text/plain',
+            'X-Robots-Tag': 'noindex, nofollow, noarchive'
+          }
+        });
       }
 
       const isAllowedSource = (val) => {

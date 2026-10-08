@@ -79,7 +79,11 @@ export async function fetchDisplayBuffer(url: string): Promise<ArrayBuffer> {
 
   const promise = (async () => {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: {
+          'X-Requested-With': 'FontMetricsClient'
+        }
+      });
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
