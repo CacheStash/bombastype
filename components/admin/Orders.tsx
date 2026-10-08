@@ -49,6 +49,7 @@ const Orders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [downloadingTx, setDownloadingTx] = useState<string | null>(null);
+  const [downloadingZipTx, setDownloadingZipTx] = useState<string | null>(null);
   const [resendingTx, setResendingTx] = useState<string | null>(null);
   const itemsPerPage = 20;
 
@@ -223,6 +224,81 @@ const Orders = () => {
   };
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  const handleDownloadPackageZip = async (order: any) => {
+    setDownloadingZipTx(order.transaction_id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return alert("Session expired. Please login again.");
+
+      // Find target font file
+      let targetFile = order.font_file;
+      if (!targetFile && order.font_id) {
+        const { data: fontRow } = await supabase
+          .from('fonts')
+          .select('font_files, trial_file_url')
+          .eq('id', order.font_id)
+          .maybeSingle();
+
+        if (fontRow) {
+          const files = Array.isArray(fontRow.font_files) && fontRow.font_files.length > 0
+            ? fontRow.font_files
+            : (fontRow.trial_file_url ? [fontRow.trial_file_url] : []);
+          targetFile = files[0];
+        }
+      }
+
+      if (!targetFile && order.font_name) {
+        const { data: fontRow } = await supabase
+          .from('fonts')
+          .select('font_files, trial_file_url')
+          .ilike('name', order.font_name)
+          .maybeSingle();
+
+        if (fontRow) {
+          const files = Array.isArray(fontRow.font_files) && fontRow.font_files.length > 0
+            ? fontRow.font_files
+            : (fontRow.trial_file_url ? [fontRow.trial_file_url] : []);
+          targetFile = files[0];
+        }
+      }
+
+      if (!targetFile) {
+        return alert("Font files not found for this order.");
+      }
+
+      const downloadType = order.download_type || 'commercial';
+      const res = await fetch(`/api/download-zip?file=${encodeURIComponent(targetFile)}&order=${encodeURIComponent(order.transaction_id)}&type=${downloadType}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to generate package zip.`);
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      const contentDisposition = res.headers.get('Content-Disposition');
+      let downloadName = `${(order.font_name || 'Font').replace(/\s+/g, '_')}_${order.transaction_id?.slice(0, 10)}.zip`;
+      if (contentDisposition && contentDisposition.includes('filename=')) {
+        downloadName = contentDisposition.split('filename=')[1].split(';')[0].replace(/["']/g, '').trim();
+      }
+
+      a.download = downloadName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (err: any) {
+      console.error("ZIP_DOWNLOAD_ERROR:", err);
+      alert("Download error: " + err.message);
+    } finally {
+      setDownloadingZipTx(null);
+    }
+  };
 
   const handleDownloadLicenseTxt = async (order: any) => {
     setDownloadingTx(order.transaction_id);
@@ -503,6 +579,15 @@ const Orders = () => {
                 </td>
                 <td className="p-5 text-center">
                   <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                    <button 
+                      onClick={() => handleDownloadPackageZip(order)}
+                      disabled={downloadingZipTx === order.transaction_id}
+                      title="Download Buyer Package (.zip)"
+                      className="px-2.5 py-1 border border-vintage-ink bg-vintage-ink text-vintage-paper hover:bg-vintage-accent hover:text-white transition-all text-[9px] font-bold tracking-wider uppercase flex items-center gap-1.5 group disabled:opacity-40"
+                    >
+                      <Download size={12} className="opacity-80 group-hover:opacity-100" />
+                      <span>{downloadingZipTx === order.transaction_id ? '...' : '.ZIP'}</span>
+                    </button>
                     <button 
                       onClick={() => handleDownloadLicenseTxt(order)}
                       disabled={downloadingTx === order.transaction_id}

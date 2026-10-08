@@ -3159,14 +3159,37 @@ export default {
             isAuthorized = true;
             buyerEmail = userData.email;
             
-            // Ambil data profil untuk LICENSE.txt (Bypass RLS via Service Role)
-            const profRes = await fetch(`${supabaseUrl}/rest/v1/fontbuyer?id=eq.${userData.id}&select=full_name,address`, {
-              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
-            });
-            const profData = await profRes.json();
-            if (profData?.[0]) {
-              buyerName = profData[0].full_name || 'N/A';
-              buyerAddress = profData[0].address || 'N/A';
+            // Jika ada order ID, ambil data pembeli asli untuk LICENSE.txt & OpenType stamping (agar admin download menghasilkan lisensi & stamp pembeli asli)
+            if (transactionId && serviceRoleKey) {
+              const hRes = await fetch(
+                `${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(transactionId)}&select=user_id`,
+                { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+              );
+              const hRows = await hRes.json();
+              if (hRows?.[0]?.user_id) {
+                const bRes = await fetch(
+                  `${supabaseUrl}/rest/v1/fontbuyer?id=eq.${hRows[0].user_id}&select=email,full_name,address`,
+                  { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+                );
+                const bRows = await bRes.json();
+                if (bRows?.[0]) {
+                  buyerEmail = bRows[0].email || buyerEmail;
+                  buyerName = bRows[0].full_name || buyerName;
+                  buyerAddress = bRows[0].address || buyerAddress;
+                }
+              }
+            }
+
+            if (buyerName === 'N/A') {
+              // Fallback: Ambil data profil user yang login untuk LICENSE.txt (Bypass RLS via Service Role)
+              const profRes = await fetch(`${supabaseUrl}/rest/v1/fontbuyer?id=eq.${userData.id}&select=full_name,address`, {
+                headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+              });
+              const profData = await profRes.json();
+              if (profData?.[0]) {
+                buyerName = profData[0].full_name || 'N/A';
+                buyerAddress = profData[0].address || 'N/A';
+              }
             }
           }
         }
