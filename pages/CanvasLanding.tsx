@@ -291,7 +291,7 @@ const CanvasLanding: React.FC = () => {
 
       {/* 4. LICENSING & STUDIO POLICY */}
       <section className="mb-20 px-4 max-w-6xl mx-auto">
-        <div className="border border-vintage-ink bg-vintage-paper/90 p-8 md:p-14 relative">
+        <div className="border border-vintage-ink bg-vintage-paper/90 p-8 md:p-12 relative mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
             <div className="max-w-2xl">
               <div className="flex items-center gap-2 mb-3">
@@ -304,23 +304,11 @@ const CanvasLanding: React.FC = () => {
                 Complimentary Lettering & Crucial Pro Workflows
               </h2>
               <p className="text-sm md:text-base leading-relaxed text-vintage-ink/80 mb-3">
-                FontCanvas Studio is free for designers and typographers to prototype custom lettering, test chromatic layer stacking, and compose layouts directly in your browser (*).
+                FontCanvas Studio is free for designers and typographers to prototype custom lettering, test chromatic layer stacking, and compose layouts directly in your browser.
               </p>
-              <p className="text-sm md:text-base leading-relaxed text-vintage-ink/80 mb-4">
-                To unlock essential production capabilities—including unwatermarked vector SVG & high-res PNG exports, full access to font families, and complete ornamental extras—simply purchase at least one paid font from our collection.
+              <p className="text-sm md:text-base leading-relaxed text-vintage-ink/80">
+                To unlock crucial production capabilities—including clean unwatermarked vector SVG & high-res PNG exports, chromatic layer stacking, and full access to all accompanying ornament fonts and SVG assets—simply purchase at least one paid font from our collection. Please note that FontCanvas specifically unlocks and loads your purchased fonts.
               </p>
-              <p className="text-xs leading-relaxed text-vintage-ink/65 italic border-l-2 border-vintage-accent pl-3 py-0.5">
-                * Continuous Development & In-Browser Simplicity: We actively maintain and update FontCanvas regularly to resolve critical bugs and introduce refined tools. FontCanvas is intentionally engineered to stay clean, fast, and focused on essential typographic design workflows—allowing our buyers to compose, customize, and export production-ready vector artwork directly in-browser without requiring complex 3rd-party graphic software.
-              </p>
-
-              <div className="mt-4 p-4 border border-vintage-ink/20 bg-vintage-background/60 text-xs leading-relaxed text-vintage-ink/80">
-                <div className="font-bold uppercase tracking-wider text-vintage-accent text-[11px] mb-1 flex items-center gap-1.5">
-                  <span>Direct Website Exclusive Facility</span>
-                </div>
-                <p>
-                  <strong>Please note:</strong> FontCanvas VIP access, full font family unlocking, and creator perks are exclusively reserved for orders placed directly on <strong>bombastype.com</strong>. We sincerely apologize, but purchases made through third-party marketplaces (such as Creative Market, Envato, MyFonts, etc.) are not eligible for this facility, as it is an exclusive benefit created solely for our direct website patrons.
-                </p>
-              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
@@ -340,6 +328,26 @@ const CanvasLanding: React.FC = () => {
                 Buy Now
               </Link>
             </div>
+          </div>
+        </div>
+
+        {/* Supplementary Notices: Direct Store Exclusive Facility & Continuous Development */}
+        <div className="space-y-4">
+          {/* Direct Store Exclusive Facility */}
+          <div className="p-5 border border-vintage-ink/20 bg-vintage-paper/50 text-xs leading-relaxed text-vintage-ink/80">
+            <div className="font-bold uppercase tracking-wider text-vintage-accent text-[11px] mb-1.5 flex items-center gap-1.5">
+              <span>Direct Store Exclusive Facility</span>
+            </div>
+            <p>
+              <strong>Please note:</strong> FontCanvas VIP access, full font family unlocking, and creator perks are exclusively reserved for orders placed directly on <strong>bombastype.com</strong>. We sincerely apologize, but purchases made through third-party marketplaces (such as Creative Market, Envato, MyFonts, etc.) are not eligible for this facility, as it is an exclusive benefit created solely for our direct website patrons.
+            </p>
+          </div>
+
+          {/* Continuous Development & In-Browser Simplicity */}
+          <div className="p-4 border-l-2 border-vintage-accent bg-vintage-paper/30 text-xs leading-relaxed text-vintage-ink/75 italic">
+            <p>
+              <strong>* Continuous Development & In-Browser Simplicity:</strong> We actively maintain and update FontCanvas regularly to resolve critical bugs and introduce refined tools. FontCanvas is intentionally engineered to stay clean, fast, and focused on essential typographic design workflows—allowing our buyers to compose, customize, and export production-ready vector artwork directly in-browser without requiring complex 3rd-party graphic software.
+            </p>
           </div>
         </div>
       </section>
