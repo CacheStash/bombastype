@@ -49,8 +49,19 @@ async function fetchFileBuffer(fileName, env) {
   const object = await env.R2_BUCKET.get(fileName);
   if (object) return { body: await object.arrayBuffer(), contentType: object.httpMetadata?.contentType };
 
-  // 2. Jika tidak ada di R2, asumsikan ini adalah Google Drive ID
-  // Gunakan Google UserContent CDN (lh3) untuk performa lebih cepat dan bebas batas lonjakan trafik/virus HTML
+  // 2. Proteksi Anti-Open-Proxy: Jika fileName memiliki ekstensi font (.otf, .ttf, .woff, .woff2),
+  // jangan teruskan ke Google Drive karena file R2 yang hilang tidak boleh menjadi request Drive liar.
+  const isFontExtension = /\.(otf|ttf|woff2?)$/i.test(fileName);
+  if (isFontExtension) {
+    return null;
+  }
+
+  // 3. Fallback Google Drive ID (Hanya untuk legacy alphanumeric Drive ID)
+  const isValidDriveId = /^[a-zA-Z0-9_-]{25,45}$/.test(fileName);
+  if (!isValidDriveId) {
+    return null;
+  }
+
   const driveUrl = `https://lh3.googleusercontent.com/d/${fileName}`;
   let res = await fetch(driveUrl);
 
@@ -64,13 +75,25 @@ async function fetchFileBuffer(fileName, env) {
   }
   
   if (res.ok) {
-    const contentType = res.headers.get('content-type') || '';
-    // Proteksi: Jika Google memberikan HTML (halaman peringatan virus), return null
-    // Karena Opentype.js tidak bisa memproses HTML sebagai Font
-    if (contentType.includes('text/html')) {
-      console.error(`DRIVE_REJECTED_BINARY_FETCH: ${fileName} - Size likely too large`);
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+    const contentLength = parseInt(res.headers.get('content-length') || '0', 10);
+    
+    // Proteksi: Maksimal ukuran file 15MB (mencegah proxy download film/file besar)
+    if (contentLength > 15 * 1024 * 1024) {
+      console.error(`DRIVE_REJECTED_OVERSIZED: ${fileName} (${contentLength} bytes)`);
       return null;
     }
+
+    // Proteksi: Tolak jika HTML, video, audio, atau image non-font
+    if (
+      contentType.includes('text/html') || 
+      contentType.includes('video/') || 
+      contentType.includes('audio/') || 
+      contentType.includes('image/')
+    ) {
+      return null;
+    }
+
     return { body: await res.arrayBuffer(), contentType: contentType };
   }
 
