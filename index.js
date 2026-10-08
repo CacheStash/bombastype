@@ -28,6 +28,12 @@ function calculateCRC32(data) {
 const resetRateLimitMap = new Map();
 function checkResetRateLimit(ip, limit = 5, windowMs = 900000) {
   const now = Date.now();
+  if (resetRateLimitMap.size > 5000) {
+    for (const [key, val] of resetRateLimitMap.entries()) {
+      if (now > val.resetTime) resetRateLimitMap.delete(key);
+    }
+    if (resetRateLimitMap.size > 5000) resetRateLimitMap.clear();
+  }
   const record = resetRateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
   if (now > record.resetTime) {
     record.count = 1;
@@ -43,10 +49,41 @@ function checkResetRateLimit(ip, limit = 5, windowMs = 900000) {
   return true;
 }
 
+function isAllowedSource(val) {
+  if (!val) return false;
+  try {
+    const parsed = val.startsWith('http://') || val.startsWith('https://')
+      ? new URL(val)
+      : new URL(`https://${val}`);
+    const hostname = parsed.hostname.toLowerCase();
+    return (
+      hostname === 'bombastype.com' ||
+      hostname.endsWith('.bombastype.com') ||
+      hostname === 'bombastype.workers.dev' ||
+      hostname.endsWith('.bombastype.workers.dev') ||
+      hostname === 'subqi.com' ||
+      hostname.endsWith('.subqi.com') ||
+      hostname === 'subqi.workers.dev' ||
+      hostname.endsWith('.subqi.workers.dev') ||
+      hostname === 'fontcanvas.pages.dev' ||
+      hostname.endsWith('.fontcanvas.pages.dev') ||
+      (hostname.endsWith('.workers.dev') && hostname.includes('fontcanvas')) ||
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1'
+    );
+  } catch (_) {
+    return false;
+  }
+}
 
 async function fetchFileBuffer(fileName, env) {
-  // 1. Coba ambil dari R2
-  const object = await env.R2_BUCKET.get(fileName);
+  if (fileName.includes('..') || fileName.includes('\\')) return null;
+
+  // 1. Coba ambil dari R2 (cek folder tester/ terlebih dahulu jika ada, lalu fallback ke root)
+  let object = await env.R2_BUCKET.get('tester/' + fileName);
+  if (!object) {
+    object = await env.R2_BUCKET.get(fileName);
+  }
   if (object) return { body: await object.arrayBuffer(), contentType: object.httpMetadata?.contentType };
 
   // 2. Proteksi Anti-Open-Proxy: Jika fileName memiliki ekstensi font (.otf, .ttf, .woff, .woff2),
@@ -980,6 +1017,14 @@ async function triggerGasEmail(buyerEmail, buyerName, orderId, items, env) {
 
 // Web Crypto HMAC helpers for ephemeral token verification
 const textEncoder = new TextEncoder();
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+
 async function signHMAC(secret, message) {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -995,7 +1040,7 @@ async function signHMAC(secret, message) {
 async function verifyHMAC(secret, message, expectedHex) {
   try {
     const actual = await signHMAC(secret, message);
-    return actual === expectedHex;
+    return safeEqual(actual, expectedHex);
   } catch {
     return false;
   }
@@ -1007,11 +1052,14 @@ export default {
 
     // 1. Handling CORS (Preflight)
     if (request.method === 'OPTIONS') {
+      const origin = request.headers.get('Origin') || '';
+      const allowedOrigin = origin && isAllowedSource(origin) ? origin : '*';
       return new Response(null, {
         headers: {
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': allowedOrigin,
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Authorization, apikey, Content-Type, X-Order-ID',
+          'Access-Control-Allow-Headers': 'Authorization, apikey, Content-Type, X-Order-ID, X-FT, X-Requested-With',
+          'Access-Control-Max-Age': '86400',
         }
       });
     }
@@ -1027,24 +1075,49 @@ export default {
 
     // --- 2.5. API Ephemeral Font Token Issuance (/api/ft) ---
     if (url.pathname === '/api/ft' && request.method === 'GET') {
+      const origin = request.headers.get('Origin') || '';
+      const referer = request.headers.get('Referer') || '';
+      const secFetchMode = request.headers.get('Sec-Fetch-Mode') || '';
+      const secFetchDest = request.headers.get('Sec-Fetch-Dest') || '';
+
+      // Direct navigation / address bar open blocked
+      if (secFetchMode === 'navigate' || secFetchDest === 'document') {
+        return new Response(null, { status: 404 });
+      }
+
+      // Check allowed origin or referer if provided
+      if ((origin && !isAllowedSource(origin)) || (referer && !isAllowedSource(referer))) {
+        return new Response(JSON.stringify({ error: "FORBIDDEN" }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
       const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
       if (!checkResetRateLimit(`ft_${clientIp}`, 40, 300000)) {
         return new Response(JSON.stringify({ error: "TOO_MANY_REQUESTS" }), {
           status: 429,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origin && isAllowedSource(origin) ? origin : '*' }
         });
       }
 
-      const fontTokenSecret = env.FONT_TOKEN_SECRET || env.ADMIN_SECRET || 'SubqiVaultHMACSecret2026';
+      const fontTokenSecret = env.FONT_TOKEN_SECRET || env.SUPABASE_SERVICE_ROLE_KEY || env.GAS_TOKEN;
+      if (!fontTokenSecret) {
+        return new Response(JSON.stringify({ error: "SERVER_MISCONFIGURED" }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
       const exp = Math.floor(Date.now() / 1000) + 600; // 10 minutes
       const sig = await signHMAC(fontTokenSecret, String(exp));
 
-      return new Response(JSON.stringify({ t: `${exp}.${sig}` }), {
+      return new Response(JSON.stringify({ t: `${exp}.${sig}`, ttl: 600 }), {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store, no-cache, max-age=0',
-          'Access-Control-Allow-Origin': '*'
+          'Access-Control-Allow-Origin': origin && isAllowedSource(origin) ? origin : '*'
         }
       });
     }
@@ -1056,7 +1129,6 @@ export default {
       const secFetchMode = request.headers.get('Sec-Fetch-Mode') || '';
       const secFetchDest = request.headers.get('Sec-Fetch-Dest') || '';
       const acceptHeader = request.headers.get('Accept') || '';
-      const requestedWith = request.headers.get('X-Requested-With') || '';
       const userAgent = (request.headers.get('User-Agent') || '').toLowerCase();
 
       // 1. DETECT DIRECT BROWSER NAVIGATION (Address Bar, Open in New Tab, DevTools Open)
@@ -1092,22 +1164,7 @@ export default {
         userAgent.includes('aria2') ||
         userAgent.includes('postman');
 
-      // 2.1 VERIFY EPHEMERAL HMAC TOKEN (X-FT)
-      const fontTokenSecret = env.FONT_TOKEN_SECRET || env.ADMIN_SECRET || 'SubqiVaultHMACSecret2026';
-      const ftHeader = request.headers.get('X-FT') || '';
-      let isTokenValid = false;
-      if (ftHeader && ftHeader.includes('.')) {
-        const [expStr, sig] = ftHeader.split('.');
-        const exp = parseInt(expStr, 10);
-        if (exp && sig && (Date.now() / 1000 < exp)) {
-          isTokenValid = await verifyHMAC(fontTokenSecret, expStr, sig);
-        }
-      }
-
-      // Modern in-app font fetch MUST have valid HMAC token OR valid CORS fetch
-      const isLegitFetch = isTokenValid || (secFetchMode === 'cors' && secFetchDest === 'empty') || requestedWith === 'FontMetricsClient';
-
-      if (isKnownDownloader || !isLegitFetch || (!origin && !referer)) {
+      if (isKnownDownloader) {
         return new Response('Access Denied: Direct font binary downloads are restricted.', {
           status: 403,
           headers: {
@@ -1117,32 +1174,32 @@ export default {
         });
       }
 
-      const isAllowedSource = (val) => {
-        if (!val) return false;
-        try {
-          const parsed = val.startsWith('http://') || val.startsWith('https://')
-            ? new URL(val)
-            : new URL(`https://${val}`);
-          const hostname = parsed.hostname.toLowerCase();
-          return (
-            hostname === 'bombastype.com' ||
-            hostname.endsWith('.bombastype.com') ||
-            hostname === 'bombastype.workers.dev' ||
-            hostname.endsWith('.bombastype.workers.dev') ||
-            hostname === 'subqi.com' ||
-            hostname.endsWith('.subqi.com') ||
-            hostname === 'subqi.workers.dev' ||
-            hostname.endsWith('.subqi.workers.dev') ||
-            hostname === 'fontcanvas.pages.dev' ||
-            hostname.endsWith('.fontcanvas.pages.dev') ||
-            (hostname.endsWith('.workers.dev') && hostname.includes('fontcanvas')) ||
-            hostname === 'localhost' ||
-            hostname === '127.0.0.1'
-          );
-        } catch (_) {
-          return false;
+      // 2.1 VERIFY EPHEMERAL HMAC TOKEN (X-FT)
+      const fontTokenSecret = env.FONT_TOKEN_SECRET || env.SUPABASE_SERVICE_ROLE_KEY || env.GAS_TOKEN;
+      if (!fontTokenSecret) {
+        return new Response('Server misconfigured: Token secret missing.', { status: 500 });
+      }
+
+      const ftHeader = request.headers.get('X-FT') || '';
+      let isTokenValid = false;
+      if (ftHeader && ftHeader.includes('.')) {
+        const [expStr, sig] = ftHeader.split('.');
+        const exp = parseInt(expStr, 10);
+        if (exp && sig && (Math.floor(Date.now() / 1000) < exp)) {
+          isTokenValid = await verifyHMAC(fontTokenSecret, expStr, sig);
         }
-      };
+      }
+
+      // STRICT GATE: Must have valid ephemeral token AND valid origin/referer
+      if (!isTokenValid || (!origin && !referer)) {
+        return new Response('Access Denied: Direct font binary downloads are restricted.', {
+          status: 403,
+          headers: {
+            'Content-Type': 'text/plain',
+            'X-Robots-Tag': 'noindex, nofollow, noarchive'
+          }
+        });
+      }
 
       // 1. Hotlink security check ALWAYS runs first (even before cache lookup)
       if ((origin && !isAllowedSource(origin)) || (referer && !isAllowedSource(referer))) {
@@ -1156,6 +1213,10 @@ export default {
       }
 
       const fontName = decodeURIComponent(url.pathname.split('/').pop());
+      // Prevent directory traversal
+      if (fontName.includes('/') || fontName.includes('..') || fontName.includes('\\')) {
+        return new Response('Access Denied: Invalid font identifier.', { status: 403 });
+      }
       const lowerFontName = fontName.toLowerCase();
       const allowedFontExtensions = ['.ttf', '.otf', '.woff2', '.woff'];
       const hasAllowedExtension = allowedFontExtensions.some(ext => lowerFontName.endsWith(ext));

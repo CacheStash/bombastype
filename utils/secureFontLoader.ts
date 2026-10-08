@@ -69,29 +69,86 @@ export const unmaskFontBuffer = normalizeBufferMetrics;
 const fontPromiseCache = new Map<string, Promise<ArrayBuffer>>();
 const facePromises = new Map<string, Promise<FontFace | void>>();
 
-let cachedToken: { token: string; exp: number } | null = null;
+// Token management with clock-skew tolerance, sessionStorage persistence, and retry backoff
+const TOKEN_STORAGE_KEY = 'bt_ft_v1';
+let cachedToken: { token: string; expiresAtLocal: number } | null = null;
 let tokenPromise: Promise<string> | null = null;
+let failUntil = 0;
+
+// Hydrate from sessionStorage on boot
+try {
+  if (typeof sessionStorage !== 'undefined') {
+    const stored = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.token && typeof parsed.expiresAtLocal === 'number' && Date.now() < parsed.expiresAtLocal) {
+        cachedToken = parsed;
+      }
+    }
+  }
+} catch {
+  // Ignore sessionStorage errors (e.g. private mode)
+}
+
+function resetTokenCache() {
+  cachedToken = null;
+  tokenPromise = null;
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    }
+  } catch {}
+}
+
+// Invalidate on BFCache restoration
+if (typeof window !== 'undefined') {
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+      resetTokenCache();
+    }
+  });
+}
 
 /**
  * Mengambil ephemeral HMAC token berumur 10 menit untuk otorisasi fetch font
  */
-async function getFontAccessToken(): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  if (cachedToken && cachedToken.exp - now > 60) {
+async function getFontAccessToken(force = false): Promise<string> {
+  const now = Date.now();
+  if (!force && cachedToken && cachedToken.expiresAtLocal > now) {
     return cachedToken.token;
   }
-  if (tokenPromise) return tokenPromise;
+
+  if (now < failUntil) {
+    return '';
+  }
+
+  if (force) {
+    resetTokenCache();
+  } else if (tokenPromise) {
+    return tokenPromise;
+  }
 
   tokenPromise = (async () => {
     try {
       const res = await fetch('/api/ft');
-      if (!res.ok) return '';
+      if (!res.ok) {
+        failUntil = Date.now() + 5000;
+        return '';
+      }
       const data = await res.json();
-      const exp = parseInt(data.t?.split('.')[0], 10) || (now + 600);
-      cachedToken = { token: data.t, exp };
-      return data.t;
+      const ttl = typeof data.ttl === 'number' ? data.ttl : 600;
+      // Kurangi 60 detik buffer dari ttl untuk mencegah kadaluarsa saat inflight
+      const expiresAtLocal = Date.now() + Math.max(30, ttl - 60) * 1000;
+      cachedToken = { token: data.t, expiresAtLocal };
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(cachedToken));
+        }
+      } catch {}
+      return data.t || '';
     } catch {
-      cachedToken = null;
+      failUntil = Date.now() + 5000;
+      resetTokenCache();
       return '';
     } finally {
       tokenPromise = null;
@@ -111,15 +168,23 @@ export async function fetchDisplayBuffer(url: string): Promise<ArrayBuffer> {
 
   const promise = (async () => {
     try {
-      const token = await getFontAccessToken();
-      const headers: Record<string, string> = {
-        'X-Requested-With': 'FontMetricsClient'
-      };
+      let token = await getFontAccessToken();
+      const headers: Record<string, string> = {};
       if (token) {
         headers['X-FT'] = token;
       }
 
-      const res = await fetch(url, { headers });
+      let res = await fetch(url, { headers });
+
+      // Jika ditolak 403 (mungkin token expired di server), coba refresh token sekali
+      if (res.status === 403) {
+        token = await getFontAccessToken(true);
+        if (token) {
+          headers['X-FT'] = token;
+          res = await fetch(url, { headers });
+        }
+      }
+
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
