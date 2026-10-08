@@ -43,6 +43,11 @@
           e.stopPropagation();
           return false;
         }
+        if (isCtrlOrCmd && !e.shiftKey && !e.altKey && key === 'S') {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
       }, true);
     </script>
     
