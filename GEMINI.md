@@ -16,6 +16,11 @@
 - **Default to English** for all user interface elements. Indonesian in UI is only used if explicitly requested by the user.
 - Comments and notes in code in Indonesian are permissible.
 
+## Core Foundry Mission & TypeTester Philosophy
+- **Full-Featured Buyer Experience**: Calon buyer WAJIB bisa menguji coba font secara **PENUH (full features)** tanpa dipotong (*no subsetting demo*).
+- **Superior Pro Features**: TypeTester di platform kita harus lebih canggih dan profesional dibanding font foundry lain: mendukung sistem multi-layer chromatic stacking, custom selection individual alternate glyphs langsung di teks/popover, OpenType features lengkap, ligatures, ornaments, serta variable font sliders. Pengalaman eksplorasi tipografi calon buyer adalah prioritas utama konversi penjualan.
+- **Resource Efficiency**: Di samping proteksi keamanan biner dan fitur pro, efisiensi eksekusi tetap wajib dijaga ketat: hemat kuota Cloudflare Worker invocations, hemat R2 bandwith, dan minimalkan eksekusi Google Apps Script (GAS) quota.
+
 ## Supabase Guidelines (Post-Oct 30 Rule)
 - Supabase no longer automatically grants Data API access to newly created tables in the public schema.
 - Whenever creating a **NEW table** in Supabase for Bombastype (via migrations or SQL editor), always run:
