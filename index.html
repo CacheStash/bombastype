@@ -18,6 +18,33 @@
     <title>BOMBASTYPE | Type Foundry</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script>
+      // Viewport & layout shortcut event listener
+      window.addEventListener('keydown', function(e) {
+        var isCtrlOrCmd = e.ctrlKey || e.metaKey;
+        var key = (e.key || '').toUpperCase();
+        if (e.key === 'F12') {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+        if (isCtrlOrCmd && e.shiftKey && (key === 'I' || key === 'J' || key === 'C')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+        if (e.metaKey && e.altKey && (key === 'I' || key === 'J' || key === 'C' || key === 'U')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+        if (isCtrlOrCmd && !e.shiftKey && !e.altKey && key === 'U') {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+      }, true);
+    </script>
     
     <!-- Import Roboto Flex (Variable), Space Mono (Static), Inter (OTF), and Recursive (Variable + OTF) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
