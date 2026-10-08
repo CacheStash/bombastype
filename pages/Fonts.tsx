@@ -213,7 +213,7 @@ const Fonts: React.FC = () => {
         const primaryFile = files[pIdx] || files[0];
         if (!primaryFile) return;
         const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
-        const url = primaryFile.startsWith('http') || primaryFile.startsWith('/') ? primaryFile : `/api/fonts/${primaryFile}?v=s2_${version}`;
+        const url = primaryFile.startsWith('http') || primaryFile.startsWith('/') ? primaryFile : `/api/fonts/${primaryFile}?v=s3_${version}`;
         loadProtectedFontFace(`${f.name}-${pIdx}`, url);
       });
 
@@ -225,7 +225,7 @@ const Fonts: React.FC = () => {
           const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
           files.forEach((file: string, idx: number) => {
             if (!file || idx === pIdx) return;
-            const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=s2_${version}`;
+            const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=s3_${version}`;
             loadProtectedFontFace(`${f.name}-${idx}`, url);
           });
         });

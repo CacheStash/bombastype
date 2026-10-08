@@ -24,6 +24,207 @@ function calculateCRC32(data) {
   return (crc ^ 0xFFFFFFFF) >>> 0;
 }
 
+// --- OPENTYPE METADATA STAMPING (Pure DataView, <2ms, 0 design/kerning modification) ---
+function encodeUTF16BE(str) {
+  const bytes = new Uint8Array(str.length * 2);
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    bytes[i * 2] = (code >> 8) & 0xff;
+    bytes[i * 2 + 1] = code & 0xff;
+  }
+  return bytes;
+}
+
+function encodeASCII(str) {
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) {
+    bytes[i] = str.charCodeAt(i) & 0x7f;
+  }
+  return bytes;
+}
+
+function calculateTableChecksum(u8Array, offset, length) {
+  let sum = 0;
+  const view = new DataView(u8Array.buffer, u8Array.byteOffset, u8Array.byteLength);
+  const nWords = (length + 3) >>> 2;
+  for (let i = 0; i < nWords; i++) {
+    const pos = offset + i * 4;
+    let word = 0;
+    if (pos + 4 <= offset + length) {
+      word = view.getUint32(pos);
+    } else {
+      for (let b = 0; b < 4; b++) {
+        const byteVal = (pos + b < offset + length) ? u8Array[pos + b] : 0;
+        word = (word << 8) | byteVal;
+      }
+    }
+    sum = (sum + word) >>> 0;
+  }
+  return sum;
+}
+
+function stampFontMetadata(fontBuffer, stamps) {
+  try {
+    const bytes = new Uint8Array(fontBuffer);
+    if (bytes.length < 64) return fontBuffer;
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+    const sfntVersion = view.getUint32(0);
+    const isOTF = sfntVersion === 0x4F54544F; // 'OTTO'
+    const isTTF = sfntVersion === 0x00010000 || sfntVersion === 0x74727565; // TrueType or 'true'
+    if (!isOTF && !isTTF) {
+      return fontBuffer;
+    }
+
+    const numTables = view.getUint16(4);
+    let nameTableDirOffset = -1;
+    let nameTableOffset = 0;
+    let nameTableLength = 0;
+    let headTableOffset = -1;
+
+    for (let i = 0; i < numTables; i++) {
+      const dirOffset = 12 + i * 16;
+      const tag = view.getUint32(dirOffset);
+      if (tag === 0x6E616D65) { // 'name'
+        nameTableDirOffset = dirOffset;
+        nameTableOffset = view.getUint32(dirOffset + 8);
+        nameTableLength = view.getUint32(dirOffset + 12);
+      } else if (tag === 0x68656164) { // 'head'
+        headTableOffset = view.getUint32(dirOffset + 8);
+      }
+    }
+
+    if (nameTableDirOffset === -1 || nameTableOffset === 0) {
+      return fontBuffer;
+    }
+
+    const format = view.getUint16(nameTableOffset);
+    if (format !== 0 && format !== 1) {
+      return fontBuffer;
+    }
+
+    const existingCount = view.getUint16(nameTableOffset + 2);
+    const existingStringOffset = view.getUint16(nameTableOffset + 4);
+    const existingStringBase = nameTableOffset + existingStringOffset;
+
+    const records = [];
+    const stampedNameIds = new Set();
+    if (stamps.uniqueId) stampedNameIds.add(3);
+    if (stamps.licenseDescription) stampedNameIds.add(13);
+    if (stamps.licenseUrl) stampedNameIds.add(14);
+    if (stamps.vendorUrl) stampedNameIds.add(11);
+    if (stamps.trademark) stampedNameIds.add(7);
+
+    for (let i = 0; i < existingCount; i++) {
+      const recOffset = nameTableOffset + 6 + i * 12;
+      const platformID = view.getUint16(recOffset);
+      const encodingID = view.getUint16(recOffset + 2);
+      const languageID = view.getUint16(recOffset + 4);
+      const nameID = view.getUint16(recOffset + 6);
+      const length = view.getUint16(recOffset + 8);
+      const strOffset = view.getUint16(recOffset + 10);
+
+      if (stampedNameIds.has(nameID)) {
+        continue;
+      }
+
+      const strBytes = bytes.slice(existingStringBase + strOffset, existingStringBase + strOffset + length);
+      records.push({ platformID, encodingID, languageID, nameID, data: strBytes });
+    }
+
+    const stampEntries = [
+      { nameID: 3, val: stamps.uniqueId },
+      { nameID: 7, val: stamps.trademark },
+      { nameID: 11, val: stamps.vendorUrl },
+      { nameID: 13, val: stamps.licenseDescription },
+      { nameID: 14, val: stamps.licenseUrl },
+    ];
+
+    for (const entry of stampEntries) {
+      if (!entry.val) continue;
+      // Windows Unicode BMP (UTF-16BE)
+      records.push({
+        platformID: 3,
+        encodingID: 1,
+        languageID: 0x0409,
+        nameID: entry.nameID,
+        data: encodeUTF16BE(entry.val)
+      });
+      // Mac Roman (ASCII)
+      records.push({
+        platformID: 1,
+        encodingID: 0,
+        languageID: 0,
+        nameID: entry.nameID,
+        data: encodeASCII(entry.val)
+      });
+    }
+
+    records.sort((a, b) => {
+      if (a.platformID !== b.platformID) return a.platformID - b.platformID;
+      if (a.encodingID !== b.encodingID) return a.encodingID - b.encodingID;
+      if (a.languageID !== b.languageID) return a.languageID - b.languageID;
+      return a.nameID - b.nameID;
+    });
+
+    const headerSize = 6;
+    const recordsSize = records.length * 12;
+    const stringOffset = headerSize + recordsSize;
+    let totalStringSize = 0;
+    for (const r of records) {
+      totalStringSize += r.data.length;
+    }
+
+    const newNameTableLength = stringOffset + totalStringSize;
+    const newNameTable = new Uint8Array(newNameTableLength);
+    const nameView = new DataView(newNameTable.buffer);
+
+    nameView.setUint16(0, 0);
+    nameView.setUint16(2, records.length);
+    nameView.setUint16(4, stringOffset);
+
+    let curStringOffset = 0;
+    for (let i = 0; i < records.length; i++) {
+      const r = records[i];
+      const recOffset = 6 + i * 12;
+      nameView.setUint16(recOffset, r.platformID);
+      nameView.setUint16(recOffset + 2, r.encodingID);
+      nameView.setUint16(recOffset + 4, r.languageID);
+      nameView.setUint16(recOffset + 6, r.nameID);
+      nameView.setUint16(recOffset + 8, r.data.length);
+      nameView.setUint16(recOffset + 10, curStringOffset);
+
+      newNameTable.set(r.data, stringOffset + curStringOffset);
+      curStringOffset += r.data.length;
+    }
+
+    const paddedOldLength = (bytes.length + 3) & ~3;
+    const newTotalLength = paddedOldLength + newNameTableLength;
+    const resultBytes = new Uint8Array(newTotalLength);
+    resultBytes.set(bytes, 0);
+    resultBytes.set(newNameTable, paddedOldLength);
+
+    const resultView = new DataView(resultBytes.buffer);
+    resultView.setUint32(nameTableDirOffset + 8, paddedOldLength);
+    resultView.setUint32(nameTableDirOffset + 12, newNameTableLength);
+
+    const newChecksum = calculateTableChecksum(resultBytes, paddedOldLength, newNameTableLength);
+    resultView.setUint32(nameTableDirOffset + 4, newChecksum);
+
+    if (headTableOffset > 0 && headTableOffset + 12 <= resultBytes.length) {
+      resultView.setUint32(headTableOffset + 8, 0);
+      const wholeFileChecksum = calculateTableChecksum(resultBytes, 0, resultBytes.length);
+      const adjustment = (0xB1B0AFBA - wholeFileChecksum) >>> 0;
+      resultView.setUint32(headTableOffset + 8, adjustment);
+    }
+
+    return resultBytes.buffer;
+  } catch (err) {
+    console.error("stampFontMetadata error fallback:", err);
+    return fontBuffer;
+  }
+}
+
 // In-memory rate limiter for sensitive authentication & recovery endpoints
 const resetRateLimitMap = new Map();
 function checkResetRateLimit(ip, limit = 5, windowMs = 900000) {
@@ -1278,7 +1479,17 @@ export default {
         // Optional internal bypass for raw access via authorized key
         const rawSecret = env.RAW_BYPASS_KEY || env.ADMIN_SECRET || env.GAS_TOKEN;
         const isRawRequested = Boolean(rawSecret && url.searchParams.get('raw') === 'true' && url.searchParams.get('key') === rawSecret);
-        const finalBody = isRawRequested ? fileData.body : maskFontBuffer(fileData.body);
+        
+        let processedBody = fileData.body;
+        if (!isRawRequested && (lowerFontName.endsWith('.otf') || lowerFontName.endsWith('.ttf'))) {
+          processedBody = stampFontMetadata(processedBody, {
+            uniqueId: "BombasType Web Tester Engine - Not For Commercial Use",
+            licenseDescription: "Web Preview Tester Only. Unauthorized distribution or commercial extraction is strictly prohibited. BombasType Studio - https://bombastype.com",
+            vendorUrl: "https://bombastype.com",
+            licenseUrl: "https://bombastype.com"
+          });
+        }
+        const finalBody = isRawRequested ? processedBody : maskFontBuffer(processedBody);
 
         // Base headers stored in Cloudflare Worker cache (WITHOUT origin-locked CORS)
         const baseHeaders = new Headers();
@@ -3203,7 +3414,18 @@ export default {
               : `${cleanBase}.${ext}`;
           }
 
-          return { name: finalFileName, content: fileData.body };
+          let finalContent = fileData.body;
+          if (finalFileName.endsWith('.otf') || finalFileName.endsWith('.ttf')) {
+            finalContent = stampFontMetadata(fileData.body, {
+              uniqueId: `BombasType Commercial License #${transactionId || 'DIRECT'}`,
+              licenseDescription: `Official Commercial License granted to ${buyerName} (${buyerEmail}) on ${issueDate}. Order ID: ${transactionId || 'DIRECT'}. Archival verification hash: BT-SIG-${watermarkSig}. Authorized commercial licensee only.`,
+              trademark: `Licensed to: ${buyerName}`,
+              vendorUrl: `https://bombastype.com`,
+              licenseUrl: `https://bombastype.com/user/receipt/${transactionId || ''}`
+            });
+          }
+
+          return { name: finalFileName, content: finalContent };
         }));
 
         // Gabungkan seluruh font family + LICENSE.txt
