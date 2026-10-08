@@ -219,4 +219,44 @@
   .divider-icon {
     @apply text-vintage-accent text-xl;
   }
+
+  /* Canvas Landing Custom Buttons */
+  .canvas-specimen-btn {
+    border: 2px solid rgba(44, 36, 26, 0.4) !important;
+    background-color: transparent !important;
+    color: var(--color-vintage-ink) !important;
+    transition: all 0.25s ease-in-out !important;
+  }
+
+  .canvas-specimen-btn:hover {
+    border-color: var(--color-vintage-accent) !important;
+    background-color: rgba(139, 107, 74, 0.15) !important;
+    color: var(--color-vintage-accent) !important;
+  }
+
+  .canvas-buynow-btn {
+    background-color: var(--color-vintage-accent) !important;
+    color: #ffffff !important;
+    border: 2px solid var(--color-vintage-accent) !important;
+    transition: all 0.25s ease-in-out !important;
+  }
+
+  .canvas-buynow-btn:hover {
+    background-color: transparent !important;
+    border-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-ink) !important;
+  }
+
+  .canvas-editor-btn {
+    background-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-paper) !important;
+    border: 2px solid var(--color-vintage-ink) !important;
+    transition: all 0.25s ease-in-out !important;
+  }
+
+  .canvas-editor-btn:hover {
+    background-color: transparent !important;
+    border-color: var(--color-vintage-ink) !important;
+    color: var(--color-vintage-ink) !important;
+  }
 }

@@ -66,7 +66,7 @@ const CanvasLanding: React.FC = () => {
           </a>
           <Link
             to="/fonts"
-            className="border-2 border-vintage-ink/40 text-vintage-ink bg-transparent hover:border-vintage-accent hover:text-vintage-accent hover:bg-vintage-accent/10 py-4 px-8 text-xs font-bold uppercase tracking-[0.2em] transition-all cursor-pointer"
+            className="canvas-specimen-btn py-4 px-8 text-xs font-bold uppercase tracking-[0.2em] cursor-pointer"
           >
             Font Specimens
           </Link>
@@ -316,14 +316,14 @@ const CanvasLanding: React.FC = () => {
                 href={CANVAS_APP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-vintage-ink !text-vintage-paper border-2 border-vintage-ink hover:!bg-transparent hover:!border-vintage-ink hover:!text-vintage-ink py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="canvas-editor-btn py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Launch FontCanvas Editor</span>
                 <ArrowUpRight size={16} />
               </a>
               <Link
                 to="/fonts"
-                className="bg-vintage-accent !text-white border-2 border-vintage-accent hover:!bg-transparent hover:!border-vintage-ink hover:!text-vintage-ink py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center transition-all cursor-pointer"
+                className="canvas-buynow-btn py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center cursor-pointer"
               >
                 Buy Now
               </Link>
