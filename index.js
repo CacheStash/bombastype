@@ -976,10 +976,23 @@ export default {
         secFetchMode === 'navigate' || 
         secFetchDest === 'document' || 
         secFetchDest === 'iframe' ||
-        acceptHeader.includes('text/html');
+        acceptHeader.includes('text/html') ||
+        (!origin && !referer && secFetchMode !== 'cors');
 
       if (isDirectNavigation) {
-        return Response.redirect(`${url.origin}/`, 302);
+        return new Response(
+          '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Vault</title><meta http-equiv="refresh" content="0;url=/"><script>try{window.close();}catch(e){}window.location.replace("/");</script></head><body></body></html>',
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8',
+              'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+              'X-Robots-Tag': 'noindex, nofollow, noarchive'
+            }
+          }
+        );
       }
 
       // 2. BLOCK EXTERNAL DOWNLOAD MANAGERS & CLIPBOARD CAPTURES (IDM, curl, wget, aria2)
@@ -1066,13 +1079,16 @@ export default {
         let cachedResponse = await cache.match(cacheKey);
 
         // 2. Cache Hit: Return cached binary with dynamic CORS & Vary: Origin
+        // Cache-Control for client browser MUST be private no-store so browser disk cache NEVER stores the binary
         if (cachedResponse && cachedResponse.headers.get('X-Font-Protection') === 'subqi-shield-v1') {
           const headers = new Headers(cachedResponse.headers);
           headers.set('Access-Control-Allow-Origin', allowedOrigin);
           headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
           headers.set('Access-Control-Expose-Headers', '*');
           headers.set('Vary', 'Origin');
-          headers.set('Cache-Control', 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800');
+          headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
+          headers.set('Pragma', 'no-cache');
+          headers.set('Expires', '0');
           return new Response(cachedResponse.body, {
             status: cachedResponse.status,
             headers
@@ -1096,16 +1112,19 @@ export default {
         baseHeaders.set('X-Content-Type-Options', 'nosniff');
         baseHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         baseHeaders.set('X-Font-Protection', isRawRequested ? 'none' : 'subqi-shield-v1');
-        baseHeaders.set('Cache-Control', 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800');
+        baseHeaders.set('Cache-Control', 'public, s-maxage=31536000');
 
         const responseToCache = new Response(finalBody, { headers: baseHeaders });
         ctx.waitUntil(cache.put(cacheKey, responseToCache.clone()));
 
-        // Response sent to current requester has specific dynamic CORS
+        // Response sent to current requester has specific dynamic CORS & client-side no-store
         const responseHeaders = new Headers(baseHeaders);
         responseHeaders.set('Access-Control-Allow-Origin', allowedOrigin);
         responseHeaders.set('Access-Control-Expose-Headers', '*');
         responseHeaders.set('Vary', 'Origin');
+        responseHeaders.set('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
+        responseHeaders.set('Pragma', 'no-cache');
+        responseHeaders.set('Expires', '0');
 
         return new Response(finalBody, { headers: responseHeaders });
       } catch (e) { return new Response('Error fetching font', { status: 500 }); }
