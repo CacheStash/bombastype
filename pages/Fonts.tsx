@@ -122,7 +122,7 @@ const CharacterCard = ({ font, promo, onAdd, onView }: any) => {
         <h3 
           className="text-4xl md:text-6xl leading-[1.6] break-all tracking-tight py-6"
           style={{ 
-            fontFamily: `"${font.name}-${primaryIdx}"`,
+            fontFamily: `"${font.name}-preview-${primaryIdx}"`,
             fontVariantLigatures: "none" 
           }} 
         >
@@ -137,9 +137,9 @@ const CharacterCard = ({ font, promo, onAdd, onView }: any) => {
         <h3 
           className="text-4xl md:text-6xl leading-none break-all tracking-tight text-vintage-ink"
           style={{ 
-            fontFamily: `"${font.name}-${primaryIdx}"`,
+            fontFamily: `"${font.name}-preview-${primaryIdx}"`,
             transform: 'translateY(0.05em)' 
-          }}
+          }} 
         >
           0123456789
         </h3>
@@ -152,7 +152,7 @@ const CharacterCard = ({ font, promo, onAdd, onView }: any) => {
         <h3 
           className="text-3xl md:text-5xl leading-[1.6] break-all tracking-tight py-4 text-vintage-ink"
           style={{ 
-            fontFamily: `"${font.name}-${primaryIdx}"`,
+            fontFamily: `"${font.name}-preview-${primaryIdx}"`,
             fontVariantLigatures: "none" 
           }} 
         >
@@ -206,32 +206,18 @@ const Fonts: React.FC = () => {
 
   useEffect(() => {
     if (fonts.length > 0) {
-      // 1. Immediate Phase: Load primary font for each typeface so preview cards render instantly
+      // Load primary font for each typeface using alphanumeric subset & isolated family name
       fonts.forEach(f => {
         const files = Array.isArray(f.font_files) ? f.font_files : [f.file_url];
         const pIdx = f.metadata?.primary_font_index || 0;
         const primaryFile = files[pIdx] || files[0];
         if (!primaryFile) return;
         const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
-        const url = primaryFile.startsWith('http') || primaryFile.startsWith('/') ? primaryFile : `/api/fonts/${primaryFile}?v=s3_${version}`;
-        loadProtectedFontFace(`${f.name}-${pIdx}`, url);
+        const url = primaryFile.startsWith('http') || primaryFile.startsWith('/') 
+          ? primaryFile 
+          : `/api/fonts-preview/${primaryFile}?subset=alphanumeric&v=s4_${version}`;
+        loadProtectedFontFace(`${f.name}-preview-${pIdx}`, url);
       });
-
-      // 2. Idle Phase: Defer secondary styles to prevent network request congestion
-      const timer = setTimeout(() => {
-        fonts.forEach(f => {
-          const files = Array.isArray(f.font_files) ? f.font_files : [f.file_url];
-          const pIdx = f.metadata?.primary_font_index || 0;
-          const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
-          files.forEach((file: string, idx: number) => {
-            if (!file || idx === pIdx) return;
-            const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=s3_${version}`;
-            loadProtectedFontFace(`${f.name}-${idx}`, url);
-          });
-        });
-      }, 600);
-
-      return () => clearTimeout(timer);
     }
   }, [fonts]);
 
