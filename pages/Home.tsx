@@ -174,7 +174,7 @@ export default function Home() {
       const file = Array.isArray(f.font_files) ? f.font_files[pIdx] : f.file_url;
       if (!file) return;
       const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
-      const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?v=s3_${version}`;
+      const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?subset=alphanumeric&v=s4_${version}`;
       loadProtectedFontFace(`${f.name}-${pIdx}`, url);
     });
   }, [recentFonts]);

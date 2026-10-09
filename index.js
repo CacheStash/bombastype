@@ -1,3 +1,50 @@
+import opentype from 'opentype.js';
+
+function subsetFontBuffer(fontBuffer, mode) {
+  try {
+    const bytes = new Uint8Array(fontBuffer);
+    const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    const font = opentype.parse(ab);
+
+    let allowedChars;
+    if (mode === 'alphanumeric') {
+      // BombasType Handpicked section: A-Z, a-z, 0-9
+      allowedChars = new Set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ');
+    } else if (mode === 'basic') {
+      // Subqi /fonts preview: A-Z, a-z, 0-9 and basic keyboard symbols (ASCII 32 to 126)
+      allowedChars = new Set();
+      for (let i = 32; i <= 126; i++) {
+        allowedChars.add(String.fromCharCode(i));
+      }
+    } else {
+      return fontBuffer;
+    }
+
+    const allowedGlyphs = [font.glyphs.get(0)]; // .notdef
+    for (let i = 1; i < font.glyphs.length; i++) {
+      const g = font.glyphs.get(i);
+      if (g.unicode && allowedChars.has(String.fromCharCode(g.unicode))) {
+        allowedGlyphs.push(g);
+      }
+    }
+
+    const subsetFont = new opentype.Font({
+      familyName: font.names.fontFamily?.en || 'SubsetFont',
+      styleName: font.names.fontSubfamily?.en || 'Regular',
+      unitsPerEm: font.unitsPerEm,
+      ascender: font.ascender,
+      descender: font.descender,
+      glyphs: allowedGlyphs
+    });
+
+    const subsetAb = subsetFont.toArrayBuffer();
+    return subsetAb;
+  } catch (err) {
+    console.error("subsetFontBuffer error fallback:", err);
+    return fontBuffer;
+  }
+}
+
 async function getSupabaseUser(authHeader, env) {
   if (!authHeader) return null;
   const res = await fetch(`${env.VITE_SUPABASE_URL}/auth/v1/user`, {
@@ -1513,6 +1560,13 @@ export default {
         
         let processedBody = fileData.body;
         if (!isRawRequested && (lowerFontName.endsWith('.otf') || lowerFontName.endsWith('.ttf'))) {
+          const subsetParam = url.searchParams.get('subset');
+          if (subsetParam === 'alphanumeric') {
+            processedBody = subsetFontBuffer(processedBody, 'alphanumeric');
+          } else if (subsetParam === 'basic') {
+            processedBody = subsetFontBuffer(processedBody, 'basic');
+          }
+
           const cleanBase = fontName.replace(/\.[^/.]+$/, "");
           processedBody = stampFontMetadata(processedBody, {
             uniqueId: `1.000;BT;${cleanBase};BT-SPEC-W01`,
