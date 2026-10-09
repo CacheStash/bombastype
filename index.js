@@ -400,12 +400,11 @@ async function fetchFileBuffer(fileName, env) {
       return null;
     }
 
-    // Proteksi: Tolak jika HTML, video, audio, atau image non-font
+    // Proteksi: Tolak jika HTML, video, audio
     if (
       contentType.includes('text/html') || 
       contentType.includes('video/') || 
-      contentType.includes('audio/') || 
-      contentType.includes('image/')
+      contentType.includes('audio/')
     ) {
       return null;
     }
