@@ -1402,7 +1402,7 @@ export default {
     }
 
     // --- 3. API Fonts (Protected Read: Allowed Origins Only With Cache API & Masking Shield) ---
-    if (url.pathname.startsWith('/api/fonts/')) {
+    if (url.pathname.startsWith('/api/fonts/') || url.pathname.startsWith('/api/fonts-preview/')) {
       const origin = request.headers.get('Origin') || '';
       const referer = request.headers.get('Referer') || '';
       const secFetchMode = request.headers.get('Sec-Fetch-Mode') || '';
@@ -1560,7 +1560,8 @@ export default {
         
         let processedBody = fileData.body;
         if (!isRawRequested && (lowerFontName.endsWith('.otf') || lowerFontName.endsWith('.ttf'))) {
-          const subsetParam = url.searchParams.get('subset');
+          const isPreviewRoute = url.pathname.startsWith('/api/fonts-preview/');
+          const subsetParam = url.searchParams.get('subset') || (isPreviewRoute ? 'alphanumeric' : null);
           if (subsetParam === 'alphanumeric') {
             processedBody = subsetFontBuffer(processedBody, 'alphanumeric');
           } else if (subsetParam === 'basic') {

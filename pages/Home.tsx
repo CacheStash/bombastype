@@ -53,7 +53,7 @@ const FontCard = ({
     <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 shrink-0">
       <h3 
         className="text-4xl md:text-6xl leading-[1.6] break-all tracking-tight py-6"
-        style={{ fontFamily: `"${fontName}-${primaryIndex}"`, fontVariantLigatures: "none" }} 
+        style={{ fontFamily: `"${fontName}-preview-${primaryIndex}"`, fontVariantLigatures: "none" }} 
       >
         ABCDEFGHIJKLMNOPQRSTUVWXYZ
       </h3>
@@ -64,7 +64,7 @@ const FontCard = ({
     <div className="w-full px-2 overflow-hidden bg-vintage-ink/1 flex items-center justify-center shrink-0 py-2 md:py-4">
       <h3 
         className="text-4xl md:text-6xl leading-none break-all tracking-tight text-vintage-ink"
-        style={{ fontFamily: `"${fontName}-${primaryIndex}"`, transform: 'translateY(0.05em)' }}
+        style={{ fontFamily: `"${fontName}-preview-${primaryIndex}"`, transform: 'translateY(0.05em)' }}
       >
         0123456789
       </h3>
@@ -75,7 +75,7 @@ const FontCard = ({
     <div className="w-full px-2 overflow-hidden bg-vintage-ink/2 flex items-center justify-center shrink-0">
       <h3 
         className="text-3xl md:text-5xl leading-[1.6] break-all tracking-tight py-4 text-vintage-ink"
-        style={{ fontFamily: `"${fontName}-${primaryIndex}"`, fontVariantLigatures: "none" }} 
+        style={{ fontFamily: `"${fontName}-preview-${primaryIndex}"`, fontVariantLigatures: "none" }} 
       >
         abcdefghijklmnopqrstuvwxyz
       </h3>
@@ -166,7 +166,7 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // Protected Font Face Registration untuk Recent Fonts
+  // Protected Font Face Registration untuk Recent Fonts (Subset Alphanumeric & Isolated Font Family)
   useEffect(() => {
     if (recentFonts.length === 0) return;
     recentFonts.forEach(f => {
@@ -174,8 +174,8 @@ export default function Home() {
       const file = Array.isArray(f.font_files) ? f.font_files[pIdx] : f.file_url;
       if (!file) return;
       const version = new Date(f.updated_at || f.created_at || Date.now()).getTime();
-      const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts/${file}?subset=alphanumeric&v=s4_${version}`;
-      loadProtectedFontFace(`${f.name}-${pIdx}`, url);
+      const url = file.startsWith('http') || file.startsWith('/') ? file : `/api/fonts-preview/${file}?subset=alphanumeric&v=s4_${version}`;
+      loadProtectedFontFace(`${f.name}-preview-${pIdx}`, url);
     });
   }, [recentFonts]);
 
