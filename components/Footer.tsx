@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { openFontopsyWithAuth } from '../lib/fontopsySession';
 import { Instagram, Facebook, Globe, ChevronDown } from "lucide-react";
 
 // Icon Behance Custom SVG
@@ -254,7 +255,11 @@ export default function Footer() {
                       href="https://fontopsy.bombastype.com" 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      onClick={() => setIsToolsOpen(false)}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        await openFontopsyWithAuth('https://fontopsy.bombastype.com');
+                        setIsToolsOpen(false);
+                      }}
                       className="px-2.5 py-1.5 hover:bg-vintage-paper/10 text-vintage-paper/90 hover:text-white rounded transition-colors flex items-center justify-between tracking-widest text-[9px]"
                     >
                       <span>FONTOPSY</span>

@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Search, User, ShoppingCart, ArrowRight, ChevronDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../lib/supabase';
+import { getCanvasUrlWithSession } from '../lib/canvasSession';
+import { openFontopsyWithAuth } from '../lib/fontopsySession';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface NavbarProps {
@@ -78,6 +80,20 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
     }
   };
 
+  const handleOpenTool = async (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.includes('canvas.')) {
+      e.preventDefault();
+      const targetUrl = await getCanvasUrlWithSession(href);
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      setIsToolsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
+    } else if (href.includes('fontopsy.')) {
+      e.preventDefault();
+      await openFontopsyWithAuth(href);
+      setIsToolsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -210,7 +226,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                         href={tool.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={() => setIsToolsDropdownOpen(false)}
+                        onClick={(e) => handleOpenTool(e, tool.href)}
                         className="group/tool px-2.5 py-1.5 hover:bg-vintage-ink transition-colors flex items-center justify-between tracking-widest text-[9px] font-bold rounded-[2px]"
                       >
                         <span className="text-vintage-ink group-hover/tool:text-white transition-colors">
@@ -427,6 +443,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                       href={tool.href}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => handleOpenTool(e, tool.href)}
                       className="text-xs uppercase tracking-[0.2em] font-bold text-vintage-ink flex justify-between items-center group py-1"
                     >
                       <span className="flex items-center gap-2">

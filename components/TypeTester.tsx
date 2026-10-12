@@ -17,6 +17,7 @@ import { FontConfig } from '../types';
 import opentype from 'opentype.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { loadProtectedFontFace, loadProtectedOpenType } from '../utils/secureFontLoader';
+import { getCanvasUrlWithSession } from '../lib/canvasSession';
 
 interface RasterMetricTileProps {
   glyphIdx: number;
@@ -1070,6 +1071,12 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
               href={`https://canvas.bombastype.com/?font=${encodeURIComponent(config.name)}&font_id=${encodeURIComponent(config.id || '')}&style=${activeStyleIndex}&layered=${isLayeredMode ? '1' : '0'}${isLayeredMode ? `&layers=${encodeURIComponent(JSON.stringify(layers.filter(l => l.isVisible).map(l => ({ fontIndex: l.fontIndex, color: l.color }))))}` : ''}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={async (e) => {
+                e.preventDefault();
+                const rawUrl = `https://canvas.bombastype.com/?font=${encodeURIComponent(config.name)}&font_id=${encodeURIComponent(config.id || '')}&style=${activeStyleIndex}&layered=${isLayeredMode ? '1' : '0'}${isLayeredMode ? `&layers=${encodeURIComponent(JSON.stringify(layers.filter(l => l.isVisible).map(l => ({ fontIndex: l.fontIndex, color: l.color }))))}` : ''}`;
+                const targetUrl = await getCanvasUrlWithSession(rawUrl);
+                window.open(targetUrl, '_blank', 'noopener,noreferrer');
+              }}
               className="vintage-btn font-display py-1.5 px-3 sm:px-4 text-[9px] flex items-center gap-2 group/btn shrink-0"
               title="Open active font in FontCanvas Atelier"
             >

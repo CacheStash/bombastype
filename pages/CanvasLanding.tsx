@@ -7,9 +7,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Layers, Sliders, PenTool, Sparkles, Smartphone, Download, ShieldCheck, Compass } from 'lucide-react';
+import { openCanvasWithSession } from '../lib/canvasSession';
 
 const CanvasLanding: React.FC = () => {
   const CANVAS_APP_URL = "https://canvas.bombastype.com";
+  const handleLaunchCanvas = (e: React.MouseEvent) => {
+    e.preventDefault();
+    openCanvasWithSession(CANVAS_APP_URL);
+  };
 
   return (
     <div className="pb-16 relative z-10 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper font-serif">
@@ -59,6 +64,7 @@ const CanvasLanding: React.FC = () => {
             href={CANVAS_APP_URL}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={handleLaunchCanvas}
             className="bg-vintage-ink !text-vintage-paper hover:bg-vintage-accent hover:!text-white py-4 px-8 text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-3 group shadow-md transition-colors"
           >
             <span className="!text-vintage-paper group-hover:!text-white">Launch FontCanvas Studio</span>
@@ -137,6 +143,7 @@ const CanvasLanding: React.FC = () => {
               href={CANVAS_APP_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleLaunchCanvas}
               className="absolute inset-0 bg-vintage-ink/90 !text-vintage-paper flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 p-4"
             >
               <span className="text-xl sm:text-2xl md:text-3xl font-display tracking-wide mb-2 !text-vintage-paper">
@@ -316,6 +323,7 @@ const CanvasLanding: React.FC = () => {
                 href={CANVAS_APP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={handleLaunchCanvas}
                 className="canvas-editor-btn py-3.5 px-6 text-xs font-bold uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Launch FontCanvas Editor</span>
@@ -366,6 +374,7 @@ const CanvasLanding: React.FC = () => {
               href={CANVAS_APP_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleLaunchCanvas}
               style={{ backgroundColor: '#fdf6e3', color: '#2c241a' }}
               className="inline-flex items-center gap-3 bg-[#fdf6e3] !text-[#2c241a] hover:!bg-vintage-accent hover:!text-white transition-all px-9 py-4 font-bold text-xs uppercase tracking-[0.2em] shadow-lg cursor-pointer"
             >

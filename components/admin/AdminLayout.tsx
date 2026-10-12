@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Type, ShoppingCart, LogOut, 
-  Tag, Menu, X, Mail, FileText, Power, Loader2, CreditCard, Megaphone
+  Tag, Menu, X, Mail, FileText, Power, Loader2, CreditCard, Megaphone,
+  Sparkles, ExternalLink
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { openCanvasWithSession } from '../../lib/canvasSession';
 import { Globe } from 'lucide-react';
 import WebAnalytics from './WebAnalytics';
 // Content Components
@@ -225,6 +227,17 @@ const AdminDashboard = () => {
               </button>
             );
           })}
+
+          {/* Quick External Link: FontCanvas Studio with auto-login / God Mode */}
+          <button
+            onClick={() => openCanvasWithSession('https://canvas.bombastype.com')}
+            className="w-full flex items-center gap-4 px-4 py-3 text-[11px] font-bold tracking-wider transition-all text-left group bg-vintage-ink/5 hover:bg-vintage-ink hover:text-vintage-paper border border-dashed border-vintage-ink/30 mt-3"
+            title="Launch FontCanvas with Admin God Mode"
+          >
+            <Sparkles size={16} className="text-amber-600 group-hover:text-amber-300 transition-colors" />
+            <span className="grow">FontCanvas Studio</span>
+            <ExternalLink size={13} className="opacity-40 group-hover:opacity-100 transition-opacity" />
+          </button>
         </nav>
 
         {/* Footer / Logout & Control Toggles */}
