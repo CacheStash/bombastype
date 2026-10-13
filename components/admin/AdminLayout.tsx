@@ -141,7 +141,7 @@ const AdminDashboard = () => {
     if (error) {
       alert("Failed to sign out: " + error.message);
     } else {
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 

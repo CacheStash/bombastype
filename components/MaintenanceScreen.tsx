@@ -28,12 +28,13 @@ const MaintenanceScreen: React.FC = () => {
           <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-600 animate-pulse" />
           <span className="font-mono text-xs uppercase tracking-widest font-bold">System Status: Maintenance Mode</span>
         </div>
-        <Link 
-          to="/admin" 
-          className="text-xs font-mono uppercase tracking-widest text-vintage-ink/40 hover:text-vintage-ink hover:underline transition-all"
+        <button 
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-admin-auth'))}
+          className="text-xs font-mono uppercase tracking-widest text-vintage-ink/40 hover:text-vintage-ink hover:underline transition-all cursor-pointer"
         >
           Staff Portal →
-        </Link>
+        </button>
       </div>
 
       {/* Main Content */}

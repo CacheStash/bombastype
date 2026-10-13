@@ -60,6 +60,14 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
+    const cleanQuery = query.trim().toLowerCase();
+    if (cleanQuery === '/godmode') {
+      setSearchQuery('');
+      setSuggestions([]);
+      setIsSearchOpen(false);
+      window.dispatchEvent(new CustomEvent('open-admin-auth'));
+      return;
+    }
     if (query.length < 2) { setSuggestions([]); return; }
     const { data } = await supabase
       .from('v_global_search')
@@ -261,6 +269,15 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => handleSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && searchQuery.trim().toLowerCase() === '/godmode') {
+                          e.preventDefault();
+                          setSearchQuery('');
+                          setSuggestions([]);
+                          setIsSearchOpen(false);
+                          window.dispatchEvent(new CustomEvent('open-admin-auth'));
+                        }
+                      }}
                       placeholder="SEARCH..."
                       className="bg-transparent border-b border-vintage-ink text-[10px] tracking-widest outline-none px-2 w-full uppercase"
                     />
@@ -478,6 +495,15 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchQuery.trim().toLowerCase() === '/godmode') {
+                      e.preventDefault();
+                      setSearchQuery('');
+                      setSuggestions([]);
+                      setIsSearchOpen(false);
+                      window.dispatchEvent(new CustomEvent('open-admin-auth'));
+                    }
+                  }}
                   placeholder="TYPE TO SEARCH FONTS & ARCHIVE..."
                   className="w-full p-3 text-base md:text-sm font-bold uppercase tracking-widest bg-transparent outline-none placeholder:text-vintage-ink/40"
                 />
