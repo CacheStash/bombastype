@@ -303,6 +303,116 @@ function stampFontMetadata(fontBuffer, stamps) {
   }
 }
 
+// --- STAMP SLOT (per-visitor fingerprint on top of a shared edge cache) ---
+// Panduan internal: edge cache menyimpan SATU biner per URL (stempel berisi placeholder STAMP_SLOT).
+// Tiap request, 17 karakter placeholder ditimpa in-place dengan sidik jari pengunjung (waktu + hash IP),
+// lalu checksum tabel 'name' & head.checkSumAdjustment diperbarui secara inkremental. O(ukuran tabel name), bukan O(ukuran font).
+const STAMP_SLOT = 'ZZZZZZZZ-ZZZZZZZZ'; // 17 char, ASCII, dipakai di nameID 3 & 13
+const STAMP_SLOT_LEN = STAMP_SLOT.length;
+
+function findSfntTable(view, tagU32) {
+  const numTables = view.getUint16(4);
+  for (let i = 0; i < numTables; i++) {
+    const d = 12 + i * 16;
+    if (d + 16 > view.byteLength) break;
+    if (view.getUint32(d) === tagU32) {
+      return { dirOffset: d, offset: view.getUint32(d + 8), length: view.getUint32(d + 12) };
+    }
+  }
+  return null;
+}
+
+// Cari posisi placeholder di tabel 'name' (UTF-16BE untuk platform 3, ASCII untuk platform 1).
+// Hasil: string "pos:wide,pos:wide" untuk disimpan di header cache. String kosong = tidak ada slot.
+function locateStampSlots(buffer) {
+  try {
+    const bytes = new Uint8Array(buffer);
+    if (bytes.length < 64) return '';
+    const view = new DataView(buffer);
+    const nm = findSfntTable(view, 0x6E616D65); // 'name'
+    if (!nm || nm.offset + nm.length > bytes.length) return '';
+    const end = nm.offset + nm.length;
+    const slots = [];
+    const first = STAMP_SLOT.charCodeAt(0);
+    for (let p = nm.offset; p + STAMP_SLOT_LEN <= end; p++) {
+      if (bytes[p] !== first) continue;
+      let ok = true;
+      for (let k = 1; k < STAMP_SLOT_LEN; k++) {
+        if (bytes[p + k] !== STAMP_SLOT.charCodeAt(k)) { ok = false; break; }
+      }
+      if (ok) { slots.push(`${p}:0`); p += STAMP_SLOT_LEN - 1; }
+    }
+    for (let p = nm.offset; p + STAMP_SLOT_LEN * 2 <= end; p++) {
+      if (bytes[p] !== 0 || bytes[p + 1] !== first) continue;
+      let ok = true;
+      for (let k = 1; k < STAMP_SLOT_LEN; k++) {
+        if (bytes[p + k * 2] !== 0 || bytes[p + k * 2 + 1] !== STAMP_SLOT.charCodeAt(k)) { ok = false; break; }
+      }
+      if (ok) { slots.push(`${p}:1`); p += STAMP_SLOT_LEN * 2 - 1; }
+    }
+    return slots.join(',');
+  } catch (e) {
+    return '';
+  }
+}
+
+// Sidik jari 17 char: 8 char waktu (base36) + '-' + 8 char hash IP (HMAC, tidak bisa dibalik tanpa secret).
+async function buildVisitorStamp(secret, ip) {
+  const t = Date.now().toString(36).toUpperCase().padStart(8, '0').slice(-8);
+  const h = (await signHMAC(secret, ip)).slice(0, 8).toUpperCase();
+  return `${t}-${h}`;
+}
+
+// maskedBuffer = biner dari cache (sudah di-mask). toggleInPlace(u8) = XOR 512 byte pertama langsung di array (simetris).
+// Hanya SATU salinan buffer dibuat per request (murah untuk CPU limit Workers).
+function personalizeStamp(maskedBuffer, slotsHeader, stampValue, toggleInPlace) {
+  try {
+    if (!slotsHeader || stampValue.length !== STAMP_SLOT_LEN) return maskedBuffer;
+    const slots = slotsHeader.split(',').map(s => {
+      const [p, w] = s.split(':');
+      return { pos: parseInt(p, 10), wide: w === '1' };
+    });
+
+    const buffer = maskedBuffer.slice(0); // satu-satunya salinan; cache tidak tersentuh
+    const bytes = new Uint8Array(buffer);
+    const view = new DataView(buffer);
+    toggleInPlace(bytes); // unmask 512 byte pertama (direktori tabel & mungkin head)
+
+    const nm = findSfntTable(view, 0x6E616D65);
+    const hd = findSfntTable(view, 0x68656164);
+    if (!nm || nm.offset + nm.length > bytes.length) return maskedBuffer;
+
+    // Validasi: semua slot harus ada di dalam tabel name dan masih berisi placeholder
+    for (const s of slots) {
+      const span = s.wide ? STAMP_SLOT_LEN * 2 : STAMP_SLOT_LEN;
+      if (!(s.pos >= nm.offset && s.pos + span <= nm.offset + nm.length)) return maskedBuffer;
+    }
+
+    const oldSum = calculateTableChecksum(bytes, nm.offset, nm.length);
+    for (const s of slots) {
+      for (let k = 0; k < STAMP_SLOT_LEN; k++) {
+        const c = stampValue.charCodeAt(k) & 0x7f;
+        if (s.wide) { bytes[s.pos + k * 2] = 0; bytes[s.pos + k * 2 + 1] = c; }
+        else { bytes[s.pos + k] = c; }
+      }
+    }
+    const newSum = calculateTableChecksum(bytes, nm.offset, nm.length);
+    const delta = (newSum - oldSum) >>> 0;
+
+    // checksum tabel name di direktori
+    view.setUint32(nm.dirOffset + 4, newSum);
+    // Checksum seluruh file ikut berubah 2*delta (isi tabel + kolom checksum di direktori)
+    if (hd && hd.offset > 0 && hd.offset + 12 <= bytes.length) {
+      const adj = view.getUint32(hd.offset + 8);
+      view.setUint32(hd.offset + 8, (adj - 2 * delta) >>> 0);
+    }
+    toggleInPlace(bytes); // mask ulang sebelum dikirim
+    return buffer;
+  } catch (e) {
+    return maskedBuffer;
+  }
+}
+
 // In-memory rate limiter for sensitive authentication & recovery endpoints
 const resetRateLimitMap = new Map();
 function checkResetRateLimit(ip, limit = 5, windowMs = 900000) {
@@ -1550,6 +1660,15 @@ export default {
         return masked.buffer;
       };
 
+      // Versi in-place (tanpa salinan) untuk personalizeStamp
+      const toggleMaskInPlace = (u8) => {
+        const limit = Math.min(u8.length, FONT_MASK_LENGTH);
+        const keyLen = FONT_CIPHER_KEY.length;
+        for (let i = 0; i < limit; i++) {
+          u8[i] ^= FONT_CIPHER_KEY[i % keyLen];
+        }
+      };
+
       try {
         const cache = caches.default;
         const cacheKey = new Request(url.toString(), { method: 'GET' });
@@ -1557,7 +1676,7 @@ export default {
 
         // 2. Cache Hit: Return cached binary with dynamic CORS & Vary: Origin
         // Cache-Control for client browser MUST be private no-store so browser disk cache NEVER stores the binary
-        if (cachedResponse && cachedResponse.headers.get('X-Font-Protection') === 'subqi-shield-v1') {
+        if (cachedResponse && cachedResponse.headers.get('X-Font-Protection') === 'subqi-shield-v2') {
           const headers = new Headers(cachedResponse.headers);
           headers.set('Access-Control-Allow-Origin', allowedOrigin);
           headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
@@ -1566,7 +1685,16 @@ export default {
           headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
           headers.set('Pragma', 'no-cache');
           headers.set('Expires', '0');
-          return new Response(cachedResponse.body, {
+          const hitSlots = headers.get('X-Stamp-Slots') || '';
+          // header internal tidak perlu terlihat di Network tab pengunjung
+          headers.delete('X-Stamp-Slots');
+          headers.delete('X-Font-Protection');
+          let hitBody = cachedResponse.body;
+          if (hitSlots) {
+            const hitStamp = await buildVisitorStamp(fontTokenSecret, clientIp);
+            hitBody = personalizeStamp(await cachedResponse.arrayBuffer(), hitSlots, hitStamp, toggleMaskInPlace);
+          }
+          return new Response(hitBody, {
             status: cachedResponse.status,
             headers
           });
@@ -1585,6 +1713,7 @@ export default {
         );
         
         let processedBody = fileData.body;
+        let stampSlots = '';
         if (!isRawRequested && (lowerFontName.endsWith('.otf') || lowerFontName.endsWith('.ttf'))) {
           const isPreviewRoute = url.pathname.startsWith('/api/fonts-preview/');
           const subsetParam = url.searchParams.get('subset') || (isPreviewRoute ? 'alphanumeric' : null);
@@ -1595,8 +1724,8 @@ export default {
           }
 
           const cleanBase = fontName.replace(/\.[^/.]+$/, "");
-          const ipFingerprint = (await signHMAC(fontTokenSecret, clientIp)).slice(0, 8).toUpperCase();
-          const dynamicStamp = `BT-TESTER-${Date.now().toString(36).toUpperCase()}-${ipFingerprint}`;
+          // Biner yang masuk edge cache hanya membawa placeholder; sidik jari asli ditimpa per request (lihat personalizeStamp)
+          const dynamicStamp = `BT-TESTER-${STAMP_SLOT}`;
           processedBody = stampFontMetadata(processedBody, {
             uniqueId: `1.000;BT;${cleanBase};${dynamicStamp}`,
             licenseDescription: `Evaluation Typeface Software. Ref: ${dynamicStamp}. Strictly Non-Commercial Preview for BombasType Foundry.`,
@@ -1604,6 +1733,7 @@ export default {
             vendorUrl: `https://bombastype.com`,
             licenseUrl: `https://bombastype.com/licenses`
           });
+          stampSlots = locateStampSlots(processedBody);
         }
         const finalBody = isRawRequested ? processedBody : maskFontBuffer(processedBody);
 
@@ -1615,7 +1745,8 @@ export default {
         baseHeaders.set('Content-Disposition', 'inline');
         baseHeaders.set('X-Content-Type-Options', 'nosniff');
         baseHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
-        baseHeaders.set('X-Font-Protection', isRawRequested ? 'none' : 'subqi-shield-v1');
+        baseHeaders.set('X-Font-Protection', isRawRequested ? 'none' : 'subqi-shield-v2');
+        if (stampSlots) baseHeaders.set('X-Stamp-Slots', stampSlots);
         baseHeaders.set('Cache-Control', 'public, s-maxage=31536000');
 
         const responseToCache = new Response(finalBody, { headers: baseHeaders });
@@ -1629,8 +1760,15 @@ export default {
         responseHeaders.set('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
         responseHeaders.set('Pragma', 'no-cache');
         responseHeaders.set('Expires', '0');
+        responseHeaders.delete('X-Stamp-Slots');
+        responseHeaders.delete('X-Font-Protection');
 
-        return new Response(finalBody, { headers: responseHeaders });
+        let missBody = finalBody;
+        if (stampSlots) {
+          const missStamp = await buildVisitorStamp(fontTokenSecret, clientIp);
+          missBody = personalizeStamp(finalBody, stampSlots, missStamp, toggleMaskInPlace);
+        }
+        return new Response(missBody, { headers: responseHeaders });
       } catch (e) { return new Response('Error fetching font', { status: 500 }); }
     }
 

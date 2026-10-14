@@ -39,7 +39,7 @@ pnpm run build
 
 echo "🚀 Deploy ke Cloudflare..."
 # Otomatis kirim input 'y' jika muncul dialog konfirmasi tanpa merusak CLI argument
-echo "y" | npx wrangler deploy
+echo "y" | npx wrangler deploy --keep-vars
 
 # 3. Git Push (Otomatis tanpa input komen)
 if [[ -n $(git status -s) ]]; then
