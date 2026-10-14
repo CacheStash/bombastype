@@ -273,7 +273,7 @@ export default function Home() {
      <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
      {/* Hero Section */}
       <section className="text-center mb-16 w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
-        <motion.p className="text-base md:text-lg lg:text-xl uppercase tracking-[0.2em] font-bold text-vintage-accent mb-6 sm:mb-8 max-w-4xl mx-auto">
+        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mb-6 sm:mb-8 leading-relaxed">
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
 
