@@ -208,6 +208,27 @@ export async function fetchDisplayBuffer(url: string): Promise<ArrayBuffer> {
 }
 
 /**
+ * Resolves the genuine native FontFace constructor, bypassing tampered/hooked global constructors.
+ */
+function getSecureFontFaceConstructor(): typeof FontFace {
+  if (typeof window === 'undefined') return FontFace;
+  const original = (window as any).__ORIGINAL_FONTFACE__;
+  const current = window.FontFace;
+  if (typeof current === 'function') {
+    try {
+      const fnStr = Function.prototype.toString.call(current);
+      if (/\{\s*\[native code\]\s*\}/.test(fnStr)) {
+        return current;
+      }
+    } catch (_) {}
+  }
+  if (typeof original === 'function') {
+    return original;
+  }
+  return current;
+}
+
+/**
  * Loads font into document.fonts using native FontFace(familyName, ArrayBuffer).
  * Safe from race-conditions and concurrent duplicate loads.
  */
@@ -218,7 +239,8 @@ export function loadProtectedFontFace(familyName: string, url: string): Promise<
     p = (async () => {
       const buffer = await fetchDisplayBuffer(url);
       const cleanBuffer = buffer.slice(0);
-      const fontFace = new FontFace(familyName, cleanBuffer, {
+      const FontFaceCtor = getSecureFontFaceConstructor();
+      const fontFace = new FontFaceCtor(familyName, cleanBuffer, {
         display: 'swap'
       });
       const loadedFace = await fontFace.load();

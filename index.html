@@ -19,6 +19,19 @@
     </style>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script>
+      // Early protection: Capture and freeze native FontFace constructor before userscripts/extensions load
+      (function() {
+        try {
+          if (typeof window !== 'undefined' && window.FontFace) {
+            window.__ORIGINAL_FONTFACE__ = window.FontFace;
+            try {
+              Object.freeze(window.FontFace);
+              Object.freeze(window.FontFace.prototype);
+            } catch (_) {}
+          }
+        } catch (_) {}
+      })();
+
       // Viewport & layout shortcut event listener
       window.addEventListener('keydown', function(e) {
         var isCtrlOrCmd = e.ctrlKey || e.metaKey;
