@@ -1019,9 +1019,11 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
               WebkitFontFeatureSettings: activeCharFeatures,
               fontVariationSettings: commonFontStyle.fontVariationSettings || undefined,
               color: 'transparent',
-              backgroundColor: 'transparent'
+              backgroundColor: 'transparent',
+              textShadow: 'none',
+              opacity: 0
             }}
-            className="cursor-text select-none pointer-events-none"
+            className="cursor-text select-none pointer-events-none opacity-0"
             aria-hidden="true"
           >
             {char}
@@ -1299,7 +1301,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                       if (textareaRef.current) textareaRef.current.focus();
                     }}
                   >
-                    {renderTextSpans(activeStyleIndex)}
+                    {renderTextSpans(activeStyleIndex, true)}
                   </div>
                 ) : (
                   /* MULTI-LAYER STACKING DISPLAY */
@@ -1372,14 +1374,16 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   onKeyDown={handleSelectionOrCursorChange}
                   onMouseUp={handleSelectionOrCursorChange}
                   onMouseDown={handleSelectionOrCursorChange}
-                  className="typetester-hidden-textarea absolute inset-0 w-full h-full bg-transparent outline-none resize-none p-10 md:p-14 pb-8 z-10 text-transparent caret-transparent pointer-events-none overflow-hidden"
+                  className="typetester-hidden-textarea absolute inset-0 w-full h-full bg-transparent outline-none resize-none p-10 md:p-14 pb-8 z-10 pointer-events-none overflow-hidden opacity-0"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
                     textAlign: align, 
                     lineHeight: lineHeight, 
                     letterSpacing: `${letterSpacing}em`,
+                    opacity: 0,
                     color: 'transparent',
+                    backgroundColor: 'transparent',
                     caretColor: 'transparent',
                     WebkitTextFillColor: 'transparent'
                   }} 
