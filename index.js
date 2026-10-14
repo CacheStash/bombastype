@@ -1578,6 +1578,7 @@ export default {
       const rawUserAgent = request.headers.get('User-Agent') || '';
       const userAgent = rawUserAgent.toLowerCase();
       const country = request.headers.get('CF-IPCountry') || '';
+      const acceptHeader = request.headers.get('Accept') || '';
 
       // 1. DETECT DIRECT BROWSER NAVIGATION (Address Bar, Open in New Tab, DevTools Open)
       const isDirectNavigation = 

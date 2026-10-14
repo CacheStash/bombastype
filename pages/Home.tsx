@@ -279,9 +279,9 @@ export default function Home() {
 
       
 
-        {/* HERO IMAGES (PROPORSIONAL LEBAR & TIDAK OVERLAPPING) */}
+        {/* HERO IMAGES (PROPORSIONAL LEBAR & TIDAK TERPOTONG) */}
 
-        <div className="my-8 sm:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-4/3 sm:aspect-16/10 md:aspect-3/2 max-w-5xl overflow-hidden">
+        <div className="my-8 sm:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-4/3 sm:aspect-16/10 md:aspect-4/3 max-w-5xl overflow-visible">
           <AnimatePresence mode="popLayout">
             <motion.img
               key={currentHeaderIdx}
@@ -291,7 +291,7 @@ export default function Home() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -slideDirection }}
               transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="absolute inset-0 w-full h-full object-contain scale-120 sm:scale-130 md:scale-140"
+              className="absolute inset-0 w-full h-full object-contain scale-105 sm:scale-115 md:scale-120"
             />
           </AnimatePresence>
         </div>
