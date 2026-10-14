@@ -31,13 +31,17 @@ export default function Footer() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAffiliateVisible, setIsAffiliateVisible] = useState(false);
   const toolsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
+        const isTrainer = session.user.email?.toLowerCase() === 'gotrainer19@gmail.com';
         const { data } = await supabase.from('fontadmin').select('id').eq('id', session.user.id).maybeSingle();
-        setIsAdmin(!!data);
+        const admin = !!data;
+        setIsAdmin(admin);
+        setIsAffiliateVisible(admin || isTrainer);
       }
     });
   }, []);
@@ -59,7 +63,7 @@ export default function Footer() {
     { name: "CONTACT", href: "/contact" },
     { name: "POLICY", href: "/policy" },
     { name: "FAQ", href: "/faq" },
-    ...(isAdmin ? [{ name: "AFFILIATE", href: "/affiliate" }] : []),
+    ...(isAffiliateVisible ? [{ name: "AFFILIATE", href: "/affiliate" }] : []),
   ];
 
   const handleSubscribe = async (e: React.FormEvent) => {

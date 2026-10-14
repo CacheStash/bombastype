@@ -19,6 +19,7 @@ const UserDashboard = () => {
   const [fullName, setFullName] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAffiliateAllowed, setIsAffiliateAllowed] = useState(false);
 
   // Fetch data profil & unread messages (Filtered by Registration Date)
   useEffect(() => {
@@ -34,13 +35,16 @@ const UserDashboard = () => {
           .maybeSingle();
         if (data?.full_name) setFullName(data.full_name);
 
+        const isTrainer = user.email?.toLowerCase() === 'gotrainer19@gmail.com';
+
         // Check Admin Status (Stealth Gate for Affiliate Tab)
-        const { data: adminCheck } = await supabase
-          .from('fontadmin')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
-        setIsAdmin(!!adminCheck);
+        const [{ data: adminCheck }, { data: affCheck }] = await Promise.all([
+          supabase.from('fontadmin').select('id').eq('id', user.id).maybeSingle(),
+          supabase.from('affiliates').select('id').eq('user_id', user.id).maybeSingle()
+        ]);
+        const admin = !!adminCheck;
+        setIsAdmin(admin);
+        setIsAffiliateAllowed(admin || isTrainer || !!affCheck);
 
         // Fetch Unread Messages (Direct + Broadcast Filtered)
         const [{ data: readData }, { data: hiddenData }, { data: messages }] = await Promise.all([
@@ -116,7 +120,7 @@ const UserDashboard = () => {
           {[
             { id: 'library', label: 'My Library', icon: Library },
             { id: 'settings', label: 'Settings', icon: Settings },
-            ...(isAdmin ? [{ id: 'affiliate', label: 'Affiliate Hub', icon: Share2 }] : [])
+            ...(isAffiliateAllowed ? [{ id: 'affiliate', label: 'Affiliate Hub', icon: Share2 }] : [])
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
