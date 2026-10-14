@@ -178,9 +178,10 @@ const Checkout: React.FC = () => {
   };
 
   // --- PURCHASE SUCCESS HANDLER ---
-  const handlePurchaseSuccess = async (finalOrderId: string) => {
+  const handlePurchaseSuccess = async (finalOrderId: string, paypalBreakdown?: any) => {
     setLoading(true);
     try {
+      const storedRef = localStorage.getItem('affiliate_ref') || (appliedCoupon as any)?.affiliate_code || null;
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -192,7 +193,9 @@ const Checkout: React.FC = () => {
           type: 'full',
           metadata: { 
             order_id: finalOrderId,
-            cart_items: cart 
+            cart_items: cart,
+            paypal_breakdown: paypalBreakdown || null,
+            affiliate_ref: storedRef
           }
         })
       });
@@ -598,7 +601,9 @@ const Checkout: React.FC = () => {
                         onApprove={async (_data, actions) => {
                           const details = await actions.order?.capture();
                           if (details?.status === "COMPLETED") {
-                            await handlePurchaseSuccess(orderId);
+                            const capture = details?.purchase_units?.[0]?.payments?.captures?.[0];
+                            const breakdown = capture?.seller_receivable_breakdown;
+                            await handlePurchaseSuccess(orderId, breakdown);
                             alert(`TRANSACTION SUCCESSFUL! WELCOME, ${details?.payer?.name?.given_name || 'BUYER'}.`);
                           }
                         }}

@@ -27,17 +27,30 @@ const FontDetail: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const [isLongImage, setIsLongImage] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [affiliateCode, setAffiliateCode] = useState('');
+  const [affiliateCopied, setAffiliateCopied] = useState(false);
 
   useEffect(() => { fetchData(); }, [id]);
 
   const fetchData = async () => {
     setLoading(true);
-    const [fontRes, promosRes] = await Promise.all([
+    const [fontRes, promosRes, { data: { session } }] = await Promise.all([
       supabase.from('fonts').select('*').eq('id', id).single(),
-      supabase.from('promotions').select('*').eq('is_active', true)
+      supabase.from('promotions').select('*').eq('is_active', true),
+      supabase.auth.getSession()
     ]);
     if (fontRes.data) setFont(fontRes.data);
     if (promosRes.data) setPromos(promosRes.data);
+
+    if (session?.user) {
+      const [{ data: adminCheck }, { data: affData }] = await Promise.all([
+        supabase.from('fontadmin').select('id').eq('id', session.user.id).maybeSingle(),
+        supabase.from('affiliates').select('affiliate_code').eq('user_id', session.user.id).maybeSingle()
+      ]);
+      if (adminCheck) setIsAdmin(true);
+      if (affData) setAffiliateCode(affData.affiliate_code);
+    }
     setLoading(false);
   };
 
@@ -304,6 +317,32 @@ const FontDetail: React.FC = () => {
           ))}
         </div>
       </section>
+
+      {/* STEALTH AFFILIATE QUICK SHARE BAR (Admin Only) */}
+      {isAdmin && affiliateCode && (
+        <section className="max-w-7xl mx-auto px-6 mb-8">
+          <div className="border border-vintage-accent bg-vintage-background/90 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <span className="font-bold text-[9px] uppercase tracking-widest text-vintage-accent shrink-0">
+                Guild Partner Quick Share:
+              </span>
+              <code className="font-mono text-xs font-bold text-vintage-ink bg-white/60 px-2 py-1 border border-vintage-ink/20">
+                {`${window.location.origin}/c/${affiliateCode}/${font.id}`}
+              </code>
+            </div>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/c/${affiliateCode}/${font.id}`);
+                setAffiliateCopied(true);
+                setTimeout(() => setAffiliateCopied(false), 2000);
+              }}
+              className="vintage-btn py-1.5 px-4 text-[9px] tracking-widest shrink-0 uppercase"
+            >
+              {affiliateCopied ? 'COPIED TO CLIPBOARD' : 'COPY SPECIMEN LINK'}
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* 5. INVESTMENT & ACTION SECTION */}
       <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">

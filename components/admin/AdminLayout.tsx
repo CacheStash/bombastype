@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Type, ShoppingCart, LogOut, 
   Tag, Menu, X, Mail, FileText, Power, Loader2, CreditCard, Megaphone,
-  Sparkles, ExternalLink
+  Sparkles, ExternalLink, Share2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { openCanvasWithSession } from '../../lib/canvasSession';
 import { Globe } from 'lucide-react';
 import WebAnalytics from './WebAnalytics';
+import AffiliateManager from './AffiliateManager';
 // Content Components
 import ProductManager from './ProductManager';
 import ContentManager from './ContentManager';
@@ -150,6 +151,7 @@ const AdminDashboard = () => {
     { id: 'broadcast', label: 'Broadcast Studio', icon: Megaphone },
     { id: 'products', label: 'Typeface Inventory', icon: Type },
     { id: 'promotions', label: 'Promotional Deals', icon: Tag },
+    { id: 'affiliates', label: 'Affiliates & Payouts', icon: Share2 },
     { id: 'orders', label: 'Customer Orders', icon: ShoppingCart },
     { id: 'email_studio', label: 'Email Studio', icon: Mail },
     { id: 'content', label: 'Site Content', icon: FileText },
@@ -166,6 +168,7 @@ const AdminDashboard = () => {
       case 'inbox': return <BroadcastStudio />;
       case 'products': return <ProductManager />;
       case 'promotions': return <PromotionsManager onNavigateTab={setActiveTab} />;
+      case 'affiliates': return <AffiliateManager />;
       case 'orders': return <Orders />;
       case 'email_studio': return <EmailStudio />;
       case 'content': return <ContentManager />;

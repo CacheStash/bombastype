@@ -1502,6 +1502,26 @@ export default {
       );
     }
 
+    // --- 2.2. STEALTH AFFILIATE VANITY ROUTING (/c/:code or /c/:code/:fontId) ---
+    if (url.pathname.startsWith('/c/')) {
+      const parts = url.pathname.slice(3).split('/').filter(Boolean);
+      const affCode = parts[0] ? parts[0].trim().toUpperCase() : '';
+      const fontTarget = parts[1] ? parts[1].trim() : '';
+
+      const targetPath = fontTarget ? `/font/${fontTarget}` : '/';
+      const cookieHeader = `__ctx_ref=${encodeURIComponent(affCode)}; Max-Age=2592000; Path=/; SameSite=Lax; HttpOnly; Secure`;
+
+      const redirectUrl = new URL(targetPath, url.origin);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': redirectUrl.toString(),
+          'Set-Cookie': cookieHeader,
+          'Cache-Control': 'no-store, no-cache, max-age=0'
+        }
+      });
+    }
+
     // --- 2.5. API Ephemeral Font Token Issuance (/api/ft) ---
     if (url.pathname === '/api/ft' && request.method === 'GET') {
       const origin = request.headers.get('Origin') || '';
@@ -2434,6 +2454,76 @@ export default {
 
         if (type !== 'trial' && items.length > 0) {
           ctx.waitUntil(triggerGasEmail(email, name, transactionId, items, env));
+
+          // 3. Process Affiliate Commission Attribution (Fail-Safe, Background Protected)
+          ctx.waitUntil((async () => {
+            try {
+              let affCode = metadata?.affiliate_ref || '';
+              if (!affCode) {
+                const cookieStr = request.headers.get('Cookie') || '';
+                const match = cookieStr.match(/(?:^|;\s*)__ctx_ref=([^;]+)/);
+                if (match) affCode = decodeURIComponent(match[1]).trim().toUpperCase();
+              }
+
+              if (affCode && supabaseUrl && serviceRoleKey) {
+                const affRes = await fetch(`${supabaseUrl}/rest/v1/affiliates?affiliate_code=ilike.${encodeURIComponent(affCode)}&status=eq.active&select=id,user_id,paypal_email,commission_rate`, {
+                  headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+                });
+                if (affRes.ok) {
+                  const affData = await affRes.json();
+                  if (affData && affData.length > 0) {
+                    const aff = affData[0];
+                    const isSelfReferral = aff.user_id === targetUserId || (aff.paypal_email && aff.paypal_email.toLowerCase() === email.toLowerCase());
+                    if (!isSelfReferral) {
+                      const breakdown = metadata?.paypal_breakdown;
+                      let gross = 0;
+                      let inboundFee = 0;
+                      let netStore = 0;
+
+                      if (breakdown?.gross_amount?.value && breakdown?.paypal_fee?.value) {
+                        gross = parseFloat(breakdown.gross_amount.value);
+                        inboundFee = parseFloat(breakdown.paypal_fee.value);
+                        netStore = breakdown.net_amount?.value ? parseFloat(breakdown.net_amount.value) : (gross - inboundFee);
+                      } else {
+                        gross = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
+                        inboundFee = (gross * 0.044) + 0.30;
+                        netStore = Math.max(0, gross - inboundFee);
+                      }
+
+                      const rate = Number(aff.commission_rate) || 0.20;
+                      const commissionAmount = parseFloat((netStore * rate).toFixed(2));
+
+                      if (commissionAmount > 0) {
+                        await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions`, {
+                          method: 'POST',
+                          headers: {
+                            'apikey': serviceRoleKey,
+                            'Authorization': `Bearer ${serviceRoleKey}`,
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                            affiliate_id: aff.id,
+                            order_id: transactionId,
+                            font_name: fontName || items.map(i => i.name).join(', '),
+                            buyer_email: email,
+                            gross_amount: gross,
+                            paypal_inbound_fee: inboundFee,
+                            net_store_amount: netStore,
+                            commission_rate: rate,
+                            commission_amount: commissionAmount,
+                            status: 'pending_clearance',
+                            cleared_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+                          })
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+            } catch (affErr) {
+              console.error("Affiliate attribution error (silent fallback):", affErr);
+            }
+          })());
         }
 
         return new Response(JSON.stringify({ success: true, transactionId, userId: targetUserId }), {

@@ -4,12 +4,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Library, Settings, LogOut, ArrowLeft, Menu, X, Mail } from 'lucide-react';
+import { Library, Settings, LogOut, ArrowLeft, Menu, X, Mail, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import MyFontsHistory from './MyFontsHistory';
 import AccountSettings from './AccountSettings'; 
 import UserMessages from './UserMessages';
+import AffiliatePortal from './AffiliatePortal';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('library');
@@ -17,6 +18,7 @@ const UserDashboard = () => {
   const [userEmail, setUserEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Fetch data profil & unread messages (Filtered by Registration Date)
   useEffect(() => {
@@ -31,6 +33,14 @@ const UserDashboard = () => {
           .eq('id', user.id)
           .maybeSingle();
         if (data?.full_name) setFullName(data.full_name);
+
+        // Check Admin Status (Stealth Gate for Affiliate Tab)
+        const { data: adminCheck } = await supabase
+          .from('fontadmin')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+        setIsAdmin(!!adminCheck);
 
         // Fetch Unread Messages (Direct + Broadcast Filtered)
         const [{ data: readData }, { data: hiddenData }, { data: messages }] = await Promise.all([
@@ -105,7 +115,8 @@ const UserDashboard = () => {
         <nav className="grow p-6 space-y-3">
           {[
             { id: 'library', label: 'My Library', icon: Library },
-            { id: 'settings', label: 'Settings', icon: Settings }
+            { id: 'settings', label: 'Settings', icon: Settings },
+            ...(isAdmin ? [{ id: 'affiliate', label: 'Affiliate Hub', icon: Share2 }] : [])
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -156,6 +167,7 @@ const UserDashboard = () => {
         <div className="max-w-5xl mx-auto animate-in fade-in duration-700">
           {activeTab === 'library' && <MyFontsHistory />}
           {activeTab === 'settings' && <AccountSettings />}
+          {activeTab === 'affiliate' && <AffiliatePortal />}
         </div>
       </main>
     </div>

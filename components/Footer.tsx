@@ -30,7 +30,17 @@ export default function Footer() {
   const [honeypot, setHoneypot] = useState("");
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const toolsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const { data } = await supabase.from('fontadmin').select('id').eq('id', session.user.id).maybeSingle();
+        setIsAdmin(!!data);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -49,6 +59,7 @@ export default function Footer() {
     { name: "CONTACT", href: "/contact" },
     { name: "POLICY", href: "/policy" },
     { name: "FAQ", href: "/faq" },
+    ...(isAdmin ? [{ name: "AFFILIATE", href: "/affiliate" }] : []),
   ];
 
   const handleSubscribe = async (e: React.FormEvent) => {

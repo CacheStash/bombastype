@@ -35,6 +35,7 @@ import Checkout from './pages/shop/Checkout';
 import LicenseReceipt from './pages/user/LicenseReceipt';
 import FontDetail from './pages/FontDetail';
 import CanvasLanding from './pages/CanvasLanding';
+import AffiliateLanding from './pages/AffiliateLanding';
 
 // Maintenance Screen
 import MaintenanceScreen from './components/MaintenanceScreen';
@@ -102,6 +103,16 @@ const App: React.FC = () => {
     window.addEventListener('open-admin-auth', handleOpenAdminAuth);
     return () => window.removeEventListener('open-admin-auth', handleOpenAdminAuth);
   }, [session, isAdmin]);
+
+  React.useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref') || params.get('c');
+      if (ref) {
+        localStorage.setItem('affiliate_ref', ref.trim().toUpperCase());
+      }
+    } catch (_) {}
+  }, []);
 
   React.useEffect(() => {
     const fetchMaintenanceStatus = async () => {
@@ -224,9 +235,15 @@ const App: React.FC = () => {
                   />
                   <Route 
                     path="/user/dashboard/*" 
-                    element={session && !isAdmin ? <UserDashboard /> : (isAdmin ? <Navigate to="/backstage" replace /> : <Navigate to="/user/auth" />)} 
+                    element={session ? <UserDashboard /> : <Navigate to="/user/auth" />} 
                   />
                   <Route path="/user/receipt/:orderId" element={<LicenseReceipt />} />
+
+                  {/* Stealth Affiliate Route (Hidden from public, only admin can view) */}
+                  <Route 
+                    path="/affiliate" 
+                    element={session && isAdmin ? <AffiliateLanding /> : <Navigate to="/" replace />} 
+                  />
                   
                   {/* Stealth Admin Routes */}
                   <Route 
