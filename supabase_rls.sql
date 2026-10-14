@@ -263,3 +263,32 @@ ON public.keep_alive_ping FOR ALL
 TO public
 USING (true)
 WITH CHECK (true);
+
+-- 14. TABLE: font_access_logs (Forensic Stamping Audit & Leak Trace)
+CREATE TABLE IF NOT EXISTS public.font_access_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    font_name TEXT NOT NULL,
+    stamp_time TEXT NOT NULL,
+    ip_hash TEXT NOT NULL,
+    client_ip TEXT NOT NULL,
+    country TEXT,
+    user_agent TEXT,
+    referer TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_font_access_logs_ip_hash ON public.font_access_logs(ip_hash);
+CREATE INDEX IF NOT EXISTS idx_font_access_logs_client_ip ON public.font_access_logs(client_ip);
+CREATE INDEX IF NOT EXISTS idx_font_access_logs_created_at ON public.font_access_logs(created_at DESC);
+
+ALTER TABLE public.font_access_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "font_access_logs_admin_all" ON public.font_access_logs;
+CREATE POLICY "font_access_logs_admin_all"
+ON public.font_access_logs FOR ALL
+TO authenticated
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+-- Post-Oct 30 Rule (MANDATORY)
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.font_access_logs TO anon, authenticated, service_role;

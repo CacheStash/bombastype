@@ -438,6 +438,44 @@ function checkResetRateLimit(ip, limit = 5, windowMs = 900000) {
   return true;
 }
 
+// Catat log forensik ke Supabase di background (asinkron tanpa menghalangi respon font)
+function logForensicAccess(env, ctx, { fontName, stamp, clientIp, country, userAgent, referer }) {
+  if (!ctx || !ctx.waitUntil || !stamp) return;
+  
+  // Anti-spam throttling: maks 1 log per IP per font per 1 jam agar kuota database Supabase tetap hemat
+  const throttleKey = `fnlog_${clientIp}_${fontName}`;
+  if (!checkResetRateLimit(throttleKey, 1, 3600000)) {
+    return;
+  }
+
+  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !serviceRoleKey) return;
+
+  const [stampTime, ipHash] = stamp.split('-');
+
+  ctx.waitUntil(
+    fetch(`${supabaseUrl}/rest/v1/font_access_logs`, {
+      method: 'POST',
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        font_name: fontName,
+        stamp_time: stampTime || '',
+        ip_hash: ipHash || '',
+        client_ip: clientIp,
+        country: country || null,
+        user_agent: (userAgent || '').slice(0, 255),
+        referer: (referer || '').slice(0, 255)
+      })
+    }).catch(() => {})
+  );
+}
+
 function isAllowedSource(val) {
   if (!val) return false;
   try {
@@ -1537,8 +1575,9 @@ export default {
       const referer = request.headers.get('Referer') || '';
       const secFetchMode = request.headers.get('Sec-Fetch-Mode') || '';
       const secFetchDest = request.headers.get('Sec-Fetch-Dest') || '';
-      const acceptHeader = request.headers.get('Accept') || '';
-      const userAgent = (request.headers.get('User-Agent') || '').toLowerCase();
+      const rawUserAgent = request.headers.get('User-Agent') || '';
+      const userAgent = rawUserAgent.toLowerCase();
+      const country = request.headers.get('CF-IPCountry') || '';
 
       // 1. DETECT DIRECT BROWSER NAVIGATION (Address Bar, Open in New Tab, DevTools Open)
       const isDirectNavigation = 
@@ -1693,6 +1732,14 @@ export default {
           if (hitSlots) {
             const hitStamp = await buildVisitorStamp(fontTokenSecret, clientIp);
             hitBody = personalizeStamp(await cachedResponse.arrayBuffer(), hitSlots, hitStamp, toggleMaskInPlace);
+            logForensicAccess(env, ctx, {
+              fontName,
+              stamp: hitStamp,
+              clientIp,
+              country,
+              userAgent: rawUserAgent,
+              referer
+            });
           }
           return new Response(hitBody, {
             status: cachedResponse.status,
@@ -1767,6 +1814,14 @@ export default {
         if (stampSlots) {
           const missStamp = await buildVisitorStamp(fontTokenSecret, clientIp);
           missBody = personalizeStamp(finalBody, stampSlots, missStamp, toggleMaskInPlace);
+          logForensicAccess(env, ctx, {
+            fontName,
+            stamp: missStamp,
+            clientIp,
+            country,
+            userAgent: rawUserAgent,
+            referer
+          });
         }
         return new Response(missBody, { headers: responseHeaders });
       } catch (e) { return new Response('Error fetching font', { status: 500 }); }
