@@ -988,7 +988,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
     .join(', ') || 'normal';
 
   // Sinkronisasi alternate feature ke seluruh layer
-  const renderTextSpans = (fontIdx: number) => {
+  const renderTextSpans = (fontIdx: number, isPrimaryLayer: boolean = true) => {
     const styleFontFamily = `"${config.name}-${fontIdx}"`;
     return text.split('').map((char, i) => {
       const overrideGlyphIdx = glyphOverrides[i];
@@ -1006,6 +1006,28 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
       const isSelected = selectionRange 
         ? (i >= Math.min(selectionRange.start, selectionRange.end) && i < Math.max(selectionRange.start, selectionRange.end))
         : (selectedCharIndex === i);
+
+      // Pada secondary layer saat selection aktif, sembunyikan visual karakter terpilih agar tidak ada ghost/duplikasi dengan primary layer
+      if (!isPrimaryLayer && isSelected) {
+        return (
+          <span 
+            key={i}
+            data-char-idx={i}
+            style={{
+              fontFamily: styleFontFamily,
+              fontFeatureSettings: activeCharFeatures,
+              WebkitFontFeatureSettings: activeCharFeatures,
+              fontVariationSettings: commonFontStyle.fontVariationSettings || undefined,
+              color: 'transparent',
+              backgroundColor: 'transparent'
+            }}
+            className="cursor-text select-none pointer-events-none"
+            aria-hidden="true"
+          >
+            {char}
+          </span>
+        );
+      }
 
       return (
         <span 
@@ -1057,7 +1079,17 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
   };
 
   return (
-    <div className="w-full bg-transparent text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper">
+    <div className="w-full bg-transparent text-vintage-ink">
+      <style>{`
+        .typetester-hidden-textarea,
+        .typetester-hidden-textarea::selection,
+        .typetester-hidden-textarea::-moz-selection {
+          background-color: transparent !important;
+          color: transparent !important;
+          text-shadow: none !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+      `}</style>
       <div className="overflow-visible relative z-40 bg-transparent">
         
         {/* TOP TOOLBAR */}
@@ -1280,7 +1312,8 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                     {layers.map((layer, stackIdx) => {
                       if (!layer.isVisible) return null;
                       const calculatedZIndex = layers.length - stackIdx;
-                      const isFirstVisible = stackIdx === 0;
+                      const firstVisibleIdx = layers.findIndex(l => l.isVisible);
+                      const isFirstVisible = stackIdx === firstVisibleIdx;
 
                       return (
                         <div 
@@ -1299,7 +1332,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                             textShadow: layer.color ? 'none' : (layer.isInverted ? '-1px -1px 0 rgba(0,0,0,0.15), 1px 1px 0 rgba(0,0,0,0.15)' : 'none')
                           }}
                         >
-                          {renderTextSpans(layer.fontIndex)}
+                          {renderTextSpans(layer.fontIndex, isFirstVisible)}
                         </div>
                       );
                     })}
@@ -1339,13 +1372,16 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                   onKeyDown={handleSelectionOrCursorChange}
                   onMouseUp={handleSelectionOrCursorChange}
                   onMouseDown={handleSelectionOrCursorChange}
-                  className="absolute inset-0 w-full h-full bg-transparent outline-none resize-none p-10 md:p-14 pb-8 z-10 text-transparent caret-transparent selection:bg-transparent selection:text-transparent pointer-events-none overflow-hidden"
+                  className="typetester-hidden-textarea absolute inset-0 w-full h-full bg-transparent outline-none resize-none p-10 md:p-14 pb-8 z-10 text-transparent caret-transparent pointer-events-none overflow-hidden"
                   style={{ 
                     ...commonFontStyle, 
                     fontSize: `${fontSize}px`, 
                     textAlign: align, 
                     lineHeight: lineHeight, 
-                    letterSpacing: `${letterSpacing}em` 
+                    letterSpacing: `${letterSpacing}em`,
+                    color: 'transparent',
+                    caretColor: 'transparent',
+                    WebkitTextFillColor: 'transparent'
                   }} 
                   spellCheck={false} 
                 />
