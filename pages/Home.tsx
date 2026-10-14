@@ -273,15 +273,13 @@ export default function Home() {
      <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
      {/* Hero Section */}
       <section className="text-center mb-16 w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
-        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-6">
+        <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-6 sm:mb-8">
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
 
-      
+        {/* HERO IMAGES (STANDAR PROPORSI IMAGE TERLEBAR 2434x1844 / 1.32 TANPA TERPOTONG) */}
 
-        {/* HERO IMAGES (SELEBAR NAVBAR DENGAN JARAK AMAN TEXT) */}
-
-        <div className="my-8 sm:my-12 md:my-16 lg:my-20 w-full flex justify-center pointer-events-none select-none relative h-80 sm:h-110 md:h-145 lg:h-170 max-w-7xl overflow-visible">
+        <div className="my-6 sm:my-8 md:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-[2434/1844] max-w-6xl xl:max-w-7xl overflow-visible">
           <AnimatePresence mode="popLayout">
             <motion.img
               key={currentHeaderIdx}
@@ -291,12 +289,12 @@ export default function Home() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -slideDirection }}
               transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="absolute inset-0 w-full h-full object-contain scale-110 sm:scale-120 md:scale-125 lg:scale-130"
+              className="absolute inset-0 w-full h-full object-contain"
             />
           </AnimatePresence>
         </div>
 
-        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mt-6 sm:mt-10 mb-8 leading-relaxed">
+        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mt-6 sm:mt-8 md:mt-10 mb-8 leading-relaxed">
           Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, & letterpress design.
         </motion.p>
         <div className="flex justify-center mt-8 w-full max-w-xl mx-auto relative z-30">
