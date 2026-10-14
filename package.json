@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare:tester": "python scripts/prepare_tester_font.py"
   },
   "dependencies": {
     "@paypal/react-paypal-js": "^8.9.2",

@@ -355,12 +355,15 @@ function isAllowedSource(val) {
   }
 }
 
-async function fetchFileBuffer(fileName, env) {
+async function fetchFileBuffer(fileName, env, options = {}) {
   if (fileName.includes('..') || fileName.includes('\\')) return null;
 
-  // 1. Coba ambil dari R2 (cek folder tester/ terlebih dahulu jika ada, lalu fallback ke root)
-  let object = await env.R2_BUCKET.get('tester/' + fileName);
-  if (!object) {
+  // 1. Ambil dari R2 (cek folder tester/ jika preferTester aktif, selain itu ambil dari root)
+  let object = null;
+  if (options.preferTester) {
+    object = await env.R2_BUCKET.get('tester/' + fileName);
+  }
+  if (!object && !options.onlyTester) {
     object = await env.R2_BUCKET.get(fileName);
   }
   if (object) return { body: await object.arrayBuffer(), contentType: object.httpMetadata?.contentType };
@@ -1357,13 +1360,22 @@ export default {
       const referer = request.headers.get('Referer') || '';
       const secFetchMode = request.headers.get('Sec-Fetch-Mode') || '';
       const secFetchDest = request.headers.get('Sec-Fetch-Dest') || '';
+      const requestedWith = request.headers.get('X-Requested-With') || '';
 
-      // Direct navigation / address bar open blocked
-      if (secFetchMode === 'navigate' || secFetchDest === 'document') {
+      // 1. Direct browser navigation / address bar open blocked
+      if (secFetchMode === 'navigate' || secFetchDest === 'document' || secFetchDest === 'iframe') {
         return new Response(null, { status: 404 });
       }
 
-      // Check allowed origin or referer if provided
+      // 2. Mandatory Origin or Referer (Strict block against naked curl / automation scripts)
+      if (!origin && !referer) {
+        return new Response(JSON.stringify({ error: "FORBIDDEN" }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      // 3. Strict Allowed Origin / Referer check
       if ((origin && !isAllowedSource(origin)) || (referer && !isAllowedSource(referer))) {
         return new Response(JSON.stringify({ error: "FORBIDDEN" }), {
           status: 403,
@@ -1371,7 +1383,15 @@ export default {
         });
       }
 
-      const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+      // 4. Mandatory client fingerprint header
+      if (requestedWith !== 'FontMetricsClient') {
+        return new Response(JSON.stringify({ error: "FORBIDDEN" }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const clientIp = request.headers.get('CF-Connecting-IP') || '127.0.0.1';
       if (!checkResetRateLimit(`ft_${clientIp}`, 40, 300000)) {
         return new Response(JSON.stringify({ error: "TOO_MANY_REQUESTS" }), {
           status: 429,
@@ -1388,7 +1408,8 @@ export default {
       }
 
       const exp = Math.floor(Date.now() / 1000) + 600; // 10 minutes
-      const sig = await signHMAC(fontTokenSecret, String(exp));
+      // Bind token directly to Client IP address to prevent cross-network URL sharing
+      const sig = await signHMAC(fontTokenSecret, `${exp}:${clientIp}`);
 
       return new Response(JSON.stringify({ t: `${exp}.${sig}`, ttl: 600 }), {
         status: 200,
@@ -1452,24 +1473,26 @@ export default {
         });
       }
 
-      // 2.1 VERIFY EPHEMERAL HMAC TOKEN (X-FT)
+      // 2.1 VERIFY EPHEMERAL HMAC TOKEN (X-FT) BOUND TO CLIENT IP
       const fontTokenSecret = env.FONT_TOKEN_SECRET || env.SUPABASE_SERVICE_ROLE_KEY || env.GAS_TOKEN;
       if (!fontTokenSecret) {
         return new Response('Server misconfigured: Token secret missing.', { status: 500 });
       }
 
+      const clientIp = request.headers.get('CF-Connecting-IP') || '127.0.0.1';
+      const requestedWith = request.headers.get('X-Requested-With') || '';
       const ftHeader = request.headers.get('X-FT') || '';
       let isTokenValid = false;
       if (ftHeader && ftHeader.includes('.')) {
         const [expStr, sig] = ftHeader.split('.');
         const exp = parseInt(expStr, 10);
         if (exp && sig && (Math.floor(Date.now() / 1000) < exp)) {
-          isTokenValid = await verifyHMAC(fontTokenSecret, expStr, sig);
+          isTokenValid = await verifyHMAC(fontTokenSecret, `${expStr}:${clientIp}`, sig);
         }
       }
 
-      // STRICT GATE: Must have valid ephemeral token AND valid origin/referer
-      if (!isTokenValid || (!origin && !referer)) {
+      // STRICT GATE: Must have valid ephemeral token, valid origin/referer, and X-Requested-With header
+      if (!isTokenValid || (!origin && !referer) || requestedWith !== 'FontMetricsClient') {
         return new Response('Access Denied: Direct font binary downloads are restricted.', {
           status: 403,
           headers: {
@@ -1549,13 +1572,17 @@ export default {
           });
         }
 
-        // 3. Cache Miss: Fetch from R2 / Google Drive
-        const fileData = await fetchFileBuffer(fontName, env);
+        // 3. Cache Miss: Fetch from R2 / Google Drive (Prioritizing tester/ folder for web preview)
+        const fileData = await fetchFileBuffer(fontName, env, { preferTester: true });
         if (!fileData) return new Response(`Font not found`, { status: 404 });
 
-        // Optional internal bypass for raw access via authorized key
-        const rawSecret = env.RAW_BYPASS_KEY || env.ADMIN_SECRET || env.GAS_TOKEN;
-        const isRawRequested = Boolean(rawSecret && url.searchParams.get('raw') === 'true' && url.searchParams.get('key') === rawSecret);
+        // Raw bypass only allowed via dedicated RAW_BYPASS_KEY in Authorization header (never via query params or fallback secrets)
+        const authHeader = request.headers.get('Authorization') || '';
+        const isRawRequested = Boolean(
+          env.RAW_BYPASS_KEY && 
+          authHeader.startsWith('Bearer ') && 
+          safeEqual(authHeader.slice(7), env.RAW_BYPASS_KEY)
+        );
         
         let processedBody = fileData.body;
         if (!isRawRequested && (lowerFontName.endsWith('.otf') || lowerFontName.endsWith('.ttf'))) {
@@ -1568,9 +1595,11 @@ export default {
           }
 
           const cleanBase = fontName.replace(/\.[^/.]+$/, "");
+          const ipFingerprint = (await signHMAC(fontTokenSecret, clientIp)).slice(0, 8).toUpperCase();
+          const dynamicStamp = `BT-TESTER-${Date.now().toString(36).toUpperCase()}-${ipFingerprint}`;
           processedBody = stampFontMetadata(processedBody, {
-            uniqueId: `1.000;BT;${cleanBase};BT-SPEC-W01`,
-            licenseDescription: `Digital Specimen Typeface Software. Build Ref: BT-SPEC-W01. BombasType Foundry.`,
+            uniqueId: `1.000;BT;${cleanBase};${dynamicStamp}`,
+            licenseDescription: `Evaluation Typeface Software. Ref: ${dynamicStamp}. Strictly Non-Commercial Preview for BombasType Foundry.`,
             trademark: `BombasType is a trademark of BombasType Foundry.`,
             vendorUrl: `https://bombastype.com`,
             licenseUrl: `https://bombastype.com/licenses`

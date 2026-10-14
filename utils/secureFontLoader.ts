@@ -130,7 +130,11 @@ async function getFontAccessToken(force = false): Promise<string> {
 
   tokenPromise = (async () => {
     try {
-      const res = await fetch('/api/ft');
+      const res = await fetch('/api/ft', {
+        headers: {
+          'X-Requested-With': 'FontMetricsClient',
+        },
+      });
       if (!res.ok) {
         failUntil = Date.now() + 5000;
         return '';
@@ -169,7 +173,9 @@ export async function fetchDisplayBuffer(url: string): Promise<ArrayBuffer> {
   const promise = (async () => {
     try {
       let token = await getFontAccessToken();
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = {
+        'X-Requested-With': 'FontMetricsClient',
+      };
       if (token) {
         headers['X-FT'] = token;
       }
@@ -181,6 +187,7 @@ export async function fetchDisplayBuffer(url: string): Promise<ArrayBuffer> {
         token = await getFontAccessToken(true);
         if (token) {
           headers['X-FT'] = token;
+          headers['X-Requested-With'] = 'FontMetricsClient';
           res = await fetch(url, { headers });
         }
       }
