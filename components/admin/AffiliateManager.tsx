@@ -334,7 +334,10 @@ const AffiliateManager: React.FC = () => {
   const handleDirectPayPalPayout = async (item: typeof affiliateDueBalances[0]) => {
     const { affiliate, dueCommissions, dueAmount } = item;
     const commissionIds = dueCommissions.map(c => c.id);
-    const confirmMsg = `EXECUTE DIRECT PAYPAL TRANSFER?\n\n- Partner: ${affiliate.affiliate_code}\n- Recipient: ${affiliate.paypal_email}\n- Amount: $${dueAmount.toFixed(2)} USD\n- Orders to Settle: ${commissionIds.length}\n\nThis will trigger an immediate live transfer from your PayPal account via PayPal REST API.\n\nProceed?`;
+    const fee = Math.min(20.00, Math.round(dueAmount * 0.02 * 100) / 100);
+    const netAmount = Math.max(0.01, Math.round((dueAmount - fee) * 100) / 100);
+
+    const confirmMsg = `EXECUTE DIRECT PAYPAL TRANSFER?\n\n- Partner: ${affiliate.affiliate_code}\n- Recipient: ${affiliate.paypal_email}\n- Gross Settled Balance: $${dueAmount.toFixed(2)} USD\n- PayPal Gateway Fee (2%, max $20): -$${fee.toFixed(2)} USD\n- Net Amount Sent to PayPal: $${netAmount.toFixed(2)} USD\n- Orders to Settle: ${commissionIds.length}\n\nThis will trigger an immediate live transfer from your PayPal account via PayPal REST API.\n\nProceed?`;
     if (!window.confirm(confirmMsg)) return;
 
     setIsSubmittingPayout(true);
@@ -364,7 +367,7 @@ const AffiliateManager: React.FC = () => {
       const data = await res.json() as any;
       if (!res.ok) throw new Error(data.error || data.message || "Payout request failed.");
 
-      alert(`PAYPAL TRANSFER SUCCESSFUL!\n\nPayPal Batch ID: ${data.payoutBatchId}\nStatus: ${data.batchStatus}\nAmount: $${dueAmount.toFixed(2)} USD transferred to ${affiliate.paypal_email}!\nCommissions updated to paid.`);
+      alert(`PAYPAL TRANSFER SUCCESSFUL!\n\nPayPal Batch ID: ${data.payoutBatchId}\nStatus: ${data.batchStatus}\nGross Settled: $${dueAmount.toFixed(2)} USD\nPayPal Fee: -$${fee.toFixed(2)} USD\nNet Transferred: $${netAmount.toFixed(2)} USD to ${affiliate.paypal_email}!\nCommissions updated to paid.`);
       await fetchData();
       fetchPayPalBalance();
     } catch (err: any) {

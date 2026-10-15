@@ -3809,14 +3809,17 @@ export default {
 
         const items = payouts.map((p, idx) => {
           const cleanEmail = (p.paypal_email || '').trim().toLowerCase();
-          const amountVal = Number(p.amount || 0).toFixed(2);
+          const grossVal = Number(p.amount || 0);
+          const feeVal = Math.min(20.00, Math.round(grossVal * 0.02 * 100) / 100);
+          const netVal = Math.max(0.01, Math.round((grossVal - feeVal) * 100) / 100);
+          const amountVal = netVal.toFixed(2);
           return {
             recipient_type: 'EMAIL',
             amount: {
               value: amountVal,
               currency: p.currency || 'USD'
             },
-            note: notes || `BombasType Affiliate Commission Payout (${p.affiliate_code})`,
+            note: notes || `BombasType Affiliate Commission Payout (${p.affiliate_code}) - Net $${amountVal} (Fee $${feeVal.toFixed(2)})`,
             sender_item_id: `COMM-${p.affiliate_code || idx}-${Date.now().toString(36)}-${idx}`,
             receiver: cleanEmail
           };
@@ -3868,6 +3871,9 @@ export default {
 
           // Record payout entry
           try {
+            const grossAmt = Number(p.amount || 0);
+            const feeAmt = Math.min(20.00, Math.round(grossAmt * 0.02 * 100) / 100);
+            const netAmt = Math.max(0.01, Math.round((grossAmt - feeAmt) * 100) / 100);
             await fetch(`${supabaseUrl}/rest/v1/affiliate_payouts`, {
               method: 'POST',
               headers: {
@@ -3878,13 +3884,13 @@ export default {
               body: JSON.stringify({
                 affiliate_id: p.affiliate_id,
                 payout_batch_id: paypalBatchId,
-                amount: Number(p.amount),
+                amount: grossAmt,
                 currency: p.currency || 'USD',
                 paypal_email: p.paypal_email,
                 status: 'completed',
                 commission_ids: commIds,
                 paid_at: nowIso,
-                notes: notes
+                notes: `${notes || 'Admin Payout'} (Gross: $${grossAmt.toFixed(2)}, Gateway Fee: $${feeAmt.toFixed(2)}, Net Sent: $${netAmt.toFixed(2)})`
               })
             });
           } catch (insertErr) {
@@ -4055,10 +4061,14 @@ export default {
         }
         const accessToken = tokenData.access_token;
 
-        // 5. Execute PayPal REST API Payout
+        // 5. Execute PayPal REST API Payout with Outbound Gateway Fee Deduction
         const batchTimestamp = new Date().toISOString().substring(0, 10).replace(/-/g, '');
         const senderBatchId = `BT-WITHDRAW-${batchTimestamp}-${Date.now().toString(36).toUpperCase()}`;
-        const payoutAmountFormatted = withdrawTarget.toFixed(2);
+        
+        const grossAmount = withdrawTarget;
+        const payoutFee = Math.min(20.00, Math.round(grossAmount * 0.02 * 100) / 100);
+        const netPayoutAmount = Math.max(0.01, Math.round((grossAmount - payoutFee) * 100) / 100);
+        const netPayoutFormatted = netPayoutAmount.toFixed(2);
 
         const payoutRes = await fetch(`${paypalHost}/v1/payments/payouts`, {
           method: 'POST',
@@ -4070,16 +4080,16 @@ export default {
             sender_batch_header: {
               sender_batch_id: senderBatchId,
               email_subject: "Instant Affiliate Commission Withdrawal from BombasType!",
-              email_message: `Here is your requested affiliate withdrawal of $${payoutAmountFormatted} USD from BombasType. Thank you for partnering with us!`
+              email_message: `Here is your affiliate withdrawal from BombasType: $${netPayoutFormatted} USD (Gross: $${grossAmount.toFixed(2)}, Gateway fee: $${payoutFee.toFixed(2)}). Thank you for partnering with us!`
             },
             items: [
               {
                 recipient_type: 'EMAIL',
                 amount: {
-                  value: payoutAmountFormatted,
+                  value: netPayoutFormatted,
                   currency: 'USD'
                 },
-                note: `BombasType Instant Affiliate Withdrawal (${affiliate.affiliate_code})`,
+                note: `BombasType Affiliate Withdrawal (${affiliate.affiliate_code}) - Net $${netPayoutFormatted} (Gateway Fee: $${payoutFee.toFixed(2)})`,
                 sender_item_id: `WITHDRAW-${affiliate.affiliate_code}-${Date.now().toString(36)}`,
                 receiver: paypalEmail
               }
@@ -4182,19 +4192,22 @@ export default {
             body: JSON.stringify({
               affiliate_id: affiliate.id,
               payout_batch_id: paypalBatchId,
-              amount: Number(payoutAmountFormatted),
+              amount: Number(grossAmount.toFixed(2)),
               currency: 'USD',
               paypal_email: paypalEmail,
               status: 'completed',
               commission_ids: commissionsToMarkPaid.map(c => c.id),
-              notes: 'Self-Service Instant Withdrawal'
+              notes: `Self-Service Instant Withdrawal (Gross: $${grossAmount.toFixed(2)}, Gateway Fee: $${payoutFee.toFixed(2)}, Net Sent: $${netPayoutFormatted})`
             })
           });
         } catch (_) {}
 
         return new Response(JSON.stringify({
           success: true,
-          amount: Number(payoutAmountFormatted),
+          amount: Number(netPayoutFormatted),
+          grossAmount: Number(grossAmount.toFixed(2)),
+          feeAmount: payoutFee,
+          netAmount: Number(netPayoutFormatted),
           payoutBatchId: paypalBatchId,
           batchStatus: payoutResult.batch_header?.batch_status || 'PENDING',
           receiver: paypalEmail,
