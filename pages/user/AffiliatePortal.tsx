@@ -2036,7 +2036,7 @@ const AffiliatePortal: React.FC = () => {
                     <span>Transparent Payment Gateway Fee Notice</span>
                   </div>
                   <p className="text-[11px] text-vintage-ink/80 leading-relaxed font-sans">
-                    As an independent indie type foundry, PayPal charges an outbound transfer fee (standard 2% cross-border transfer, capped at $20.00 USD) on direct payouts. To keep our indie store sustainable, this payment gateway fee is deducted from the withdrawal amount, similar to creator platforms like FontBundles, Envato, and Gumroad. We sincerely apologize for the gateway fee and deeply appreciate your support and partnership!
+                    As an independent type foundry, sales transactions already incur payment gateway fees (~4.4% + $0.30) upon checkout, meaning the store receives net revenue rather than 100% of gross sales. In addition, PayPal charges an outbound transfer fee (standard 2% cross-border transfer, capped at $20.00 USD) on automated payouts. To maintain sustainable store operations, this outbound transfer fee is deducted from the withdrawal amount. We sincerely apologize for this gateway transfer cost and deeply appreciate your understanding and valuable partnership!
                   </p>
                 </div>
 
