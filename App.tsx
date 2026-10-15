@@ -249,11 +249,17 @@ const App: React.FC = () => {
                     {/* Auth & User Routes */}
                     <Route 
                       path="/user/auth" 
-                      element={!session ? <UserAuth /> : <Navigate to="/user/dashboard" />} 
+                      element={!session ? <UserAuth /> : (isAdmin ? <Navigate to="/backstage" replace /> : <Navigate to="/user/dashboard" replace />)} 
                     />
                     <Route 
                       path="/user/dashboard/*" 
-                      element={session ? <UserDashboard /> : <Navigate to="/user/auth" />} 
+                      element={
+                        session ? (
+                          isAdmin ? <Navigate to="/backstage" replace /> : <UserDashboard />
+                        ) : (
+                          <Navigate to="/user/auth" replace />
+                        )
+                      } 
                     />
                     <Route path="/user/receipt/:orderId" element={<LicenseReceipt />} />
 

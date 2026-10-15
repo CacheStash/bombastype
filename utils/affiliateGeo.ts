@@ -315,7 +315,7 @@ export function getDummyAffiliateData(email?: string) {
   if (email && email.toLowerCase() === 'gotrainer19@gmail.com') {
     return {
       affiliate_code: 'GOTRAINER19',
-      paypal_email: 'gotrainer19@gmail.com',
+      paypal_email: 'agent@amir.subqi.com',
       phone_code: '+62',
       phone_number: '81298765432',
       country: 'Indonesia',

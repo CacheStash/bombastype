@@ -33,6 +33,20 @@ const UserAuth = () => {
 
     const redirectTarget = searchParams.get('redirect') || '/user/dashboard';
 
+    const handleLoginSuccess = async (userId: string) => {
+      const { data: adminRecord } = await supabase
+        .from('fontadmin')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (adminRecord) {
+        navigate('/backstage');
+      } else {
+        navigate(redirectTarget);
+      }
+    };
+
     // 1. ATTEMPT STANDARD LOGIN
     const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({ 
       email: cleanEmail, 
@@ -40,7 +54,7 @@ const UserAuth = () => {
     });
     
     if (!signInError && signInData.session) {
-      navigate(redirectTarget);
+      await handleLoginSuccess(signInData.session.user.id);
       setLoading(false);
       return;
     }
@@ -64,8 +78,8 @@ const UserAuth = () => {
             password: cleanPassword 
           });
           
-          if (!retryLogin.error) {
-            navigate(redirectTarget);
+          if (!retryLogin.error && retryLogin.data?.user) {
+            await handleLoginSuccess(retryLogin.data.user.id);
             setLoading(false);
             return;
           }

@@ -395,12 +395,12 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute top-full right-0 mt-4 w-40 bg-vintage-paper border border-vintage-ink shadow-xl z-50 flex flex-col overflow-hidden"
                   >
-                   <Link 
-                      to="/user/dashboard" 
+                    <Link 
+                      to={isAdmin ? "/backstage" : "/user/dashboard"} 
                       className="nav-dropdown-item px-4 py-3 text-[10px] font-bold tracking-widest border-b border-vintage-ink/10 block"
                       onClick={() => setIsAccountDropdownOpen(false)}
                     >
-                      DASHBOARD
+                      {isAdmin ? "BACKSTAGE" : "DASHBOARD"}
                     </Link>
                     <button 
                       type="button"

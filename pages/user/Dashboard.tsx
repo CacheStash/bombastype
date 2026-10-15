@@ -26,6 +26,13 @@ const UserDashboard = () => {
     const fetchInitialData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Admin belongs in /backstage, not user dashboard
+        const { data: adminCheck } = await supabase.from('fontadmin').select('id').eq('id', user.id).maybeSingle();
+        if (adminCheck) {
+          window.location.replace('/backstage');
+          return;
+        }
+
         const userJoinedAt = user.created_at;
         setUserEmail(user.email || '');
         const { data } = await supabase
@@ -37,14 +44,14 @@ const UserDashboard = () => {
 
         const isTrainer = user.email?.toLowerCase() === 'gotrainer19@gmail.com';
 
-        // Check Admin Status (Stealth Gate for Affiliate Tab)
-        const [{ data: adminCheck }, { data: affCheck }] = await Promise.all([
-          supabase.from('fontadmin').select('id').eq('id', user.id).maybeSingle(),
-          supabase.from('affiliates').select('id').eq('user_id', user.id).maybeSingle()
-        ]);
-        const admin = !!adminCheck;
-        setIsAdmin(admin);
-        setIsAffiliateAllowed(admin || isTrainer || !!affCheck);
+        const { data: affCheck } = await supabase
+          .from('affiliates')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        setIsAdmin(false);
+        setIsAffiliateAllowed(isTrainer || !!affCheck);
 
         // Fetch Unread Messages (Direct + Broadcast Filtered)
         const [{ data: readData }, { data: hiddenData }, { data: messages }] = await Promise.all([
