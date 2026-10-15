@@ -4453,18 +4453,20 @@ export default {
               },
               body: JSON.stringify({
                 affiliate_id: currentAffiliate.id,
-                discount_percentage: clampedDiscount,
-                discount_value: clampedDiscount,
                 discount_type: 'percentage',
+                discount_value: clampedDiscount,
                 start_date: today,
                 end_date: oneYearLater,
                 is_active: true
               })
             });
-            if (updateCoupRes.ok) {
-              const resData = await updateCoupRes.json();
-              savedCoupon = resData[0];
+            if (!updateCoupRes.ok) {
+              const errBody = await updateCoupRes.text();
+              console.error('Error updating existing coupon:', errBody);
+              throw new Error(`Failed to update coupon record: ${errBody}`);
             }
+            const resData = await updateCoupRes.json();
+            savedCoupon = resData[0];
           } else {
             const insertCoupRes = await fetch(`${supabaseUrl}/rest/v1/coupons`, {
               method: 'POST',
@@ -4476,9 +4478,8 @@ export default {
               },
               body: JSON.stringify({
                 code: finalCouponCode,
-                discount_percentage: clampedDiscount,
-                discount_value: clampedDiscount,
                 discount_type: 'percentage',
+                discount_value: clampedDiscount,
                 is_active: true,
                 affiliate_id: currentAffiliate.id,
                 start_date: today,
@@ -4486,17 +4487,20 @@ export default {
                 max_uses: null
               })
             });
-            if (insertCoupRes.ok) {
-              const resData = await insertCoupRes.json();
-              savedCoupon = resData[0];
+            if (!insertCoupRes.ok) {
+              const errBody = await insertCoupRes.text();
+              console.error('Error inserting coupon:', errBody);
+              throw new Error(`Failed to create coupon record: ${errBody}`);
             }
+            const resData = await insertCoupRes.json();
+            savedCoupon = resData[0];
           }
         }
 
         return new Response(JSON.stringify({
           success: true,
           affiliate: updatedAffiliateData[0] || currentAffiliate,
-          coupon: savedCoupon || { code: finalCouponCode, discount_percentage: clampedDiscount, is_active: true },
+          coupon: savedCoupon || { code: finalCouponCode, discount_value: clampedDiscount, is_active: true },
           fullName: trimmedFullName
         }), {
           status: 200,

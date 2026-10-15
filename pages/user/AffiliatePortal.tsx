@@ -175,7 +175,7 @@ const AffiliatePortal: React.FC = () => {
           if (couponRow) {
             setAffiliateCoupon(couponRow);
             setCouponCodeCustom(couponRow.code);
-            setCouponDiscountPercent(Number(couponRow.discount_percentage || couponRow.discount_value || 10));
+            setCouponDiscountPercent(Number(couponRow.discount_value || couponRow.discount_percentage || 10));
           } else {
             // Fallback: Check if coupon exists matching affiliate_code pattern
             const defaultCode = `${affData.affiliate_code || ''}10`;
@@ -189,7 +189,7 @@ const AffiliatePortal: React.FC = () => {
             if (fallbackCoup) {
               setAffiliateCoupon(fallbackCoup);
               setCouponCodeCustom(fallbackCoup.code);
-              setCouponDiscountPercent(Number(fallbackCoup.discount_percentage || fallbackCoup.discount_value || 10));
+              setCouponDiscountPercent(Number(fallbackCoup.discount_value || fallbackCoup.discount_percentage || 10));
             } else {
               setCouponCodeCustom(defaultCode);
               setCouponDiscountPercent(10);
@@ -501,7 +501,7 @@ const AffiliatePortal: React.FC = () => {
       if (data.coupon) {
         setAffiliateCoupon(data.coupon);
         setCouponCodeCustom(data.coupon.code);
-        setCouponDiscountPercent(Number(data.coupon.discount_percentage || data.coupon.discount_value || 10));
+        setCouponDiscountPercent(Number(data.coupon.discount_value || data.coupon.discount_percentage || 10));
       }
 
       localStorage.setItem(`aff_auto_payout_${affiliate.id}`, autoPayoutEnabled ? '1' : '0');
