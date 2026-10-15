@@ -1855,8 +1855,8 @@ const AffiliatePortal: React.FC = () => {
 
       {/* WITHDRAWAL CONFIRMATION MODAL (BOMBASTYPE REFINED VINTAGE) */}
       {showWithdrawModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 font-sans">
-          <div className="bg-vintage-paper border border-vintage-ink/30 shadow-2xl max-w-md w-full p-6 space-y-5 text-vintage-ink relative rounded-xs">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 font-sans">
+          <div className="bg-vintage-paper border border-vintage-ink/30 shadow-2xl max-w-md w-full p-6 space-y-5 text-vintage-ink relative rounded-xs max-h-[90vh] overflow-y-auto">
             
             {/* Header */}
             <div className="flex items-center justify-between border-b border-vintage-ink/15 pb-3">
