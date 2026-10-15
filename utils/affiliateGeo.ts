@@ -368,3 +368,18 @@ export async function syncAffiliateCoupon(supabase: any, affiliateId: string, af
     return couponCode;
   }
 }
+
+export const AFFILIATE_MIN_PAYOUT_USD = 50.00;
+
+export function getNextMonthlyPayoutDate(): { dateString: string; daysLeft: number; payoutDate: Date } {
+  const now = new Date();
+  const nextPayout = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0));
+  const diffTime = nextPayout.getTime() - now.getTime();
+  const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  const dateString = nextPayout.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  return { dateString, daysLeft, payoutDate: nextPayout };
+}

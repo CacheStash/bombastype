@@ -8,20 +8,40 @@ import { supabase } from '../../lib/supabase';
 import { 
   Copy, Check, ArrowRight, Clock, CheckCircle2, DollarSign, 
   AlertCircle, Share2, ExternalLink, Settings, Save, Mail, Hash,
-  Tag, MapPin, Phone
+  Tag, MapPin, Phone, Calendar, Wallet, ChevronRight, FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon, findCountryByName } from '../../utils/affiliateGeo';
+import { 
+  COUNTRIES, 
+  PROVINCES_BY_COUNTRY, 
+  getDummyAffiliateData, 
+  syncAffiliateCoupon, 
+  findCountryByName,
+  getNextMonthlyPayoutDate,
+  AFFILIATE_MIN_PAYOUT_USD
+} from '../../utils/affiliateGeo';
 import { CountryCombobox } from '../../components/CountryCombobox';
 import { PhoneDialCombobox } from '../../components/PhoneDialCombobox';
+
+interface PayoutItem {
+  id: string;
+  paid_at: string;
+  amount: number;
+  currency: string;
+  payout_batch_id: string;
+  commission_count: number;
+  status: string;
+  notes?: string;
+}
 
 const AffiliatePortal: React.FC = () => {
   const [affiliate, setAffiliate] = useState<any>(null);
   const [commissions, setCommissions] = useState<any[]>([]);
+  const [payoutHistory, setPayoutHistory] = useState<PayoutItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCoupon, setCopiedCoupon] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'payouts' | 'settings'>('overview');
 
   // Account Settings Form State
   const [editPaypalEmail, setEditPaypalEmail] = useState('');
@@ -37,6 +57,8 @@ const AffiliatePortal: React.FC = () => {
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState('');
   const [settingsError, setSettingsError] = useState('');
+
+  const nextPayoutInfo = getNextMonthlyPayoutDate();
 
   useEffect(() => {
     fetchAffiliateData();
@@ -88,10 +110,75 @@ const AffiliatePortal: React.FC = () => {
           .eq('affiliate_id', affData.id)
           .order('created_at', { ascending: false });
 
-        setCommissions(commData || []);
+        const loadedComms = commData || [];
+        setCommissions(loadedComms);
+
+        // Fetch Payouts History (try table first, fallback to synthesized)
+        try {
+          const { data: pData } = await supabase
+            .from('affiliate_payouts')
+            .select('*')
+            .eq('affiliate_id', affData.id)
+            .order('paid_at', { ascending: false });
+
+          if (pData && pData.length > 0) {
+            setPayoutHistory(pData.map((p: any) => ({
+              id: p.id,
+              paid_at: p.paid_at || p.created_at,
+              amount: Number(p.amount || 0),
+              currency: p.currency || 'USD',
+              payout_batch_id: p.payout_batch_id || 'PP-BATCH',
+              commission_count: Array.isArray(p.commission_ids) ? p.commission_ids.length : 1,
+              status: p.status || 'completed',
+              notes: p.notes
+            })));
+          } else {
+            synthesizePayoutHistory(loadedComms);
+          }
+        } catch {
+          synthesizePayoutHistory(loadedComms);
+        }
       }
     }
     setLoading(false);
+  };
+
+  const synthesizePayoutHistory = (allComms: any[]) => {
+    const paidComms = allComms.filter(c => c.status === 'paid');
+    const groupMap = new Map<string, {
+      id: string;
+      paid_at: string;
+      amount: number;
+      count: number;
+      reference: string;
+    }>();
+
+    paidComms.forEach(c => {
+      const dateKey = c.paid_at ? c.paid_at.substring(0, 10) : 'settled';
+      const existing = groupMap.get(dateKey) || {
+        id: dateKey,
+        paid_at: c.paid_at || c.created_at,
+        amount: 0,
+        count: 0,
+        reference: c.payout_reference || 'PP-DISBURSEMENT'
+      };
+      existing.amount += Number(c.commission_amount || 0);
+      existing.count += 1;
+      groupMap.set(dateKey, existing);
+    });
+
+    const list = Array.from(groupMap.values()).map(g => ({
+      id: g.id,
+      paid_at: g.paid_at,
+      amount: g.amount,
+      currency: 'USD',
+      payout_batch_id: g.reference,
+      commission_count: g.count,
+      status: 'completed'
+    }));
+
+    list.sort((a, b) => new Date(b.paid_at).getTime() - new Date(a.paid_at).getTime());
+    setPayoutHistory(list);
   };
 
   const handleCountryChange = (selectedCountry: string, dialCode?: string) => {
@@ -177,7 +264,6 @@ const AffiliatePortal: React.FC = () => {
         .single();
 
       if (error) {
-        // Fallback in case columns not migrated yet
         console.warn('Update with full address failed, falling back to base fields:', error.message);
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('affiliates')
@@ -251,19 +337,31 @@ const AffiliatePortal: React.FC = () => {
     setTimeout(() => setCopiedCoupon(false), 2000);
   };
 
-  const pendingAmount = commissions
-    .filter(c => c.status === 'pending_clearance')
-    .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+  const now = new Date();
 
+  // Cleared / Due: status approved OR (pending_clearance with cleared_at <= now)
   const readyAmount = commissions
-    .filter(c => c.status === 'approved')
+    .filter(c => c.status === 'approved' || (c.status === 'pending_clearance' && new Date(c.cleared_at) <= now))
     .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
 
-  const totalPaidAmount = Number(affiliate.total_paid || 0);
+  // Clearance Holding: pending_clearance still within 14-day warranty window
+  const pendingAmount = commissions
+    .filter(c => c.status === 'pending_clearance' && new Date(c.cleared_at) > now)
+    .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+
+  // Total Disbursed / Settled
+  const totalPaidAmount = commissions
+    .filter(c => c.status === 'paid')
+    .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+
+  const isQualifiedForPayout = readyAmount >= AFFILIATE_MIN_PAYOUT_USD;
+  const thresholdPercentage = Math.min(100, (readyAmount / AFFILIATE_MIN_PAYOUT_USD) * 100);
+  const remainingForThreshold = Math.max(0, AFFILIATE_MIN_PAYOUT_USD - readyAmount);
+
   const provinceOptions = PROVINCES_BY_COUNTRY[editCountry] || [];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 font-sans text-vintage-ink">
       
       {/* HEADER SECTION WITH SUB-NAV */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-vintage-ink pb-6">
@@ -287,6 +385,19 @@ const AffiliatePortal: React.FC = () => {
             }`}
           >
             Overview & Sales
+          </button>
+          <button
+            onClick={() => setActiveTab('payouts')}
+            className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase border border-vintage-ink transition-all flex items-center gap-1.5 ${
+              activeTab === 'payouts'
+                ? 'bg-vintage-ink text-vintage-paper'
+                : 'bg-vintage-paper text-vintage-ink hover:bg-vintage-ink/5'
+            }`}
+          >
+            <Calendar size={12} /> Payouts & Due Ledger
+            {isQualifiedForPayout && (
+              <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse"></span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -390,16 +501,16 @@ const AffiliatePortal: React.FC = () => {
 
             <div className="p-5 border-2 border-vintage-accent bg-green-50/50 text-left space-y-1">
               <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-green-900">
-                <span>Ready For Payout</span>
+                <span>Ready For Payout (Due)</span>
                 <CheckCircle2 size={14} className="text-green-800" />
               </div>
               <div className="text-3xl font-display font-bold text-green-900">
                 ${readyAmount.toFixed(2)}
               </div>
               <p className="text-[10px] italic text-vintage-ink/60">
-                {readyAmount >= 50 
-                  ? 'Threshold reached ($50+). Scheduled for next monthly run.' 
-                  : `$${(50 - readyAmount).toFixed(2)} more needed to trigger payout ($50 min).`}
+                {isQualifiedForPayout 
+                  ? `Threshold reached ($50+). Scheduled for monthly run on ${nextPayoutInfo.dateString}.` 
+                  : `$${remainingForThreshold.toFixed(2)} more needed to trigger payout ($50 min).`}
               </p>
             </div>
 
@@ -506,7 +617,186 @@ const AffiliatePortal: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: ACCOUNT & PAYOUT SETTINGS */}
+      {/* TAB 2: PAYOUT HISTORY & DUE STATUS */}
+      {activeTab === 'payouts' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          
+          {/* PAYOUT SCHEDULE & THRESHOLD CARD */}
+          <div className="p-6 border-2 border-vintage-ink bg-vintage-background/80 space-y-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-vintage-ink/20 pb-4">
+              <div className="flex items-start gap-3">
+                <Calendar size={24} className="text-vintage-accent shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent block">
+                    Disbursement Schedule
+                  </span>
+                  <h3 className="text-xl font-display font-bold">
+                    Next Monthly Payout: {nextPayoutInfo.dateString}
+                  </h3>
+                  <p className="text-xs text-vintage-ink/70">
+                    Disbursements occur on the <span className="font-bold">1st of every month</span> for balances reaching the <span className="font-bold">${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD</span> minimum.
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-xs font-mono font-bold px-3 py-1 bg-vintage-paper border border-vintage-ink inline-block">
+                  {nextPayoutInfo.daysLeft} DAYS REMAINING
+                </span>
+                <span className="text-[10px] text-vintage-ink/60 block mt-1">
+                  To: <span className="font-mono font-bold">{affiliate.paypal_email}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Threshold Qualification Meter */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-bold uppercase tracking-wider text-[11px]">
+                  $50 Minimum Threshold Progress
+                </span>
+                <span className="font-mono font-bold text-vintage-accent">
+                  ${readyAmount.toFixed(2)} / ${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD ({thresholdPercentage.toFixed(0)}%)
+                </span>
+              </div>
+
+              <div className="w-full bg-vintage-paper border border-vintage-ink h-3.5 rounded-none overflow-hidden p-0.5">
+                <div 
+                  className={`h-full transition-all duration-700 ${
+                    isQualifiedForPayout ? 'bg-green-700' : 'bg-amber-600'
+                  }`}
+                  style={{ width: `${thresholdPercentage}%` }}
+                />
+              </div>
+
+              <div className="text-xs italic pt-1">
+                {isQualifiedForPayout ? (
+                  <span className="text-green-900 font-bold flex items-center gap-1.5">
+                    <CheckCircle2 size={14} /> Congratulations! You meet the $50 minimum threshold. Your cleared balance of ${readyAmount.toFixed(2)} USD is queued for the {nextPayoutInfo.dateString} monthly payout run.
+                  </span>
+                ) : (
+                  <span className="text-amber-900 flex items-center gap-1.5">
+                    <Clock size={14} /> Currently accumulating: ${remainingForThreshold.toFixed(2)} USD needed to qualify. Any balance under $50 rolls over automatically to subsequent monthly runs without expiration.
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 3 BALANCE BREAKDOWN CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-5 border-2 border-vintage-accent bg-green-50/50 text-left space-y-1">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-green-900 block">
+                Ready for Next Monthly Run
+              </span>
+              <div className="text-3xl font-display font-bold text-green-900">
+                ${readyAmount.toFixed(2)}
+              </div>
+              <p className="text-[10px] italic text-vintage-ink/70">
+                Passed 14-day warranty clearance
+              </p>
+            </div>
+
+            <div className="p-5 border border-vintage-ink bg-vintage-background/60 text-left space-y-1">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-amber-900 block">
+                In-Warranty Holding
+              </span>
+              <div className="text-3xl font-display font-bold text-amber-900">
+                ${pendingAmount.toFixed(2)}
+              </div>
+              <p className="text-[10px] italic text-vintage-ink/70">
+                Protected by 14-day clearance buffer
+              </p>
+            </div>
+
+            <div className="p-5 border border-vintage-ink bg-vintage-paper text-left space-y-1">
+              <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block">
+                Lifetime Paid Out
+              </span>
+              <div className="text-3xl font-display font-bold text-vintage-ink">
+                ${totalPaidAmount.toFixed(2)}
+              </div>
+              <p className="text-[10px] italic text-vintage-ink/70">
+                Total successfully transferred to PayPal
+              </p>
+            </div>
+          </div>
+
+          {/* SETTLED PAYOUTS LEDGER */}
+          <div className="border border-vintage-ink bg-vintage-paper overflow-hidden">
+            <div className="p-4 border-b border-vintage-ink bg-vintage-background flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-vintage-ink">
+                  Completed Payout Disbursements ({payoutHistory.length})
+                </h3>
+                <span className="text-[11px] font-serif italic text-vintage-ink/70">
+                  Official disbursement receipts to your PayPal account
+                </span>
+              </div>
+              <span className="text-xs font-mono font-bold px-2 py-1 bg-white border border-vintage-ink">
+                ${totalPaidAmount.toFixed(2)} Total Settled
+              </span>
+            </div>
+
+            {payoutHistory.length === 0 ? (
+              <div className="p-10 text-center space-y-2">
+                <Wallet size={28} className="mx-auto text-vintage-ink/30" />
+                <p className="text-sm font-bold text-vintage-ink">No historical payouts yet</p>
+                <p className="text-xs font-serif italic text-vintage-ink/60 max-w-sm mx-auto">
+                  When your cleared balance reaches $50.00 USD on the 1st of the month, payments are disbursed to {affiliate.paypal_email} and documented here.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-vintage-ink bg-vintage-background/40 font-mono uppercase text-[10px] text-vintage-ink/70">
+                      <th className="p-3">Payout Date</th>
+                      <th className="p-3">Reference / Batch ID</th>
+                      <th className="p-3">Destination</th>
+                      <th className="p-3 text-right">Amount</th>
+                      <th className="p-3 text-center">Orders Settled</th>
+                      <th className="p-3 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-vintage-ink/20 font-mono">
+                    {payoutHistory.map((p) => (
+                      <tr key={p.id} className="hover:bg-vintage-ink/5 transition-colors">
+                        <td className="p-3 text-vintage-ink/80 text-[11px] whitespace-nowrap">
+                          {new Date(p.paid_at).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </td>
+                        <td className="p-3 font-mono font-bold text-vintage-accent truncate max-w-[180px]">
+                          {p.payout_batch_id}
+                        </td>
+                        <td className="p-3 text-vintage-ink/80 truncate max-w-[200px]">
+                          {affiliate.paypal_email}
+                        </td>
+                        <td className="p-3 text-right font-bold text-green-900 text-sm">
+                          ${p.amount.toFixed(2)} {p.currency}
+                        </td>
+                        <td className="p-3 text-center">
+                          {p.commission_count}
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800 text-green-900 bg-green-50">
+                            <Check size={10} /> Completed
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+
+      {/* TAB 3: ACCOUNT & PAYOUT SETTINGS */}
       {activeTab === 'settings' && (
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="border border-vintage-ink bg-vintage-paper p-6 sm:p-8 space-y-6 max-w-3xl">
