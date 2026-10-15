@@ -41,7 +41,6 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
     { name: "FONTS", href: "/fonts" },
     { name: "CANVAS", href: "/canvas", isNew: true },
     { name: "LICENSE", href: "/license" },
-    { name: "AFFILIATE", href: "/affiliate" },
     { name: "CONTACT", href: "/contact" },
     { name: "POLICY", href: "/policy" },
     { name: "FAQ", href: "/faq" },
@@ -275,6 +274,14 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* AFFILIATE (FAR RIGHT AFTER TOOLS) */}
+            <Link 
+              to="/affiliate" 
+              className="text-[9px] uppercase tracking-[0.2em] font-bold text-vintage-ink hover:text-vintage-accent transition-colors flex items-center gap-1.5"
+            >
+              <span>AFFILIATE</span>
+            </Link>
           </div>
 
           {/* SISI KANAN: SEARCH & ACTIONS */}
@@ -499,6 +506,23 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
                     </a>
                   ))}
                 </div>
+              </div>
+
+              {/* Mobile Affiliate Link */}
+              <div className="pt-4 border-t border-vintage-ink/15">
+                <Link
+                  to="/affiliate"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-xs uppercase tracking-[0.3em] font-bold text-vintage-ink flex justify-between items-center group py-1 hover:text-vintage-accent transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <span>AFFILIATE</span>
+                    <span className="bg-vintage-accent text-white text-[7px] px-1.5 py-0 h-3.5 leading-none flex items-center font-bold tracking-wider rounded-[2px]">
+                      20% NET
+                    </span>
+                  </span>
+                  <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
               </div>
             </motion.div>
           )}

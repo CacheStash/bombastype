@@ -19,7 +19,7 @@ interface CountryComboboxProps {
 export const CountryCombobox: React.FC<CountryComboboxProps> = ({
   value,
   onChange,
-  placeholder = 'Type to search country (e.g. Indonesia, Japan, Germany)...',
+  placeholder = 'Type to search country (e.g. United States, United Kingdom, Canada)...',
   required = false,
   theme = 'vintage',
   className = ''
@@ -47,12 +47,17 @@ export const CountryCombobox: React.FC<CountryComboboxProps> = ({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return COUNTRIES.slice(0, 30);
+    if (!q) {
+      const priorityCodes = ['US', 'GB', 'CA', 'AU', 'DE', 'FR', 'ID', 'SG', 'JP', 'NL', 'IT', 'ES', 'BR', 'IN', 'CH', 'SE', 'AE', 'NZ', 'MY', 'KR'];
+      const priorityList = COUNTRIES.filter(c => priorityCodes.includes(c.code));
+      const remainingList = COUNTRIES.filter(c => !priorityCodes.includes(c.code));
+      return [...priorityList, ...remainingList];
+    }
     return COUNTRIES.filter((c) => 
       c.name.toLowerCase().includes(q) ||
       c.code.toLowerCase().includes(q) ||
       c.dial.includes(q)
-    ).slice(0, 35);
+    );
   }, [query]);
 
   const handleSelectCountry = (country: CountryOption) => {

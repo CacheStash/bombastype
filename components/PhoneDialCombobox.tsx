@@ -45,12 +45,17 @@ export const PhoneDialCombobox: React.FC<PhoneDialComboboxProps> = ({
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    if (!s) return COUNTRIES.slice(0, 30);
+    if (!s) {
+      const priorityCodes = ['US', 'GB', 'CA', 'AU', 'DE', 'FR', 'ID', 'SG', 'JP', 'NL', 'IT', 'ES', 'BR', 'IN', 'CH', 'SE', 'AE', 'NZ', 'MY', 'KR'];
+      const priorityList = COUNTRIES.filter(c => priorityCodes.includes(c.code));
+      const remainingList = COUNTRIES.filter(c => !priorityCodes.includes(c.code));
+      return [...priorityList, ...remainingList];
+    }
     return COUNTRIES.filter(c => 
       c.dial.includes(s) || 
       c.name.toLowerCase().includes(s) || 
       c.code.toLowerCase().includes(s)
-    ).slice(0, 30);
+    );
   }, [search]);
 
   const isVintage = theme === 'vintage';

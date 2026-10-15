@@ -4622,6 +4622,27 @@ export default {
       }
     }
 
+    // --- 6G. API Geo Location Detection (Cloudflare Edge Geolocation) ---
+    if (url.pathname === '/api/geo' && request.method === 'GET') {
+      const cf = request.cf || {};
+      const countryCode = cf.country || request.headers.get('cf-ipcountry') || null;
+      return new Response(JSON.stringify({
+        success: true,
+        country_code: countryCode,
+        city: cf.city || null,
+        region: cf.region || null,
+        region_code: cf.regionCode || null,
+        postal_code: cf.postalCode || null,
+        timezone: cf.timezone || null
+      }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'private, no-cache',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
     // --- 7. API Secure ZIP Download (For Buyers) ---
     if (url.pathname.startsWith('/api/download-zip')) {
       const rawFile = url.searchParams.get('file') || ''; // AMBIL PARAM MENTAH

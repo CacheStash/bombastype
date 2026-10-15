@@ -8,7 +8,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, CheckCircle2, ShieldCheck, Zap, Coins, ArrowRight, Copy, Check, Tag, MapPin, Phone, UserCheck, RefreshCcw, CheckCircle, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon, findCountryByName } from '../utils/affiliateGeo';
+import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon, findCountryByName, getCitiesForState, detectClientLocation } from '../utils/affiliateGeo';
 import { CountryCombobox } from '../components/CountryCombobox';
 import { PhoneDialCombobox } from '../components/PhoneDialCombobox';
 
@@ -20,11 +20,11 @@ const AffiliateLanding: React.FC = () => {
   const [codeAvailability, setCodeAvailability] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [paypalEmail, setPaypalEmail] = useState('');
   
-  // Phone & Address State
-  const [phoneCode, setPhoneCode] = useState('+62');
+  // Phone & Address State (Defaulted to US)
+  const [phoneCode, setPhoneCode] = useState('+1');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [country, setCountry] = useState('Indonesia');
-  const [stateProvince, setStateProvince] = useState('DKI Jakarta');
+  const [country, setCountry] = useState('United States');
+  const [stateProvince, setStateProvince] = useState('California');
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
@@ -38,6 +38,14 @@ const AffiliateLanding: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Client location auto-suggestion for country & dial code
+    detectClientLocation().then((geo) => {
+      setCountry(prev => (prev === 'United States' ? geo.country : prev));
+      setPhoneCode(prev => (prev === '+1' ? geo.phoneCode : prev));
+      if (geo.stateProvince) {
+        setStateProvince(prev => (prev === 'California' ? geo.stateProvince : prev));
+      }
+    }).catch(() => {});
     const checkAuthAndAffiliate = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setSessionUser(user);
@@ -136,6 +144,7 @@ const AffiliateLanding: React.FC = () => {
     } else {
       setStateProvince('');
     }
+    setCity('');
   };
 
   const handleRegisterAffiliate = async (e: React.FormEvent) => {
@@ -171,7 +180,7 @@ const AffiliateLanding: React.FC = () => {
     }
 
     if (!phoneNumber.trim()) {
-      setErrorMsg('A valid phone number is required for affiliate payout verification.');
+      setErrorMsg('Phone number is required to complete your partner profile.');
       return;
     }
 
@@ -294,6 +303,7 @@ const AffiliateLanding: React.FC = () => {
   };
 
   const provinceOptions = PROVINCES_BY_COUNTRY[country] || [];
+  const cityOptions = getCitiesForState(country, stateProvince);
 
   return (
     <div className="min-h-screen bg-vintage-paper py-12 px-6 md:px-12 flex flex-col items-center text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper">
@@ -576,7 +586,7 @@ const AffiliateLanding: React.FC = () => {
               {/* 3. PHONE NUMBER WITH COUNTRY DIAL CODE */}
               <div className="space-y-1">
                 <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block flex items-center gap-1.5">
-                  <Phone size={14} /> Phone Number (For Payout Verification)
+                  <Phone size={14} /> Phone Number
                 </label>
                 <div className="flex border border-vintage-ink bg-white">
                   <PhoneDialCombobox
@@ -588,7 +598,7 @@ const AffiliateLanding: React.FC = () => {
                     type="tel" 
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="81234567890" 
+                    placeholder="4155550198" 
                     required
                     className="w-full p-3 font-mono text-sm font-bold outline-none bg-transparent text-vintage-ink"
                   />
@@ -650,12 +660,20 @@ const AffiliateLanding: React.FC = () => {
                     </label>
                     <input 
                       type="text" 
+                      list="affiliate-landing-city-list"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      placeholder="e.g. Jakarta Selatan" 
+                      placeholder="e.g. San Francisco" 
                       required
                       className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                     />
+                    {cityOptions.length > 0 && (
+                      <datalist id="affiliate-landing-city-list">
+                        {cityOptions.map((c) => (
+                          <option key={c} value={c} />
+                        ))}
+                      </datalist>
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -666,7 +684,7 @@ const AffiliateLanding: React.FC = () => {
                       type="text" 
                       value={postalCode}
                       onChange={(e) => setPostalCode(e.target.value)}
-                      placeholder="e.g. 12190" 
+                      placeholder="e.g. 94105" 
                       required
                       className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                     />
@@ -681,7 +699,7 @@ const AffiliateLanding: React.FC = () => {
                     type="text" 
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    placeholder="Street name, suite, unit, building" 
+                    placeholder="e.g. 525 Market St, Suite 3200" 
                     required
                     className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                   />

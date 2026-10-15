@@ -20,7 +20,9 @@ import {
   checkCouponAvailability,
   findCountryByName,
   getNextMonthlyPayoutDate,
-  AFFILIATE_MIN_PAYOUT_USD
+  AFFILIATE_MIN_PAYOUT_USD,
+  getCitiesForState,
+  detectClientLocation
 } from '../../utils/affiliateGeo';
 import { calculateAffiliateMilestone, getClaimedMilestones, getAffiliateEarningBadge } from '../../utils/affiliateMilestone';
 import { CountryCombobox } from '../../components/CountryCombobox';
@@ -52,16 +54,16 @@ const AffiliatePortal: React.FC = () => {
   const [payoutPage, setPayoutPage] = useState(1);
   const PAYOUTS_PER_PAGE = 10;
 
-  // Account Settings Form State
+  // Account Settings Form State (Defaulted to US)
   const [editFullName, setEditFullName] = useState('');
   const [originalFullName, setOriginalFullName] = useState('');
   const [editPaypalEmail, setEditPaypalEmail] = useState('');
   const [editVanityCode, setEditVanityCode] = useState('');
   const [vanityCodeAvailability, setVanityCodeAvailability] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-  const [editPhoneCode, setEditPhoneCode] = useState('+62');
+  const [editPhoneCode, setEditPhoneCode] = useState('+1');
   const [editPhoneNumber, setEditPhoneNumber] = useState('');
-  const [editCountry, setEditCountry] = useState('Indonesia');
-  const [editStateProvince, setEditStateProvince] = useState('DKI Jakarta');
+  const [editCountry, setEditCountry] = useState('United States');
+  const [editStateProvince, setEditStateProvince] = useState('California');
   const [editCity, setEditCity] = useState('');
   const [editPostalCode, setEditPostalCode] = useState('');
   const [editStreetAddress, setEditStreetAddress] = useState('');
@@ -403,6 +405,7 @@ const AffiliatePortal: React.FC = () => {
     } else {
       setEditStateProvince('');
     }
+    setEditCity('');
   };
 
   const toggleAutoPayout = async () => {
@@ -611,6 +614,7 @@ const AffiliatePortal: React.FC = () => {
   const remainingForThreshold = Math.max(0, AFFILIATE_MIN_PAYOUT_USD - readyAmount);
 
   const provinceOptions = PROVINCES_BY_COUNTRY[editCountry] || [];
+  const cityOptions = getCitiesForState(editCountry, editStateProvince);
 
   const handleOpenWithdrawModal = () => {
     if (readyAmount < AFFILIATE_MIN_PAYOUT_USD) {
@@ -1820,7 +1824,7 @@ const AffiliatePortal: React.FC = () => {
               {/* Phone Field */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider block flex items-center gap-1.5 text-vintage-ink font-sans">
-                  <Phone size={14} className="text-vintage-accent" /> Phone Number (With Dial Code)
+                  <Phone size={14} className="text-vintage-accent" /> Phone Number
                 </label>
                 <div className="flex border border-vintage-ink/30 bg-white">
                   <PhoneDialCombobox
@@ -1833,7 +1837,7 @@ const AffiliatePortal: React.FC = () => {
                     required
                     value={editPhoneNumber}
                     onChange={(e) => setEditPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="81234567890"
+                    placeholder="4155550198"
                     className="w-full px-4 py-3 font-mono text-sm font-bold outline-none bg-transparent text-vintage-ink"
                   />
                 </div>
@@ -1894,12 +1898,20 @@ const AffiliatePortal: React.FC = () => {
                     </label>
                     <input 
                       type="text" 
+                      list="affiliate-settings-city-list"
                       value={editCity}
                       onChange={(e) => setEditCity(e.target.value)}
-                      placeholder="e.g. Jakarta Selatan" 
+                      placeholder="e.g. San Francisco" 
                       required
                       className="w-full p-3 border border-vintage-ink/30 bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                     />
+                    {cityOptions.length > 0 && (
+                      <datalist id="affiliate-settings-city-list">
+                        {cityOptions.map((c) => (
+                          <option key={c} value={c} />
+                        ))}
+                      </datalist>
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -1910,7 +1922,7 @@ const AffiliatePortal: React.FC = () => {
                       type="text" 
                       value={editPostalCode}
                       onChange={(e) => setEditPostalCode(e.target.value)}
-                      placeholder="e.g. 12190" 
+                      placeholder="e.g. 94105" 
                       required
                       className="w-full p-3 border border-vintage-ink/30 bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                     />
@@ -1925,7 +1937,7 @@ const AffiliatePortal: React.FC = () => {
                     type="text" 
                     value={editStreetAddress}
                     onChange={(e) => setEditStreetAddress(e.target.value)}
-                    placeholder="Street name, suite, unit, building" 
+                    placeholder="e.g. 525 Market St, Suite 3200" 
                     required
                     className="w-full p-3 border border-vintage-ink/30 bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                   />

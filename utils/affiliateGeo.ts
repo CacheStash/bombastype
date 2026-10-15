@@ -251,6 +251,15 @@ export const COUNTRIES: CountryOption[] = [
 ];
 
 export const PROVINCES_BY_COUNTRY: Record<string, string[]> = {
+  'United States': [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 
+    'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 
+    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 
+    'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 
+    'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 
+    'Pennsylvania', 'Puerto Rico', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 
+    'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+  ],
   Indonesia: [
     'Aceh', 'Bali', 'Banten', 'Bengkulu', 'DI Yogyakarta', 'DKI Jakarta', 
     'Gorontalo', 'Jambi', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur', 
@@ -260,35 +269,35 @@ export const PROVINCES_BY_COUNTRY: Record<string, string[]> = {
     'Papua Selatan', 'Papua Tengah', 'Riau', 'Sulawesi Barat', 'Sulawesi Selatan', 
     'Sulawesi Tengah', 'Sulawesi Tenggara', 'Sulawesi Utara', 'Sumatera Barat', 'Sumatera Selatan', 'Sumatera Utara'
   ],
-  'United States': [
-    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 
-    'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 
-    'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 
-    'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 
-    'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 
-    'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 
-    'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
-  ],
   Canada: [
     'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador', 
     'Nova Scotia', 'Ontario', 'Prince Edward Island', 'Quebec', 'Saskatchewan', 
     'Northwest Territories', 'Nunavut', 'Yukon'
   ],
-  Australia: [
-    'New South Wales', 'Victoria', 'Queensland', 'Western Australia', 
-    'South Australia', 'Tasmania', 'Australian Capital Territory', 'Northern Territory'
-  ],
   'United Kingdom': [
     'England', 'Scotland', 'Wales', 'Northern Ireland', 'Greater London'
   ],
-  Malaysia: [
-    'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis', 
-    'Pulau Pinang', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu', 'Kuala Lumpur', 'Labuan', 'Putrajaya'
+  Australia: [
+    'New South Wales', 'Victoria', 'Queensland', 'Western Australia', 
+    'South Australia', 'Tasmania', 'Australian Capital Territory', 'Northern Territory'
   ],
   Germany: [
     'Baden-Wurttemberg', 'Bavaria', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hesse', 
     'Lower Saxony', 'Mecklenburg-Vorpommern', 'North Rhine-Westphalia', 'Rhineland-Palatinate', 
     'Saarland', 'Saxony', 'Saxony-Anhalt', 'Schleswig-Holstein', 'Thuringia'
+  ],
+  France: [
+    'Auvergne-Rhone-Alpes', 'Bourgogne-Franche-Comte', 'Brittany', 'Centre-Val de Loire', 
+    'Corsica', 'Grand Est', 'Hauts-de-France', 'Ile-de-France (Paris)', 'Normandy', 
+    'Nouvelle-Aquitaine', 'Occitanie', 'Pays de la Loire', "Provence-Alpes-Cote d'Azur"
+  ],
+  Japan: [
+    'Hokkaido', 'Aomori', 'Iwate', 'Miyagi', 'Akita', 'Yamagata', 'Fukushima', 'Ibaraki', 
+    'Tochigi', 'Gunma', 'Saitama', 'Chiba', 'Tokyo', 'Kanagawa', 'Niigata', 'Toyama', 
+    'Ishikawa', 'Fukui', 'Yamanashi', 'Nagano', 'Gifu', 'Shizuoka', 'Aichi', 'Mie', 
+    'Shiga', 'Kyoto', 'Osaka', 'Hyogo', 'Nara', 'Wakayama', 'Tottori', 'Shimane', 
+    'Okayama', 'Hiroshima', 'Yamaguchi', 'Tokushima', 'Kagawa', 'Ehime', 'Kochi', 
+    'Fukuoka', 'Saga', 'Nagasaki', 'Kumamoto', 'Oita', 'Miyazaki', 'Kagoshima', 'Okinawa'
   ],
   India: [
     'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 
@@ -296,8 +305,312 @@ export const PROVINCES_BY_COUNTRY: Record<string, string[]> = {
     'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 
     'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 
     'West Bengal', 'Delhi'
+  ],
+  Malaysia: [
+    'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis', 
+    'Pulau Pinang', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu', 'Kuala Lumpur', 'Labuan', 'Putrajaya'
+  ],
+  Singapore: [
+    'Central Region', 'East Region', 'North Region', 'North-East Region', 'West Region'
+  ],
+  Netherlands: [
+    'Drenthe', 'Flevoland', 'Friesland', 'Gelderland', 'Groningen', 'Limburg', 
+    'North Brabant', 'North Holland (Amsterdam)', 'Overijssel', 'South Holland (Rotterdam/The Hague)', 'Utrecht', 'Zeeland'
+  ],
+  Italy: [
+    'Abruzzo', 'Basilicata', 'Calabria', 'Campania', 'Emilia-Romagna', 'Friuli Venezia Giulia', 
+    'Lazio (Rome)', 'Liguria', 'Lombardy (Milan)', 'Marche', 'Molise', 'Piedmont', 
+    'Puglia', 'Sardinia', 'Sicily', 'Tuscany (Florence)', 'Trentino-South Tyrol', 'Umbria', "Valle d'Aosta", 'Veneto (Venice)'
+  ],
+  Spain: [
+    'Andalusia', 'Aragon', 'Asturias', 'Balearic Islands', 'Basque Country', 'Canary Islands', 
+    'Cantabria', 'Castile and Leon', 'Castilla-La Mancha', 'Catalonia (Barcelona)', 'Extremadura', 
+    'Galicia', 'La Rioja', 'Madrid', 'Murcia', 'Navarre', 'Valencian Community'
+  ],
+  Brazil: [
+    'Acre', 'Alagoas', 'Amapa', 'Amazonas', 'Bahia', 'Ceara', 'Distrito Federal (Brasilia)', 
+    'Espirito Santo', 'Goias', 'Maranhao', 'Mato Grosso', 'Mato Grosso do Sul', 'Minas Gerais', 
+    'Para', 'Paraiba', 'Parana', 'Pernambuco', 'Piaui', 'Rio de Janeiro', 'Rio Grande do Norte', 
+    'Rio Grande do Sul', 'Rondonia', 'Roraima', 'Santa Catarina', 'Sao Paulo', 'Sergipe', 'Tocantins'
+  ],
+  Mexico: [
+    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas', 'Chihuahua', 
+    'Coahuila', 'Colima', 'Mexico City', 'Durango', 'Guanajuato', 'Guerrero', 'Hidalgo', 
+    'Jalisco (Guadalajara)', 'Mexico State', 'Michoacan', 'Morelos', 'Nayarit', 'Nuevo Leon (Monterrey)', 
+    'Oaxaca', 'Puebla', 'Queretaro', 'Quintana Roo (Cancun)', 'San Luis Potosi', 'Sinaloa', 
+    'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatan', 'Zacatecas'
+  ],
+  'United Arab Emirates': [
+    'Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman', 'Umm Al-Quwain', 'Ras Al Khaimah', 'Fujairah'
+  ],
+  'New Zealand': [
+    'Auckland', 'Bay of Plenty', 'Canterbury', 'Gisborne', "Hawke's Bay", 'Manawatu-Wanganui', 
+    'Marlborough', 'Nelson', 'Northland', 'Otago', 'Southland', 'Taranaki', 'Tasman', 'Waikato', 'Wellington', 'West Coast'
+  ],
+  'South Korea': [
+    'Seoul', 'Busan', 'Daegu', 'Incheon', 'Gwangju', 'Daejeon', 'Ulsan', 'Sejong', 
+    'Gyeonggi-do', 'Gangwon-do', 'Chungcheongbuk-do', 'Chungcheongnam-do', 'Jeollabuk-do', 
+    'Jeollanam-do', 'Gyeongsangbuk-do', 'Gyeongsangnam-do', 'Jeju-do'
   ]
 };
+
+// Dynamic mapping of state/province to major cities, districts, counties & subdistricts (kecamatan)
+export const CITIES_BY_STATE: Record<string, string[]> = {
+  // --- United States ---
+  California: [
+    'Los Angeles', 'San Francisco', 'San Diego', 'San Jose', 'Sacramento', 'Oakland', 
+    'Fresno', 'Long Beach', 'Bakersfield', 'Anaheim', 'Santa Ana', 'Riverside', 'Stockton', 
+    'Irvine', 'Fremont', 'San Bernardino', 'Modesto', 'Fontana', 'Oxnard', 'Moreno Valley', 
+    'Huntington Beach', 'Glendale', 'Santa Clarita', 'Garden Grove', 'Oceanside', 'Santa Rosa', 
+    'Rancho Cucamonga', 'Ontario', 'Lancaster', 'Elk Grove', 'Palmdale', 'Coronado', 'Pasadena', 
+    'Berkeley', 'Santa Monica', 'Beverly Hills', 'Sunnyvale', 'Santa Clara', 'Palo Alto', 'Torrance'
+  ],
+  'New York': [
+    'New York City', 'Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island', 'Buffalo', 
+    'Rochester', 'Yonkers', 'Syracuse', 'Albany', 'New Rochelle', 'Mount Vernon', 'Schenectady', 
+    'Utica', 'White Plains', 'Hempstead', 'Troy', 'Niagara Falls', 'Binghamton', 'Ithaca'
+  ],
+  Texas: [
+    'Houston', 'San Antonio', 'Dallas', 'Austin', 'Fort Worth', 'El Paso', 'Arlington', 
+    'Corpus Christi', 'Plano', 'Lubbock', 'Laredo', 'Irving', 'Garland', 'Frisco', 
+    'McKinney', 'Amarillo', 'Grand Prairie', 'Brownsville', 'Killeen', 'Pasadena', 'Mesquite', 
+    'McAllen', 'Denton', 'Waco', 'Carrollton', 'Midland', 'Abilene', 'Beaumont', 'Round Rock'
+  ],
+  Florida: [
+    'Miami', 'Orlando', 'Tampa', 'Jacksonville', 'St. Petersburg', 'Hialeah', 'Tallahassee', 
+    'Fort Lauderdale', 'Port St. Lucie', 'Cape Coral', 'Pembroke Pines', 'Hollywood', 
+    'Miramar', 'Gainesville', 'Coral Springs', 'Clearwater', 'Palm Bay', 'Pompano Beach', 
+    'West Palm Beach', 'Lakeland', 'Boca Raton', 'Sarasota', 'Bradenton', 'Naples'
+  ],
+  Washington: [
+    'Seattle', 'Spokane', 'Tacoma', 'Vancouver', 'Bellevue', 'Kent', 'Everett', 'Renton', 
+    'Spokane Valley', 'Federal Way', 'Yakima', 'Bellingham', 'Kirkland', 'Olympia', 'Redmond'
+  ],
+  Illinois: [
+    'Chicago', 'Aurora', 'Naperville', 'Joliet', 'Rockford', 'Springfield', 'Elgin', 
+    'Peoria', 'Champaign', 'Waukegan', 'Cicero', 'Bloomington', 'Evanston', 'Arlington Heights'
+  ],
+  Massachusetts: [
+    'Boston', 'Worcester', 'Springfield', 'Cambridge', 'Lowell', 'Brockton', 'Quincy', 
+    'Lynn', 'New Bedford', 'Fall River', 'Newton', 'Somerville', 'Framingham', 'Waltham'
+  ],
+  Georgia: [
+    'Atlanta', 'Augusta', 'Columbus', 'Macon', 'Savannah', 'Athens', 'Sandy Springs', 
+    'South Fulton', 'Roswell', 'Johns Creek', 'Warner Robins', 'Albany', 'Alpharetta', 'Marietta'
+  ],
+  Colorado: [
+    'Denver', 'Colorado Springs', 'Aurora', 'Fort Collins', 'Lakewood', 'Thornton', 
+    'Arvada', 'Westminster', 'Pueblo', 'Greeley', 'Centennial', 'Boulder', 'Longmont'
+  ],
+  Pennsylvania: [
+    'Philadelphia', 'Pittsburgh', 'Allentown', 'Reading', 'Erie', 'Upper Darby', 'Scranton', 
+    'Bethlehem', 'Lancaster', 'Harrisburg', 'York', 'State College'
+  ],
+  Ohio: [
+    'Columbus', 'Cleveland', 'Cincinnati', 'Toledo', 'Akron', 'Dayton', 'Parma', 'Canton', 'Youngstown'
+  ],
+  Michigan: [
+    'Detroit', 'Grand Rapids', 'Warren', 'Sterling Heights', 'Ann Arbor', 'Lansing', 'Dearborn', 'Flint'
+  ],
+  'North Carolina': [
+    'Charlotte', 'Raleigh', 'Greensboro', 'Durham', 'Winston-Salem', 'Fayetteville', 'Cary', 'Wilmington'
+  ],
+  Oregon: [
+    'Portland', 'Salem', 'Eugene', 'Gresham', 'Hillsboro', 'Beaverton', 'Bend', 'Medford'
+  ],
+  Nevada: [
+    'Las Vegas', 'Henderson', 'Reno', 'North Las Vegas', 'Sparks', 'Carson City'
+  ],
+  Arizona: [
+    'Phoenix', 'Tucson', 'Mesa', 'Chandler', 'Scottsdale', 'Glendale', 'Gilbert', 'Tempe', 'Peoria', 'Surprise'
+  ],
+  Hawaii: [
+    'Honolulu', 'East Honolulu', 'Pearl City', 'Hilo', 'Kailua', 'Waipahu', 'Kaneohe'
+  ],
+  'District of Columbia': [
+    'Washington, D.C.', 'Georgetown', 'Capitol Hill', 'Dupont Circle', 'Adams Morgan', 'Navy Yard'
+  ],
+
+  // --- Indonesia (Kota, Kabupaten & Kecamatan Populer) ---
+  'DKI Jakarta': [
+    'Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Barat', 'Jakarta Timur', 'Jakarta Utara', 'Kepulauan Seribu',
+    'Kebayoran Baru', 'Kebayoran Lama', 'Cilandak', 'Pasar Minggu', 'Jagakarsa', 'Mampang Prapatan', 
+    'Pancoran', 'Tebet', 'Setiabudi', 'Pesanggrahan', 'Gambir', 'Tanah Abang', 'Menteng', 'Senen', 
+    'Cempaka Putih', 'Johar Baru', 'Kemayoran', 'Sawah Besar', 'Grogol Petamburan', 'Palmerah', 
+    'Kebon Jeruk', 'Kembangan', 'Taman Sari', 'Tambora', 'Cengkareng', 'Kalideres', 'Matraman', 
+    'Pulo Gadung', 'Jatinegara', 'Duren Sawit', 'Kramat Jati', 'Makasar', 'Pasar Rebo', 'Ciracas', 
+    'Cipayung', 'Cakung', 'Penjaringan', 'Tanjung Priok', 'Koja', 'Cilincing', 'Pademangan', 'Kelapa Gading'
+  ],
+  'Jawa Barat': [
+    'Kota Bandung', 'Kota Bekasi', 'Kota Bogor', 'Kota Depok', 'Kota Cimahi', 'Kota Sukabumi', 
+    'Kota Cirebon', 'Kota Tasikmalaya', 'Kota Banjar', 'Kabupaten Bandung', 'Kabupaten Bandung Barat', 
+    'Kabupaten Bekasi (Cikarang)', 'Kabupaten Bogor (Cibinong)', 'Kabupaten Ciamis', 'Kabupaten Cianjur', 
+    'Kabupaten Cirebon', 'Kabupaten Garut', 'Kabupaten Indramayu', 'Kabupaten Karawang', 
+    'Kabupaten Kuningan', 'Kabupaten Majalengka', 'Kabupaten Pangandaran', 'Kabupaten Purwakarta', 
+    'Kabupaten Subang', 'Kabupaten Sukabumi', 'Kabupaten Sumedang', 'Kabupaten Tasikmalaya'
+  ],
+  'Jawa Timur': [
+    'Kota Surabaya', 'Kota Malang', 'Kota Madiun', 'Kota Kediri', 'Kota Mojokerto', 'Kota Blitar', 
+    'Kota Pasuruan', 'Kota Probolinggo', 'Kota Batu', 'Kabupaten Sidoarjo', 'Kabupaten Gresik', 
+    'Kabupaten Malang', 'Kabupaten Banyuwangi', 'Kabupaten Jember', 'Kabupaten Pasuruan', 
+    'Kabupaten Mojokerto', 'Kabupaten Kediri', 'Kabupaten Bojonegoro', 'Kabupaten Lamongan', 
+    'Kabupaten Tuban', 'Kabupaten Jombang', 'Kabupaten Nganjuk', 'Kabupaten Tulungagung', 
+    'Kabupaten Blitar', 'Kabupaten Trenggalek', 'Kabupaten Ponorogo', 'Kabupaten Magetan', 'Kabupaten Ngawi'
+  ],
+  'Jawa Tengah': [
+    'Kota Semarang', 'Kota Surakarta (Solo)', 'Kota Salatiga', 'Kota Magelang', 'Kota Pekalongan', 
+    'Kota Tegal', 'Kabupaten Banyumas (Purwokerto)', 'Kabupaten Cilacap', 'Kabupaten Brebes', 
+    'Kabupaten Tegal', 'Kabupaten Pemalang', 'Kabupaten Pekalongan', 'Kabupaten Batang', 
+    'Kabupaten Kendal', 'Kabupaten Demak', 'Kabupaten Kudus', 'Kabupaten Jepara', 'Kabupaten Pati', 
+    'Kabupaten Rembang', 'Kabupaten Blora', 'Kabupaten Grobogan', 'Kabupaten Boyolali', 
+    'Kabupaten Klaten', 'Kabupaten Sukoharjo', 'Kabupaten Wonogiri', 'Kabupaten Karanganyar', 'Kabupaten Sragen'
+  ],
+  Banten: [
+    'Kota Tangerang', 'Kota Tangerang Selatan (BSD/Serpong)', 'Kota Serang', 'Kota Cilegon', 
+    'Kabupaten Tangerang', 'Kabupaten Serang', 'Kabupaten Pandeglang', 'Kabupaten Lebak', 
+    'Ciputat', 'Pamulang', 'Pondok Aren (Bintaro)', 'Kelapa Dua', 'Curug', 'Cikupa', 'Balaraja'
+  ],
+  Bali: [
+    'Kota Denpasar', 'Kabupaten Badung (Kuta, Seminyak, Canggu)', 'Kabupaten Gianyar (Ubud)', 
+    'Kabupaten Tabanan', 'Kabupaten Buleleng (Singaraja)', 'Kabupaten Karangasem', 
+    'Kabupaten Klungkung (Nusa Penida)', 'Kabupaten Bangli', 'Kabupaten Jembrana (Negara)'
+  ],
+  'DI Yogyakarta': [
+    'Kota Yogyakarta', 'Kabupaten Sleman (Depok, Mlati, Ngaglik)', 'Kabupaten Bantul (Kasihan, Sewon, Banguntapan)', 
+    'Kabupaten Kulon Progo (Wates)', 'Kabupaten Gunungkidul (Wonosari)', 'Malioboro', 'Kotagede'
+  ],
+  'Sumatera Utara': [
+    'Kota Medan', 'Kota Binjai', 'Kota Pematangsiantar', 'Kota Tebing Tinggi', 'Kota Tanjungbalai', 
+    'Kota Sibolga', 'Kota Padangsidimpuan', 'Kota Gunungsitoli', 'Kabupaten Deli Serdang', 'Kabupaten Karo'
+  ],
+  'Sumatera Barat': [
+    'Kota Padang', 'Kota Bukittinggi', 'Kota Payakumbuh', 'Kota Pariaman', 'Kota Solok', 
+    'Kota Padang Panjang', 'Kota Sawahlunto', 'Kabupaten Agam', 'Kabupaten Tanah Datar'
+  ],
+  Riau: [
+    'Kota Pekanbaru', 'Kota Dumai', 'Kabupaten Kampar', 'Kabupaten Siak', 'Kabupaten Bengkalis', 
+    'Kabupaten Indragiri Hulu', 'Kabupaten Indragiri Hilir', 'Kabupaten Pelalawan', 'Kabupaten Rokan Hilir'
+  ],
+  'Kepulauan Riau': [
+    'Kota Batam', 'Kota Tanjungpinang', 'Kabupaten Bintan', 'Kabupaten Karimun', 'Kabupaten Natuna', 'Kabupaten Anambas'
+  ],
+  'Sulawesi Selatan': [
+    'Kota Makassar', 'Kota Parepare', 'Kota Palopo', 'Kabupaten Gowa', 'Kabupaten Maros', 
+    'Kabupaten Bone', 'Kabupaten Bulukumba', 'Kabupaten Bantaeng', 'Kabupaten Luwu'
+  ],
+
+  // --- Canada ---
+  Ontario: ['Toronto', 'Ottawa', 'Mississauga', 'Brampton', 'Hamilton', 'London', 'Markham', 'Vaughan', 'Kitchener', 'Windsor'],
+  'British Columbia': ['Vancouver', 'Surrey', 'Burnaby', 'Richmond', 'Abbotsford', 'Coquitlam', 'Kelowna', 'Victoria', 'Nanaimo'],
+  Quebec: ['Montreal', 'Quebec City', 'Laval', 'Gatineau', 'Longueuil', 'Sherbrooke', 'Levis', 'Trois-Rivieres'],
+  Alberta: ['Calgary', 'Edmonton', 'Red Deer', 'Lethbridge', 'St. Albert', 'Medicine Hat', 'Wood Buffalo (Fort McMurray)'],
+
+  // --- United Kingdom ---
+  England: ['London', 'Birmingham', 'Manchester', 'Leeds', 'Liverpool', 'Newcastle', 'Sheffield', 'Bristol', 'Nottingham', 'Southampton', 'Oxford', 'Cambridge'],
+  Scotland: ['Glasgow', 'Edinburgh', 'Aberdeen', 'Dundee', 'Inverness', 'Perth', 'Stirling'],
+  Wales: ['Cardiff', 'Swansea', 'Newport', 'Wrexham', 'Bangor'],
+  'Northern Ireland': ['Belfast', 'Derry / Londonderry', 'Lisburn', 'Newry', 'Bangor'],
+  'Greater London': ['City of London', 'Westminster', 'Kensington and Chelsea', 'Camden', 'Greenwich', 'Hackney', 'Islington', 'Lambeth', 'Southwark', 'Tower Hamlets'],
+
+  // --- Australia ---
+  'New South Wales': ['Sydney', 'Newcastle', 'Central Coast', 'Wollongong', 'Maitland', 'Tweed Heads', 'Wagga Wagga', 'Albury', 'Port Macquarie', 'Tamworth', 'Orange'],
+  Victoria: ['Melbourne', 'Geelong', 'Ballarat', 'Bendigo', 'Shepparton', 'Mildura', 'Warrnambool', 'Wodonga', 'Traralgon'],
+  Queensland: ['Brisbane', 'Gold Coast', 'Sunshine Coast', 'Townsville', 'Cairns', 'Toowoomba', 'Mackay', 'Rockhampton', 'Bundaberg', 'Hervey Bay'],
+  'Western Australia': ['Perth', 'Mandurah', 'Bunbury', 'Busselton', 'Geraldton', 'Albany', 'Kalgoorlie-Boulder'],
+  'South Australia': ['Adelaide', 'Mount Gambier', 'Whyalla', 'Gawler', 'Port Lincoln'],
+
+  // --- Germany ---
+  Berlin: ['Berlin (Mitte)', 'Charlottenburg', 'Pankow', 'Kreuzberg', 'Neukolln', 'Spandau'],
+  Bavaria: ['Munich', 'Nuremberg', 'Augsburg', 'Regensburg', 'Ingolstadt', 'Wurzburg', 'Furth', 'Erlangen', 'Bamberg'],
+  'North Rhine-Westphalia': ['Cologne', 'Dusseldorf', 'Dortmund', 'Essen', 'Duisburg', 'Bochum', 'Wuppertal', 'Bielefeld', 'Bonn', 'Munster'],
+  Hamburg: ['Hamburg', 'Altona', 'Eimsbuttel', 'Hamburg-Nord', 'Wandsbek', 'Bergedorf', 'Harburg'],
+  Hesse: ['Frankfurt am Main', 'Wiesbaden', 'Kassel', 'Darmstadt', 'Offenbach am Main', 'Hanau', 'Giessen'],
+
+  // --- Singapore ---
+  'Central Region': ['Downtown Core', 'Marina Bay', 'Orchard', 'Newton', 'Novena', 'Rochor', 'Queenstown', 'Bukit Merah', 'Tanglin', 'Toa Payoh'],
+  'East Region': ['Bedok', 'Tampines', 'Pasir Ris', 'Changi'],
+  'North Region': ['Woodlands', 'Yishun', 'Sembawang', 'Mandai'],
+  'North-East Region': ['Ang Mo Kio', 'Hougang', 'Punggol', 'Sengkang', 'Serangoon'],
+  'West Region': ['Jurong East', 'Jurong West', 'Clementi', 'Bukit Batok', 'Bukit Panjang', 'Choa Chu Kang', 'Tuas']
+};
+
+/**
+ * Returns dynamic cities, districts, or kecamatans for a selected country & state/province.
+ */
+export function getCitiesForState(country: string, stateProvince: string): string[] {
+  if (!stateProvince) return [];
+  const cleanState = stateProvince.trim();
+  if (CITIES_BY_STATE[cleanState]) {
+    return CITIES_BY_STATE[cleanState];
+  }
+  // Try case-insensitive lookup
+  const stateKey = Object.keys(CITIES_BY_STATE).find(k => k.toLowerCase() === cleanState.toLowerCase());
+  if (stateKey) {
+    return CITIES_BY_STATE[stateKey];
+  }
+  return [];
+}
+
+/**
+ * Auto-detect user country, dial code, and location from Cloudflare Edge Geolocation (/api/geo)
+ * with robust client-side timezone & locale fallback. Zero external costs, zero delay.
+ */
+export async function detectClientLocation(): Promise<{
+  countryCode?: string;
+  countryName?: string;
+  dialCode?: string;
+  city?: string;
+  region?: string;
+  postalCode?: string;
+}> {
+  try {
+    const res = await fetch('/api/geo');
+    if (res.ok) {
+      const data = await res.json() as any;
+      if (data && data.country_code) {
+        const found = COUNTRIES.find(c => c.code.toUpperCase() === data.country_code.toUpperCase());
+        if (found) {
+          return {
+            countryCode: found.code,
+            countryName: found.name,
+            dialCode: found.dial,
+            city: data.city || undefined,
+            region: data.region || undefined,
+            postalCode: data.postal_code || undefined
+          };
+        }
+      }
+    }
+  } catch (_) {}
+
+  // Fallback to client browser timezone
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (tz.startsWith('America/')) {
+      const us = COUNTRIES.find(c => c.code === 'US');
+      return { countryCode: 'US', countryName: us?.name || 'United States', dialCode: us?.dial || '+1' };
+    }
+    if (tz.startsWith('Asia/Jakarta') || tz.startsWith('Asia/Pontianak') || tz.startsWith('Asia/Makassar') || tz.startsWith('Asia/Jayapura')) {
+      const id = COUNTRIES.find(c => c.code === 'ID');
+      return { countryCode: 'ID', countryName: id?.name || 'Indonesia', dialCode: id?.dial || '+62' };
+    }
+    if (tz.startsWith('Europe/London')) {
+      const gb = COUNTRIES.find(c => c.code === 'GB');
+      return { countryCode: 'GB', countryName: gb?.name || 'United Kingdom', dialCode: gb?.dial || '+44' };
+    }
+    if (tz.startsWith('Australia/')) {
+      const au = COUNTRIES.find(c => c.code === 'AU');
+      return { countryCode: 'AU', countryName: au?.name || 'Australia', dialCode: au?.dial || '+61' };
+    }
+    if (tz.startsWith('Asia/Singapore')) {
+      const sg = COUNTRIES.find(c => c.code === 'SG');
+      return { countryCode: 'SG', countryName: sg?.name || 'Singapore', dialCode: sg?.dial || '+65' };
+    }
+  } catch (_) {}
+
+  // Default to US
+  return { countryCode: 'US', countryName: 'United States', dialCode: '+1' };
+}
 
 export function findCountryByName(name: string): CountryOption | undefined {
   if (!name) return undefined;
@@ -316,13 +629,13 @@ export function getDummyAffiliateData(email?: string) {
     return {
       affiliate_code: 'GOTRAINER19',
       paypal_email: 'agent@amir.subqi.com',
-      phone_code: '+62',
-      phone_number: '81298765432',
-      country: 'Indonesia',
-      state_province: 'DKI Jakarta',
-      city: 'Jakarta Selatan',
-      postal_code: '12190',
-      street_address: 'Jl. Senopati No. 88, Kebayoran Baru'
+      phone_code: '+1',
+      phone_number: '4155550198',
+      country: 'United States',
+      state_province: 'California',
+      city: 'San Francisco',
+      postal_code: '94105',
+      street_address: '525 Market St, Suite 3200'
     };
   }
   return null;

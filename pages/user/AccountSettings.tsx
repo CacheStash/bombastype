@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CountryCombobox } from '../../components/CountryCombobox';
-import { COUNTRIES, PROVINCES_BY_COUNTRY, findCountryByName } from '../../utils/affiliateGeo';
+import { COUNTRIES, PROVINCES_BY_COUNTRY, findCountryByName, getCitiesForState, detectClientLocation } from '../../utils/affiliateGeo';
 import { validateLegitEmail } from '../../lib/emailValidator';
 
 const AccountSettings = () => {
@@ -35,13 +35,13 @@ const AccountSettings = () => {
   const [checkoutCodes, setCheckoutCodes] = useState<string[]>([]);
   const [selectedCode, setSelectedCode] = useState('');
 
-  // Profile Details State
+  // Profile Details State (Defaulted to US)
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userEmail, setUserEmail] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [fullName, setFullName] = useState('');
-  const [country, setCountry] = useState('Indonesia');
-  const [stateProvince, setStateProvince] = useState('DKI Jakarta');
+  const [country, setCountry] = useState('United States');
+  const [stateProvince, setStateProvince] = useState('California');
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
@@ -94,6 +94,14 @@ const AccountSettings = () => {
       } else if (buyer?.address) {
         // Fallback: If address is a single text string, prefill street address
         setStreetAddress(buyer.address);
+      } else {
+        // Auto-suggest country and province from client location
+        detectClientLocation().then(geo => {
+          setCountry(prev => (prev === 'United States' ? geo.country : prev));
+          if (geo.stateProvince) {
+            setStateProvince(prev => (prev === 'California' ? geo.stateProvince : prev));
+          }
+        }).catch(() => {});
       }
 
       // 3. Fetch purchase history transaction codes
@@ -121,6 +129,7 @@ const AccountSettings = () => {
     } else {
       setStateProvince('');
     }
+    setCity('');
   };
 
   const handleCopy = () => {
@@ -241,6 +250,7 @@ const AccountSettings = () => {
   };
 
   const provinceOptions = PROVINCES_BY_COUNTRY[country] || [];
+  const cityOptions = getCitiesForState(country, stateProvince);
 
   return (
     <div className="max-w-3xl space-y-12 pb-20">
@@ -393,11 +403,19 @@ const AccountSettings = () => {
                 </label>
                 <input 
                   type="text" 
+                  list="account-city-list"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  placeholder="e.g. London, New York, Jakarta" 
+                  placeholder="e.g. San Francisco" 
                   className="w-full p-3 border border-vintage-ink/30 bg-white font-sans text-xs font-bold outline-none text-vintage-ink placeholder:text-vintage-ink/40"
                 />
+                {cityOptions.length > 0 && (
+                  <datalist id="account-city-list">
+                    {cityOptions.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                )}
               </div>
 
               {/* Postal / ZIP */}
@@ -409,7 +427,7 @@ const AccountSettings = () => {
                   type="text" 
                   value={postalCode}
                   onChange={(e) => setPostalCode(e.target.value)}
-                  placeholder="e.g. 10110" 
+                  placeholder="e.g. 94105" 
                   className="w-full p-3 border border-vintage-ink/30 bg-white font-sans text-xs font-bold outline-none text-vintage-ink placeholder:text-vintage-ink/40"
                 />
               </div>
@@ -424,7 +442,7 @@ const AccountSettings = () => {
                 type="text" 
                 value={streetAddress}
                 onChange={(e) => setStreetAddress(e.target.value)}
-                placeholder="e.g. 124 Heritage Boulevard, Suite 400" 
+                placeholder="e.g. 525 Market St, Suite 3200" 
                 className="w-full p-3 border border-vintage-ink/30 bg-white font-sans text-xs font-bold outline-none text-vintage-ink placeholder:text-vintage-ink/40"
               />
             </div>
