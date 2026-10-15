@@ -2550,6 +2550,11 @@ export default {
                       const commissionAmount = parseFloat((netStore * rate).toFixed(2));
 
                       if (commissionAmount > 0) {
+                        const isDummyTestAffiliate = (aff.affiliate_code && aff.affiliate_code.toUpperCase().includes('GOTRAINER')) || (aff.paypal_email && aff.paypal_email.toLowerCase().includes('gotrainer'));
+                        const holdDays = isDummyTestAffiliate ? -14 : 14;
+                        const clearedAtDate = new Date(Date.now() + holdDays * 24 * 60 * 60 * 1000).toISOString();
+                        const commStatus = isDummyTestAffiliate ? 'approved' : 'pending_clearance';
+
                         const commRecord = {
                           affiliate_id: aff.id,
                           order_id: transactionId,
@@ -2560,9 +2565,12 @@ export default {
                           net_store_amount: netStore,
                           commission_rate: rate,
                           commission_amount: commissionAmount,
-                          status: 'pending_clearance',
-                          cleared_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+                          status: commStatus,
+                          cleared_at: clearedAtDate
                         };
+                        if (isDummyTestAffiliate) {
+                          commRecord.created_at = clearedAtDate;
+                        }
 
                         if (commissionAttributionType) commRecord.attribution_type = commissionAttributionType;
                         if (commissionCouponCode) commRecord.coupon_code = commissionCouponCode;

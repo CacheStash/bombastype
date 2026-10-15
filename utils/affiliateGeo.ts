@@ -328,44 +328,94 @@ export function getDummyAffiliateData(email?: string) {
   return null;
 }
 
-export async function syncAffiliateCoupon(supabase: any, affiliateId: string, affiliateCode: string) {
+export async function checkCouponAvailability(
+  supabase: any,
+  code: string,
+  currentAffiliateId?: string
+): Promise<{ available: boolean; message: string }> {
+  if (!code || code.trim().length < 3) {
+    return { available: false, message: 'Code must be at least 3 characters.' };
+  }
+  const cleanCode = code.trim().toUpperCase();
+  try {
+    const { data, error } = await supabase
+      .from('coupons')
+      .select('id, code, affiliate_id, is_active')
+      .ilike('code', cleanCode)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      return { available: false, message: 'Verification error. Please retry.' };
+    }
+    if (!data) {
+      return { available: true, message: `"${cleanCode}" is available to use!` };
+    }
+    if (currentAffiliateId && data.affiliate_id === currentAffiliateId) {
+      return { available: true, message: `"${cleanCode}" is currently assigned to your account.` };
+    }
+    return { available: false, message: `"${cleanCode}" is already taken by another partner or campaign.` };
+  } catch (err: any) {
+    return { available: false, message: err.message || 'Verification failed.' };
+  }
+}
+
+export async function syncAffiliateCoupon(
+  supabase: any, 
+  affiliateId: string, 
+  affiliateCode: string,
+  customCode?: string,
+  discountPercent: number = 10
+) {
   if (!affiliateId || !affiliateCode) return null;
-  const couponCode = `${affiliateCode.trim().toUpperCase()}10`;
+  const clampedDiscount = Math.min(30, Math.max(10, Math.round(discountPercent || 10)));
+  const finalCode = (customCode || `${affiliateCode.trim().toUpperCase()}${clampedDiscount}`).trim().toUpperCase();
+  const today = new Date().toISOString().split('T')[0];
+  // Auto-expire after 1 year (365 days) to keep database clean
+  const oneYearLater = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   try {
     const { data: existing } = await supabase
       .from('coupons')
-      .select('id, code')
-      .eq('code', couponCode)
+      .select('id, code, affiliate_id')
+      .eq('code', finalCode)
       .maybeSingle();
 
     if (existing) {
+      if (existing.affiliate_id && existing.affiliate_id !== affiliateId) {
+        throw new Error(`Coupon code "${finalCode}" is already registered to another partner.`);
+      }
       await supabase
         .from('coupons')
         .update({
           affiliate_id: affiliateId,
-          discount_percentage: 10,
+          discount_percentage: clampedDiscount,
+          discount_value: clampedDiscount,
           discount_type: 'percentage',
+          start_date: today,
+          end_date: oneYearLater,
           is_active: true
         })
         .eq('id', existing.id);
-      return couponCode;
+      return finalCode;
     } else {
       await supabase
         .from('coupons')
         .insert({
-          code: couponCode,
-          discount_percentage: 10,
+          code: finalCode,
+          discount_percentage: clampedDiscount,
+          discount_value: clampedDiscount,
           discount_type: 'percentage',
           is_active: true,
           affiliate_id: affiliateId,
-          end_date: '2035-12-31',
+          start_date: today,
+          end_date: oneYearLater,
           max_uses: null
         });
-      return couponCode;
+      return finalCode;
     }
   } catch (err) {
     console.error('Failed to sync affiliate coupon:', err);
-    return couponCode;
+    throw err;
   }
 }
 

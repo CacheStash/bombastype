@@ -13,9 +13,10 @@ interface PromotionsManagerProps {
 }
 
 const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) => {
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'coupons'>('campaigns');
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'coupons' | 'affiliate_coupons'>('campaigns');
   const [promos, setPromos] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
+  const [affiliateCoupons, setAffiliateCoupons] = useState<any[]>([]);
   const [fonts, setFonts] = useState<any[]>([]);
   const [buyersList, setBuyersList] = useState<any[]>([]);
   
@@ -80,7 +81,30 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
 
   const fetchCoupons = async () => {
     const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
-    if (data) setCoupons(data || []);
+    if (data) {
+      setCoupons(data || []);
+
+      // Extract affiliate coupons and join with affiliates profile
+      const affOnly = (data || []).filter((c: any) => c.affiliate_id);
+      if (affOnly.length > 0) {
+        const affIds = [...new Set(affOnly.map((c: any) => c.affiliate_id))];
+        try {
+          const { data: affList } = await supabase
+            .from('affiliates')
+            .select('id, affiliate_code, paypal_email, commission_rate, user_id')
+            .in('id', affIds);
+          const affMap = new Map((affList || []).map((a: any) => [a.id, a]));
+          setAffiliateCoupons(affOnly.map((c: any) => ({
+            ...c,
+            affiliate: affMap.get(c.affiliate_id) || null
+          })));
+        } catch (_) {
+          setAffiliateCoupons(affOnly);
+        }
+      } else {
+        setAffiliateCoupons([]);
+      }
+    }
   };
 
   const fetchFonts = async () => {
@@ -472,6 +496,17 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
             >
               Discount Coupons
             </button>
+            <button 
+              type="button"
+              onClick={() => setActiveTab('affiliate_coupons')}
+              className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-vintage-ink transition-all duration-300 ${
+                activeTab === 'affiliate_coupons' 
+                  ? 'bg-vintage-ink text-vintage-paper shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' 
+                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5'
+              }`}
+            >
+              Partner Coupons ({affiliateCoupons.length})
+            </button>
           </div>
         </div>
         
@@ -621,6 +656,93 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB 3: AFFILIATE / PARTNER COUPONS */}
+      {activeTab === 'affiliate_coupons' && (
+        <div className="space-y-6">
+          <div className="border border-vintage-ink/20 p-5 bg-vintage-paper flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="font-bold text-vintage-ink uppercase tracking-wider block text-xs mb-1 font-serif">
+                Affiliate Partner Discount Vouchers
+              </span>
+              <span className="text-vintage-ink/70 text-[11px] font-sans leading-relaxed">
+                Audience promo vouchers configured by affiliate partners. Affiliates can offer 10% to 30% discounts to drive sales volume while earning 20% net commissions.
+              </span>
+            </div>
+            <span className="px-3 py-1 bg-vintage-ink text-vintage-paper text-xs font-bold uppercase font-mono border border-vintage-ink shrink-0">
+              {affiliateCoupons.length} Active Codes
+            </span>
+          </div>
+
+          <div className="border border-vintage-ink/20 bg-white overflow-x-auto shadow-xs">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-vintage-ink/20 bg-vintage-ink/5 uppercase text-[10px] font-bold text-vintage-ink tracking-wider font-mono">
+                  <th className="p-3">Coupon Code</th>
+                  <th className="p-3">Discount</th>
+                  <th className="p-3">Partner Code</th>
+                  <th className="p-3">PayPal Payout Email</th>
+                  <th className="p-3 text-center">Uses</th>
+                  <th className="p-3">Expires</th>
+                  <th className="p-3 text-center">Status</th>
+                  <th className="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-vintage-ink/10 font-mono">
+                {affiliateCoupons.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="p-8 text-center text-vintage-ink/60 font-sans italic">
+                      No affiliate coupons generated yet.
+                    </td>
+                  </tr>
+                ) : (
+                  affiliateCoupons.map((c) => (
+                    <tr key={c.id} className="hover:bg-vintage-ink/3 transition-colors">
+                      <td className="p-3">
+                        <span className="bg-vintage-ink text-vintage-paper px-2 py-0.5 border border-vintage-ink font-bold uppercase tracking-wider">
+                          {c.code}
+                        </span>
+                      </td>
+                      <td className="p-3 font-bold text-green-900 text-sm">
+                        {c.discount_percentage || c.discount_value}% OFF
+                      </td>
+                      <td className="p-3 font-bold text-vintage-ink font-sans">
+                        {c.affiliate?.affiliate_code || 'N/A'}
+                      </td>
+                      <td className="p-3 text-vintage-ink/80 truncate max-w-[200px]">
+                        {c.affiliate?.paypal_email || 'No email registered'}
+                      </td>
+                      <td className="p-3 text-center font-bold">
+                        {c.used_count || 0}
+                      </td>
+                      <td className="p-3 text-vintage-ink/70 text-[11px] whitespace-nowrap">
+                        {c.end_date || 'Ongoing'}
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`px-2 py-0.5 border text-[9px] font-bold uppercase ${
+                          c.is_active 
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-950' 
+                            : 'border-vintage-ink/20 bg-vintage-ink/5 text-vintage-ink/60'
+                        }`}>
+                          {c.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <button
+                          onClick={() => handleDeleteCoupon(c.id)}
+                          className="text-red-800 hover:text-red-600 font-bold uppercase text-[10px] border-b border-red-800/40 cursor-pointer"
+                        >
+                          Revoke
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
