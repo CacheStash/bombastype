@@ -59,6 +59,7 @@ const AffiliatePortal: React.FC = () => {
   const [savingSettings, setSavingSettings] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawInputAmount, setWithdrawInputAmount] = useState('50.00');
   const [withdrawSuccess, setWithdrawSuccess] = useState<{ amount: number; receiver: string; batchId: string } | null>(null);
   const [withdrawError, setWithdrawError] = useState('');
   const [settingsSuccess, setSettingsSuccess] = useState('');
@@ -423,6 +424,7 @@ const AffiliatePortal: React.FC = () => {
       alert(`Minimum withdrawal amount is $${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD. Your cleared balance is currently $${readyAmount.toFixed(2)} USD.`);
       return;
     }
+    setWithdrawInputAmount(readyAmount.toFixed(2));
     setWithdrawError('');
     setWithdrawSuccess(null);
     setShowWithdrawModal(true);
@@ -432,6 +434,16 @@ const AffiliatePortal: React.FC = () => {
   const handleInstantWithdraw = handleOpenWithdrawModal;
 
   const executeWithdrawal = async () => {
+    const targetAmt = Number(withdrawInputAmount);
+    if (isNaN(targetAmt) || targetAmt < AFFILIATE_MIN_PAYOUT_USD) {
+      setWithdrawError(`Minimum withdrawal amount is $${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD.`);
+      return;
+    }
+    if (targetAmt > readyAmount + 0.001) {
+      setWithdrawError(`Requested amount ($${targetAmt.toFixed(2)}) exceeds your cleared balance ($${readyAmount.toFixed(2)}).`);
+      return;
+    }
+
     setIsWithdrawing(true);
     setWithdrawError('');
     try {
@@ -443,7 +455,8 @@ const AffiliatePortal: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
-        }
+        },
+        body: JSON.stringify({ amount: targetAmt })
       });
 
       const data = await res.json() as any;
@@ -451,7 +464,7 @@ const AffiliatePortal: React.FC = () => {
 
       await fetchAffiliateData();
       setWithdrawSuccess({
-        amount: Number(data.amount || readyAmount),
+        amount: Number(data.amount || targetAmt),
         receiver: data.receiver || affiliate.paypal_email,
         batchId: data.payoutBatchId || ''
       });
@@ -962,8 +975,13 @@ const AffiliatePortal: React.FC = () => {
                         <td className="p-3 text-vintage-ink truncate max-w-[200px] font-medium">
                           {affiliate.paypal_email}
                         </td>
-                        <td className="p-3 text-right font-bold text-green-900 text-sm">
-                          ${p.amount.toFixed(2)} {p.currency}
+                        <td className="p-3 text-right">
+                          <div className="font-bold text-green-900 text-sm">
+                            ${p.amount.toFixed(2)} {p.currency}
+                          </div>
+                          <div className="text-[10px] text-vintage-ink/60 font-sans">
+                            Gross sent (PayPal fee may apply)
+                          </div>
                         </td>
                         <td className="p-3 text-center font-bold">
                           {p.commission_count}
@@ -1301,15 +1319,62 @@ const AffiliatePortal: React.FC = () => {
               </div>
             ) : (
               <>
-                {/* Amount Card */}
-                <div className="p-4 border border-vintage-ink/15 bg-vintage-ink/5 flex items-center justify-between rounded-xs">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-vintage-ink/60 block">Payout Amount</span>
-                    <span className="text-2xl font-bold font-mono text-vintage-ink">${readyAmount.toFixed(2)} USD</span>
+                {/* Editable Amount Input Card */}
+                <div className="p-4 border border-vintage-ink/20 bg-vintage-ink/5 space-y-3 rounded-xs">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-vintage-ink/70 block font-sans">
+                      Withdrawal Amount (USD)
+                    </label>
+                    <span className="text-[10px] font-mono text-vintage-ink/80">
+                      Available: <span className="font-bold text-vintage-ink">${readyAmount.toFixed(2)}</span>
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-green-100 border border-green-300 text-green-900 rounded-xs">
-                    Cleared Balance
-                  </span>
+
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono font-bold text-lg text-vintage-ink">
+                      $
+                    </span>
+                    <input 
+                      type="number"
+                      step="0.01"
+                      min={AFFILIATE_MIN_PAYOUT_USD}
+                      max={readyAmount}
+                      value={withdrawInputAmount}
+                      onChange={(e) => setWithdrawInputAmount(e.target.value)}
+                      disabled={isWithdrawing}
+                      className="w-full pl-8 pr-4 py-2 border border-vintage-ink/30 font-mono font-bold text-xl text-vintage-ink bg-white focus:outline-hidden focus:border-vintage-ink rounded-xs"
+                    />
+                  </div>
+
+                  {/* Preset Quick Buttons */}
+                  <div className="flex gap-2 text-[10px] font-bold uppercase">
+                    <button
+                      type="button"
+                      onClick={() => setWithdrawInputAmount('50.00')}
+                      disabled={isWithdrawing || readyAmount < 50}
+                      className="px-2.5 py-1 border border-vintage-ink/30 bg-white hover:bg-vintage-ink hover:text-vintage-paper transition-colors cursor-pointer rounded-xs"
+                    >
+                      $50.00 Min
+                    </button>
+                    {readyAmount >= 100 && (
+                      <button
+                        type="button"
+                        onClick={() => setWithdrawInputAmount('100.00')}
+                        disabled={isWithdrawing}
+                        className="px-2.5 py-1 border border-vintage-ink/30 bg-white hover:bg-vintage-ink hover:text-vintage-paper transition-colors cursor-pointer rounded-xs"
+                      >
+                        $100.00
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setWithdrawInputAmount(readyAmount.toFixed(2))}
+                      disabled={isWithdrawing}
+                      className="px-2.5 py-1 border border-vintage-ink/30 bg-white hover:bg-vintage-ink hover:text-vintage-paper transition-colors cursor-pointer ml-auto rounded-xs"
+                    >
+                      Max (${readyAmount.toFixed(2)})
+                    </button>
+                  </div>
                 </div>
 
                 {/* Recipient Account Detail */}
@@ -1326,13 +1391,24 @@ const AffiliatePortal: React.FC = () => {
                   </div>
                 </div>
 
+                {/* PayPal Outbound Fee Disclosure */}
+                <div className="p-3 border border-sky-300 bg-sky-50/80 space-y-1 text-xs rounded-xs">
+                  <div className="flex items-center gap-1.5 font-bold uppercase text-sky-950 text-[11px]">
+                    <DollarSign size={14} className="text-sky-700 shrink-0" />
+                    <span>PayPal Processing & Receiving Fee</span>
+                  </div>
+                  <p className="text-[11px] text-sky-900/90 leading-snug font-sans">
+                    Standard PayPal transfer fees apply upon sending. Depending on your recipient PayPal account type and country, PayPal may deduct their transaction fee so the net amount received in PayPal may reflect PayPal's deductions.
+                  </p>
+                </div>
+
                 {/* Warning Callout */}
                 <div className="p-3 border border-amber-300 bg-amber-50/80 space-y-1 text-xs rounded-xs">
                   <div className="flex items-center gap-1.5 font-bold uppercase text-amber-950 text-[11px]">
                     <AlertCircle size={14} className="text-amber-700 shrink-0" />
                     <span>Double-Check Recipient Email</span>
                   </div>
-                  <p className="text-[11px] text-amber-900/90 leading-snug">
+                  <p className="text-[11px] text-amber-900/90 leading-snug font-sans">
                     Please ensure the recipient PayPal address above is accurate and active. Transfers sent to an incorrect PayPal account cannot be reversed or refunded by the platform.
                   </p>
                 </div>

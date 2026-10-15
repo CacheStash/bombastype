@@ -3732,7 +3732,7 @@ export default {
               body: JSON.stringify({
                 status: 'paid',
                 paid_at: nowIso,
-                payout_reference: paypalBatchId
+                payout_batch_id: paypalBatchId
               })
             });
           }
@@ -3876,6 +3876,36 @@ export default {
           });
         }
 
+        // Parse optional custom withdrawal amount requested by user
+        let reqBody = {};
+        try {
+          reqBody = await request.json();
+        } catch (_) {}
+
+        let withdrawTarget = readyAmount;
+        if (reqBody.amount !== undefined && reqBody.amount !== null && reqBody.amount !== '') {
+          const parsed = Number(reqBody.amount);
+          if (isNaN(parsed) || parsed < MIN_WITHDRAW_THRESHOLD) {
+            return new Response(JSON.stringify({ 
+              error: "INVALID_AMOUNT", 
+              message: `Withdrawal amount must be at least $${MIN_WITHDRAW_THRESHOLD.toFixed(2)} USD.` 
+            }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+          if (parsed > readyAmount + 0.001) {
+            return new Response(JSON.stringify({ 
+              error: "EXCEEDS_BALANCE", 
+              message: `Requested amount ($${parsed.toFixed(2)}) exceeds your cleared balance ($${readyAmount.toFixed(2)}).` 
+            }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+          withdrawTarget = parsed;
+        }
+
         // 3. Determine Sandbox vs Live Mode Host
         const paypalHost = isSandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 
@@ -3899,8 +3929,7 @@ export default {
         // 5. Execute PayPal REST API Payout
         const batchTimestamp = new Date().toISOString().substring(0, 10).replace(/-/g, '');
         const senderBatchId = `BT-WITHDRAW-${batchTimestamp}-${Date.now().toString(36).toUpperCase()}`;
-        const commissionIds = eligibleComms.map(c => c.id);
-        const payoutAmountFormatted = readyAmount.toFixed(2);
+        const payoutAmountFormatted = withdrawTarget.toFixed(2);
 
         const payoutRes = await fetch(`${paypalHost}/v1/payments/payouts`, {
           method: 'POST',
@@ -3937,43 +3966,79 @@ export default {
         const paypalBatchId = payoutResult.batch_header?.payout_batch_id || senderBatchId;
         const nowIso = new Date().toISOString();
 
-        // 6. Update Database Records
-        await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?id=in.(${commissionIds.join(',')})`, {
-          method: 'PATCH',
-          headers: {
-            'apikey': serviceRoleKey,
-            'Authorization': `Bearer ${serviceRoleKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
+        // 6. Allocate commissions & Update Database Records
+        // Sort oldest cleared first for FIFO allocation
+        eligibleComms.sort((a, b) => new Date(a.cleared_at).getTime() - new Date(b.cleared_at).getTime());
+
+        let remainingToPay = Math.round(withdrawTarget * 100) / 100;
+        const commissionsToMarkPaid = [];
+        let splitCommissionToInsert = null;
+
+        for (const comm of eligibleComms) {
+          if (remainingToPay <= 0) break;
+          const commAmt = Math.round(Number(comm.commission_amount || 0) * 100) / 100;
+
+          if (commAmt <= remainingToPay + 0.005) {
+            commissionsToMarkPaid.push({ id: comm.id, fullAmount: commAmt });
+            remainingToPay = Math.round((remainingToPay - commAmt) * 100) / 100;
+          } else {
+            // Partial split: commAmt > remainingToPay
+            const paidPortion = remainingToPay;
+            const remainingPortion = Math.round((commAmt - paidPortion) * 100) / 100;
+
+            commissionsToMarkPaid.push({ id: comm.id, partialAmount: paidPortion });
+
+            // Create remainder commission row with remainingPortion
+            splitCommissionToInsert = {
+              affiliate_id: comm.affiliate_id,
+              order_id: comm.order_id,
+              font_name: comm.font_name,
+              buyer_email: comm.buyer_email,
+              gross_amount: comm.gross_amount,
+              paypal_inbound_fee: comm.paypal_inbound_fee,
+              net_store_amount: comm.net_store_amount,
+              commission_rate: comm.commission_rate,
+              commission_amount: remainingPortion,
+              status: 'approved',
+              cleared_at: comm.cleared_at
+            };
+
+            remainingToPay = 0;
+            break;
+          }
+        }
+
+        // Execute updates
+        for (const item of commissionsToMarkPaid) {
+          const updateBody = {
             status: 'paid',
             paid_at: nowIso,
-            payout_reference: paypalBatchId
-          })
-        });
+            payout_batch_id: paypalBatchId
+          };
+          if (item.partialAmount !== undefined) {
+            updateBody.commission_amount = item.partialAmount;
+          }
+          await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?id=eq.${item.id}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateBody)
+          });
+        }
 
-        try {
-          await fetch(`${supabaseUrl}/rest/v1/affiliate_payouts`, {
+        if (splitCommissionToInsert) {
+          await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions`, {
             method: 'POST',
             headers: {
               'apikey': serviceRoleKey,
               'Authorization': `Bearer ${serviceRoleKey}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              affiliate_id: affiliate.id,
-              payout_batch_id: paypalBatchId,
-              amount: Number(readyAmount),
-              currency: 'USD',
-              paypal_email: paypalEmail,
-              status: 'completed',
-              commission_ids: commissionIds,
-              paid_at: nowIso,
-              notes: 'Self-service instant withdrawal'
-            })
+            body: JSON.stringify(splitCommissionToInsert)
           });
-        } catch (insertErr) {
-          console.warn("affiliate_payouts record notice:", insertErr);
         }
 
         return new Response(JSON.stringify({
