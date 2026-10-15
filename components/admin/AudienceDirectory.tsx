@@ -83,15 +83,19 @@ export const AudienceDirectory: React.FC = () => {
       // 2. Query Buyers, Orders, Subscribers, Affiliates
       const [
         { data: buyerRows },
-        { data: orderRows },
+        { data: orderRows, error: orderErr },
         { data: subscriberRows },
         { data: affiliateRows }
       ] = await Promise.all([
         supabase.from('fontbuyer').select('id, email, full_name, created_at'),
-        supabase.from('admin_order_view').select('buyer_email, price, tier, download_date, transaction_id, font_name'),
+        supabase.from('admin_order_view').select('*'),
         supabase.from('fontsubscribers').select('email, status, created_at'),
         supabase.from('affiliates').select('id, user_id, affiliate_code, paypal_email, status, created_at')
       ]);
+
+      if (orderErr) {
+        console.warn("admin_order_view notice:", orderErr.message);
+      }
 
       // 3. Aggregate by lowercase email
       const map = new Map<string, {
@@ -147,21 +151,33 @@ export const AudienceDirectory: React.FC = () => {
 
       // Process Orders / Download History
       (orderRows || []).forEach(o => {
-        if (!o.buyer_email) return;
-        const rec = getOrCreate(o.buyer_email);
-        const price = Number(o.price || 0);
-        const tier = (o.tier || '').toLowerCase();
-        const isTrial = price === 0 || tier.includes('demo') || tier.includes('trial');
+        const email = (o.buyer_email || o.metadata?.buyer_email || o.email || '').trim().toLowerCase();
+        if (!email) return;
 
-        if (isTrial) {
-          rec.roles.add('buyer_trial');
-          rec.trialOrdersCount += 1;
-        } else {
+        const rec = getOrCreate(email);
+        const rawPrice = o.metadata?.price_at_purchase ?? o.metadata?.price ?? o.price ?? 0;
+        const price = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice).replace(/[^0-9.]/g, '')) || 0;
+        const downloadType = String(o.download_type || '').trim().toLowerCase();
+        const tier = String(o.tier || '').trim().toLowerCase();
+
+        const isTrial = downloadType === 'trial' || tier.includes('demo') || tier.includes('trial') || (price === 0 && downloadType !== 'full' && downloadType !== 'commercial');
+        const isPaid = price > 0 || downloadType === 'full' || downloadType === 'commercial';
+
+        if (isPaid) {
           rec.roles.add('buyer_paid');
           rec.paidOrdersCount += 1;
           rec.totalSpent += price;
         }
-        updateDates(rec, o.download_date);
+        if (isTrial) {
+          rec.roles.add('buyer_trial');
+          rec.trialOrdersCount += 1;
+        }
+
+        const buyerName = o.metadata?.buyer_name || o.buyer_name;
+        if (buyerName && (!rec.name || rec.name === rec.email.split('@')[0])) {
+          rec.name = buyerName;
+        }
+        updateDates(rec, o.download_date || o.created_at);
       });
 
       // Process Newsletter Subscribers
@@ -189,6 +205,16 @@ export const AudienceDirectory: React.FC = () => {
           recPaypal.roles.add('partner');
           recPaypal.partnerCode = a.affiliate_code || undefined;
           updateDates(recPaypal, a.created_at);
+        }
+      });
+
+      // Ensure zero unlabeled contacts: registered accounts without commercial purchases default to buyer_trial
+      map.forEach(rec => {
+        if (rec.roles.size === 0) {
+          rec.roles.add('buyer_trial');
+          if (rec.trialOrdersCount === 0) {
+            rec.trialOrdersCount = 1;
+          }
         }
       });
 
