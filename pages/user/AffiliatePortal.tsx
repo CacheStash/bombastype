@@ -544,18 +544,22 @@ const AffiliatePortal: React.FC = () => {
 
   if (!affiliate) {
     return (
-      <div className="border border-vintage-ink/20 p-10 bg-vintage-paper/60 text-center space-y-4">
-        <Share2 size={32} className="mx-auto text-vintage-accent" />
-        <h3 className="text-3xl font-display">Join the BombasType Affiliate Program</h3>
-        <p className="text-xs italic text-vintage-ink/70 max-w-md mx-auto leading-relaxed">
-          Recommend our fonts to your audience and receive 20% net commission on every font license purchased.
-        </p>
-        <Link 
-          to="/affiliate" 
-          className="vintage-btn py-3 px-6 text-xs tracking-widest inline-flex items-center gap-2 uppercase"
-        >
-          BECOME AN AFFILIATE <ArrowRight size={14} />
-        </Link>
+      <div className="border border-vintage-ink/20 p-10 bg-vintage-paper text-center space-y-5">
+        <Share2 size={36} className="mx-auto text-vintage-accent" />
+        <div className="space-y-2">
+          <h3 className="text-2xl sm:text-3xl font-display font-bold text-vintage-ink">Join the BombasType Affiliate Program</h3>
+          <p className="text-sm font-sans font-medium text-vintage-ink max-w-lg mx-auto leading-relaxed">
+            Recommend our fonts to your audience and receive 20% net commission on every font license purchased.
+          </p>
+        </div>
+        <div>
+          <Link 
+            to="/affiliate" 
+            className="vintage-btn py-3 px-8 text-xs font-bold tracking-widest inline-flex items-center gap-2 uppercase"
+          >
+            <Share2 size={14} /> Join Affiliate
+          </Link>
+        </div>
       </div>
     );
   }
@@ -587,10 +591,14 @@ const AffiliatePortal: React.FC = () => {
     .filter(c => c.status === 'pending_clearance' && new Date(c.cleared_at) > now)
     .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
 
-  // Total Disbursed / Settled
-  const totalPaidAmount = commissions
+  // Total Disbursed / Settled (Gross and Net after PayPal outbound fee)
+  const totalPaidGross = commissions
     .filter(c => c.status === 'paid')
     .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+
+  const totalNetPaidAmount = payoutHistory.length > 0
+    ? payoutHistory.reduce((sum, p) => sum + Number(p.net_amount ?? (p.amount - (p.fee || 0))), 0)
+    : Math.max(0, +(totalPaidGross - Math.min(20, totalPaidGross * 0.02)).toFixed(2));
 
   // Gross referral sales & Milestone reward calculations
   const totalGrossSales = commissions.reduce((sum, c) => sum + Number(c.gross_amount || 0), 0);
@@ -845,14 +853,14 @@ const AffiliatePortal: React.FC = () => {
 
             <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5">
               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-vintage-ink font-sans">
-                <span>Total Paid Out</span>
+                <span>Lifetime Net Paid</span>
                 <CircleDollarSign size={16} className="text-vintage-ink" />
               </div>
               <div className="text-3xl font-display font-bold text-vintage-ink flex items-center">
                 <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
-                <span>{totalPaidAmount.toFixed(2)}</span>
+                <span>{totalNetPaidAmount.toFixed(2)}</span>
               </div>
-              <p className="text-xs text-vintage-ink font-sans leading-relaxed">Lifetime payouts received to PayPal</p>
+              <p className="text-xs text-vintage-ink font-sans leading-relaxed">Net payouts received to PayPal (post-fee)</p>
             </div>
           </div>
 
@@ -923,67 +931,80 @@ const AffiliatePortal: React.FC = () => {
                       <th className="p-3">Attribution</th>
                       <th className="p-3 text-right">Gross</th>
                       <th className="p-3 text-right">Net Store</th>
-                      <th className="p-3 text-right">Your 20% Net</th>
+                      <th className="p-3 text-right">Commission (20%)</th>
+                      <th className="p-3 text-right">PayPal Fee (2%)</th>
+                      <th className="p-3 text-right">Net Payout</th>
                       <th className="p-3 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-vintage-ink/15 font-mono">
-                    {paginatedCommissions.map((comm) => (
-                      <tr key={comm.id} className="hover:bg-vintage-ink/5 transition-colors">
-                        <td className="p-3 text-vintage-ink text-xs whitespace-nowrap font-medium">
-                          {new Date(comm.created_at).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </td>
-                        <td className="p-3">
-                          <span className="font-bold text-vintage-ink block font-sans text-xs sm:text-sm">
-                            {comm.font_name || 'Font License'}
-                          </span>
-                          <span className="text-xs text-vintage-ink/70 truncate block max-w-[200px]">
-                            ID: {comm.order_id}
-                          </span>
-                        </td>
-                        <td className="p-3 whitespace-nowrap">
-                          {comm.coupon_code || comm.attribution_type === 'coupon' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-purple-800/30 text-purple-900 bg-purple-50 font-sans">
-                              <Tag size={10} className="text-vintage-accent" /> Coupon: {comm.coupon_code || 'PROMO'}
+                    {paginatedCommissions.map((comm) => {
+                      const commAmt = Number(comm.commission_amount || 0);
+                      const commFee = +(Math.min(20, commAmt * 0.02)).toFixed(2);
+                      const commNet = +(Math.max(0, commAmt - commFee)).toFixed(2);
+                      return (
+                        <tr key={comm.id} className="hover:bg-vintage-ink/5 transition-colors">
+                          <td className="p-3 text-vintage-ink text-xs whitespace-nowrap font-medium">
+                            {new Date(comm.created_at).toLocaleDateString(undefined, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </td>
+                          <td className="p-3">
+                            <span className="font-bold text-vintage-ink block font-sans text-xs sm:text-sm">
+                              {comm.font_name || 'Font License'}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-vintage-ink/20 text-vintage-ink/80 bg-vintage-ink/5 font-sans">
-                              <Share2 size={10} className="text-vintage-ink/60" /> Shared Link
+                            <span className="text-xs text-vintage-ink/70 truncate block max-w-[200px]">
+                              ID: {comm.order_id}
                             </span>
-                          )}
-                        </td>
-                        <td className="p-3 text-right text-vintage-ink font-semibold">
-                          ${Number(comm.gross_amount || 0).toFixed(2)}
-                        </td>
-                        <td className="p-3 text-right text-vintage-ink/80 font-medium">
-                          ${Number(comm.net_store_amount || 0).toFixed(2)}
-                        </td>
-                        <td className="p-3 text-right font-bold text-vintage-accent text-sm">
-                          +${Number(comm.commission_amount || 0).toFixed(2)}
-                        </td>
-                        <td className="p-3 text-center">
-                          {comm.status === 'pending_clearance' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-amber-800/40 text-amber-900 bg-amber-50">
-                              <Clock size={11} /> Holding
-                            </span>
-                          )}
-                          {comm.status === 'approved' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800/40 text-green-900 bg-green-50">
-                              <CheckCircle2 size={11} /> Cleared
-                            </span>
-                          )}
-                          {comm.status === 'paid' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-blue-800/40 text-blue-900 bg-blue-50">
-                              <DollarSign size={11} /> Paid Out
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            {comm.coupon_code || comm.attribution_type === 'coupon' ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-purple-800/30 text-purple-900 bg-purple-50 font-sans">
+                                <Tag size={10} className="text-vintage-accent" /> Coupon: {comm.coupon_code || 'PROMO'}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-vintage-ink/20 text-vintage-ink/80 bg-vintage-ink/5 font-sans">
+                                <Share2 size={10} className="text-vintage-ink/60" /> Shared Link
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-right text-vintage-ink font-semibold">
+                            ${Number(comm.gross_amount || 0).toFixed(2)}
+                          </td>
+                          <td className="p-3 text-right text-vintage-ink/80 font-medium">
+                            ${Number(comm.net_store_amount || 0).toFixed(2)}
+                          </td>
+                          <td className="p-3 text-right font-bold text-vintage-accent text-sm">
+                            +${commAmt.toFixed(2)}
+                          </td>
+                          <td className="p-3 text-right font-mono font-medium text-amber-900 text-xs">
+                            -${commFee.toFixed(2)}
+                          </td>
+                          <td className="p-3 text-right font-mono font-bold text-green-900 text-sm">
+                            ${commNet.toFixed(2)}
+                          </td>
+                          <td className="p-3 text-center">
+                            {comm.status === 'pending_clearance' && (
+                              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-amber-800/40 text-amber-900 bg-amber-50">
+                                <Clock size={11} /> Holding
+                              </span>
+                            )}
+                            {comm.status === 'approved' && (
+                              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800/40 text-green-900 bg-green-50">
+                                <CheckCircle2 size={11} /> Cleared
+                              </span>
+                            )}
+                            {comm.status === 'paid' && (
+                              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-blue-800/40 text-blue-900 bg-blue-50">
+                                <DollarSign size={11} /> Paid Out
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
 
@@ -1403,13 +1424,13 @@ const AffiliatePortal: React.FC = () => {
 
             <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5">
               <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
-                Lifetime Paid Out
+                Lifetime Paid Out (Net)
               </span>
               <div className="text-3xl font-display font-bold text-vintage-ink">
-                ${totalPaidAmount.toFixed(2)}
+                ${totalNetPaidAmount.toFixed(2)}
               </div>
               <p className="text-xs text-vintage-ink font-sans">
-                Total successfully transferred to PayPal
+                Net successfully transferred to PayPal
               </p>
             </div>
           </div>
@@ -1426,7 +1447,7 @@ const AffiliatePortal: React.FC = () => {
                 </span>
               </div>
               <span className="text-xs font-mono font-bold px-3 py-1 bg-white border border-vintage-ink/30">
-                ${totalPaidAmount.toFixed(2)} Total Settled
+                ${totalNetPaidAmount.toFixed(2)} Net Settled
               </span>
             </div>
 
@@ -1531,6 +1552,19 @@ const AffiliatePortal: React.FC = () => {
                 )}
               </div>
             )}
+          </div>
+
+          {/* TRANSPARENT PAYMENT GATEWAY FEE NOTICE (PAYOUTS SECTION) */}
+          <div className="border border-vintage-ink/20 bg-vintage-paper p-4 flex items-start gap-3">
+            <Info size={20} className="text-vintage-accent shrink-0 mt-0.5" />
+            <div className="space-y-1 font-sans grow">
+              <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block">
+                Transparent Payment Gateway Fee Notice
+              </span>
+              <p className="text-[11px] text-vintage-ink/80 leading-relaxed max-w-3xl">
+                As an independent type foundry, sales transactions already incur payment gateway fees (~4.4% + $0.30) upon checkout, meaning the store receives net revenue rather than 100% of gross sales. In addition, PayPal charges an outbound transfer fee (standard 2% cross-border transfer, capped at $20.00 USD) on automated payouts. To maintain sustainable store operations, this outbound transfer fee is deducted from the withdrawal amount. We sincerely apologize for this gateway transfer cost and deeply appreciate your understanding and valuable partnership!
+              </p>
+            </div>
           </div>
 
         </div>

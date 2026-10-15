@@ -263,17 +263,8 @@ const App: React.FC = () => {
                     />
                     <Route path="/user/receipt/:orderId" element={<LicenseReceipt />} />
 
-                    {/* Stealth Affiliate Route (Hidden from public, only admin & gotrainer19 can view) */}
-                    <Route 
-                      path="/affiliate" 
-                      element={
-                        session ? (
-                          isAffiliateAllowed ? <AffiliateLanding /> : <Navigate to="/" replace />
-                        ) : (
-                          <Navigate to="/user/auth?redirect=/affiliate" replace />
-                        )
-                      } 
-                    />
+                    {/* Public Affiliate Landing Page */}
+                    <Route path="/affiliate" element={<AffiliateLanding />} />
                     
                     {/* Stealth Admin Routes */}
                     <Route 

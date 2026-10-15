@@ -59,11 +59,10 @@ export default function Footer() {
   const footerLinks = [
     { name: "FONTS", href: "/fonts" },
     { name: "LICENSE", href: "/license" },
-    { name: "ABOUT", href: "/about" },
+    { name: "AFFILIATE", href: "/affiliate" },
     { name: "CONTACT", href: "/contact" },
     { name: "POLICY", href: "/policy" },
     { name: "FAQ", href: "/faq" },
-    ...(isAffiliateVisible ? [{ name: "AFFILIATE", href: "/affiliate" }] : []),
   ];
 
   const handleSubscribe = async (e: React.FormEvent) => {
