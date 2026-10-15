@@ -324,7 +324,7 @@ const FontDetail: React.FC = () => {
           <div className="border border-vintage-ink bg-vintage-background p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <span className="font-bold text-xs uppercase tracking-widest text-vintage-accent shrink-0">
-                Guild Partner Quick Share:
+                Partner Quick Share:
               </span>
               <code className="font-mono text-xs font-bold text-vintage-ink bg-vintage-ink/10 px-2 py-1 border border-vintage-ink">
                 {`${window.location.origin}/c/${affiliateCode}/${font.id}`}

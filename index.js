@@ -3731,6 +3731,214 @@ export default {
       }
     }
 
+    // --- 6F. API Self-Service Instant Affiliate Withdrawal (Affiliate User Only) ---
+    if (url.pathname === '/api/affiliate/request-withdraw' && request.method === 'POST') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user) {
+          return new Response(JSON.stringify({ error: "UNAUTHORIZED", message: "User authentication required." }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        const clientId = env.PAYPAL_CLIENT_ID;
+        const clientSecret = env.PAYPAL_CLIENT_SECRET;
+
+        if (!clientId || !clientSecret) {
+          return new Response(JSON.stringify({ 
+            error: "PAYPAL_CREDENTIALS_MISSING", 
+            message: "PayPal integration credentials are not configured on the server." 
+          }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // 1. Fetch Affiliate Record
+        const affRes = await fetch(`${supabaseUrl}/rest/v1/affiliates?user_id=eq.${user.id}&select=*`, {
+          headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+        });
+        const affiliates = affRes.ok ? await affRes.json() : [];
+        const affiliate = affiliates[0];
+
+        if (!affiliate) {
+          return new Response(JSON.stringify({ error: "AFFILIATE_NOT_FOUND", message: "You are not registered as an affiliate partner." }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const paypalEmail = (affiliate.paypal_email || '').trim().toLowerCase();
+        if (!paypalEmail || !paypalEmail.includes('@')) {
+          return new Response(JSON.stringify({ 
+            error: "PAYPAL_EMAIL_MISSING", 
+            message: "No valid PayPal payout email registered. Please update your account settings." 
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // 2. Query Eligible Commissions from Database (Server-Side Recalculation)
+        const commRes = await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?affiliate_id=eq.${affiliate.id}&status=in.(pending_clearance,approved)&select=id,commission_amount,status,cleared_at`, {
+          headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+        });
+        const allComms = commRes.ok ? await commRes.json() : [];
+        const now = new Date();
+
+        // Must be approved OR pending_clearance with cleared_at <= now
+        const eligibleComms = allComms.filter(c => 
+          c.status === 'approved' || (c.status === 'pending_clearance' && new Date(c.cleared_at) <= now)
+        );
+
+        const readyAmount = eligibleComms.reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+        const MIN_WITHDRAW_THRESHOLD = 50.00;
+
+        if (readyAmount < MIN_WITHDRAW_THRESHOLD) {
+          return new Response(JSON.stringify({ 
+            error: "THRESHOLD_NOT_MET", 
+            message: `Minimum withdrawal threshold is $${MIN_WITHDRAW_THRESHOLD.toFixed(2)} USD. Your cleared balance is currently $${readyAmount.toFixed(2)} USD.` 
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // 3. Determine Sandbox vs Live Mode
+        let isSandbox = true;
+        try {
+          const { data: settingData } = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode`, {
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+          }).then(r => r.json());
+          if (settingData && settingData.length > 0) {
+            isSandbox = settingData[0].value === true || settingData[0].value === 'true';
+          }
+        } catch (_) {}
+
+        const paypalHost = isSandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+
+        // 4. Request OAuth2 Access Token
+        const basicAuth = btoa(`${clientId}:${clientSecret}`);
+        const tokenRes = await fetch(`${paypalHost}/v1/oauth2/token`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${basicAuth}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: 'grant_type=client_credentials'
+        });
+
+        const tokenData = await tokenRes.json();
+        if (!tokenRes.ok || !tokenData.access_token) {
+          throw new Error(`PayPal OAuth Failed (${tokenRes.status}): ${tokenData.error_description || tokenData.error || 'Invalid credentials'}`);
+        }
+        const accessToken = tokenData.access_token;
+
+        // 5. Execute PayPal REST API Payout
+        const batchTimestamp = new Date().toISOString().substring(0, 10).replace(/-/g, '');
+        const senderBatchId = `BT-WITHDRAW-${batchTimestamp}-${Date.now().toString(36).toUpperCase()}`;
+        const commissionIds = eligibleComms.map(c => c.id);
+        const payoutAmountFormatted = readyAmount.toFixed(2);
+
+        const payoutRes = await fetch(`${paypalHost}/v1/payments/payouts`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender_batch_header: {
+              sender_batch_id: senderBatchId,
+              email_subject: "Instant Affiliate Commission Withdrawal from BombasType!",
+              email_message: `Here is your requested affiliate withdrawal of $${payoutAmountFormatted} USD from BombasType. Thank you for partnering with us!`
+            },
+            items: [
+              {
+                recipient_type: 'EMAIL',
+                amount: {
+                  value: payoutAmountFormatted,
+                  currency: 'USD'
+                },
+                note: `BombasType Instant Affiliate Withdrawal (${affiliate.affiliate_code})`,
+                sender_item_id: `WITHDRAW-${affiliate.affiliate_code}-${Date.now().toString(36)}`,
+                receiver: paypalEmail
+              }
+            ]
+          })
+        });
+
+        const payoutResult = await payoutRes.json();
+        if (!payoutRes.ok) {
+          throw new Error(`PayPal Transfer Failed (${payoutRes.status}): ${payoutResult.message || JSON.stringify(payoutResult)}`);
+        }
+
+        const paypalBatchId = payoutResult.batch_header?.payout_batch_id || senderBatchId;
+        const nowIso = new Date().toISOString();
+
+        // 6. Update Database Records
+        await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?id=in.(${commissionIds.join(',')})`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            status: 'paid',
+            paid_at: nowIso,
+            payout_reference: paypalBatchId
+          })
+        });
+
+        try {
+          await fetch(`${supabaseUrl}/rest/v1/affiliate_payouts`, {
+            method: 'POST',
+            headers: {
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              affiliate_id: affiliate.id,
+              payout_batch_id: paypalBatchId,
+              amount: Number(readyAmount),
+              currency: 'USD',
+              paypal_email: paypalEmail,
+              status: 'completed',
+              commission_ids: commissionIds,
+              paid_at: nowIso,
+              notes: 'Self-service instant withdrawal'
+            })
+          });
+        } catch (insertErr) {
+          console.warn("affiliate_payouts record notice:", insertErr);
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          amount: Number(payoutAmountFormatted),
+          payoutBatchId: paypalBatchId,
+          batchStatus: payoutResult.batch_header?.batch_status || 'PENDING',
+          receiver: paypalEmail,
+          settledOrders: commissionIds.length
+        }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({
+          error: "WITHDRAW_FAILED",
+          message: err.message
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
     // --- 7. API Secure ZIP Download (For Buyers) ---
     if (url.pathname.startsWith('/api/download-zip')) {
       const rawFile = url.searchParams.get('file') || ''; // AMBIL PARAM MENTAH

@@ -8,7 +8,8 @@ import { supabase } from '../../lib/supabase';
 import { 
   Copy, Check, ArrowRight, Clock, CheckCircle2, DollarSign, 
   AlertCircle, Share2, ExternalLink, Settings, Save, Mail, Hash,
-  Tag, MapPin, Phone, Calendar, Wallet, ChevronRight, FileText
+  Tag, MapPin, Phone, Calendar, Wallet, ChevronRight, FileText,
+  Zap, RefreshCw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { 
@@ -55,6 +56,7 @@ const AffiliatePortal: React.FC = () => {
   const [editStreetAddress, setEditStreetAddress] = useState('');
 
   const [savingSettings, setSavingSettings] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState('');
   const [settingsError, setSettingsError] = useState('');
 
@@ -360,6 +362,40 @@ const AffiliatePortal: React.FC = () => {
 
   const provinceOptions = PROVINCES_BY_COUNTRY[editCountry] || [];
 
+  const handleInstantWithdraw = async () => {
+    if (readyAmount < AFFILIATE_MIN_PAYOUT_USD) {
+      alert(`Minimum withdrawal amount is $${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD. Your cleared balance is currently $${readyAmount.toFixed(2)} USD.`);
+      return;
+    }
+
+    const confirmMsg = `INSTANT PAYPAL WITHDRAWAL\n\n- Cleared Balance: $${readyAmount.toFixed(2)} USD\n- Destination: ${affiliate.paypal_email}\n- Partner Code: ${affiliate.affiliate_code}\n\nThis will trigger an immediate transfer from BombasType directly to your PayPal account via PayPal REST API.\n\nProceed with withdrawal?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsWithdrawing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Session expired. Please log in again.");
+
+      const res = await fetch('/api/affiliate/request-withdraw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      const data = await res.json() as any;
+      if (!res.ok) throw new Error(data.message || data.error || "Withdrawal failed.");
+
+      await fetchAffiliateData();
+      alert(`WITHDRAWAL SUCCESSFUL!\n\n$${Number(data.amount).toFixed(2)} USD has been transferred directly to your PayPal account (${data.receiver})!\n\nPayPal Batch ID: ${data.payoutBatchId}`);
+    } catch (err: any) {
+      alert("Withdrawal Failed: " + err.message);
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans text-vintage-ink">
       
@@ -499,19 +535,42 @@ const AffiliatePortal: React.FC = () => {
               <p className="text-xs text-vintage-ink font-sans leading-relaxed">14-day clearance hold against refund disputes</p>
             </div>
 
-            <div className="p-5 border border-green-800/30 bg-green-50/50 text-left space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-green-950 font-sans">
-                <span>Available for Payout</span>
-                <CheckCircle2 size={16} className="text-green-800" />
+            <div className="p-5 border border-green-800/30 bg-green-50/50 text-left space-y-2 flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-green-950 font-sans">
+                  <span>Available for Payout</span>
+                  <CheckCircle2 size={16} className="text-green-800" />
+                </div>
+                <div className="text-3xl font-display font-bold text-green-900">
+                  ${readyAmount.toFixed(2)}
+                </div>
+                <p className="text-xs text-vintage-ink font-sans leading-relaxed">
+                  {isQualifiedForPayout 
+                    ? `Passed 14-day clearance. Ready for immediate withdrawal!` 
+                    : `$${remainingForThreshold.toFixed(2)} more needed to unlock withdrawal ($50 min).`}
+                </p>
               </div>
-              <div className="text-3xl font-display font-bold text-green-900">
-                ${readyAmount.toFixed(2)}
-              </div>
-              <p className="text-xs text-vintage-ink font-sans leading-relaxed">
-                {isQualifiedForPayout 
-                  ? `Threshold reached ($50+). Scheduled for monthly run on ${nextPayoutInfo.dateString}.` 
-                  : `$${remainingForThreshold.toFixed(2)} more needed to trigger payout ($50 min).`}
-              </p>
+
+              <button
+                onClick={handleInstantWithdraw}
+                disabled={!isQualifiedForPayout || isWithdrawing}
+                className={`w-full mt-2 vintage-btn py-2 px-3 text-xs uppercase font-bold tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  isQualifiedForPayout
+                    ? 'bg-vintage-accent! text-white! hover:bg-vintage-ink! cursor-pointer'
+                    : 'bg-vintage-ink/10 text-vintage-ink/40 border-vintage-ink/20 cursor-not-allowed shadow-none'
+                }`}
+                title={isQualifiedForPayout ? "Withdraw cleared funds instantly to PayPal" : "Requires $50.00 minimum cleared balance"}
+              >
+                {isWithdrawing ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" /> Transferring...
+                  </>
+                ) : (
+                  <>
+                    <Zap size={13} /> {isQualifiedForPayout ? `Instant Withdraw ($${readyAmount.toFixed(2)})` : `Withdraw ($50 Min)`}
+                  </>
+                )}
+              </button>
             </div>
 
             <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5">
@@ -668,16 +727,38 @@ const AffiliatePortal: React.FC = () => {
                 />
               </div>
 
-              <div className="text-xs pt-1 font-sans">
-                {isQualifiedForPayout ? (
-                  <span className="text-green-900 font-bold flex items-center gap-1.5">
-                    <CheckCircle2 size={16} /> You meet the $50 minimum threshold. Your cleared balance of ${readyAmount.toFixed(2)} USD is scheduled for payout on {nextPayoutInfo.dateString}.
-                  </span>
-                ) : (
-                  <span className="text-amber-950 flex items-center gap-1.5 font-medium">
-                    <Clock size={16} className="text-amber-800" /> Currently accumulating: ${remainingForThreshold.toFixed(2)} USD needed to qualify. Any balance under $50 rolls over automatically to subsequent monthly runs.
-                  </span>
-                )}
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-xs font-sans">
+                  {isQualifiedForPayout ? (
+                    <span className="text-green-900 font-bold flex items-center gap-1.5">
+                      <CheckCircle2 size={16} /> You meet the $50 minimum threshold. You can withdraw your cleared balance of ${readyAmount.toFixed(2)} USD instantly to {affiliate.paypal_email}.
+                    </span>
+                  ) : (
+                    <span className="text-amber-950 flex items-center gap-1.5 font-medium">
+                      <Clock size={16} className="text-amber-800" /> Currently accumulating: ${remainingForThreshold.toFixed(2)} USD needed to unlock withdrawal ($50 min).
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleInstantWithdraw}
+                  disabled={!isQualifiedForPayout || isWithdrawing}
+                  className={`vintage-btn py-2 px-5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shrink-0 ${
+                    isQualifiedForPayout
+                      ? 'bg-vintage-accent! text-white! hover:bg-vintage-ink! cursor-pointer'
+                      : 'bg-vintage-ink/10 text-vintage-ink/40 border-vintage-ink/20 cursor-not-allowed shadow-none'
+                  }`}
+                >
+                  {isWithdrawing ? (
+                    <>
+                      <RefreshCw size={13} className="animate-spin" /> Disbursing...
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={13} /> {isQualifiedForPayout ? `⚡ Withdraw Now ($${readyAmount.toFixed(2)})` : `Locked ($50 Min)`}
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
