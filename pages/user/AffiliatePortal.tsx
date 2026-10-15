@@ -65,6 +65,7 @@ const AffiliatePortal: React.FC = () => {
   const [userEmail, setUserEmail] = useState('');
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawInputAmount, setWithdrawInputAmount] = useState('50.00');
   const [withdrawSuccess, setWithdrawSuccess] = useState<{
     grossAmount: number;
     feeAmount: number;
@@ -72,6 +73,7 @@ const AffiliatePortal: React.FC = () => {
     receiver: string;
     batchId: string;
   } | null>(null);
+  const [withdrawError, setWithdrawError] = useState('');
   const [settingsSuccess, setSettingsSuccess] = useState('');
   const [settingsError, setSettingsError] = useState('');
 
