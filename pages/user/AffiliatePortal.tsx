@@ -9,7 +9,7 @@ import {
   Copy, Check, ArrowRight, Clock, CheckCircle2, DollarSign, 
   AlertCircle, Share2, ExternalLink, Settings, Save, Mail, Hash,
   Tag, MapPin, Phone, Calendar, Wallet, ChevronRight, FileText,
-  Zap, RefreshCw
+  Zap, RefreshCw, X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { 
@@ -54,9 +54,13 @@ const AffiliatePortal: React.FC = () => {
   const [editCity, setEditCity] = useState('');
   const [editPostalCode, setEditPostalCode] = useState('');
   const [editStreetAddress, setEditStreetAddress] = useState('');
+  const [autoPayoutEnabled, setAutoPayoutEnabled] = useState(true);
 
   const [savingSettings, setSavingSettings] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawSuccess, setWithdrawSuccess] = useState<{ amount: number; receiver: string; batchId: string } | null>(null);
+  const [withdrawError, setWithdrawError] = useState('');
   const [settingsSuccess, setSettingsSuccess] = useState('');
   const [settingsError, setSettingsError] = useState('');
 
@@ -91,6 +95,16 @@ const AffiliatePortal: React.FC = () => {
         if (affData.postal_code) setEditPostalCode(affData.postal_code);
         if (affData.street_address) setEditStreetAddress(affData.street_address);
 
+        // Auto Payout Preference
+        const cachedPref = localStorage.getItem(`aff_auto_payout_${affData.id}`);
+        if (affData.auto_payout_enabled !== undefined && affData.auto_payout_enabled !== null) {
+          setAutoPayoutEnabled(affData.auto_payout_enabled !== false);
+        } else if (cachedPref !== null) {
+          setAutoPayoutEnabled(cachedPref === '1');
+        } else {
+          setAutoPayoutEnabled(true);
+        }
+
         // Pre-fill dummy data if test account has empty address
         if (!affData.phone_number && user.email === 'gotrainer19@gmail.com') {
           const dummy = getDummyAffiliateData(user.email);
@@ -112,7 +126,31 @@ const AffiliatePortal: React.FC = () => {
           .eq('affiliate_id', affData.id)
           .order('created_at', { ascending: false });
 
-        const loadedComms = commData || [];
+        // Query font_history metadata for attribution details
+        const orderIds = (commData || []).map(c => c.order_id).filter(Boolean);
+        const orderMetaMap = new Map<string, any>();
+        if (orderIds.length > 0) {
+          try {
+            const { data: histData } = await supabase
+              .from('font_history')
+              .select('transaction_id, metadata')
+              .in('transaction_id', orderIds);
+            (histData || []).forEach((h: any) => {
+              if (h.transaction_id && h.metadata) {
+                orderMetaMap.set(h.transaction_id, h.metadata);
+              }
+            });
+          } catch (_) {}
+        }
+
+        const loadedComms = (commData || []).map((c: any) => {
+          const meta = orderMetaMap.get(c.order_id);
+          return {
+            ...c,
+            coupon_code: c.coupon_code || meta?.coupon_code || null,
+            attribution_type: c.attribution_type || meta?.attribution_type || (meta?.coupon_code ? 'coupon' : 'referral_link')
+          };
+        });
         setCommissions(loadedComms);
 
         // Fetch Payouts History (try table first, fallback to synthesized)
@@ -201,6 +239,22 @@ const AffiliatePortal: React.FC = () => {
     }
   };
 
+  const toggleAutoPayout = async () => {
+    const nextVal = !autoPayoutEnabled;
+    setAutoPayoutEnabled(nextVal);
+    if (affiliate?.id) {
+      localStorage.setItem(`aff_auto_payout_${affiliate.id}`, nextVal ? '1' : '0');
+      try {
+        await supabase
+          .from('affiliates')
+          .update({ auto_payout_enabled: nextVal, updated_at: new Date().toISOString() })
+          .eq('id', affiliate.id);
+      } catch (e) {
+        console.warn("Direct toggle update error:", e);
+      }
+    }
+  };
+
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSettingsSuccess('');
@@ -254,6 +308,7 @@ const AffiliatePortal: React.FC = () => {
         city: editCity.trim(),
         postal_code: editPostalCode.trim(),
         street_address: editStreetAddress.trim(),
+        auto_payout_enabled: autoPayoutEnabled,
         updated_at: new Date().toISOString()
       };
 
@@ -284,6 +339,7 @@ const AffiliatePortal: React.FC = () => {
         updatedData = data;
       }
 
+      localStorage.setItem(`aff_auto_payout_${affiliate.id}`, autoPayoutEnabled ? '1' : '0');
       // Sync audience coupon with updated code
       await syncAffiliateCoupon(supabase, affiliate.id, cleanCode);
 
@@ -362,16 +418,19 @@ const AffiliatePortal: React.FC = () => {
 
   const provinceOptions = PROVINCES_BY_COUNTRY[editCountry] || [];
 
-  const handleInstantWithdraw = async () => {
+  const handleOpenWithdrawModal = () => {
     if (readyAmount < AFFILIATE_MIN_PAYOUT_USD) {
       alert(`Minimum withdrawal amount is $${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD. Your cleared balance is currently $${readyAmount.toFixed(2)} USD.`);
       return;
     }
+    setWithdrawError('');
+    setWithdrawSuccess(null);
+    setShowWithdrawModal(true);
+  };
 
-    const confirmMsg = `INSTANT PAYPAL WITHDRAWAL\n\n- Cleared Balance: $${readyAmount.toFixed(2)} USD\n- Destination: ${affiliate.paypal_email}\n- Partner Code: ${affiliate.affiliate_code}\n\nThis will trigger an immediate transfer from BombasType directly to your PayPal account via PayPal REST API.\n\nProceed with withdrawal?`;
-    if (!window.confirm(confirmMsg)) return;
-
+  const executeWithdrawal = async () => {
     setIsWithdrawing(true);
+    setWithdrawError('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Session expired. Please log in again.");
@@ -388,9 +447,13 @@ const AffiliatePortal: React.FC = () => {
       if (!res.ok) throw new Error(data.message || data.error || "Withdrawal failed.");
 
       await fetchAffiliateData();
-      alert(`WITHDRAWAL SUCCESSFUL!\n\n$${Number(data.amount).toFixed(2)} USD has been transferred directly to your PayPal account (${data.receiver})!\n\nPayPal Batch ID: ${data.payoutBatchId}`);
+      setWithdrawSuccess({
+        amount: Number(data.amount || readyAmount),
+        receiver: data.receiver || affiliate.paypal_email,
+        batchId: data.payoutBatchId || ''
+      });
     } catch (err: any) {
-      alert("Withdrawal Failed: " + err.message);
+      setWithdrawError(err.message || "Withdrawal failed. Please try again.");
     } finally {
       setIsWithdrawing(false);
     }
@@ -552,7 +615,7 @@ const AffiliatePortal: React.FC = () => {
               </div>
 
               <button
-                onClick={handleInstantWithdraw}
+                onClick={handleOpenWithdrawModal}
                 disabled={!isQualifiedForPayout || isWithdrawing}
                 className={`w-full mt-2 vintage-btn py-2 px-3 text-xs uppercase font-bold tracking-wider flex items-center justify-center gap-2 transition-all ${
                   isQualifiedForPayout
@@ -616,6 +679,7 @@ const AffiliatePortal: React.FC = () => {
                     <tr className="border-b border-vintage-ink/20 bg-vintage-ink/3 font-mono uppercase text-xs font-bold text-vintage-ink">
                       <th className="p-3">Date</th>
                       <th className="p-3">Typeface / Order</th>
+                      <th className="p-3">Attribution</th>
                       <th className="p-3 text-right">Gross</th>
                       <th className="p-3 text-right">Net Store</th>
                       <th className="p-3 text-right">Your 20% Net</th>
@@ -639,6 +703,17 @@ const AffiliatePortal: React.FC = () => {
                           <span className="text-xs text-vintage-ink/70 truncate block max-w-[200px]">
                             ID: {comm.order_id}
                           </span>
+                        </td>
+                        <td className="p-3 whitespace-nowrap">
+                          {comm.coupon_code || comm.attribution_type === 'coupon' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-purple-800/30 text-purple-900 bg-purple-50 font-sans">
+                              <Tag size={10} className="text-vintage-accent" /> Coupon: {comm.coupon_code || 'PROMO'}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-vintage-ink/20 text-vintage-ink/80 bg-vintage-ink/5 font-sans">
+                              <Share2 size={10} className="text-vintage-ink/60" /> Shared Link
+                            </span>
+                          )}
                         </td>
                         <td className="p-3 text-right text-vintage-ink font-semibold">
                           ${Number(comm.gross_amount || 0).toFixed(2)}
@@ -686,22 +761,51 @@ const AffiliatePortal: React.FC = () => {
               <div className="flex items-start gap-3">
                 <Calendar size={24} className="text-vintage-accent shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-vintage-accent block font-sans">
-                    Payout Schedule
-                  </span>
-                  <h3 className="text-xl font-display font-bold text-vintage-ink">
-                    Next Monthly Payout: {nextPayoutInfo.dateString}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-vintage-accent block font-sans">
+                      Payout Schedule
+                    </span>
+                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 border rounded-xs font-sans ${
+                      autoPayoutEnabled 
+                        ? 'bg-green-100 border-green-300 text-green-950' 
+                        : 'bg-vintage-ink/5 border-vintage-ink/20 text-vintage-ink/70'
+                    }`}>
+                      {autoPayoutEnabled ? 'Auto-Payout Active' : 'Manual Payout Only'}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-display font-bold text-vintage-ink mt-0.5">
+                    {autoPayoutEnabled ? `Next Monthly Payout: ${nextPayoutInfo.dateString}` : 'Automated Payout: Paused'}
                   </h3>
                   <p className="text-xs sm:text-sm text-vintage-ink/80 font-sans mt-0.5">
-                    Disbursements occur on the <span className="font-bold text-vintage-ink">1st of every month</span> for balances reaching the <span className="font-bold text-vintage-ink">${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD</span> minimum.
+                    {autoPayoutEnabled ? (
+                      <>Disbursements occur on the <span className="font-bold text-vintage-ink">1st of every month</span> for balances reaching the <span className="font-bold text-vintage-ink">${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD</span> minimum.</>
+                    ) : (
+                      <>Automated monthly disbursement is paused. Your cleared earnings accumulate until you trigger Instant Withdrawal manually.</>
+                    )}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-xs font-mono font-bold px-3 py-1 bg-white border border-vintage-ink/30 inline-block">
-                  {nextPayoutInfo.daysLeft} DAYS REMAINING
-                </span>
-                <span className="text-xs text-vintage-ink/80 block mt-1 font-sans">
+              <div className="flex flex-col items-start md:items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleAutoPayout}
+                    className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-colors cursor-pointer rounded-xs font-sans ${
+                      autoPayoutEnabled 
+                        ? 'bg-green-100 border-green-300 text-green-950 hover:bg-green-200' 
+                        : 'bg-amber-100 border-amber-300 text-amber-950 hover:bg-amber-200'
+                    }`}
+                    title="Click to toggle automated monthly payouts"
+                  >
+                    {autoPayoutEnabled ? '✓ Auto-Payout: ON' : '✕ Auto-Payout: OFF'}
+                  </button>
+                  {autoPayoutEnabled && (
+                    <span className="text-xs font-mono font-bold px-3 py-1.5 bg-white border border-vintage-ink/30 inline-block rounded-xs">
+                      {nextPayoutInfo.daysLeft} DAYS REMAINING
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs text-vintage-ink/80 block font-sans">
                   To: <span className="font-mono font-bold text-vintage-ink">{affiliate.paypal_email}</span>
                 </span>
               </div>
@@ -918,8 +1022,32 @@ const AffiliatePortal: React.FC = () => {
                   className="w-full border border-vintage-ink/30 px-4 py-3 font-mono text-sm bg-vintage-paper focus:bg-white outline-none focus:border-vintage-ink"
                 />
                 <span className="text-xs text-vintage-ink/80 font-sans block">
-                  All monthly cleared commission earnings will be disbursed directly to this PayPal address.
+                  All cleared commission earnings will be disbursed directly to this PayPal address.
                 </span>
+              </div>
+
+              {/* Monthly Auto-Payout Toggle */}
+              <div className="p-4 border border-vintage-ink/20 bg-vintage-ink/3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Zap size={14} className="text-vintage-accent" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink">Monthly Automated Disbursement</span>
+                  </div>
+                  <p className="text-xs text-vintage-ink/80 leading-relaxed max-w-lg font-sans">
+                    When enabled, cleared commissions ($50.00+ minimum) are automatically paid out on the 1st of each month via PayPal. If disabled, your balance accumulates indefinitely until you trigger Instant Withdrawal manually.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAutoPayoutEnabled(!autoPayoutEnabled)}
+                  className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer whitespace-nowrap self-start sm:self-center font-sans ${
+                    autoPayoutEnabled 
+                      ? 'border-emerald-700 bg-emerald-50 text-emerald-900 hover:bg-emerald-100' 
+                      : 'border-vintage-ink/30 bg-white text-vintage-ink hover:bg-vintage-paper'
+                  }`}
+                >
+                  {autoPayoutEnabled ? '✓ Auto-Payout ON' : '✕ Auto-Payout OFF (Manual Only)'}
+                </button>
               </div>
 
               {/* Vanity Code Field */}
@@ -1115,6 +1243,132 @@ const AffiliatePortal: React.FC = () => {
 
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* WITHDRAWAL CONFIRMATION MODAL (BOMBASTYPE REFINED VINTAGE) */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 font-sans">
+          <div className="bg-vintage-paper border border-vintage-ink/30 shadow-2xl max-w-md w-full p-6 space-y-5 text-vintage-ink relative rounded-xs">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-vintage-ink/15 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xs bg-vintage-ink/5 border border-vintage-ink/20 flex items-center justify-center">
+                  <Wallet size={16} className="text-vintage-accent" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold font-serif uppercase tracking-tight text-vintage-ink">Confirm Withdrawal</h3>
+                  <p className="text-[10px] font-bold text-vintage-ink/60 uppercase tracking-wider">PayPal Payout Transfer</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { if (!isWithdrawing) { setShowWithdrawModal(false); setWithdrawError(''); setWithdrawSuccess(null); } }}
+                disabled={isWithdrawing}
+                className="p-1 text-vintage-ink/60 hover:text-vintage-ink border border-transparent hover:border-vintage-ink/20 transition-colors cursor-pointer rounded-xs"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {withdrawSuccess ? (
+              <div className="space-y-4 py-2">
+                <div className="p-4 border border-green-300 bg-green-50/80 space-y-2 text-center rounded-xs">
+                  <CheckCircle2 size={36} className="text-green-700 mx-auto" />
+                  <h4 className="text-sm font-bold uppercase text-green-950 font-serif">Transfer Completed!</h4>
+                  <p className="text-xs text-green-900 leading-relaxed font-sans font-medium">
+                    <span className="font-bold">${withdrawSuccess.amount.toFixed(2)} USD</span> has been sent directly to your PayPal account:
+                  </p>
+                  <p className="font-mono text-xs font-bold bg-white/80 border border-green-300 py-1 px-3 rounded-xs inline-block text-green-950">
+                    {withdrawSuccess.receiver}
+                  </p>
+                  {withdrawSuccess.batchId && (
+                    <p className="text-[10px] font-mono text-green-800/80">
+                      Batch Ref: {withdrawSuccess.batchId}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => { setShowWithdrawModal(false); setWithdrawSuccess(null); }}
+                  className="w-full py-2.5 bg-vintage-ink text-vintage-paper font-bold text-xs uppercase tracking-wider border border-vintage-ink hover:bg-vintage-accent transition-all cursor-pointer rounded-xs"
+                >
+                  Close Window
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Amount Card */}
+                <div className="p-4 border border-vintage-ink/15 bg-vintage-ink/5 flex items-center justify-between rounded-xs">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-vintage-ink/60 block">Payout Amount</span>
+                    <span className="text-2xl font-bold font-mono text-vintage-ink">${readyAmount.toFixed(2)} USD</span>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-green-100 border border-green-300 text-green-900 rounded-xs">
+                    Cleared Balance
+                  </span>
+                </div>
+
+                {/* Recipient Account Detail */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between items-center py-1.5 border-b border-vintage-ink/10">
+                    <span className="font-medium text-vintage-ink/70 uppercase text-[11px]">PayPal Destination</span>
+                    <span className="font-mono font-bold text-vintage-ink bg-vintage-ink/5 px-2 py-0.5 border border-vintage-ink/10 text-xs rounded-xs">
+                      {affiliate.paypal_email}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-1.5 border-b border-vintage-ink/10">
+                    <span className="font-medium text-vintage-ink/70 uppercase text-[11px]">Partner Code</span>
+                    <span className="font-mono font-bold text-vintage-ink">{affiliate.affiliate_code}</span>
+                  </div>
+                </div>
+
+                {/* Warning Callout */}
+                <div className="p-3 border border-amber-300 bg-amber-50/80 space-y-1 text-xs rounded-xs">
+                  <div className="flex items-center gap-1.5 font-bold uppercase text-amber-950 text-[11px]">
+                    <AlertCircle size={14} className="text-amber-700 shrink-0" />
+                    <span>Double-Check Recipient Email</span>
+                  </div>
+                  <p className="text-[11px] text-amber-900/90 leading-snug">
+                    Please ensure the recipient PayPal address above is accurate and active. Transfers sent to an incorrect PayPal account cannot be reversed or refunded by the platform.
+                  </p>
+                </div>
+
+                {withdrawError && (
+                  <div className="p-3 border border-red-300 bg-red-50 text-red-900 text-xs font-bold rounded-xs">
+                    {withdrawError}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setShowWithdrawModal(false); setWithdrawError(''); }}
+                    disabled={isWithdrawing}
+                    className="flex-1 py-2.5 border border-vintage-ink/20 hover:border-vintage-ink text-vintage-ink text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer rounded-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={executeWithdrawal}
+                    disabled={isWithdrawing}
+                    className="flex-1 py-2.5 bg-vintage-ink text-vintage-paper hover:bg-vintage-accent text-xs font-bold uppercase tracking-wider border border-vintage-ink transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer rounded-xs"
+                  >
+                    {isWithdrawing ? (
+                      <>
+                        <RefreshCw size={13} className="animate-spin" /> Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Zap size={13} /> Confirm & Send
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

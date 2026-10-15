@@ -9,7 +9,7 @@ import {
   Share2, Users, DollarSign, Clock, CheckCircle2, 
   AlertCircle, Download, Check, ShieldCheck, RefreshCw, 
   ExternalLink, Calendar, Eye, FileText, ArrowUpRight, 
-  Search, X, Filter, ChevronRight, Wallet, Zap
+  Search, X, Filter, ChevronRight, Wallet, Zap, Tag
 } from 'lucide-react';
 import { AFFILIATE_MIN_PAYOUT_USD, getNextMonthlyPayoutDate } from '../../utils/affiliateGeo';
 
@@ -27,6 +27,7 @@ interface AffiliateRecord {
   city?: string;
   postal_code?: string;
   street_address?: string;
+  auto_payout_enabled?: boolean;
   created_at: string;
 }
 
@@ -45,6 +46,8 @@ interface CommissionRecord {
   status: 'pending_clearance' | 'approved' | 'paid' | 'reversed';
   paid_at?: string;
   payout_reference?: string;
+  coupon_code?: string;
+  attribution_type?: string;
   created_at: string;
 }
 
@@ -70,6 +73,15 @@ const AffiliateManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'due_payouts' | 'partners' | 'commissions' | 'history'>('due_payouts');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Live PayPal balance state
+  const [paypalLiveBalance, setPaypalLiveBalance] = useState<{
+    available: number;
+    total: number;
+    asOf: string;
+    isSandbox: boolean;
+  } | null>(null);
+  const [isFetchingBalance, setIsFetchingBalance] = useState(false);
   
   // Modal states
   const [inspectedPartner, setInspectedPartner] = useState<AffiliateRecord | null>(null);
@@ -86,7 +98,32 @@ const AffiliateManager: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    fetchPayPalBalance();
   }, []);
+
+  const fetchPayPalBalance = async () => {
+    setIsFetchingBalance(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/admin/paypal-balance', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      const data = await res.json() as any;
+      if (data.success) {
+        setPaypalLiveBalance({
+          available: Number(data.available_balance || 0),
+          total: Number(data.total_balance || 0),
+          asOf: data.as_of_time,
+          isSandbox: data.is_sandbox
+        });
+      }
+    } catch (err) {
+      console.warn("Could not fetch live PayPal balance:", err);
+    } finally {
+      setIsFetchingBalance(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -97,7 +134,33 @@ const AffiliateManager: React.FC = () => {
       ]);
       
       const loadedAffiliates = affData || [];
-      const loadedCommissions = commData || [];
+      
+      // Query font_history metadata for attribution details
+      const orderIds = (commData || []).map(c => c.order_id).filter(Boolean);
+      const orderMetaMap = new Map<string, any>();
+      if (orderIds.length > 0) {
+        try {
+          const { data: histData } = await supabase
+            .from('font_history')
+            .select('transaction_id, metadata')
+            .in('transaction_id', orderIds);
+          (histData || []).forEach((h: any) => {
+            if (h.transaction_id && h.metadata) {
+              orderMetaMap.set(h.transaction_id, h.metadata);
+            }
+          });
+        } catch (_) {}
+      }
+
+      const loadedCommissions = (commData || []).map((c: any) => {
+        const meta = orderMetaMap.get(c.order_id);
+        return {
+          ...c,
+          coupon_code: c.coupon_code || meta?.coupon_code || null,
+          attribution_type: c.attribution_type || meta?.attribution_type || (meta?.coupon_code ? 'coupon' : 'referral_link')
+        };
+      });
+
       setAffiliates(loadedAffiliates);
       setCommissions(loadedCommissions);
 
@@ -196,7 +259,9 @@ const AffiliateManager: React.FC = () => {
     .filter(c => c.status === 'pending_clearance' || c.status === 'approved')
     .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
 
-  const safeToWithdraw = Math.max(0, totalNetStore - affiliateReservedPool);
+  const safeToWithdraw = paypalLiveBalance !== null
+    ? Math.max(0, paypalLiveBalance.available - affiliateReservedPool)
+    : Math.max(0, totalNetStore - affiliateReservedPool);
 
   // Group due balances by affiliate
   const now = new Date();
@@ -240,9 +305,55 @@ const AffiliateManager: React.FC = () => {
     };
   });
 
-  const qualifiedPayouts = affiliateDueBalances.filter(item => item.isQualified);
+  // Respect creator preference for monthly auto-payout
+  const qualifiedPayouts = affiliateDueBalances.filter(item => item.isQualified && (item.affiliate.auto_payout_enabled !== false));
+  const manualOnlyQualifiedPayouts = affiliateDueBalances.filter(item => item.isQualified && item.affiliate.auto_payout_enabled === false);
   const accumulatingPayouts = affiliateDueBalances.filter(item => item.dueAmount > 0 && !item.isQualified);
   const holdingOnlyPayouts = affiliateDueBalances.filter(item => item.dueAmount === 0 && item.holdingAmount > 0);
+
+  // Direct instant single-partner payout via PayPal REST API
+  const handleDirectPayPalPayout = async (item: typeof affiliateDueBalances[0]) => {
+    const { affiliate, dueCommissions, dueAmount } = item;
+    const commissionIds = dueCommissions.map(c => c.id);
+    const confirmMsg = `EXECUTE DIRECT PAYPAL TRANSFER?\n\n- Partner: ${affiliate.affiliate_code}\n- Recipient: ${affiliate.paypal_email}\n- Amount: $${dueAmount.toFixed(2)} USD\n- Orders to Settle: ${commissionIds.length}\n\nThis will trigger an immediate live transfer from your PayPal account via PayPal REST API.\n\nProceed?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsSubmittingPayout(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Session expired. Please log in again.");
+
+      const res = await fetch('/api/admin/paypal-payout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          payouts: [{
+            affiliate_id: affiliate.id,
+            affiliate_code: affiliate.affiliate_code,
+            paypal_email: affiliate.paypal_email,
+            amount: dueAmount,
+            currency: 'USD',
+            commission_ids: commissionIds
+          }],
+          notes: `Direct admin payout for ${affiliate.affiliate_code}`
+        })
+      });
+
+      const data = await res.json() as any;
+      if (!res.ok) throw new Error(data.error || data.message || "Payout request failed.");
+
+      alert(`PAYPAL TRANSFER SUCCESSFUL!\n\nPayPal Batch ID: ${data.payoutBatchId}\nStatus: ${data.batchStatus}\nAmount: $${dueAmount.toFixed(2)} USD transferred to ${affiliate.paypal_email}!\nCommissions updated to paid.`);
+      await fetchData();
+      fetchPayPalBalance();
+    } catch (err: any) {
+      alert("PayPal Payout Failed: " + err.message);
+    } finally {
+      setIsSubmittingPayout(false);
+    }
+  };
 
   // Export PayPal Mass Payment CSV for Qualified Affiliates
   const handleExportPayPalCSV = () => {
@@ -514,14 +625,28 @@ const AffiliateManager: React.FC = () => {
           <p className="text-xs text-amber-900 font-sans font-medium">Commissions due + in-warranty hold</p>
         </div>
 
-        <div className="p-5 border border-green-900/20 bg-green-50/70 text-left space-y-1.5 shadow-xs">
-          <span className="text-xs font-bold uppercase tracking-wider text-green-950 block font-sans">
-            SAFE TO WITHDRAW (NET PROFIT)
-          </span>
+        <div className="p-5 border border-green-900/20 bg-green-50/70 text-left space-y-1.5 shadow-xs relative">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-green-950 block font-sans">
+              SAFE TO WITHDRAW (NET PROFIT)
+            </span>
+            <button
+              onClick={fetchPayPalBalance}
+              disabled={isFetchingBalance}
+              title="Sync live PayPal balance"
+              className="text-[9px] font-bold uppercase flex items-center gap-1 px-1.5 py-0.5 border border-green-900/30 bg-white text-green-950 hover:bg-green-100 transition-all cursor-pointer shadow-2xs"
+            >
+              <RefreshCw size={9} className={isFetchingBalance ? 'animate-spin' : ''} /> {isFetchingBalance ? 'Syncing...' : 'Sync PP'}
+            </button>
+          </div>
           <div className="text-3xl font-display font-bold text-green-900">
             ${safeToWithdraw.toFixed(2)}
           </div>
-          <p className="text-xs text-green-900 font-sans font-medium">Store profit safe to sweep to bank</p>
+          <p className="text-xs text-green-900 font-sans font-medium">
+            {paypalLiveBalance !== null
+              ? `Live PayPal ($${paypalLiveBalance.available.toFixed(2)}) - Pool ($${affiliateReservedPool.toFixed(2)})`
+              : 'Store profit safe to sweep to bank'}
+          </p>
         </div>
       </div>
 
@@ -654,12 +779,21 @@ const AffiliateManager: React.FC = () => {
                           </span>
                         </td>
                         <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-2">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleDirectPayPalPayout(item)}
+                              disabled={isSubmittingPayout}
+                              className="vintage-btn py-1 px-2.5 text-[10px] tracking-wider uppercase font-bold bg-amber-700! text-white! flex items-center gap-1 cursor-pointer"
+                              title="Send funds directly to partner PayPal account via REST API"
+                            >
+                              <Zap size={11} className={isSubmittingPayout ? 'animate-spin' : ''} /> Send PayPal
+                            </button>
                             <button
                               onClick={() => handleOpenPayoutModal(item)}
-                              className="vintage-btn py-1 px-3 text-[10px] tracking-wider uppercase font-bold bg-green-900! text-white!"
+                              className="vintage-btn py-1 px-2 text-[10px] tracking-wider uppercase font-bold bg-vintage-ink/10 text-vintage-ink hover:bg-vintage-ink/20"
+                              title="Record offline / manual payment"
                             >
-                              Record Payout
+                              Record Manual
                             </button>
                             <button
                               onClick={() => setInspectedPartner(item.affiliate)}
@@ -819,17 +953,38 @@ const AffiliateManager: React.FC = () => {
                           ${(balance?.holdingAmount || 0).toFixed(2)}
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 text-center">
-                          <span className="px-2.5 py-0.5 border border-vintage-ink/40 text-[10px] uppercase font-bold bg-white text-vintage-ink">
-                            {a.status}
-                          </span>
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="px-2 py-0.5 border border-vintage-ink/30 text-[9px] uppercase font-bold bg-white text-vintage-ink">
+                              {a.status}
+                            </span>
+                            <span className={`px-1.5 py-0.2 border text-[8px] uppercase font-bold ${
+                              a.auto_payout_enabled === false 
+                                ? 'border-amber-800/30 bg-amber-50 text-amber-900' 
+                                : 'border-emerald-800/30 bg-emerald-50 text-emerald-900'
+                            }`}>
+                              {a.auto_payout_enabled === false ? 'Manual Only' : 'Auto 1st'}
+                            </span>
+                          </div>
                         </td>
                         <td className="p-3 text-center">
-                          <button
-                            onClick={() => setInspectedPartner(a)}
-                            className="vintage-btn py-1 px-3 text-[10px] tracking-wider uppercase font-bold inline-flex items-center gap-1"
-                          >
-                            <Eye size={12} /> View Details
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            {balance && balance.isQualified && (
+                              <button
+                                onClick={() => handleDirectPayPalPayout(balance)}
+                                disabled={isSubmittingPayout}
+                                className="vintage-btn py-1 px-2.5 text-[10px] tracking-wider uppercase font-bold bg-amber-700! text-white! inline-flex items-center gap-1 cursor-pointer"
+                                title="Send live PayPal transfer now"
+                              >
+                                <Zap size={10} className={isSubmittingPayout ? 'animate-spin' : ''} /> Pay Now (${balance.dueAmount.toFixed(2)})
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setInspectedPartner(a)}
+                              className="vintage-btn py-1 px-2.5 text-[10px] tracking-wider uppercase font-bold inline-flex items-center gap-1"
+                            >
+                              <Eye size={12} /> View Details
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -948,6 +1103,7 @@ const AffiliateManager: React.FC = () => {
                     <th className="p-3 border-r border-vintage-ink">Order ID</th>
                     <th className="p-3 border-r border-vintage-ink">Partner</th>
                     <th className="p-3 border-r border-vintage-ink">Typeface</th>
+                    <th className="p-3 border-r border-vintage-ink">Attribution</th>
                     <th className="p-3 border-r border-vintage-ink text-right">Gross Paid</th>
                     <th className="p-3 border-r border-vintage-ink text-right">PayPal Fee</th>
                     <th className="p-3 border-r border-vintage-ink text-right">Net Store</th>
@@ -971,6 +1127,17 @@ const AffiliateManager: React.FC = () => {
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 font-sans font-bold text-vintage-ink">
                           {c.font_name || 'Specimen License'}
+                        </td>
+                        <td className="p-3 border-r border-vintage-ink/20 whitespace-nowrap">
+                          {c.coupon_code || c.attribution_type === 'coupon' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-purple-300 bg-purple-50 text-purple-900 font-sans rounded-xs">
+                              <Tag size={10} className="text-purple-600" /> Coupon ({c.coupon_code || 'CODE'})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-vintage-ink/20 bg-vintage-ink/5 text-vintage-ink/70 font-sans rounded-xs">
+                              <Share2 size={10} className="text-vintage-ink/50" /> Referral Link
+                            </span>
+                          )}
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 text-right font-medium">
                           ${Number(c.gross_amount || 0).toFixed(2)}

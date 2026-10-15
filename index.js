@@ -2415,6 +2415,10 @@ export default {
           }
         }
         
+        const orderCouponCode = metadata?.coupon_code || null;
+        const orderAffiliateRef = metadata?.affiliate_ref || null;
+        const orderAttributionType = orderCouponCode ? 'coupon' : (orderAffiliateRef ? 'referral_link' : null);
+
         if (items.length > 0) {
           historyEntries = items.map(item => ({
             user_id: targetUserId,
@@ -2423,7 +2427,13 @@ export default {
             transaction_id: transactionId,
             tier: (item.tier || 'SOLO').toUpperCase(), // Menyimpan key: SOLO, SMALL_50K, PERSONAL, dsb.
             usages: item.usages || ['desktop'],
-            metadata: { ...item.metadata, price_at_purchase: item.price } 
+            metadata: { 
+              ...item.metadata, 
+              price_at_purchase: item.price,
+              coupon_code: orderCouponCode,
+              affiliate_ref: orderAffiliateRef,
+              attribution_type: orderAttributionType
+            } 
           }));
         } else {
           // FIXED: Ambil font_id dari body, metadata, atau item pertama di cart agar tidak default ke zeros (penyebab FK Violation)
@@ -2440,7 +2450,13 @@ export default {
             transaction_id: transactionId,
             tier: (tier || 'SOLO').toUpperCase(),
             usages: usages || (type === 'trial' ? ['trial'] : ['desktop']),
-            metadata: { ...metadata, price_at_purchase: amount || 0 }
+            metadata: { 
+              ...metadata, 
+              price_at_purchase: amount || 0,
+              coupon_code: orderCouponCode,
+              affiliate_ref: orderAffiliateRef,
+              attribution_type: orderAttributionType
+            }
           }];
         }
 
@@ -2466,6 +2482,8 @@ export default {
               }
 
               let aff = null;
+              let commissionAttributionType = affCode ? 'referral_link' : 'direct';
+              let commissionCouponCode = null;
 
               if (affCode && supabaseUrl && serviceRoleKey) {
                 const affRes = await fetch(`${supabaseUrl}/rest/v1/affiliates?affiliate_code=ilike.${encodeURIComponent(affCode)}&status=eq.active&select=id,user_id,paypal_email,commission_rate`, {
@@ -2475,13 +2493,14 @@ export default {
                   const affData = await affRes.json();
                   if (affData && affData.length > 0) {
                     aff = affData[0];
+                    commissionAttributionType = 'referral_link';
                   }
                 }
               }
 
               // Fallback: If no link was clicked, but an affiliate-linked coupon was redeemed
               if (!aff && metadata?.coupon_code && supabaseUrl && serviceRoleKey) {
-                const couponRes = await fetch(`${supabaseUrl}/rest/v1/coupons?code=eq.${encodeURIComponent(metadata.coupon_code)}&select=affiliate_id,is_active`, {
+                const couponRes = await fetch(`${supabaseUrl}/rest/v1/coupons?code=eq.${encodeURIComponent(metadata.coupon_code)}&select=code,affiliate_id,is_active`, {
                   headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
                 });
                 if (couponRes.ok) {
@@ -2495,10 +2514,18 @@ export default {
                       const affByIdData = await affByIdRes.json();
                       if (affByIdData && affByIdData.length > 0) {
                         aff = affByIdData[0];
+                        commissionAttributionType = 'coupon';
+                        commissionCouponCode = couponData[0].code || metadata.coupon_code;
                       }
                     }
                   }
                 }
+              }
+
+              // If aff was found and coupon was also passed, record coupon details
+              if (aff && metadata?.coupon_code && !commissionCouponCode) {
+                commissionCouponCode = metadata.coupon_code;
+                commissionAttributionType = 'coupon';
               }
 
               if (aff) {
@@ -2523,27 +2550,47 @@ export default {
                       const commissionAmount = parseFloat((netStore * rate).toFixed(2));
 
                       if (commissionAmount > 0) {
-                        await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions`, {
+                        const commRecord = {
+                          affiliate_id: aff.id,
+                          order_id: transactionId,
+                          font_name: fontName || items.map(i => i.name).join(', '),
+                          buyer_email: email,
+                          gross_amount: gross,
+                          paypal_inbound_fee: inboundFee,
+                          net_store_amount: netStore,
+                          commission_rate: rate,
+                          commission_amount: commissionAmount,
+                          status: 'pending_clearance',
+                          cleared_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+                        };
+
+                        if (commissionAttributionType) commRecord.attribution_type = commissionAttributionType;
+                        if (commissionCouponCode) commRecord.coupon_code = commissionCouponCode;
+
+                        let commInsertRes = await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions`, {
                           method: 'POST',
                           headers: {
                             'apikey': serviceRoleKey,
                             'Authorization': `Bearer ${serviceRoleKey}`,
                             'Content-Type': 'application/json'
                           },
-                          body: JSON.stringify({
-                            affiliate_id: aff.id,
-                            order_id: transactionId,
-                            font_name: fontName || items.map(i => i.name).join(', '),
-                            buyer_email: email,
-                            gross_amount: gross,
-                            paypal_inbound_fee: inboundFee,
-                            net_store_amount: netStore,
-                            commission_rate: rate,
-                            commission_amount: commissionAmount,
-                            status: 'pending_clearance',
-                            cleared_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
-                          })
+                          body: JSON.stringify(commRecord)
                         });
+
+                        // Fallback if table does not yet have attribution_type or coupon_code columns
+                        if (!commInsertRes.ok) {
+                          delete commRecord.attribution_type;
+                          delete commRecord.coupon_code;
+                          await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions`, {
+                            method: 'POST',
+                            headers: {
+                              'apikey': serviceRoleKey,
+                              'Authorization': `Bearer ${serviceRoleKey}`,
+                              'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(commRecord)
+                          });
+                        }
                       }
                     }
                   }
@@ -3579,18 +3626,6 @@ export default {
 
         const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
         const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-        const clientId = env.PAYPAL_CLIENT_ID;
-        const clientSecret = env.PAYPAL_CLIENT_SECRET;
-
-        if (!clientId || !clientSecret) {
-          return new Response(JSON.stringify({ 
-            error: "PAYPAL_CREDENTIALS_MISSING", 
-            message: "PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET is not configured on the server." 
-          }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-          });
-        }
 
         // Determine Sandbox vs Live mode
         let isSandbox = true;
@@ -3602,6 +3637,23 @@ export default {
             isSandbox = settingData[0].value === true || settingData[0].value === 'true';
           }
         } catch (_) {}
+
+        const clientId = isSandbox 
+          ? (env.PAYPAL_SANDBOX_CLIENT_ID || env.PAYPAL_CLIENT_ID) 
+          : (env.PAYPAL_CLIENT_ID || env.PAYPAL_SANDBOX_CLIENT_ID);
+        const clientSecret = isSandbox 
+          ? (env.PAYPAL_SANDBOX_CLIENT_SECRET || env.PAYPAL_CLIENT_SECRET) 
+          : (env.PAYPAL_CLIENT_SECRET || env.PAYPAL_SANDBOX_CLIENT_SECRET);
+
+        if (!clientId || !clientSecret) {
+          return new Response(JSON.stringify({ 
+            error: "PAYPAL_CREDENTIALS_MISSING", 
+            message: "PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET is not configured on the server." 
+          }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
 
         const paypalHost = isSandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 
@@ -3745,8 +3797,24 @@ export default {
 
         const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
         const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-        const clientId = env.PAYPAL_CLIENT_ID;
-        const clientSecret = env.PAYPAL_CLIENT_SECRET;
+
+        // Determine Sandbox vs Live mode
+        let isSandbox = true;
+        try {
+          const { data: settingData } = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode`, {
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+          }).then(r => r.json());
+          if (settingData && settingData.length > 0) {
+            isSandbox = settingData[0].value === true || settingData[0].value === 'true';
+          }
+        } catch (_) {}
+
+        const clientId = isSandbox 
+          ? (env.PAYPAL_SANDBOX_CLIENT_ID || env.PAYPAL_CLIENT_ID) 
+          : (env.PAYPAL_CLIENT_ID || env.PAYPAL_SANDBOX_CLIENT_ID);
+        const clientSecret = isSandbox 
+          ? (env.PAYPAL_SANDBOX_CLIENT_SECRET || env.PAYPAL_CLIENT_SECRET) 
+          : (env.PAYPAL_CLIENT_SECRET || env.PAYPAL_SANDBOX_CLIENT_SECRET);
 
         if (!clientId || !clientSecret) {
           return new Response(JSON.stringify({ 
@@ -3808,17 +3876,7 @@ export default {
           });
         }
 
-        // 3. Determine Sandbox vs Live Mode
-        let isSandbox = true;
-        try {
-          const { data: settingData } = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode`, {
-            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
-          }).then(r => r.json());
-          if (settingData && settingData.length > 0) {
-            isSandbox = settingData[0].value === true || settingData[0].value === 'true';
-          }
-        } catch (_) {}
-
+        // 3. Determine Sandbox vs Live Mode Host
         const paypalHost = isSandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 
         // 4. Request OAuth2 Access Token
@@ -3933,6 +3991,103 @@ export default {
           error: "WITHDRAW_FAILED",
           message: err.message
         }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // --- 6G. API Live PayPal Account Balance (Bombastype Admin Only) ---
+    if (url.pathname === '/api/admin/paypal-balance' && request.method === 'GET') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+        // Determine Sandbox vs Live mode
+        let isSandbox = true;
+        try {
+          const { data: settingData } = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode`, {
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+          }).then(r => r.json());
+          if (settingData && settingData.length > 0) {
+            isSandbox = settingData[0].value === true || settingData[0].value === 'true';
+          }
+        } catch (_) {}
+
+        const clientId = isSandbox 
+          ? (env.PAYPAL_SANDBOX_CLIENT_ID || env.PAYPAL_CLIENT_ID) 
+          : (env.PAYPAL_CLIENT_ID || env.PAYPAL_SANDBOX_CLIENT_ID);
+        const clientSecret = isSandbox 
+          ? (env.PAYPAL_SANDBOX_CLIENT_SECRET || env.PAYPAL_CLIENT_SECRET) 
+          : (env.PAYPAL_CLIENT_SECRET || env.PAYPAL_SANDBOX_CLIENT_SECRET);
+
+        if (!clientId || !clientSecret) {
+          return new Response(JSON.stringify({ 
+            error: "PAYPAL_CREDENTIALS_MISSING", 
+            message: "PayPal integration credentials are not configured on the server." 
+          }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const paypalHost = isSandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+
+        // 1. Request OAuth2 Access Token
+        const basicAuth = btoa(`${clientId}:${clientSecret}`);
+        const tokenRes = await fetch(`${paypalHost}/v1/oauth2/token`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${basicAuth}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: 'grant_type=client_credentials'
+        });
+
+        const tokenData = await tokenRes.json();
+        if (!tokenRes.ok || !tokenData.access_token) {
+          throw new Error(`PayPal OAuth Failed (${tokenRes.status}): ${tokenData.error_description || tokenData.error || 'Invalid credentials'}`);
+        }
+        const accessToken = tokenData.access_token;
+
+        // 2. Fetch Account Balances from PayPal REST API
+        const balRes = await fetch(`${paypalHost}/v1/reporting/balances?currency_code=USD`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!balRes.ok) {
+          const errText = await balRes.text();
+          throw new Error(`PayPal Balance API Failed (${balRes.status}): ${errText}`);
+        }
+
+        const balData = await balRes.json();
+        const primaryBal = balData.balances?.find(b => b.currency === 'USD') || balData.balances?.[0];
+
+        return new Response(JSON.stringify({
+          success: true,
+          available_balance: primaryBal?.available_balance?.value ? parseFloat(primaryBal.available_balance.value) : 0,
+          total_balance: primaryBal?.total_balance?.value ? parseFloat(primaryBal.total_balance.value) : 0,
+          currency: primaryBal?.currency || 'USD',
+          account_id: balData.account_id || null,
+          as_of_time: balData.as_of_time || new Date().toISOString(),
+          is_sandbox: isSandbox
+        }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, error: err.message }), {
           status: 500,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
@@ -4179,15 +4334,13 @@ export default {
 
         let licenseBody = `BOMBASTYPE — OFFICIAL LICENSE CERTIFICATE\n`;
         licenseBody += `========================================================================\n`;
-        licenseBody += `ORDER ID       : ${transactionId || 'N/A'} (PRIVATE - KEEP CONFIDENTIAL)\n`;
-        licenseBody += `LICENSE KEY    : ${licenseKey} (PUBLIC LICENSE ID IN FONT BINARY)\n`;
+        licenseBody += `ORDER ID       : ${transactionId || 'N/A'}\n`;
         licenseBody += `LICENSE HOLDER : ${buyerEmail}\n`;
         licenseBody += `LICENSEE NAME  : ${buyerName}\n`;
         licenseBody += `ADDRESS        : ${buyerAddress}\n`;
         licenseBody += `ISSUE DATE     : ${issueDate}\n`;
         const displayFontName = txData.actual_name || cleanFontName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
         licenseBody += `ASSET NAME     : ${displayFontName}\n`;
-        licenseBody += `SECURITY HASH  : BT-SIG-${watermarkSig}\n`;
         licenseBody += `------------------------------------------------------------------------\n\n`;
 
         licenseBody += `LICENSED USAGE TERMS:\n\n`;

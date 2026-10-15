@@ -406,8 +406,8 @@ const Orders = () => {
       // 2. Susun isi LICENSE.txt sesuai protokol resmi Bombastype
       let licenseBody = `BOMBASTYPE — OFFICIAL LICENSE CERTIFICATE\n`;
       licenseBody += `========================================================================\n`;
-      licenseBody += `ORDER ID       : ${order.transaction_id || 'N/A'} (USE AS PASSWORD RESETTER)\n`;
-      licenseBody += `LICENSE HOLDER : ${buyerEmail} (USERNAME)\n`;
+      licenseBody += `ORDER ID       : ${order.transaction_id || 'N/A'}\n`;
+      licenseBody += `LICENSE HOLDER : ${buyerEmail}\n`;
       licenseBody += `LICENSEE NAME  : ${buyerName}\n`;
       licenseBody += `ADDRESS        : ${buyerAddress}\n`;
       licenseBody += `ISSUE DATE     : ${issueDate}\n`;
