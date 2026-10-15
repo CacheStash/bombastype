@@ -104,23 +104,23 @@ const UserDashboard = () => {
         fixed md:sticky md:top-0 w-full md:w-72 border-r-0 md:border-r border-vintage-ink bg-vintage-background flex flex-col transition-all duration-300 z-40
         ${isMenuOpen ? 'top-15.25 h-[calc(100vh-61px)] border-b border-vintage-ink' : '-top-full md:top-0 h-0 md:h-screen overflow-hidden md:overflow-visible'}
       `}>
-        <div className="p-10 border-b border-vintage-ink flex flex-col gap-4">
-          <Link to="/" className="flex items-center gap-2 text-[9px] font-bold text-vintage-accent hover:text-vintage-ink transition-colors tracking-widest uppercase">
-            <ArrowLeft size={12} /> Back to Archive
+        <div className="p-8 sm:p-10 border-b border-vintage-ink flex flex-col gap-4">
+          <Link to="/" className="flex items-center gap-2 text-xs font-bold text-vintage-accent hover:text-vintage-ink transition-colors tracking-wider uppercase font-sans">
+            <ArrowLeft size={14} /> Back to Catalog
           </Link>
           <div className="pt-2">
             <p className="text-3xl font-script text-vintage-ink capitalize">
               Hello, {fullName ? fullName.split(' ')[0] : (userEmail ? userEmail.split('@')[0] : 'Fellas')}
             </p>
-            <p className="text-[10px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-1 italic">Authorized Member</p>
+            <p className="text-xs font-bold tracking-widest text-vintage-accent uppercase mt-1.5 font-sans">Authorized Member</p>
           </div>
         </div>
         
-        <nav className="grow p-6 space-y-3">
+        <nav className="grow p-6 space-y-2">
           {[
-            { id: 'library', label: 'My Library', icon: Library },
-            { id: 'settings', label: 'Settings', icon: Settings },
-            ...(isAffiliateAllowed ? [{ id: 'affiliate', label: 'Affiliate Hub', icon: Share2 }] : [])
+            { id: 'library', label: 'Purchase History', icon: Library },
+            { id: 'settings', label: 'Security & Access', icon: Settings },
+            ...(isAffiliateAllowed ? [{ id: 'affiliate', label: 'Affiliate Portal', icon: Share2 }] : [])
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -128,14 +128,14 @@ const UserDashboard = () => {
               <button 
                 key={item.id}
                 onClick={() => handleTabChange(item.id)} 
-                className={`w-full flex items-center gap-4 px-4 py-3 text-[11px] font-bold tracking-widest uppercase transition-all relative group ${
-                  isActive ? 'bg-vintage-ink text-vintage-paper' : 'hover:bg-vintage-ink/5'
+                className={`w-full flex items-center gap-3.5 px-4 py-3.5 text-xs font-bold tracking-wider uppercase transition-all relative group font-sans ${
+                  isActive ? 'bg-vintage-ink text-vintage-paper shadow-sm' : 'text-vintage-ink hover:bg-vintage-ink/5'
                 }`}
               >
-                <Icon size={18} className={isActive ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'} />
+                <Icon size={18} className={isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'} />
                 <span className="grow text-left">{item.label}</span>
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className={`text-[8px] px-1.5 py-0.5 font-bold border animate-pulse ${
+                  <span className={`text-[10px] px-2 py-0.5 font-bold border ${
                     isActive ? 'bg-vintage-paper text-vintage-ink border-vintage-paper' : 'bg-vintage-accent text-vintage-paper border-vintage-accent'
                   }`}>
                     {item.badge}
@@ -150,10 +150,10 @@ const UserDashboard = () => {
         <div className="p-6 border-t border-vintage-ink">
           <button 
             onClick={handleLogout} 
-            className="w-full flex items-center gap-4 px-4 py-3 text-[11px] font-bold tracking-widest text-left hover:bg-red-900/10 text-red-900/60 transition-all group uppercase"
+            className="w-full flex items-center gap-3.5 px-4 py-3.5 text-xs font-bold tracking-wider text-left hover:bg-red-900/10 text-red-900 transition-all group uppercase font-sans border border-transparent hover:border-red-900/30"
           >
-            <LogOut size={18} className="opacity-40 group-hover:opacity-100" />
-            <span>Terminate Session</span>
+            <LogOut size={18} className="opacity-80 group-hover:opacity-100" />
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>

@@ -355,78 +355,78 @@ const AffiliateManager: React.FC = () => {
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-vintage-ink pb-6">
         <div>
-          <span className="text-[10px] font-bold text-vintage-accent uppercase tracking-[0.3em] block">
+          <span className="text-xs font-bold text-vintage-accent uppercase tracking-wider block font-sans">
             Partner Treasury & Payout Ledger
           </span>
-          <h2 className="text-3xl font-display">Affiliate Command Center</h2>
+          <h2 className="text-3xl font-display text-vintage-ink">Affiliate Command Center</h2>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={fetchData} 
             disabled={loading}
-            className="vintage-btn py-2 px-4 text-[10px] tracking-widest flex items-center gap-2 uppercase"
+            className="vintage-btn py-2.5 px-4 text-xs font-bold tracking-wider flex items-center gap-2 uppercase font-sans"
           >
-            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> REFRESH
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> REFRESH
           </button>
           <button 
             onClick={handleExportPayPalCSV}
-            className="vintage-btn bg-vintage-ink! text-vintage-background! py-2 px-5 text-[10px] tracking-widest flex items-center gap-2 uppercase font-bold"
+            className="vintage-btn bg-vintage-ink! text-vintage-background! py-2.5 px-5 text-xs tracking-wider flex items-center gap-2 uppercase font-bold font-sans"
           >
-            <Download size={14} /> EXPORT QUALIFIED PAYPAL CSV
+            <Download size={15} /> EXPORT QUALIFIED PAYPAL CSV
           </button>
         </div>
       </div>
 
       {/* 4 CORE FINANCIAL RECONCILIATION CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 border border-vintage-ink bg-vintage-background/60 text-left space-y-1">
-          <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block">Gross Sales Inbound</span>
+        <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">Gross Sales Inbound</span>
           <div className="text-2xl font-display font-bold text-vintage-ink">
             ${totalGrossSales.toFixed(2)}
           </div>
-          <p className="text-[10px] italic text-vintage-ink/60">Total paid by buyers via PayPal</p>
+          <p className="text-xs text-vintage-ink/80 font-sans">Total paid by buyers via PayPal</p>
         </div>
 
-        <div className="p-5 border border-vintage-ink bg-vintage-background/60 text-left space-y-1">
-          <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block">PayPal Inbound Fees</span>
+        <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">PayPal Inbound Fees</span>
           <div className="text-2xl font-display font-bold text-red-900">
             -${totalPayPalFees.toFixed(2)}
           </div>
-          <p className="text-[10px] italic text-vintage-ink/60">Payment gateway transaction cost</p>
+          <p className="text-xs text-vintage-ink/80 font-sans">Payment gateway transaction cost</p>
         </div>
 
-        <div className="p-5 border border-vintage-ink bg-vintage-background/60 text-left space-y-1">
-          <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block">Affiliate Reserved Pool</span>
+        <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block font-sans">Affiliate Reserved Pool</span>
           <div className="text-2xl font-display font-bold text-amber-900">
             ${affiliateReservedPool.toFixed(2)}
           </div>
-          <p className="text-[10px] italic text-amber-900/80">Commissions due + in-warranty hold</p>
+          <p className="text-xs text-amber-900 font-sans font-medium">Commissions due + in-warranty hold</p>
         </div>
 
-        <div className="p-5 border-2 border-vintage-accent bg-green-50/50 text-left space-y-1">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-green-900 block font-sans">
+        <div className="p-5 border-2 border-vintage-ink bg-green-50/70 text-left space-y-1.5 shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider text-green-950 block font-sans">
             SAFE TO WITHDRAW (NET PROFIT)
           </span>
           <div className="text-3xl font-display font-bold text-green-900">
             ${safeToWithdraw.toFixed(2)}
           </div>
-          <p className="text-[10px] italic text-green-900/70">Store profit safe to sweep to bank</p>
+          <p className="text-xs text-green-900 font-sans font-medium">Store profit safe to sweep to bank</p>
         </div>
       </div>
 
       {/* NAVIGATION TABS */}
-      <div className="flex border-b border-vintage-ink/30 gap-2">
+      <div className="flex border-b border-vintage-ink gap-2">
         <button
           onClick={() => setActiveTab('due_payouts')}
-          className={`py-3 px-5 text-xs font-bold uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 ${
+          className={`py-3 px-5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 font-sans ${
             activeTab === 'due_payouts'
-              ? 'border-vintage-accent text-vintage-accent bg-vintage-background/40 font-bold'
-              : 'border-transparent text-vintage-ink/60 hover:text-vintage-ink'
+              ? 'border-vintage-accent text-vintage-accent bg-vintage-paper shadow-xs font-bold'
+              : 'border-transparent text-vintage-ink/75 hover:text-vintage-ink'
           }`}
         >
-          <Clock size={14} /> Due & Scheduled Payouts
+          <Clock size={15} /> Due & Scheduled Payouts
           {qualifiedPayouts.length > 0 && (
-            <span className="px-1.5 py-0.2 text-[9px] bg-green-700 text-white rounded-full font-mono">
+            <span className="px-2 py-0.5 text-xs bg-green-700 text-white rounded-full font-mono font-bold">
               {qualifiedPayouts.length}
             </span>
           )}
@@ -434,35 +434,35 @@ const AffiliateManager: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('partners')}
-          className={`py-3 px-5 text-xs font-bold uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 ${
+          className={`py-3 px-5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 font-sans ${
             activeTab === 'partners'
-              ? 'border-vintage-accent text-vintage-accent bg-vintage-background/40 font-bold'
-              : 'border-transparent text-vintage-ink/60 hover:text-vintage-ink'
+              ? 'border-vintage-accent text-vintage-accent bg-vintage-paper shadow-xs font-bold'
+              : 'border-transparent text-vintage-ink/75 hover:text-vintage-ink'
           }`}
         >
-          <Users size={14} /> Partner Accounts ({affiliates.length})
+          <Users size={15} /> Partner Accounts ({affiliates.length})
         </button>
 
         <button
           onClick={() => setActiveTab('history')}
-          className={`py-3 px-5 text-xs font-bold uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 ${
+          className={`py-3 px-5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 font-sans ${
             activeTab === 'history'
-              ? 'border-vintage-accent text-vintage-accent bg-vintage-background/40 font-bold'
-              : 'border-transparent text-vintage-ink/60 hover:text-vintage-ink'
+              ? 'border-vintage-accent text-vintage-accent bg-vintage-paper shadow-xs font-bold'
+              : 'border-transparent text-vintage-ink/75 hover:text-vintage-ink'
           }`}
         >
-          <CheckCircle2 size={14} /> Settled Payouts ({payouts.length})
+          <CheckCircle2 size={15} /> Settled Payouts ({payouts.length})
         </button>
 
         <button
           onClick={() => setActiveTab('commissions')}
-          className={`py-3 px-5 text-xs font-bold uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 ${
+          className={`py-3 px-5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 font-sans ${
             activeTab === 'commissions'
-              ? 'border-vintage-accent text-vintage-accent bg-vintage-background/40 font-bold'
-              : 'border-transparent text-vintage-ink/60 hover:text-vintage-ink'
+              ? 'border-vintage-accent text-vintage-accent bg-vintage-paper shadow-xs font-bold'
+              : 'border-transparent text-vintage-ink/75 hover:text-vintage-ink'
           }`}
         >
-          <FileText size={14} /> All Attribution Orders ({commissions.length})
+          <FileText size={15} /> All Attribution Orders ({commissions.length})
         </button>
       </div>
 
@@ -470,20 +470,20 @@ const AffiliateManager: React.FC = () => {
       {activeTab === 'due_payouts' && (
         <div className="space-y-6">
           {/* Policy Banner */}
-          <div className="p-4 border border-vintage-ink/30 bg-amber-50/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="p-5 border-2 border-vintage-ink bg-amber-50/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <Calendar size={20} className="text-amber-800 shrink-0 mt-0.5" />
+              <Calendar size={22} className="text-amber-800 shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-950 font-sans">
                   Monthly Payout Schedule: 1st of Every Month
                 </h4>
-                <p className="text-[11px] text-amber-900/80">
-                  Next scheduled run on <span className="font-bold underline">{nextPayoutInfo.dateString}</span> ({nextPayoutInfo.daysLeft} days remaining). Minimum threshold is <span className="font-bold">${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD</span> with 14-day clearance. Balances under $50 automatically roll over to the next monthly cycle.
+                <p className="text-xs text-amber-900 font-sans mt-0.5 leading-relaxed">
+                  Next scheduled run on <span className="font-bold underline text-amber-950">{nextPayoutInfo.dateString}</span> ({nextPayoutInfo.daysLeft} days remaining). Minimum threshold is <span className="font-bold text-amber-950">${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD</span> with 14-day clearance. Balances under $50 automatically roll over to the next monthly cycle.
                 </p>
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-2">
-              <span className="text-[10px] font-mono px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 font-bold uppercase">
+              <span className="text-xs font-mono px-3 py-1 bg-amber-200 text-amber-950 border border-amber-400 font-bold uppercase">
                 Threshold: $50.00
               </span>
             </div>
@@ -494,22 +494,22 @@ const AffiliateManager: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-green-600"></span>
-                <h3 className="text-base font-display font-bold">
+                <h3 className="text-base font-display font-bold text-vintage-ink">
                   Qualified for Upcoming Monthly Settlement (Balance &ge; ${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)})
                 </h3>
               </div>
-              <span className="text-[10px] font-mono opacity-60">{qualifiedPayouts.length} creator(s) ready</span>
+              <span className="text-xs font-mono font-bold text-vintage-ink/80">{qualifiedPayouts.length} creator(s) ready</span>
             </div>
 
             {qualifiedPayouts.length === 0 ? (
-              <div className="p-6 border border-vintage-ink/20 text-center italic text-xs text-vintage-ink/60 bg-vintage-background/20">
+              <div className="p-6 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
                 No affiliates currently have cleared balances &ge; ${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD. All qualifying earnings under $50 roll over until the threshold is met.
               </div>
             ) : (
-              <div className="border border-vintage-ink overflow-x-auto bg-vintage-paper">
+              <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-vintage-ink bg-green-50/60 text-[10px] font-bold tracking-widest uppercase text-green-950">
+                    <tr className="border-b-2 border-vintage-ink bg-green-100/70 text-xs font-bold tracking-wider uppercase text-green-950 font-sans">
                       <th className="p-3 border-r border-vintage-ink">Partner Code</th>
                       <th className="p-3 border-r border-vintage-ink">PayPal Payout Account</th>
                       <th className="p-3 border-r border-vintage-ink text-right">Cleared Balance (Due)</th>
@@ -519,43 +519,43 @@ const AffiliateManager: React.FC = () => {
                       <th className="p-3 text-center">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-vintage-ink/20 font-mono text-[11px]">
+                  <tbody className="divide-y divide-vintage-ink/20 font-mono text-xs">
                     {qualifiedPayouts.map(item => (
-                      <tr key={item.affiliate.id} className="hover:bg-green-50/30">
+                      <tr key={item.affiliate.id} className="hover:bg-green-50/50 transition-colors">
                         <td className="p-3 border-r border-vintage-ink/20 font-bold text-vintage-accent font-sans">
                           {item.affiliate.affiliate_code}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[200px]">
+                        <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[200px] text-vintage-ink">
                           {item.affiliate.paypal_email}
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-green-900 text-sm">
                           ${item.dueAmount.toFixed(2)}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 text-right opacity-70">
+                        <td className="p-3 border-r border-vintage-ink/20 text-right text-vintage-ink/80 font-medium">
                           ${item.holdingAmount.toFixed(2)}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 text-center">
+                        <td className="p-3 border-r border-vintage-ink/20 text-center font-bold">
                           {item.dueCommissions.length}
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 text-center">
-                          <span className="px-2 py-0.5 bg-green-100 text-green-900 border border-green-300 text-[9px] uppercase font-bold inline-flex items-center gap-1">
-                            <CheckCircle2 size={10} /> Qualified
+                          <span className="px-2.5 py-0.5 bg-green-100 text-green-900 border border-green-300 text-[10px] uppercase font-bold inline-flex items-center gap-1">
+                            <CheckCircle2 size={12} /> Qualified
                           </span>
                         </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => handleOpenPayoutModal(item)}
-                              className="vintage-btn py-1 px-3 text-[9px] tracking-wider uppercase font-bold bg-green-900! text-white!"
+                              className="vintage-btn py-1 px-3 text-[10px] tracking-wider uppercase font-bold bg-green-900! text-white!"
                             >
                               Record Payout
                             </button>
                             <button
                               onClick={() => setInspectedPartner(item.affiliate)}
-                              className="p-1 border border-vintage-ink/30 hover:border-vintage-ink text-vintage-ink/70 hover:text-vintage-ink"
+                              className="p-1 border border-vintage-ink/30 hover:border-vintage-ink text-vintage-ink hover:text-vintage-accent"
                               title="Inspect Financial Ledger"
                             >
-                              <Eye size={12} />
+                              <Eye size={14} />
                             </button>
                           </div>
                         </td>
@@ -572,22 +572,22 @@ const AffiliateManager: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                <h3 className="text-base font-display font-bold">
+                <h3 className="text-base font-display font-bold text-vintage-ink">
                   Accumulating & Rolling Over (Cleared Balance &lt; ${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)})
                 </h3>
               </div>
-              <span className="text-[10px] font-mono opacity-60">{accumulatingPayouts.length} creator(s) rolling</span>
+              <span className="text-xs font-mono font-bold text-vintage-ink/80">{accumulatingPayouts.length} creator(s) rolling</span>
             </div>
 
             {accumulatingPayouts.length === 0 ? (
-              <div className="p-6 border border-vintage-ink/20 text-center italic text-xs text-vintage-ink/60 bg-vintage-background/20">
+              <div className="p-6 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
                 No affiliates currently in accumulating status.
               </div>
             ) : (
-              <div className="border border-vintage-ink overflow-x-auto bg-vintage-paper">
+              <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-vintage-ink bg-vintage-background/80 text-[10px] font-bold tracking-widest uppercase">
+                    <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
                       <th className="p-3 border-r border-vintage-ink">Partner Code</th>
                       <th className="p-3 border-r border-vintage-ink">PayPal Payout Account</th>
                       <th className="p-3 border-r border-vintage-ink text-right">Cleared Balance</th>
@@ -596,42 +596,42 @@ const AffiliateManager: React.FC = () => {
                       <th className="p-3 text-center">Inspect</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-vintage-ink/20 font-mono text-[11px]">
+                  <tbody className="divide-y divide-vintage-ink/20 font-mono text-xs">
                     {accumulatingPayouts.map(item => {
                       const percent = Math.min(100, (item.dueAmount / AFFILIATE_MIN_PAYOUT_USD) * 100);
                       const remaining = Math.max(0, AFFILIATE_MIN_PAYOUT_USD - item.dueAmount);
 
                       return (
-                        <tr key={item.affiliate.id} className="hover:bg-vintage-background/40">
-                          <td className="p-3 border-r border-vintage-ink/20 font-bold font-sans">
+                        <tr key={item.affiliate.id} className="hover:bg-vintage-background/40 transition-colors">
+                          <td className="p-3 border-r border-vintage-ink/20 font-bold font-sans text-vintage-ink">
                             {item.affiliate.affiliate_code}
                           </td>
-                          <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[200px]">
+                          <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[200px] text-vintage-ink">
                             {item.affiliate.paypal_email}
                           </td>
                           <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-amber-900">
                             ${item.dueAmount.toFixed(2)}
                           </td>
                           <td className="p-3 border-r border-vintage-ink/20">
-                            <div className="w-full bg-vintage-background border border-vintage-ink/20 h-2.5 rounded-none overflow-hidden relative">
+                            <div className="w-full bg-white border border-vintage-ink/30 h-3 rounded-none overflow-hidden relative p-0.5">
                               <div 
                                 className="bg-amber-600 h-full transition-all duration-500"
                                 style={{ width: `${percent}%` }}
                               />
                             </div>
-                            <span className="text-[9px] opacity-70 block mt-0.5">
+                            <span className="text-xs text-vintage-ink/80 block mt-1 font-sans">
                               {percent.toFixed(0)}% reached
                             </span>
                           </td>
-                          <td className="p-3 border-r border-vintage-ink/20 text-right text-[10px] opacity-80">
+                          <td className="p-3 border-r border-vintage-ink/20 text-right text-xs font-medium text-vintage-ink/80">
                             ${remaining.toFixed(2)} to qualify
                           </td>
                           <td className="p-3 text-center">
                             <button
                               onClick={() => setInspectedPartner(item.affiliate)}
-                              className="vintage-btn py-1 px-2.5 text-[9px] tracking-wider uppercase flex items-center gap-1 mx-auto"
+                              className="vintage-btn py-1 px-3 text-[10px] tracking-wider uppercase flex items-center gap-1 mx-auto font-bold"
                             >
-                              <Eye size={10} /> Inspect
+                              <Eye size={12} /> Inspect
                             </button>
                           </td>
                         </tr>
@@ -649,19 +649,19 @@ const AffiliateManager: React.FC = () => {
       {activeTab === 'partners' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-display">Registered Creators & Affiliates ({affiliates.length})</h3>
-            <span className="text-[10px] font-mono opacity-60">Clean Vanity Routing Active</span>
+            <h3 className="text-xl font-display text-vintage-ink">Registered Creators & Affiliates ({affiliates.length})</h3>
+            <span className="text-xs font-mono font-bold text-vintage-ink/80">Clean Vanity Routing Active</span>
           </div>
 
           {affiliates.length === 0 ? (
-            <div className="p-8 border border-vintage-ink/20 text-center italic text-xs text-vintage-ink/60 bg-vintage-background/30">
+            <div className="p-8 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
               No affiliates registered yet. Activate a partner code from the /affiliate landing page to test.
             </div>
           ) : (
-            <div className="border border-vintage-ink overflow-x-auto bg-vintage-paper">
+            <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-vintage-ink bg-vintage-background/80 text-[10px] font-bold tracking-widest uppercase">
+                  <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
                     <th className="p-3 border-r border-vintage-ink">Partner Code</th>
                     <th className="p-3 border-r border-vintage-ink">Vanity Path</th>
                     <th className="p-3 border-r border-vintage-ink">Country / Phone</th>
@@ -672,52 +672,52 @@ const AffiliateManager: React.FC = () => {
                     <th className="p-3 text-center">Audit Statement</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-vintage-ink/20 font-mono text-[11px]">
+                <tbody className="divide-y divide-vintage-ink/20 font-mono text-xs">
                   {affiliates.map((a) => {
                     const balance = affiliateDueBalances.find(b => b.affiliate.id === a.id);
                     return (
-                      <tr key={a.id} className="hover:bg-vintage-background/40">
+                      <tr key={a.id} className="hover:bg-vintage-background/40 transition-colors">
                         <td className="p-3 border-r border-vintage-ink/20 font-bold text-vintage-accent font-sans">
                           {a.affiliate_code}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20">
+                        <td className="p-3 border-r border-vintage-ink/20 font-mono">
                           <a 
                             href={`/c/${a.affiliate_code}`} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="hover:underline flex items-center gap-1 text-vintage-ink"
+                            className="hover:underline flex items-center gap-1 font-bold text-vintage-ink hover:text-vintage-accent"
                           >
-                            /c/{a.affiliate_code} <ExternalLink size={10} className="opacity-50" />
+                            /c/{a.affiliate_code} <ExternalLink size={12} className="opacity-70" />
                           </a>
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20">
                           <span className="block font-sans font-bold text-vintage-ink truncate max-w-[150px]">
                             {a.country || 'Not provided'}
                           </span>
-                          <span className="text-[10px] opacity-60 block">
+                          <span className="text-xs text-vintage-ink/70 block mt-0.5">
                             {a.phone_code} {a.phone_number || ''}
                           </span>
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[180px]">
+                        <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[180px] text-vintage-ink">
                           {a.paypal_email}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-green-900">
+                        <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-green-900 text-sm">
                           ${(balance?.dueAmount || 0).toFixed(2)}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 text-right opacity-70">
+                        <td className="p-3 border-r border-vintage-ink/20 text-right text-vintage-ink/80 font-medium">
                           ${(balance?.holdingAmount || 0).toFixed(2)}
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 text-center">
-                          <span className="px-2 py-0.5 border border-vintage-ink/30 text-[9px] uppercase font-bold bg-vintage-background">
+                          <span className="px-2.5 py-0.5 border border-vintage-ink/40 text-[10px] uppercase font-bold bg-white text-vintage-ink">
                             {a.status}
                           </span>
                         </td>
                         <td className="p-3 text-center">
                           <button
                             onClick={() => setInspectedPartner(a)}
-                            className="vintage-btn py-1 px-3 text-[9px] tracking-wider uppercase font-bold inline-flex items-center gap-1"
+                            className="vintage-btn py-1 px-3 text-[10px] tracking-wider uppercase font-bold inline-flex items-center gap-1"
                           >
-                            <Eye size={10} /> View Ledger
+                            <Eye size={12} /> View Ledger
                           </button>
                         </td>
                       </tr>
@@ -734,19 +734,19 @@ const AffiliateManager: React.FC = () => {
       {activeTab === 'history' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-display">Settled Payouts History ({payouts.length})</h3>
-            <span className="text-[10px] font-mono opacity-60">Verified PayPal Disbursements</span>
+            <h3 className="text-xl font-display text-vintage-ink">Settled Payouts History ({payouts.length})</h3>
+            <span className="text-xs font-mono font-bold text-vintage-ink/80">Verified PayPal Disbursements</span>
           </div>
 
           {payouts.length === 0 ? (
-            <div className="p-8 border border-vintage-ink/20 text-center italic text-xs text-vintage-ink/60 bg-vintage-background/30">
+            <div className="p-8 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
               No completed payouts recorded yet. Payouts recorded via batch execution will appear here.
             </div>
           ) : (
-            <div className="border border-vintage-ink overflow-x-auto bg-vintage-paper">
+            <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-vintage-ink bg-vintage-background/80 text-[10px] font-bold tracking-widest uppercase">
+                  <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
                     <th className="p-3 border-r border-vintage-ink">Settled Date</th>
                     <th className="p-3 border-r border-vintage-ink">Partner Code</th>
                     <th className="p-3 border-r border-vintage-ink">PayPal Account</th>
@@ -756,30 +756,30 @@ const AffiliateManager: React.FC = () => {
                     <th className="p-3 text-center">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-vintage-ink/20 font-mono text-[11px]">
+                <tbody className="divide-y divide-vintage-ink/20 font-mono text-xs">
                   {payouts.map(p => (
-                    <tr key={p.id} className="hover:bg-vintage-background/40">
-                      <td className="p-3 border-r border-vintage-ink/20">
+                    <tr key={p.id} className="hover:bg-vintage-background/40 transition-colors">
+                      <td className="p-3 border-r border-vintage-ink/20 font-medium">
                         {new Date(p.paid_at).toLocaleDateString()}
                       </td>
                       <td className="p-3 border-r border-vintage-ink/20 font-bold font-sans text-vintage-accent">
                         {p.affiliate_code}
                       </td>
-                      <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[200px]">
+                      <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[200px] text-vintage-ink">
                         {p.paypal_email}
                       </td>
-                      <td className="p-3 border-r border-vintage-ink/20 truncate max-w-[180px] opacity-80">
+                      <td className="p-3 border-r border-vintage-ink/20 truncate max-w-[180px] text-vintage-ink font-medium">
                         {p.payout_batch_id}
                       </td>
                       <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-green-900 text-sm">
                         ${p.amount.toFixed(2)} {p.currency}
                       </td>
-                      <td className="p-3 border-r border-vintage-ink/20 text-center">
+                      <td className="p-3 border-r border-vintage-ink/20 text-center font-bold">
                         {p.commission_count}
                       </td>
                       <td className="p-3 text-center">
-                        <span className="px-2 py-0.5 bg-green-100 text-green-900 border border-green-300 text-[9px] uppercase font-bold inline-flex items-center gap-1">
-                          <Check size={10} /> Completed
+                        <span className="px-2.5 py-0.5 bg-green-100 text-green-900 border border-green-300 text-[10px] uppercase font-bold inline-flex items-center gap-1">
+                          <Check size={12} /> Completed
                         </span>
                       </td>
                     </tr>
@@ -796,14 +796,14 @@ const AffiliateManager: React.FC = () => {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <h3 className="text-xl font-display">Attribution Orders ({filteredCommissions.length})</h3>
+              <h3 className="text-xl font-display text-vintage-ink">Attribution Orders ({filteredCommissions.length})</h3>
               <div className="relative">
                 <input
                   type="text"
                   placeholder="Search order, font, partner..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="vintage-input py-1 px-3 text-xs w-48 sm:w-64 font-mono"
+                  className="vintage-input py-1.5 px-3 text-xs w-48 sm:w-64 font-mono font-medium border-2 border-vintage-ink bg-white"
                 />
               </div>
             </div>
@@ -813,10 +813,10 @@ const AffiliateManager: React.FC = () => {
                 <button
                   key={f}
                   onClick={() => setStatusFilter(f)}
-                  className={`px-3 py-1 text-[9px] font-bold uppercase tracking-widest border transition-all ${
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider border-2 transition-all font-sans ${
                     statusFilter === f 
-                      ? 'bg-vintage-ink text-vintage-paper border-vintage-ink' 
-                      : 'bg-vintage-paper text-vintage-ink/60 border-vintage-ink/20 hover:text-vintage-ink'
+                      ? 'bg-vintage-ink text-vintage-paper border-vintage-ink shadow-xs' 
+                      : 'bg-vintage-paper text-vintage-ink/75 border-vintage-ink/30 hover:text-vintage-ink hover:border-vintage-ink'
                   }`}
                 >
                   {f.replace('_', ' ')}
@@ -826,14 +826,14 @@ const AffiliateManager: React.FC = () => {
           </div>
 
           {filteredCommissions.length === 0 ? (
-            <div className="p-8 border border-vintage-ink/20 text-center italic text-xs text-vintage-ink/60 bg-vintage-background/30">
+            <div className="p-8 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
               No commissions matching the selected filter or search query.
             </div>
           ) : (
-            <div className="border border-vintage-ink overflow-x-auto bg-vintage-paper">
+            <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-vintage-ink bg-vintage-background/80 text-[10px] font-bold tracking-widest uppercase">
+                  <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
                     <th className="p-3 border-r border-vintage-ink">Order ID</th>
                     <th className="p-3 border-r border-vintage-ink">Partner</th>
                     <th className="p-3 border-r border-vintage-ink">Typeface</th>
@@ -846,38 +846,38 @@ const AffiliateManager: React.FC = () => {
                     <th className="p-3 text-center">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-vintage-ink/20 font-mono text-[11px]">
+                <tbody className="divide-y divide-vintage-ink/20 font-mono text-xs">
                   {filteredCommissions.map((c) => {
                     const aff = affiliates.find(a => a.id === c.affiliate_id);
 
                     return (
-                      <tr key={c.id} className="hover:bg-vintage-background/40">
-                        <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[120px]">
+                      <tr key={c.id} className="hover:bg-vintage-background/40 transition-colors">
+                        <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[120px] text-vintage-ink">
                           {c.order_id}
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 font-sans font-bold text-vintage-accent">
                           {aff?.affiliate_code || 'Unknown'}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 font-sans font-bold">
+                        <td className="p-3 border-r border-vintage-ink/20 font-sans font-bold text-vintage-ink">
                           {c.font_name || 'Specimen License'}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 text-right">
+                        <td className="p-3 border-r border-vintage-ink/20 text-right font-medium">
                           ${Number(c.gross_amount || 0).toFixed(2)}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 text-right text-red-900">
+                        <td className="p-3 border-r border-vintage-ink/20 text-right text-red-900 font-medium">
                           -${Number(c.paypal_inbound_fee || 0).toFixed(2)}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 text-right">
+                        <td className="p-3 border-r border-vintage-ink/20 text-right font-medium">
                           ${Number(c.net_store_amount || 0).toFixed(2)}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-green-900">
+                        <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-green-900 text-sm">
                           +${Number(c.commission_amount || 0).toFixed(2)}
                         </td>
-                        <td className="p-3 border-r border-vintage-ink/20 text-[10px] opacity-70">
+                        <td className="p-3 border-r border-vintage-ink/20 text-xs text-vintage-ink/80">
                           {new Date(c.cleared_at).toLocaleDateString()}
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 text-center">
-                          <span className={`px-2 py-0.5 text-[9px] uppercase font-bold border ${
+                          <span className={`px-2.5 py-0.5 text-[10px] uppercase font-bold border ${
                             c.status === 'paid' ? 'bg-green-100 text-green-900 border-green-300' :
                             c.status === 'approved' ? 'bg-blue-100 text-blue-900 border-blue-300' :
                             c.status === 'pending_clearance' ? 'bg-amber-100 text-amber-900 border-amber-300' :

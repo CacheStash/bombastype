@@ -457,20 +457,20 @@ const ProductManager = () => {
                   className="cursor-pointer accent-vintage-ink" 
                 />
               </th>
-              <th className="p-3 w-16 text-center text-[10px] uppercase font-bold tracking-widest text-vintage-ink/60">Flags</th>
-              <th className="p-3 text-[10px] uppercase font-bold tracking-[0.2em] text-vintage-ink/60">Designation</th>
-              <th className="p-3 text-right text-[10px] uppercase font-bold tracking-[0.2em] text-vintage-ink/60 w-32">Base Price</th>
-              <th className="p-3 text-[10px] uppercase font-bold tracking-[0.2em] text-right text-vintage-ink/60">Management</th>
+              <th className="p-3 w-16 text-center text-xs uppercase font-bold tracking-wider text-vintage-ink font-sans">Flags</th>
+              <th className="p-3 text-xs uppercase font-bold tracking-wider text-vintage-ink font-sans">Designation</th>
+              <th className="p-3 text-right text-xs uppercase font-bold tracking-wider text-vintage-ink w-32 font-sans">Base Price</th>
+              <th className="p-3 text-xs uppercase font-bold tracking-wider text-right text-vintage-ink font-sans">Management</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="p-20 text-center italic opacity-40 font-serif">Consulting Archive Ledger...</td>
+                <td colSpan={5} className="p-20 text-center italic text-vintage-ink/70 font-serif text-sm">Consulting Archive Ledger...</td>
               </tr>
             ) : paginatedFonts.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-20 text-center italic opacity-40 font-serif">No artifacts found in this section.</td>
+                <td colSpan={5} className="p-20 text-center italic text-vintage-ink/70 font-serif text-sm">No artifacts found in this section.</td>
               </tr>
             ) : (
               paginatedFonts.map((f, i) => {
@@ -504,7 +504,7 @@ const ProductManager = () => {
                         <button 
                           type="button"
                           onClick={(e) => { e.stopPropagation(); handleToggleFeatured(f); }}
-                          className={`transition-all duration-500 cursor-pointer ${f.metadata?.is_featured ? 'text-vintage-accent' : 'text-vintage-ink/20 hover:text-vintage-accent/60'}`}
+                          className={`transition-all duration-500 cursor-pointer ${f.metadata?.is_featured ? 'text-vintage-accent' : 'text-vintage-ink/30 hover:text-vintage-accent'}`}
                           title={f.metadata?.is_featured ? "Remove from Featured" : "Set as Featured"}
                         >
                           <Star size={14} fill={f.metadata?.is_featured ? "currentColor" : "none"} />
@@ -512,7 +512,7 @@ const ProductManager = () => {
                         <button 
                           type="button"
                           onClick={(e) => { e.stopPropagation(); handleToggleHandpicked(f); }}
-                          className={`transition-all duration-500 cursor-pointer ${f.metadata?.is_handpicked ? 'text-vintage-accent' : 'text-vintage-ink/20 hover:text-vintage-accent/60'}`}
+                          className={`transition-all duration-500 cursor-pointer ${f.metadata?.is_handpicked ? 'text-vintage-accent' : 'text-vintage-ink/30 hover:text-vintage-accent'}`}
                           title={f.metadata?.is_handpicked ? "Remove from Handpicked" : "Set as Handpicked (Max 4)"}
                         >
                           <Sparkles size={14} fill={f.metadata?.is_handpicked ? "currentColor" : "none"} />
@@ -522,9 +522,9 @@ const ProductManager = () => {
                     
                     {/* FONT NAME */}
                     <td className="p-3">
-                      <span className="font-display text-2xl tracking-wider select-none">{f.name}</span>
+                      <span className="font-display text-2xl tracking-wider select-none text-vintage-ink">{f.name}</span>
                       {f.tags && f.tags.length > 0 && (
-                        <span className="block text-[10px] font-mono text-vintage-ink/50 truncate max-w-sm">
+                        <span className="block text-xs font-mono text-vintage-ink/75 truncate max-w-sm mt-0.5">
                           {Array.isArray(f.tags) ? f.tags.slice(0, 4).join(', ') : f.tags}
                         </span>
                       )}
@@ -537,37 +537,37 @@ const ProductManager = () => {
 
                     {/* ACTIONS */}
                     <td className="p-3 text-right">
-                      <div className="flex justify-end gap-4 items-center">
+                      <div className="flex justify-end gap-3.5 items-center font-sans">
                         <button 
                           type="button"
                           disabled={downloadingId === f.id}
                           onClick={() => handleDownloadZip(f)} 
-                          className="text-[10px] font-bold uppercase tracking-widest text-vintage-ink/60 hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-30"
+                          className="text-xs font-bold uppercase tracking-wider text-vintage-ink/80 hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-30"
                           title="Download font files as .zip"
                         >
-                          <Download size={12} className={downloadingId === f.id ? 'animate-bounce' : ''} /> 
+                          <Download size={13} className={downloadingId === f.id ? 'animate-bounce' : ''} /> 
                           {downloadingId === f.id ? 'Zipping...' : 'Zip'}
                         </button>
                         <button 
                           type="button"
                           onClick={() => handleEdit(f)} 
-                          className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer"
+                          className="text-xs font-bold uppercase tracking-wider text-vintage-ink hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer"
                         >
-                          <Edit2 size={12} /> Edit
+                          <Edit2 size={13} /> Edit
                         </button>
                         <button 
                           type="button"
                           onClick={() => handleDuplicate(f)} 
-                          className="text-[10px] font-bold uppercase tracking-widest text-vintage-ink/60 hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer"
+                          className="text-xs font-bold uppercase tracking-wider text-vintage-ink/80 hover:text-vintage-accent transition-colors flex items-center gap-1 cursor-pointer"
                         >
-                          <Copy size={12} /> Copy
+                          <Copy size={13} /> Copy
                         </button>
                         <button 
                           type="button"
-                          onClick={() => handleDelete(f.id)}
-                          className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-1 cursor-pointer"
+                          onClick={() => handleDelete(f.id)} 
+                          className="text-xs font-bold uppercase tracking-wider text-red-900/80 hover:text-red-700 transition-colors flex items-center gap-1 cursor-pointer"
                         >
-                          <Trash2 size={12} /> Del
+                          <Trash2 size={13} /> Delete
                         </button>
                       </div>
                     </td>

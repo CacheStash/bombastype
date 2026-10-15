@@ -59,16 +59,16 @@ const AccountSettings = () => {
       {/* HEADER */}
       <div className="border-b border-vintage-ink pb-8">
         <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Security & Access</h2>
-        <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic">
-          Management of Administrative Credentials & Accession Keys
+        <p className="text-xs font-bold tracking-widest text-vintage-accent uppercase mt-2 font-sans">
+          Management of Account Credentials & Accession Keys
         </p>
       </div>
 
       {/* ACCESSION KEYS CARD */}
-      <div className="vintage-card bg-white/40 space-y-6">
-        <div className="flex items-center gap-3 border-b border-vintage-ink/10 pb-4">
-          <Key size={16} className="text-vintage-accent" />
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-vintage-ink">
+      <div className="vintage-card bg-vintage-paper border-2 border-vintage-ink shadow-sm space-y-6">
+        <div className="flex items-center gap-3 border-b border-vintage-ink/20 pb-4">
+          <Key size={18} className="text-vintage-accent" />
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
             Archival Accession Keys
           </h3>
         </div>
@@ -78,66 +78,66 @@ const AccountSettings = () => {
             <select 
               value={selectedCode}
               onChange={(e) => setSelectedCode(e.target.value)}
-              className="w-full bg-vintage-paper/30 border border-vintage-ink/20 p-4 outline-none appearance-none cursor-pointer font-display text-xl focus:border-vintage-ink transition-all text-vintage-ink"
+              className="w-full bg-vintage-paper border-2 border-vintage-ink p-3.5 outline-none appearance-none cursor-pointer font-mono font-bold text-base focus:border-vintage-accent transition-all text-vintage-ink shadow-sm"
             >
               {checkoutCodes.length > 0 ? (
                 checkoutCodes.map((code: string, idx: number) => (
-                  <option key={idx} value={code} className="bg-vintage-paper">{code}</option>
+                  <option key={idx} value={code} className="bg-vintage-paper font-mono">{code}</option>
                 ))
               ) : (
-                <option disabled value="">Consulting Ledger...</option>
+                <option disabled value="">No Order Key Registered</option>
               )}
             </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-              <RefreshCcw size={14} />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-vintage-ink/70">
+              <RefreshCcw size={16} />
             </div>
           </div>
           
           <button 
             type="button"
             onClick={handleCopy}
-            className="vintage-btn px-8 py-4 text-[10px] flex items-center justify-center gap-2"
+            className="vintage-btn px-6 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-2 border-vintage-ink"
           >
-            <Copy size={14} /> COPY KEY
+            <Copy size={16} /> COPY KEY
           </button>
         </div>
 
-        <div className="p-4 bg-vintage-ink/3 border-l-2 border-vintage-accent text-[10px] font-serif italic text-vintage-ink/60 leading-relaxed">
-          <p>* All accession keys listed are valid as master resetter identifiers.</p>
-          <p>* Should you lose your primary access key, use any transaction identifier to regain entry via the portal.</p>
+        <div className="p-4 bg-white border border-vintage-ink text-xs sm:text-sm text-vintage-ink font-sans leading-relaxed space-y-1">
+          <p className="font-semibold text-vintage-ink">• All accession keys listed are valid as master account identifier tokens.</p>
+          <p className="text-vintage-ink/90">• Should you lose your password, use any order transaction identifier to restore access to your account.</p>
         </div>
       </div>
 
       {/* CHANGE PASSWORD FORM */}
-      <div className="vintage-card bg-white/40">
+      <div className="vintage-card bg-vintage-paper border-2 border-vintage-ink shadow-sm">
         <form onSubmit={handleUpdatePassword} className="space-y-8">
-          <div className="flex items-center gap-3 border-b border-vintage-ink/10 pb-4">
-            <ShieldCheck size={16} className="text-vintage-accent" />
-            <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-vintage-ink">
-              Refine Access Credentials
+          <div className="flex items-center gap-3 border-b border-vintage-ink/20 pb-4">
+            <ShieldCheck size={18} className="text-vintage-accent" />
+            <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
+              Update Password
             </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
-              <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">New Access Key</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">New Password</label>
               <input 
                 type="password" 
                 value={newPassword} 
                 onChange={e => setNewPassword(e.target.value)} 
-                className="w-full border-b border-vintage-ink/20 py-3 bg-transparent outline-none font-serif text-lg focus:border-vintage-ink transition-colors placeholder:text-vintage-ink/60"
-                placeholder="Enter new key..."
+                className="w-full border-2 border-vintage-ink p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50"
+                placeholder="Enter new password..."
                 required 
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Confirm Key</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">Confirm Password</label>
               <input 
                 type="password" 
                 value={confirmPassword} 
                 onChange={e => setConfirmPassword(e.target.value)} 
-                className="w-full border-b border-vintage-ink/20 py-3 bg-transparent outline-none font-serif text-lg focus:border-vintage-ink transition-colors placeholder:text-vintage-ink/60"
-                placeholder="Verify new key..."
+                className="w-full border-2 border-vintage-ink p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50"
+                placeholder="Verify new password..."
                 required 
               />
             </div>
@@ -145,13 +145,13 @@ const AccountSettings = () => {
 
           <button 
             disabled={loading} 
-            className="vintage-btn btn-reverse w-full py-5 text-[11px] flex items-center justify-center gap-4"
+            className="vintage-btn btn-reverse w-full py-4 text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-3 font-sans"
           >
             {loading ? (
               <RefreshCcw className="animate-spin" size={16} />
             ) : (
               <>
-                <ShieldCheck size={16} /> COMMIT NEW CREDENTIALS
+                <ShieldCheck size={16} /> SAVE NEW PASSWORD
               </>
             )}
           </button>

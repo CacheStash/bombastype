@@ -366,11 +366,11 @@ const AffiliatePortal: React.FC = () => {
       {/* HEADER SECTION WITH SUB-NAV */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-vintage-ink pb-6">
         <div>
-          <span className="text-[9px] font-bold text-vintage-accent uppercase tracking-[0.3em] block">
+          <span className="text-xs font-bold text-vintage-accent uppercase tracking-wider block font-sans">
             Partner Identification
           </span>
-          <h2 className="text-3xl font-display italic">
-            Guild Code: <span className="font-bold">{affiliate.affiliate_code}</span>
+          <h2 className="text-3xl font-display">
+            Guild Code: <span className="font-bold text-vintage-ink">{affiliate.affiliate_code}</span>
           </h2>
         </div>
 
@@ -378,36 +378,36 @@ const AffiliatePortal: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase border border-vintage-ink transition-all ${
+            className={`px-4 py-2.5 text-xs font-bold tracking-wider uppercase border-2 border-vintage-ink transition-all font-sans ${
               activeTab === 'overview'
                 ? 'bg-vintage-ink text-vintage-paper'
-                : 'bg-vintage-paper text-vintage-ink hover:bg-vintage-ink/5'
+                : 'bg-vintage-paper text-vintage-ink hover:bg-vintage-ink/10'
             }`}
           >
             Overview & Sales
           </button>
           <button
             onClick={() => setActiveTab('payouts')}
-            className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase border border-vintage-ink transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-bold tracking-wider uppercase border-2 border-vintage-ink transition-all flex items-center gap-2 font-sans ${
               activeTab === 'payouts'
                 ? 'bg-vintage-ink text-vintage-paper'
-                : 'bg-vintage-paper text-vintage-ink hover:bg-vintage-ink/5'
+                : 'bg-vintage-paper text-vintage-ink hover:bg-vintage-ink/10'
             }`}
           >
-            <Calendar size={12} /> Payouts & Due Ledger
+            <Calendar size={14} /> Payouts & Due Ledger
             {isQualifiedForPayout && (
-              <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-green-600 inline-block animate-pulse"></span>
             )}
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase border border-vintage-ink transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-bold tracking-wider uppercase border-2 border-vintage-ink transition-all flex items-center gap-2 font-sans ${
               activeTab === 'settings'
                 ? 'bg-vintage-ink text-vintage-paper'
-                : 'bg-vintage-paper text-vintage-ink hover:bg-vintage-ink/5'
+                : 'bg-vintage-paper text-vintage-ink hover:bg-vintage-ink/10'
             }`}
           >
-            <Settings size={12} /> Account Settings
+            <Settings size={14} /> Account Settings
           </button>
         </div>
       </div>
@@ -420,67 +420,67 @@ const AffiliatePortal: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             {/* TOOL 1: VANITY LINK */}
-            <div className="border-4 border-double border-vintage-ink p-5 bg-vintage-background/80 space-y-3">
+            <div className="border-2 border-vintage-ink p-5 bg-vintage-paper shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent block">
+                <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
                   1. Personal Vanity Link
                 </label>
-                <span className="text-[9px] font-mono text-vintage-ink/70">30-day cookie window</span>
+                <span className="text-xs font-mono font-bold text-vintage-accent bg-vintage-accent/10 px-2 py-0.5 border border-vintage-accent/30">30-day cookie window</span>
               </div>
               
-              <div className="flex items-center border border-vintage-ink bg-vintage-paper p-1.5">
+              <div className="flex items-center border-2 border-vintage-ink bg-white p-2">
                 <input 
                   type="text" 
                   readOnly 
                   value={shareUrl} 
-                  className="w-full bg-transparent font-mono text-xs font-bold text-vintage-ink outline-none px-2 truncate"
+                  className="w-full bg-transparent font-mono text-xs sm:text-sm font-bold text-vintage-ink outline-none px-2 truncate"
                 />
                 <button 
                   onClick={handleCopyLink}
-                  className="vintage-btn py-1.5 px-3 text-[10px] tracking-widest uppercase flex items-center gap-1 shrink-0 font-bold"
+                  className="vintage-btn py-1.5 px-3.5 text-xs tracking-wider uppercase flex items-center gap-1.5 shrink-0 font-bold"
                 >
-                  {copiedLink ? <Check size={12} className="text-green-800" /> : <Copy size={12} />}
+                  {copiedLink ? <Check size={14} className="text-green-800" /> : <Copy size={14} />}
                   {copiedLink ? 'COPIED' : 'COPY'}
                 </button>
               </div>
 
-              <div className="flex items-center justify-between text-[10px] italic text-vintage-ink/70">
+              <div className="flex items-center justify-between text-xs text-vintage-ink font-sans">
                 <span>Visitors clicking this link are tagged for 30 days.</span>
-                <Link to="/font/salvatore" className="underline hover:text-vintage-accent flex items-center gap-1">
-                  Specimens <ExternalLink size={10} />
+                <Link to="/font/salvatore" className="underline font-bold text-vintage-accent hover:text-vintage-ink flex items-center gap-1">
+                  Browse Fonts <ExternalLink size={12} />
                 </Link>
               </div>
             </div>
 
             {/* TOOL 2: AUDIENCE PROMO COUPON */}
-            <div className="border-4 border-double border-vintage-ink p-5 bg-vintage-background/80 space-y-3">
+            <div className="border-2 border-vintage-ink p-5 bg-vintage-paper shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent block flex items-center gap-1">
-                  <Tag size={12} /> 2. Audience 10% OFF Promo Code
+                <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block flex items-center gap-1.5 font-sans">
+                  <Tag size={14} className="text-vintage-accent" /> 2. Audience 10% OFF Promo Code
                 </label>
-                <span className="text-[9px] font-bold text-green-900 bg-green-100 px-1.5 py-0.5 border border-green-300">
+                <span className="text-xs font-bold text-green-900 bg-green-100 px-2 py-0.5 border border-green-300">
                   Active in Checkout
                 </span>
               </div>
               
-              <div className="flex items-center border border-vintage-ink bg-vintage-paper p-1.5">
+              <div className="flex items-center border-2 border-vintage-ink bg-white p-2">
                 <input 
                   type="text" 
                   readOnly 
                   value={couponCode} 
-                  className="w-full bg-transparent font-mono text-xs font-bold text-vintage-ink outline-none px-2 tracking-wider"
+                  className="w-full bg-transparent font-mono text-xs sm:text-sm font-bold text-vintage-ink outline-none px-2 tracking-wider"
                 />
                 <button 
                   onClick={handleCopyCoupon}
-                  className="vintage-btn py-1.5 px-3 text-[10px] tracking-widest uppercase flex items-center gap-1 shrink-0 font-bold"
+                  className="vintage-btn py-1.5 px-3.5 text-xs tracking-wider uppercase flex items-center gap-1.5 shrink-0 font-bold"
                 >
-                  {copiedCoupon ? <Check size={12} className="text-green-800" /> : <Copy size={12} />}
+                  {copiedCoupon ? <Check size={14} className="text-green-800" /> : <Copy size={14} />}
                   {copiedCoupon ? 'COPIED' : 'COPY'}
                 </button>
               </div>
 
-              <div className="text-[10px] italic text-vintage-ink/70">
-                Gives your audience 10% discount while directly crediting your 20% Net commission.
+              <div className="text-xs text-vintage-ink font-sans">
+                Gives your audience 10% discount while crediting your 20% Net store commission.
               </div>
             </div>
 
@@ -488,65 +488,65 @@ const AffiliatePortal: React.FC = () => {
 
           {/* 3 FINANCIAL RECONCILIATION CARDS */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 border border-vintage-ink bg-vintage-background/60 text-left space-y-1">
-              <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-vintage-accent">
+            <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-vintage-ink font-sans">
                 <span>Clearance Holding</span>
-                <Clock size={14} className="text-amber-800" />
+                <Clock size={16} className="text-amber-800" />
               </div>
               <div className="text-3xl font-display font-bold text-amber-900">
                 ${pendingAmount.toFixed(2)}
               </div>
-              <p className="text-[10px] italic text-vintage-ink/60">14-day warranty hold against refund disputes</p>
+              <p className="text-xs text-vintage-ink font-sans leading-relaxed">14-day warranty hold against refund disputes</p>
             </div>
 
-            <div className="p-5 border-2 border-vintage-accent bg-green-50/50 text-left space-y-1">
-              <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-green-900">
+            <div className="p-5 border-2 border-vintage-ink bg-green-50/70 text-left space-y-1.5 shadow-sm">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-green-950 font-sans">
                 <span>Ready For Payout (Due)</span>
-                <CheckCircle2 size={14} className="text-green-800" />
+                <CheckCircle2 size={16} className="text-green-800" />
               </div>
               <div className="text-3xl font-display font-bold text-green-900">
                 ${readyAmount.toFixed(2)}
               </div>
-              <p className="text-[10px] italic text-vintage-ink/60">
+              <p className="text-xs text-vintage-ink font-sans leading-relaxed">
                 {isQualifiedForPayout 
                   ? `Threshold reached ($50+). Scheduled for monthly run on ${nextPayoutInfo.dateString}.` 
                   : `$${remainingForThreshold.toFixed(2)} more needed to trigger payout ($50 min).`}
               </p>
             </div>
 
-            <div className="p-5 border border-vintage-ink bg-vintage-paper text-left space-y-1">
-              <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-vintage-ink/60">
+            <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-vintage-ink font-sans">
                 <span>Total Disbursed</span>
-                <DollarSign size={14} className="text-vintage-ink/60" />
+                <DollarSign size={16} className="text-vintage-ink" />
               </div>
               <div className="text-3xl font-display font-bold text-vintage-ink">
                 ${totalPaidAmount.toFixed(2)}
               </div>
-              <p className="text-[10px] italic text-vintage-ink/60">Lifetime payouts received to PayPal</p>
+              <p className="text-xs text-vintage-ink font-sans leading-relaxed">Lifetime payouts received to PayPal</p>
             </div>
           </div>
 
           {/* COMMISSIONS & SALES TRANSACTION TABLE */}
-          <div className="border border-vintage-ink bg-vintage-paper overflow-hidden">
-            <div className="p-4 border-b border-vintage-ink bg-vintage-background flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="border-2 border-vintage-ink bg-vintage-paper overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-vintage-ink bg-vintage-paper flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-vintage-ink">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
                   Referral Sales & Commission Ledger
                 </h3>
-                <span className="text-[11px] font-serif italic text-vintage-ink/70">
+                <span className="text-xs text-vintage-ink/80 font-sans">
                   Transactions referred via your vanity slug or promo coupon code
                 </span>
               </div>
-              <span className="text-xs font-mono font-bold px-2 py-1 bg-white border border-vintage-ink">
+              <span className="text-xs font-mono font-bold px-3 py-1 bg-white border border-vintage-ink">
                 {commissions.length} Sales Recorded
               </span>
             </div>
 
             {commissions.length === 0 ? (
               <div className="p-12 text-center space-y-2">
-                <AlertCircle size={28} className="mx-auto text-vintage-ink/30" />
-                <p className="text-sm font-bold text-vintage-ink">No referred orders recorded yet</p>
-                <p className="text-xs font-serif italic text-vintage-ink/60 max-w-sm mx-auto">
+                <AlertCircle size={32} className="mx-auto text-vintage-ink/40" />
+                <p className="text-sm font-bold text-vintage-ink font-sans">No referred orders recorded yet</p>
+                <p className="text-xs text-vintage-ink/80 max-w-sm mx-auto font-sans leading-relaxed">
                   Share your vanity link or discount coupon on your social platforms and portfolio to begin recording 20% net earnings.
                 </p>
               </div>
@@ -554,7 +554,7 @@ const AffiliatePortal: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-vintage-ink bg-vintage-background/40 font-mono uppercase text-[10px] text-vintage-ink/70">
+                    <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 font-mono uppercase text-xs font-bold text-vintage-ink">
                       <th className="p-3">Date</th>
                       <th className="p-3">Typeface / Order</th>
                       <th className="p-3 text-right">Gross</th>
@@ -566,7 +566,7 @@ const AffiliatePortal: React.FC = () => {
                   <tbody className="divide-y divide-vintage-ink/20 font-mono">
                     {commissions.map((comm) => (
                       <tr key={comm.id} className="hover:bg-vintage-ink/5 transition-colors">
-                        <td className="p-3 text-vintage-ink/80 text-[11px] whitespace-nowrap">
+                        <td className="p-3 text-vintage-ink text-xs whitespace-nowrap font-medium">
                           {new Date(comm.created_at).toLocaleDateString(undefined, {
                             year: 'numeric',
                             month: 'short',
@@ -574,17 +574,17 @@ const AffiliatePortal: React.FC = () => {
                           })}
                         </td>
                         <td className="p-3">
-                          <span className="font-bold text-vintage-ink block font-sans text-xs">
+                          <span className="font-bold text-vintage-ink block font-sans text-xs sm:text-sm">
                             {comm.font_name || 'Specimen License'}
                           </span>
-                          <span className="text-[10px] text-vintage-ink/50 truncate block max-w-[200px]">
+                          <span className="text-xs text-vintage-ink/70 truncate block max-w-[200px]">
                             ID: {comm.order_id}
                           </span>
                         </td>
-                        <td className="p-3 text-right text-vintage-ink">
+                        <td className="p-3 text-right text-vintage-ink font-semibold">
                           ${Number(comm.gross_amount || 0).toFixed(2)}
                         </td>
-                        <td className="p-3 text-right text-vintage-ink/70">
+                        <td className="p-3 text-right text-vintage-ink/80 font-medium">
                           ${Number(comm.net_store_amount || 0).toFixed(2)}
                         </td>
                         <td className="p-3 text-right font-bold text-vintage-accent text-sm">
@@ -592,18 +592,18 @@ const AffiliatePortal: React.FC = () => {
                         </td>
                         <td className="p-3 text-center">
                           {comm.status === 'pending_clearance' && (
-                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 border border-amber-800 text-amber-900 bg-amber-50">
-                              <Clock size={10} /> Holding
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-amber-800 text-amber-900 bg-amber-50">
+                              <Clock size={11} /> Holding
                             </span>
                           )}
                           {comm.status === 'approved' && (
-                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800 text-green-900 bg-green-50">
-                              <CheckCircle2 size={10} /> Cleared
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800 text-green-900 bg-green-50">
+                              <CheckCircle2 size={11} /> Cleared
                             </span>
                           )}
                           {comm.status === 'paid' && (
-                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 border border-blue-800 text-blue-900 bg-blue-50">
-                              <DollarSign size={10} /> Paid Out
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-blue-800 text-blue-900 bg-blue-50">
+                              <DollarSign size={11} /> Paid Out
                             </span>
                           )}
                         </td>
@@ -622,28 +622,28 @@ const AffiliatePortal: React.FC = () => {
         <div className="space-y-6 animate-in fade-in duration-300">
           
           {/* PAYOUT SCHEDULE & THRESHOLD CARD */}
-          <div className="p-6 border-2 border-vintage-ink bg-vintage-background/80 space-y-5">
+          <div className="p-6 border-2 border-vintage-ink bg-vintage-paper shadow-sm space-y-5">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-vintage-ink/20 pb-4">
               <div className="flex items-start gap-3">
                 <Calendar size={24} className="text-vintage-accent shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent block">
+                  <span className="text-xs font-bold uppercase tracking-wider text-vintage-accent block font-sans">
                     Disbursement Schedule
                   </span>
-                  <h3 className="text-xl font-display font-bold">
+                  <h3 className="text-xl font-display font-bold text-vintage-ink">
                     Next Monthly Payout: {nextPayoutInfo.dateString}
                   </h3>
-                  <p className="text-xs text-vintage-ink/70">
-                    Disbursements occur on the <span className="font-bold">1st of every month</span> for balances reaching the <span className="font-bold">${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD</span> minimum.
+                  <p className="text-xs sm:text-sm text-vintage-ink/80 font-sans mt-0.5">
+                    Disbursements occur on the <span className="font-bold text-vintage-ink">1st of every month</span> for balances reaching the <span className="font-bold text-vintage-ink">${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD</span> minimum.
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-xs font-mono font-bold px-3 py-1 bg-vintage-paper border border-vintage-ink inline-block">
+                <span className="text-xs font-mono font-bold px-3 py-1 bg-white border border-vintage-ink inline-block">
                   {nextPayoutInfo.daysLeft} DAYS REMAINING
                 </span>
-                <span className="text-[10px] text-vintage-ink/60 block mt-1">
-                  To: <span className="font-mono font-bold">{affiliate.paypal_email}</span>
+                <span className="text-xs text-vintage-ink/80 block mt-1 font-sans">
+                  To: <span className="font-mono font-bold text-vintage-ink">{affiliate.paypal_email}</span>
                 </span>
               </div>
             </div>
@@ -651,15 +651,15 @@ const AffiliatePortal: React.FC = () => {
             {/* Threshold Qualification Meter */}
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold uppercase tracking-wider text-[11px]">
+                <span className="font-bold uppercase tracking-wider text-xs text-vintage-ink font-sans">
                   $50 Minimum Threshold Progress
                 </span>
-                <span className="font-mono font-bold text-vintage-accent">
+                <span className="font-mono font-bold text-vintage-accent text-xs sm:text-sm">
                   ${readyAmount.toFixed(2)} / ${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD ({thresholdPercentage.toFixed(0)}%)
                 </span>
               </div>
 
-              <div className="w-full bg-vintage-paper border border-vintage-ink h-3.5 rounded-none overflow-hidden p-0.5">
+              <div className="w-full bg-white border-2 border-vintage-ink h-4 rounded-none overflow-hidden p-0.5">
                 <div 
                   className={`h-full transition-all duration-700 ${
                     isQualifiedForPayout ? 'bg-green-700' : 'bg-amber-600'
@@ -668,14 +668,14 @@ const AffiliatePortal: React.FC = () => {
                 />
               </div>
 
-              <div className="text-xs italic pt-1">
+              <div className="text-xs pt-1 font-sans">
                 {isQualifiedForPayout ? (
                   <span className="text-green-900 font-bold flex items-center gap-1.5">
-                    <CheckCircle2 size={14} /> Congratulations! You meet the $50 minimum threshold. Your cleared balance of ${readyAmount.toFixed(2)} USD is queued for the {nextPayoutInfo.dateString} monthly payout run.
+                    <CheckCircle2 size={16} /> Congratulations! You meet the $50 minimum threshold. Your cleared balance of ${readyAmount.toFixed(2)} USD is queued for the {nextPayoutInfo.dateString} monthly payout run.
                   </span>
                 ) : (
-                  <span className="text-amber-900 flex items-center gap-1.5">
-                    <Clock size={14} /> Currently accumulating: ${remainingForThreshold.toFixed(2)} USD needed to qualify. Any balance under $50 rolls over automatically to subsequent monthly runs without expiration.
+                  <span className="text-amber-950 flex items-center gap-1.5 font-medium">
+                    <Clock size={16} className="text-amber-800" /> Currently accumulating: ${remainingForThreshold.toFixed(2)} USD needed to qualify. Any balance under $50 rolls over automatically to subsequent monthly runs without expiration.
                   </span>
                 )}
               </div>
@@ -684,64 +684,64 @@ const AffiliatePortal: React.FC = () => {
 
           {/* 3 BALANCE BREAKDOWN CARDS */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 border-2 border-vintage-accent bg-green-50/50 text-left space-y-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-green-900 block">
+            <div className="p-5 border-2 border-vintage-ink bg-green-50/70 text-left space-y-1.5 shadow-sm">
+              <span className="text-xs font-bold uppercase tracking-wider text-green-950 block font-sans">
                 Ready for Next Monthly Run
               </span>
               <div className="text-3xl font-display font-bold text-green-900">
                 ${readyAmount.toFixed(2)}
               </div>
-              <p className="text-[10px] italic text-vintage-ink/70">
+              <p className="text-xs text-vintage-ink font-sans">
                 Passed 14-day warranty clearance
               </p>
             </div>
 
-            <div className="p-5 border border-vintage-ink bg-vintage-background/60 text-left space-y-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-amber-900 block">
+            <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block font-sans">
                 In-Warranty Holding
               </span>
               <div className="text-3xl font-display font-bold text-amber-900">
                 ${pendingAmount.toFixed(2)}
               </div>
-              <p className="text-[10px] italic text-vintage-ink/70">
+              <p className="text-xs text-vintage-ink font-sans">
                 Protected by 14-day clearance buffer
               </p>
             </div>
 
-            <div className="p-5 border border-vintage-ink bg-vintage-paper text-left space-y-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block">
+            <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+              <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
                 Lifetime Paid Out
               </span>
               <div className="text-3xl font-display font-bold text-vintage-ink">
                 ${totalPaidAmount.toFixed(2)}
               </div>
-              <p className="text-[10px] italic text-vintage-ink/70">
+              <p className="text-xs text-vintage-ink font-sans">
                 Total successfully transferred to PayPal
               </p>
             </div>
           </div>
 
           {/* SETTLED PAYOUTS LEDGER */}
-          <div className="border border-vintage-ink bg-vintage-paper overflow-hidden">
-            <div className="p-4 border-b border-vintage-ink bg-vintage-background flex items-center justify-between">
+          <div className="border-2 border-vintage-ink bg-vintage-paper overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-vintage-ink bg-vintage-paper flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-vintage-ink">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
                   Completed Payout Disbursements ({payoutHistory.length})
                 </h3>
-                <span className="text-[11px] font-serif italic text-vintage-ink/70">
+                <span className="text-xs text-vintage-ink/80 font-sans">
                   Official disbursement receipts to your PayPal account
                 </span>
               </div>
-              <span className="text-xs font-mono font-bold px-2 py-1 bg-white border border-vintage-ink">
+              <span className="text-xs font-mono font-bold px-3 py-1 bg-white border border-vintage-ink">
                 ${totalPaidAmount.toFixed(2)} Total Settled
               </span>
             </div>
 
             {payoutHistory.length === 0 ? (
               <div className="p-10 text-center space-y-2">
-                <Wallet size={28} className="mx-auto text-vintage-ink/30" />
-                <p className="text-sm font-bold text-vintage-ink">No historical payouts yet</p>
-                <p className="text-xs font-serif italic text-vintage-ink/60 max-w-sm mx-auto">
+                <Wallet size={32} className="mx-auto text-vintage-ink/40" />
+                <p className="text-sm font-bold text-vintage-ink font-sans">No historical payouts yet</p>
+                <p className="text-xs text-vintage-ink/80 max-w-sm mx-auto font-sans leading-relaxed">
                   When your cleared balance reaches $50.00 USD on the 1st of the month, payments are disbursed to {affiliate.paypal_email} and documented here.
                 </p>
               </div>
@@ -749,7 +749,7 @@ const AffiliatePortal: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-vintage-ink bg-vintage-background/40 font-mono uppercase text-[10px] text-vintage-ink/70">
+                    <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 font-mono uppercase text-xs font-bold text-vintage-ink">
                       <th className="p-3">Payout Date</th>
                       <th className="p-3">Reference / Batch ID</th>
                       <th className="p-3">Destination</th>
@@ -761,7 +761,7 @@ const AffiliatePortal: React.FC = () => {
                   <tbody className="divide-y divide-vintage-ink/20 font-mono">
                     {payoutHistory.map((p) => (
                       <tr key={p.id} className="hover:bg-vintage-ink/5 transition-colors">
-                        <td className="p-3 text-vintage-ink/80 text-[11px] whitespace-nowrap">
+                        <td className="p-3 text-vintage-ink text-xs whitespace-nowrap font-medium">
                           {new Date(p.paid_at).toLocaleDateString(undefined, {
                             year: 'numeric',
                             month: 'short',
@@ -771,18 +771,18 @@ const AffiliatePortal: React.FC = () => {
                         <td className="p-3 font-mono font-bold text-vintage-accent truncate max-w-[180px]">
                           {p.payout_batch_id}
                         </td>
-                        <td className="p-3 text-vintage-ink/80 truncate max-w-[200px]">
+                        <td className="p-3 text-vintage-ink truncate max-w-[200px] font-medium">
                           {affiliate.paypal_email}
                         </td>
                         <td className="p-3 text-right font-bold text-green-900 text-sm">
                           ${p.amount.toFixed(2)} {p.currency}
                         </td>
-                        <td className="p-3 text-center">
+                        <td className="p-3 text-center font-bold">
                           {p.commission_count}
                         </td>
                         <td className="p-3 text-center">
-                          <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800 text-green-900 bg-green-50">
-                            <Check size={10} /> Completed
+                          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800 text-green-900 bg-green-50">
+                            <Check size={11} /> Completed
                           </span>
                         </td>
                       </tr>
@@ -836,18 +836,18 @@ const AffiliatePortal: React.FC = () => {
                   placeholder="payouts@yourdomain.com"
                   className="w-full border border-vintage-ink px-4 py-3 font-mono text-sm bg-vintage-paper focus:bg-white outline-none"
                 />
-                <span className="text-[11px] font-serif italic text-vintage-ink/60 block">
+                <span className="text-xs text-vintage-ink/80 font-sans block">
                   All monthly cleared commission earnings will be disbursed directly to this PayPal address.
                 </span>
               </div>
 
               {/* Vanity Code Field */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider block flex items-center gap-1.5 text-vintage-ink">
+                <label className="text-xs font-bold uppercase tracking-wider block flex items-center gap-1.5 text-vintage-ink font-sans">
                   <Hash size={14} className="text-vintage-accent" /> Custom Vanity Code
                 </label>
-                <div className="flex items-center border border-vintage-ink bg-vintage-paper">
-                  <span className="px-4 py-3 bg-vintage-background/60 border-r border-vintage-ink text-xs font-mono font-bold text-vintage-ink/60 select-none">
+                <div className="flex items-center border-2 border-vintage-ink bg-white">
+                  <span className="px-4 py-3 bg-vintage-ink/5 border-r border-vintage-ink text-xs font-mono font-bold text-vintage-ink select-none">
                     bombastype.com/c/
                   </span>
                   <input 
@@ -856,20 +856,20 @@ const AffiliatePortal: React.FC = () => {
                     value={editVanityCode}
                     onChange={(e) => setEditVanityCode(e.target.value.toUpperCase())}
                     placeholder="STUDIO_NAME"
-                    className="grow px-4 py-3 font-mono text-sm font-bold uppercase bg-transparent outline-none"
+                    className="grow px-4 py-3 font-mono text-sm font-bold uppercase bg-transparent outline-none text-vintage-ink"
                   />
                 </div>
-                <span className="text-[11px] font-serif italic text-vintage-ink/60 block">
-                  Alphanumeric only (3–20 chars). Updating your code syncs your vanity URL and promo coupon (<code className="font-bold">{editVanityCode || 'CODE'}10</code>).
+                <span className="text-xs text-vintage-ink/80 font-sans block">
+                  Alphanumeric only (3–20 chars). Updating your code syncs your vanity URL and promo coupon (<code className="font-bold text-vintage-ink">{editVanityCode || 'CODE'}10</code>).
                 </span>
               </div>
 
               {/* Phone Field */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider block flex items-center gap-1.5 text-vintage-ink">
+                <label className="text-xs font-bold uppercase tracking-wider block flex items-center gap-1.5 text-vintage-ink font-sans">
                   <Phone size={14} className="text-vintage-accent" /> Phone Number (With Dial Code)
                 </label>
-                <div className="flex border border-vintage-ink bg-vintage-paper">
+                <div className="flex border-2 border-vintage-ink bg-white">
                   <PhoneDialCombobox
                     value={editPhoneCode}
                     onChange={setEditPhoneCode}
@@ -887,14 +887,14 @@ const AffiliatePortal: React.FC = () => {
               </div>
 
               {/* Physical Address Section */}
-              <div className="p-4 border border-vintage-ink bg-vintage-background/60 space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-vintage-accent block flex items-center gap-1.5">
-                  <MapPin size={14} /> Physical Address / Tax Verification
+              <div className="p-5 border-2 border-vintage-ink bg-vintage-paper shadow-sm space-y-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block flex items-center gap-1.5 font-sans">
+                  <MapPin size={16} className="text-vintage-accent" /> Physical Address / Tax Verification
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                    <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
                       Country (Type to search or choose)
                     </label>
                     <CountryCombobox
@@ -906,14 +906,14 @@ const AffiliatePortal: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                    <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
                       State / Province
                     </label>
                     {provinceOptions.length > 0 ? (
                       <select
                         value={editStateProvince}
                         onChange={(e) => setEditStateProvince(e.target.value)}
-                        className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none cursor-pointer text-vintage-ink"
+                        className="w-full p-3 border-2 border-vintage-ink bg-white font-mono text-xs font-bold outline-none cursor-pointer text-vintage-ink"
                       >
                         {provinceOptions.map((p) => (
                           <option key={p} value={p}>
@@ -928,7 +928,7 @@ const AffiliatePortal: React.FC = () => {
                         onChange={(e) => setEditStateProvince(e.target.value)}
                         placeholder="State or Region" 
                         required
-                        className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
+                        className="w-full p-3 border-2 border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                       />
                     )}
                   </div>
@@ -936,7 +936,7 @@ const AffiliatePortal: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                    <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
                       City / District
                     </label>
                     <input 
@@ -945,12 +945,12 @@ const AffiliatePortal: React.FC = () => {
                       onChange={(e) => setEditCity(e.target.value)}
                       placeholder="e.g. Jakarta Selatan" 
                       required
-                      className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
+                      className="w-full p-3 border-2 border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                    <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
                       Postal / ZIP Code
                     </label>
                     <input 
@@ -959,13 +959,13 @@ const AffiliatePortal: React.FC = () => {
                       onChange={(e) => setEditPostalCode(e.target.value)}
                       placeholder="e.g. 12190" 
                       required
-                      className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
+                      className="w-full p-3 border-2 border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                  <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
                     Street Address
                   </label>
                   <input 
@@ -974,30 +974,30 @@ const AffiliatePortal: React.FC = () => {
                     onChange={(e) => setEditStreetAddress(e.target.value)}
                     placeholder="Street name, suite, unit, building" 
                     required
-                    className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
+                    className="w-full p-3 border-2 border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
                   />
                 </div>
               </div>
 
               {/* Fixed Details Summary Card */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border border-vintage-ink/30 bg-vintage-paper font-mono text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 border-2 border-vintage-ink bg-vintage-paper shadow-sm font-sans text-xs">
                 <div>
-                  <span className="text-[10px] text-vintage-ink/60 uppercase block font-bold">Commission Rate:</span>
-                  <span className="font-bold text-sm text-vintage-ink">
+                  <span className="text-xs text-vintage-ink uppercase block font-bold tracking-wider">Commission Rate:</span>
+                  <span className="font-bold text-sm text-vintage-ink font-mono mt-0.5 block">
                     {(Number(affiliate.commission_rate || 0.20) * 100).toFixed(0)}% Net Store Proceeds
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-vintage-ink/60 uppercase block font-bold">Minimum Payout Threshold:</span>
-                  <span className="font-bold text-sm text-vintage-ink">$50.00 USD</span>
+                  <span className="text-xs text-vintage-ink uppercase block font-bold tracking-wider">Minimum Payout Threshold:</span>
+                  <span className="font-bold text-sm text-vintage-ink font-mono mt-0.5 block">$50.00 USD</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-vintage-ink/60 uppercase block font-bold">Holding Window:</span>
-                  <span className="font-bold text-vintage-ink">14-Day Customer Dispute Warranty</span>
+                  <span className="text-xs text-vintage-ink uppercase block font-bold tracking-wider">Holding Window:</span>
+                  <span className="font-bold text-vintage-ink block mt-0.5">14-Day Customer Dispute Warranty</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-vintage-ink/60 uppercase block font-bold">Guild Status:</span>
-                  <span className="font-bold text-green-900 uppercase">{affiliate.status || 'ACTIVE'}</span>
+                  <span className="text-xs text-vintage-ink uppercase block font-bold tracking-wider">Guild Status:</span>
+                  <span className="font-bold text-green-900 uppercase block mt-0.5">{affiliate.status || 'ACTIVE'}</span>
                 </div>
               </div>
 
