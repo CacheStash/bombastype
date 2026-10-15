@@ -3759,11 +3759,15 @@ export default {
         // Determine Sandbox vs Live mode
         let isSandbox = true;
         try {
-          const { data: settingData } = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode`, {
+          const sRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode&select=value`, {
             headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
-          }).then(r => r.json());
-          if (settingData && settingData.length > 0) {
-            isSandbox = settingData[0].value === true || settingData[0].value === 'true';
+          });
+          if (sRes.ok) {
+            const sRows = await sRes.json();
+            if (Array.isArray(sRows) && sRows.length > 0) {
+              const val = sRows[0].value;
+              isSandbox = val === true || val === 'true';
+            }
           }
         } catch (_) {}
 
@@ -3936,11 +3940,15 @@ export default {
         // Determine Sandbox vs Live mode
         let isSandbox = true;
         try {
-          const { data: settingData } = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode`, {
+          const sRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode&select=value`, {
             headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
-          }).then(r => r.json());
-          if (settingData && settingData.length > 0) {
-            isSandbox = settingData[0].value === true || settingData[0].value === 'true';
+          });
+          if (sRes.ok) {
+            const sRows = await sRes.json();
+            if (Array.isArray(sRows) && sRows.length > 0) {
+              const val = sRows[0].value;
+              isSandbox = val === true || val === 'true';
+            }
           }
         } catch (_) {}
 
@@ -4531,11 +4539,15 @@ export default {
         // Determine Sandbox vs Live mode
         let isSandbox = true;
         try {
-          const { data: settingData } = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode`, {
+          const sRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode&select=value`, {
             headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
-          }).then(r => r.json());
-          if (settingData && settingData.length > 0) {
-            isSandbox = settingData[0].value === true || settingData[0].value === 'true';
+          });
+          if (sRes.ok) {
+            const sRows = await sRes.json();
+            if (Array.isArray(sRows) && sRows.length > 0) {
+              const val = sRows[0].value;
+              isSandbox = val === true || val === 'true';
+            }
           }
         } catch (_) {}
 

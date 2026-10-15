@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { 
   Share2, Users, DollarSign, Clock, CheckCircle2, 
@@ -57,6 +57,8 @@ interface PayoutRecord {
   affiliate_code?: string;
   paypal_email: string;
   amount: number;
+  fee?: number;
+  net_amount?: number;
   currency: string;
   payout_batch_id: string;
   status: string;
@@ -73,6 +75,9 @@ const AffiliateManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'due_payouts' | 'partners' | 'commissions' | 'history'>('due_payouts');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [settledSearchQuery, setSettledSearchQuery] = useState('');
+  const [settledPage, setSettledPage] = useState(1);
+  const SETTLED_PER_PAGE = 10;
   const [userEmailsMap, setUserEmailsMap] = useState<Record<string, string>>({});
 
   // Live PayPal balance state
@@ -194,12 +199,17 @@ const AffiliateManager: React.FC = () => {
           const mappedPayouts = payoutData.map((p: any) => {
             const aff = loadedAffiliates.find(a => a.id === p.affiliate_id);
             const commIds = Array.isArray(p.commission_ids) ? p.commission_ids : [];
+            const amount = Number(p.amount || 0);
+            const fee = Number(p.payout_fee ?? p.fee ?? Math.min(20, +(amount * 0.02).toFixed(2)));
+            const netAmount = Number(p.net_amount ?? Math.max(0, +(amount - fee).toFixed(2)));
             return {
               id: p.id,
               affiliate_id: p.affiliate_id,
               affiliate_code: aff?.affiliate_code || 'PARTNER',
               paypal_email: p.paypal_email || aff?.paypal_email || '—',
-              amount: Number(p.amount || 0),
+              amount,
+              fee,
+              net_amount: netAmount,
               currency: p.currency || 'USD',
               payout_batch_id: p.payout_batch_id || 'PAYPAL-MASS',
               status: p.status || 'completed',
@@ -234,14 +244,15 @@ const AffiliateManager: React.FC = () => {
     }>();
 
     paidComms.forEach(c => {
-      const dateKey = c.paid_at ? c.paid_at.substring(0, 10) : 'settled';
-      const key = `${c.affiliate_id}_${dateKey}`;
+      // Group per withdrawal event instead of combining entire days
+      const withdrawKey = c.payout_batch_id || c.payout_reference || (c.paid_at ? c.paid_at.substring(0, 19) : c.created_at ? c.created_at.substring(0, 19) : `item-${c.id}`);
+      const key = `${c.affiliate_id}_${withdrawKey}`;
       const existing = groupMap.get(key) || {
         affiliate_id: c.affiliate_id,
         paid_at: c.paid_at || c.created_at,
         amount: 0,
         commIds: [],
-        reference: c.payout_reference || 'PP-DISBURSEMENT'
+        reference: c.payout_batch_id || c.payout_reference || 'PP-DISBURSEMENT'
       };
       existing.amount += Number(c.commission_amount || 0);
       existing.commIds.push(c.id);
@@ -251,12 +262,17 @@ const AffiliateManager: React.FC = () => {
     const synthList: PayoutRecord[] = [];
     groupMap.forEach((val, k) => {
       const aff = allAffs.find(a => a.id === val.affiliate_id);
+      const amount = val.amount;
+      const fee = +(Math.min(20, amount * 0.02)).toFixed(2);
+      const netAmount = +(Math.max(0, amount - fee)).toFixed(2);
       synthList.push({
         id: k,
         affiliate_id: val.affiliate_id,
         affiliate_code: aff?.affiliate_code || 'PARTNER',
         paypal_email: aff?.paypal_email || '—',
-        amount: val.amount,
+        amount,
+        fee,
+        net_amount: netAmount,
         currency: 'USD',
         payout_batch_id: val.reference,
         status: 'completed',
@@ -582,6 +598,34 @@ const AffiliateManager: React.FC = () => {
     return true;
   });
 
+  // Filter settled payouts history with multi-account search
+  const filteredPayouts = useMemo(() => {
+    return payouts.filter(p => {
+      if (!settledSearchQuery.trim()) return true;
+      const q = settledSearchQuery.toLowerCase().trim();
+      const aff = affiliates.find(a => a.id === p.affiliate_id);
+      const userEmail = (aff?.user_id && userEmailsMap[aff.user_id]?.toLowerCase()) || '';
+      const partnerCode = (p.affiliate_code || aff?.affiliate_code || '').toLowerCase();
+      const legalName = (aff?.legal_name || '').toLowerCase();
+      const paypalEmail = (p.paypal_email || aff?.paypal_email || '').toLowerCase();
+      const batchId = (p.payout_batch_id || '').toLowerCase();
+      return (
+        userEmail.includes(q) ||
+        partnerCode.includes(q) ||
+        legalName.includes(q) ||
+        paypalEmail.includes(q) ||
+        batchId.includes(q)
+      );
+    });
+  }, [payouts, settledSearchQuery, affiliates, userEmailsMap]);
+
+  const totalSettledNet = useMemo(() => {
+    return filteredPayouts.reduce((sum, p) => sum + (p.net_amount ?? (p.amount - (p.fee || 0))), 0);
+  }, [filteredPayouts]);
+
+  const totalSettledPages = Math.ceil(filteredPayouts.length / SETTLED_PER_PAGE) || 1;
+  const paginatedSettledPayouts = filteredPayouts.slice((settledPage - 1) * SETTLED_PER_PAGE, settledPage * SETTLED_PER_PAGE);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans text-vintage-ink">
       
@@ -653,9 +697,18 @@ const AffiliateManager: React.FC = () => {
 
         <div className="p-5 border border-green-900/20 bg-green-50/70 text-left space-y-1.5 shadow-xs relative">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-green-950 block font-sans">
-              SAFE TO WITHDRAW (NET PROFIT)
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-green-950 block font-sans">
+                SAFE TO WITHDRAW (NET PROFIT)
+              </span>
+              {paypalLiveBalance && (
+                <span className={`text-[8px] font-bold uppercase px-1 py-0.2 border ${
+                  paypalLiveBalance.isSandbox ? 'bg-amber-100 border-amber-300 text-amber-900' : 'bg-emerald-100 border-emerald-300 text-emerald-900'
+                }`}>
+                  {paypalLiveBalance.isSandbox ? 'SANDBOX' : 'LIVE'}
+                </span>
+              )}
+            </div>
             <button
               onClick={fetchPayPalBalance}
               disabled={isFetchingBalance}
@@ -671,7 +724,7 @@ const AffiliateManager: React.FC = () => {
           </div>
           <p className="text-xs text-green-900 font-sans font-medium">
             {paypalLiveBalance !== null
-              ? `Live PayPal ($${paypalLiveBalance.available.toFixed(2)}) - Pool ($${affiliateReservedPool.toFixed(2)})`
+              ? `${paypalLiveBalance.isSandbox ? 'Sandbox' : 'Live'} PayPal ($${paypalLiveBalance.available.toFixed(2)}) - Pool ($${affiliateReservedPool.toFixed(2)})`
               : 'Store profit safe to sweep to bank'}
           </p>
         </div>
@@ -1035,59 +1088,146 @@ const AffiliateManager: React.FC = () => {
       {/* TAB 3: SETTLED PAYOUTS HISTORY */}
       {activeTab === 'history' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-display text-vintage-ink">Settled Payouts History ({payouts.length})</h3>
-            <span className="text-xs font-mono font-bold text-vintage-ink/80">Verified PayPal Disbursements</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xl font-display text-vintage-ink">Settled Payouts History ({filteredPayouts.length})</h3>
+              <span className="text-xs font-mono font-bold text-vintage-ink/80">Official PayPal disbursement records across all partner accounts</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold px-2.5 py-1.5 bg-vintage-ink text-vintage-paper border border-vintage-ink/30">
+                ${totalSettledNet.toFixed(2)} Net Disbursed
+              </span>
+            </div>
           </div>
 
-          {payouts.length === 0 ? (
+          {/* Search Input */}
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-vintage-ink/60" />
+            <input
+              type="text"
+              value={settledSearchQuery}
+              onChange={e => {
+                setSettledSearchQuery(e.target.value);
+                setSettledPage(1);
+              }}
+              placeholder="Search by user email, partner code, legal name, or PayPal email..."
+              className="w-full pl-9 pr-3 py-2 text-xs font-medium border border-vintage-ink/20 bg-vintage-paper focus:outline-none placeholder:text-vintage-ink/50 text-vintage-ink"
+            />
+          </div>
+
+          {filteredPayouts.length === 0 ? (
             <div className="p-8 border border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
-              No completed payouts recorded yet. Payouts recorded via batch execution will appear here.
+              {settledSearchQuery ? 'No disbursements matching your search query.' : 'No completed payouts recorded yet. Payouts recorded via batch execution will appear here.'}
             </div>
           ) : (
             <div className="border border-vintage-ink/20 overflow-x-auto bg-vintage-paper shadow-xs">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-vintage-ink/20 bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
-                    <th className="p-3 border-r border-vintage-ink">Settled Date</th>
-                    <th className="p-3 border-r border-vintage-ink">Partner Code</th>
-                    <th className="p-3 border-r border-vintage-ink">PayPal Account</th>
-                    <th className="p-3 border-r border-vintage-ink">Batch / Reference ID</th>
-                    <th className="p-3 border-r border-vintage-ink text-right">Amount Disbursed</th>
-                    <th className="p-3 border-r border-vintage-ink text-center">Orders Settled</th>
+                    <th className="p-3 border-r border-vintage-ink/20">Payout Date</th>
+                    <th className="p-3 border-r border-vintage-ink/20">Partner / Username</th>
+                    <th className="p-3 border-r border-vintage-ink/20">User Email</th>
+                    <th className="p-3 border-r border-vintage-ink/20">PayPal Destination</th>
+                    <th className="p-3 border-r border-vintage-ink/20">Reference / Batch ID</th>
+                    <th className="p-3 border-r border-vintage-ink/20 text-right">Gross Sent</th>
+                    <th className="p-3 border-r border-vintage-ink/20 text-right">PayPal Fee (2% max $20)</th>
+                    <th className="p-3 border-r border-vintage-ink/20 text-right">Net Received</th>
+                    <th className="p-3 border-r border-vintage-ink/20 text-center">Orders Settled</th>
                     <th className="p-3 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-vintage-ink/20 font-mono text-xs">
-                  {payouts.map(p => (
-                    <tr key={p.id} className="hover:bg-vintage-background/40 transition-colors">
-                      <td className="p-3 border-r border-vintage-ink/20 font-medium">
-                        {new Date(p.paid_at).toLocaleDateString()}
-                      </td>
-                      <td className="p-3 border-r border-vintage-ink/20 font-bold font-sans text-vintage-accent">
-                        {p.affiliate_code}
-                      </td>
-                      <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[200px] text-vintage-ink">
-                        {p.paypal_email}
-                      </td>
-                      <td className="p-3 border-r border-vintage-ink/20 truncate max-w-[180px] text-vintage-ink font-medium">
-                        {p.payout_batch_id}
-                      </td>
-                      <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-green-900 text-sm">
-                        ${p.amount.toFixed(2)} {p.currency}
-                      </td>
-                      <td className="p-3 border-r border-vintage-ink/20 text-center font-bold">
-                        {p.commission_count}
-                      </td>
-                      <td className="p-3 text-center">
-                        <span className="px-2.5 py-0.5 bg-green-100 text-green-900 border border-green-300 text-[10px] uppercase font-bold inline-flex items-center gap-1">
-                          <Check size={12} /> Completed
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {paginatedSettledPayouts.map(p => {
+                    const aff = affiliates.find(a => a.id === p.affiliate_id);
+                    const userEmail = (aff?.user_id && userEmailsMap[aff.user_id]) || '—';
+                    const partnerCode = p.affiliate_code || aff?.affiliate_code || 'PARTNER';
+                    const legalName = aff?.legal_name;
+                    const fee = p.fee ?? Math.min(20, +(p.amount * 0.02).toFixed(2));
+                    const netReceived = p.net_amount ?? Math.max(0, +(p.amount - fee).toFixed(2));
+
+                    return (
+                      <tr key={p.id} className="hover:bg-vintage-background/40 transition-colors">
+                        <td className="p-3 border-r border-vintage-ink/20 whitespace-nowrap text-vintage-ink/80">
+                          {new Date(p.paid_at).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </td>
+                        <td className="p-3 border-r border-vintage-ink/20 font-bold font-sans">
+                          <span className="block uppercase font-bold text-vintage-accent">{partnerCode}</span>
+                          {legalName && (
+                            <span className="text-[10px] text-vintage-ink/70 font-medium block truncate max-w-[140px]">
+                              {legalName}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 border-r border-vintage-ink/20 font-sans font-medium text-vintage-ink truncate max-w-[180px]">
+                          {userEmail}
+                        </td>
+                        <td className="p-3 border-r border-vintage-ink/20 font-medium truncate max-w-[180px] text-vintage-ink">
+                          {p.paypal_email}
+                        </td>
+                        <td className="p-3 border-r border-vintage-ink/20 truncate max-w-[180px] text-vintage-ink/80 font-mono text-[11px]">
+                          {p.payout_batch_id}
+                        </td>
+                        <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-vintage-ink">
+                          ${p.amount.toFixed(2)}
+                        </td>
+                        <td className="p-3 border-r border-vintage-ink/20 text-right font-mono font-bold text-red-800">
+                          -${fee.toFixed(2)}
+                        </td>
+                        <td className="p-3 border-r border-vintage-ink/20 text-right">
+                          <span className="font-bold text-green-900 text-sm font-mono block">
+                            ${netReceived.toFixed(2)}
+                          </span>
+                          <span className="text-[9px] text-vintage-ink/60 font-bold block">
+                            {p.currency}
+                          </span>
+                        </td>
+                        <td className="p-3 border-r border-vintage-ink/20 text-center font-bold">
+                          {p.commission_count}
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className="px-2.5 py-0.5 bg-green-100 text-green-900 border border-green-300 text-[10px] uppercase font-bold inline-flex items-center gap-1">
+                            <Check size={12} /> Completed
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+
+              {/* AUTO PAGINATION CONTROLS */}
+              {filteredPayouts.length > SETTLED_PER_PAGE && (
+                <div className="p-3 border-t border-vintage-ink/20 bg-vintage-paper flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-sans">
+                  <span className="text-vintage-ink/80 font-medium">
+                    Showing <strong className="text-vintage-ink font-bold">{(settledPage - 1) * SETTLED_PER_PAGE + 1}</strong> to <strong className="text-vintage-ink font-bold">{Math.min(settledPage * SETTLED_PER_PAGE, filteredPayouts.length)}</strong> of <strong className="text-vintage-ink font-bold">{filteredPayouts.length}</strong> disbursements
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSettledPage(p => Math.max(1, p - 1))}
+                      disabled={settledPage === 1}
+                      className="px-3 py-1 border border-vintage-ink/30 bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer uppercase font-bold text-[10px]"
+                    >
+                      Prev
+                    </button>
+                    <span className="px-2 font-mono font-bold text-vintage-ink text-[11px]">
+                      Page {settledPage} of {totalSettledPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSettledPage(p => Math.min(totalSettledPages, p + 1))}
+                      disabled={settledPage >= totalSettledPages}
+                      className="px-3 py-1 border border-vintage-ink/30 bg-vintage-paper hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer uppercase font-bold text-[10px]"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
