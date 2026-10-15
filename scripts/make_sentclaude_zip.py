@@ -4,12 +4,18 @@ import zipfile
 # Hanya sertakan file kode, konfigurasi, dan dokumentasi esensial untuk Claude
 ALLOWED_EXTS = {
     ".ts", ".tsx", ".js", ".jsx", ".json", ".toml", ".html", ".css",
-    ".py", ".md", ".sh", ".sql", ".txt", ".env", ".env.local"
+    ".py", ".sh", ".sql"
 }
 
 EXCLUDE_DIRS = {
     "node_modules", ".git", "dist", "sentclaude", ".pnpm", "__pycache__",
-    "backups", "release", "coverage", ".vscode", ".idea"
+    "backups", "release", "coverage", ".vscode", ".idea", ".wrangler",
+    "scratch", ".agents", ".system_generated"
+}
+
+EXCLUDE_FILES = {
+    "GEMINI.md", "gemini.md", "README.md", "readme.md",
+    "struktur.txt", "policy_content.txt", ".DS_Store"
 }
 
 # Batasi ukuran file individual maksimal 300 KB untuk menghindari dump teks/log raksasa
@@ -27,9 +33,11 @@ def make_sentclaude_zip(repo_dir: str, project_name: str):
         for root, dirs, files in os.walk(repo_dir):
             dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
             for file in files:
+                if file.startswith(".env") or file in EXCLUDE_FILES:
+                    continue
+
                 ext = os.path.splitext(file)[1].lower()
-                # Sertakan file tanpa ekstensi yang penting seperti CNAME, .env
-                if ext not in ALLOWED_EXTS and not file.startswith(".env"):
+                if ext not in ALLOWED_EXTS:
                     continue
 
                 full_path = os.path.join(root, file)

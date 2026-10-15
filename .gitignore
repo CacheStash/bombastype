@@ -43,3 +43,8 @@ readme.md
 scratch/
 .agents/
 .system_generated/
+__pycache__/
+*.pyc
+*.pyo
+struktur.txt
+policy_content.txt
