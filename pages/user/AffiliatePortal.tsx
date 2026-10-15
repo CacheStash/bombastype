@@ -9,7 +9,7 @@ import {
   Copy, Check, ArrowRight, Clock, CheckCircle2, DollarSign, 
   AlertCircle, Share2, ExternalLink, Settings, Save, Mail, Hash,
   Tag, MapPin, Phone, Calendar, Wallet, ChevronRight, FileText,
-  Zap, RefreshCw, X, Sparkles, Info, ShieldCheck, Percent
+  Zap, RefreshCw, X, Sparkles, Info, ShieldCheck, Percent, Timer, Award
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { 
@@ -22,6 +22,7 @@ import {
   getNextMonthlyPayoutDate,
   AFFILIATE_MIN_PAYOUT_USD
 } from '../../utils/affiliateGeo';
+import { calculateAffiliateMilestone, getClaimedMilestones } from '../../utils/affiliateMilestone';
 import { CountryCombobox } from '../../components/CountryCombobox';
 import { PhoneDialCombobox } from '../../components/PhoneDialCombobox';
 
@@ -73,6 +74,7 @@ const AffiliatePortal: React.FC = () => {
   const [couponDiscountPercent, setCouponDiscountPercent] = useState<number>(10);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [availabilityResult, setAvailabilityResult] = useState<{ available: boolean; message: string } | null>(null);
+  const [countdownStr, setCountdownStr] = useState<string>('');
 
   const nextPayoutInfo = getNextMonthlyPayoutDate();
 
@@ -217,6 +219,38 @@ const AffiliatePortal: React.FC = () => {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    const pendingComms = commissions.filter(c => c.status === 'pending_clearance' && new Date(c.cleared_at) > new Date());
+    if (pendingComms.length === 0) {
+      setCountdownStr('');
+      return;
+    }
+    const earliestTime = Math.min(...pendingComms.map(c => new Date(c.cleared_at).getTime()));
+
+    const updateCountdown = () => {
+      const diff = earliestTime - Date.now();
+      if (diff <= 0) {
+        setCountdownStr('Clearing now...');
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      const parts = [];
+      if (days > 0) parts.push(`${days}d`);
+      parts.push(`${hours}h`);
+      parts.push(`${minutes}m`);
+      parts.push(`${seconds}s`);
+      setCountdownStr(parts.join(' '));
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [commissions]);
 
   const synthesizePayoutHistory = (allComms: any[]) => {
     const paidComms = allComms.filter(c => c.status === 'paid');
@@ -473,6 +507,11 @@ const AffiliatePortal: React.FC = () => {
     .filter(c => c.status === 'paid')
     .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
 
+  // Gross referral sales & Milestone reward calculations
+  const totalGrossSales = commissions.reduce((sum, c) => sum + Number(c.gross_amount || 0), 0);
+  const claimedMilestones = affiliate ? getClaimedMilestones(affiliate.id, Math.floor(totalGrossSales / 1000)) : [];
+  const milestoneInfo = calculateAffiliateMilestone(totalGrossSales, claimedMilestones);
+
   const isQualifiedForPayout = readyAmount >= AFFILIATE_MIN_PAYOUT_USD;
   const thresholdPercentage = Math.min(100, (readyAmount / AFFILIATE_MIN_PAYOUT_USD) * 100);
   const remainingForThreshold = Math.max(0, AFFILIATE_MIN_PAYOUT_USD - readyAmount);
@@ -547,15 +586,6 @@ const AffiliatePortal: React.FC = () => {
           <h2 className="text-3xl font-display">
             Affiliate Code: <span className="font-bold text-vintage-ink">{affiliate.affiliate_code}</span>
           </h2>
-          <div className="flex flex-wrap items-center gap-2 mt-1.5 font-sans">
-            <span className="text-xs text-vintage-ink/80 flex items-center gap-1.5 bg-vintage-ink/5 px-2.5 py-0.5 border border-vintage-ink/15">
-              <Mail size={12} className="text-vintage-accent" />
-              Username / Account: <span className="font-bold font-mono text-vintage-ink">{userEmail || affiliate.paypal_email}</span>
-            </span>
-            <span className="text-xs text-vintage-ink/80 flex items-center gap-1.5 bg-vintage-ink/5 px-2.5 py-0.5 border border-vintage-ink/15">
-              PayPal: <span className="font-bold font-mono text-vintage-ink">{affiliate.paypal_email}</span>
-            </span>
-          </div>
         </div>
 
         {/* SUB TAB CONTROLS */}
@@ -724,13 +754,122 @@ const AffiliatePortal: React.FC = () => {
             </div>
           </div>
 
+          {/* CREATOR MILESTONE REWARD & GAMIFICATION */}
+          <div className="border border-vintage-ink/20 bg-vintage-paper p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-vintage-ink/15 pb-4">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-vintage-accent uppercase tracking-widest block font-sans">
+                  Creator Milestone Rewards
+                </span>
+                <h3 className="text-xl font-display text-vintage-ink flex items-center gap-2">
+                  <Award size={18} className="text-amber-800" />
+                  Personal Font Purchase Discounts
+                </h3>
+              </div>
+              <div className="text-left sm:text-right font-sans">
+                <span className="text-[10px] uppercase font-bold text-vintage-ink/60 block">Referral Gross Sales</span>
+                <span className="text-lg font-mono font-bold text-vintage-ink">${milestoneInfo.totalGrossSales.toFixed(2)} USD</span>
+              </div>
+            </div>
+
+            {/* PSYCHOLOGICAL URGENCY BANNER IF REWARD UNLOCKED */}
+            {milestoneInfo.activeDiscountPercent > 0 && (
+              <div className="p-4 bg-amber-50 border border-amber-300 text-amber-950 space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 text-amber-900 font-sans">
+                    <Sparkles size={14} className="text-amber-700" />
+                    EXCLUSIVE CREATOR REWARD: {milestoneInfo.activeDiscountPercent}% OFF ACTIVE
+                  </span>
+                  <Link
+                    to="/fonts"
+                    className="vintage-btn btn-reverse py-1.5 px-4 text-[10px] tracking-wider uppercase font-bold inline-flex items-center gap-1.5"
+                  >
+                    Use Discount Now &rarr;
+                  </Link>
+                </div>
+                <p className="text-xs font-sans text-amber-900/90 leading-relaxed">
+                  {milestoneInfo.warningMessage}
+                </p>
+                <div className="text-[10px] text-amber-800/80 font-sans italic border-t border-amber-200/60 pt-1.5">
+                  * Automatically applied at checkout when logged in with this account. Single-use per tier and does not stack.
+                </div>
+              </div>
+            )}
+
+            {milestoneInfo.claimedInCurrentTier && (
+              <div className="p-3 bg-green-50 border border-green-200 text-green-950 text-xs font-sans flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-green-700" />
+                  You have claimed your <strong>{milestoneInfo.rawTier}% OFF</strong> milestone reward for this tier!
+                </span>
+                {milestoneInfo.nextThreshold && (
+                  <span className="text-[11px] font-mono text-green-800">
+                    Next tier at ${milestoneInfo.nextThreshold} (${milestoneInfo.amountNeededForNext.toFixed(2)} left)
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* PROGRESS BAR & MILESTONE TIERS */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-[11px] font-sans font-bold text-vintage-ink/70">
+                <span>Cycle Progress ($0 &rarr; $1,000)</span>
+                <span>${milestoneInfo.cycleGrossSales.toFixed(2)} / $1,000.00</span>
+              </div>
+              <div className="w-full h-3 bg-vintage-ink/10 border border-vintage-ink/20 rounded-none overflow-hidden relative">
+                <div 
+                  className="h-full bg-vintage-ink transition-all duration-500"
+                  style={{ width: `${milestoneInfo.cycleProgressPercent}%` }}
+                />
+              </div>
+
+              {/* 4 MILESTONE TIERS GRID */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                {[
+                  { threshold: 100, label: '10% OFF' },
+                  { threshold: 300, label: '20% OFF' },
+                  { threshold: 500, label: '30% OFF' },
+                  { threshold: 1000, label: '50% OFF' },
+                ].map((tier) => {
+                  const achieved = milestoneInfo.cycleGrossSales >= tier.threshold;
+                  const isCurrent = milestoneInfo.rawTier === (tier.threshold === 1000 ? 50 : tier.threshold === 500 ? 30 : tier.threshold === 300 ? 20 : 10);
+                  return (
+                    <div 
+                      key={tier.threshold}
+                      className={`p-2.5 border text-center transition-all ${
+                        isCurrent
+                          ? 'border-amber-600 bg-amber-50 text-amber-950 shadow-xs'
+                          : achieved
+                          ? 'border-vintage-ink bg-vintage-ink/5 text-vintage-ink'
+                          : 'border-vintage-ink/20 bg-white/60 text-vintage-ink/50'
+                      }`}
+                    >
+                      <div className="text-[10px] font-mono font-bold">${tier.threshold} Target</div>
+                      <div className="text-sm font-bold font-display mt-0.5">{tier.label}</div>
+                      <div className="text-[9px] uppercase font-bold tracking-tight mt-1">
+                        {isCurrent ? '⚡ Current Tier' : achieved ? '✓ Reached' : 'Locked'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
           {/* 14-DAY WARRANTY HOLD CLARITY BANNER */}
           <div className="border border-vintage-ink/20 bg-amber-50/70 p-4 flex items-start gap-3">
             <Clock size={20} className="text-amber-800 shrink-0 mt-0.5" />
-            <div className="space-y-0.5 font-sans">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">
-                Why is there a 14-Day Clearance Period on new sales?
-              </span>
+            <div className="space-y-1 font-sans grow">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">
+                  Why is there a 14-Day Clearance Period on new sales?
+                </span>
+                {countdownStr && (
+                  <span className="text-[11px] font-mono font-bold bg-amber-100 text-amber-900 px-2 py-0.5 border border-amber-300 inline-flex items-center gap-1 shrink-0 self-start sm:self-auto">
+                    <Timer size={12} /> Next Release: {countdownStr}
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] text-amber-900/90 leading-relaxed max-w-3xl">
                 To protect our creator network and partner payouts against fraudulent card use, unauthorized disputes, and chargebacks, every new sale is held in a 14-day warranty clearance window. Once the 14 days expire without customer dispute, funds automatically clear into <strong>Ready For Payout</strong> and can be withdrawn immediately to your PayPal account.
               </p>
@@ -748,6 +887,16 @@ const AffiliatePortal: React.FC = () => {
                 ${pendingAmount.toFixed(2)}
               </div>
               <p className="text-xs text-vintage-ink font-sans leading-relaxed">14-day clearance hold against refund disputes</p>
+              {countdownStr ? (
+                <div className="mt-2 pt-2 border-t border-vintage-ink/10 flex items-center gap-1.5 text-[11px] font-mono font-bold text-amber-900">
+                  <Timer size={13} className="text-amber-800" />
+                  <span>Earliest release: {countdownStr}</span>
+                </div>
+              ) : (
+                <div className="mt-2 pt-2 border-t border-vintage-ink/10 text-[10px] text-vintage-ink/50 font-sans italic">
+                  No active clearance holds
+                </div>
+              )}
             </div>
 
             <div className="p-5 border border-green-800/30 bg-green-50/50 text-left space-y-2 flex flex-col justify-between">

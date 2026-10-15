@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Link } from 'react-router-dom';
-import { Download, FileText, History, ShieldCheck, Clock } from 'lucide-react';
+import { Download, FileText, History, ShieldCheck, Clock, ShoppingBag } from 'lucide-react';
 
 const MyFontsHistory = () => {
   const [history, setHistory] = useState<any[]>([]);
@@ -87,9 +87,26 @@ const MyFontsHistory = () => {
       </div>
 
       {history.length === 0 ? (
-        <div className="border border-dashed border-vintage-ink/30 p-20 text-center bg-vintage-paper/50">
-          <p className="text-sm font-semibold tracking-wider uppercase text-vintage-ink/80">Your purchase history is currently empty.</p>
-          <p className="text-xs text-vintage-ink/70 mt-2 font-sans">Fonts you license or test will appear here with perpetual download access.</p>
+        <div className="border border-vintage-ink/20 p-12 sm:p-16 text-center bg-white space-y-5 shadow-xs">
+          <div className="space-y-2">
+            <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-vintage-accent block font-sans">
+              Archive Catalog
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-display text-vintage-ink uppercase">
+              Your Library is Currently Empty
+            </h3>
+            <p className="text-xs sm:text-sm text-vintage-ink/80 font-sans max-w-lg mx-auto leading-relaxed">
+              Explore our handcrafted vintage display fonts and commercial collections. All licensed typefaces include immediate OTF/TTF/WOFF2 downloads, specimen glyph maps, and legal commercial certificates.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link 
+              to="/fonts" 
+              className="vintage-btn btn-reverse inline-flex items-center gap-2.5 px-8 py-3.5 text-xs font-bold uppercase tracking-wider font-sans"
+            >
+              <ShoppingBag size={15} /> BUY FONTS NOW
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">

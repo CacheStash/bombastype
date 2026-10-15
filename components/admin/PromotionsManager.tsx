@@ -93,7 +93,25 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
             .from('affiliates')
             .select('id, affiliate_code, paypal_email, commission_rate, user_id')
             .in('id', affIds);
-          const affMap = new Map((affList || []).map((a: any) => [a.id, a]));
+
+          let userEmailsMap: Record<string, string> = {};
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const uRes = await fetch('/api/admin/affiliate-users', {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+              });
+              const uData = await uRes.json() as any;
+              if (uData.success && uData.users) {
+                userEmailsMap = uData.users;
+              }
+            }
+          } catch (_) {}
+
+          const affMap = new Map((affList || []).map((a: any) => [
+            a.id,
+            { ...a, user_email: userEmailsMap[a.user_id] || '' }
+          ]));
           setAffiliateCoupons(affOnly.map((c: any) => ({
             ...c,
             affiliate: affMap.get(c.affiliate_id) || null
@@ -689,7 +707,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                 <tr className="border-b border-vintage-ink/20 bg-vintage-ink/5 uppercase text-[10px] font-bold text-vintage-ink tracking-wider font-mono">
                   <th className="p-3">Coupon Code</th>
                   <th className="p-3">Discount</th>
-                  <th className="p-3">Partner Code</th>
+                  <th className="p-3">Affiliate User / Email</th>
                   <th className="p-3">PayPal Payout Email</th>
                   <th className="p-3 text-center">Uses</th>
                   <th className="p-3">Expires</th>
@@ -715,8 +733,15 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                       <td className="p-3 font-bold text-green-900 text-sm">
                         {c.discount_percentage || c.discount_value}% OFF
                       </td>
-                      <td className="p-3 font-bold text-vintage-ink font-sans">
-                        {c.affiliate?.affiliate_code || 'N/A'}
+                      <td className="p-3 text-vintage-ink font-sans">
+                        <div className="font-bold text-xs truncate max-w-[200px]" title={c.affiliate?.user_email || c.affiliate?.paypal_email}>
+                          {c.affiliate?.user_email || c.affiliate?.paypal_email || c.affiliate?.affiliate_code || 'N/A'}
+                        </div>
+                        {c.affiliate?.affiliate_code && (
+                          <div className="text-[10px] text-vintage-ink/50 font-mono">
+                            Code: {c.affiliate.affiliate_code}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3 text-vintage-ink/80 truncate max-w-[200px]">
                         {c.affiliate?.paypal_email || 'No email registered'}
