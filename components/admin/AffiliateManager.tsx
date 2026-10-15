@@ -625,24 +625,28 @@ const AffiliateManager: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5 shadow-xs">
           <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">Gross Sales Inbound</span>
-          <div className="text-2xl font-display font-bold text-vintage-ink">
-            ${totalGrossSales.toFixed(2)}
+          <div className="flex items-center text-2xl font-display font-bold text-vintage-ink">
+            <DollarSign size={18} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-1" />
+            <span>{totalGrossSales.toFixed(2)}</span>
           </div>
           <p className="text-xs text-vintage-ink/80 font-sans">Total paid by buyers via PayPal</p>
         </div>
 
         <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5 shadow-xs">
           <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">PayPal Inbound Fees</span>
-          <div className="text-2xl font-display font-bold text-red-900">
-            -${totalPayPalFees.toFixed(2)}
+          <div className="flex items-center text-2xl font-display font-bold text-red-900">
+            <span className="mr-0.5">-</span>
+            <DollarSign size={18} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-1" />
+            <span>{totalPayPalFees.toFixed(2)}</span>
           </div>
           <p className="text-xs text-vintage-ink/80 font-sans">Payment gateway transaction cost</p>
         </div>
 
         <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5 shadow-xs">
           <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block font-sans">Affiliate Reserved Pool</span>
-          <div className="text-2xl font-display font-bold text-amber-900">
-            ${affiliateReservedPool.toFixed(2)}
+          <div className="flex items-center text-2xl font-display font-bold text-amber-900">
+            <DollarSign size={18} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-1" />
+            <span>{affiliateReservedPool.toFixed(2)}</span>
           </div>
           <p className="text-xs text-amber-900 font-sans font-medium">Commissions due + in-warranty hold</p>
         </div>
@@ -661,8 +665,9 @@ const AffiliateManager: React.FC = () => {
               <RefreshCw size={9} className={isFetchingBalance ? 'animate-spin' : ''} /> {isFetchingBalance ? 'Syncing...' : 'Sync PP'}
             </button>
           </div>
-          <div className="text-3xl font-display font-bold text-green-900">
-            ${safeToWithdraw.toFixed(2)}
+          <div className="flex items-center text-3xl font-display font-bold text-green-900">
+            <DollarSign size={22} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-1" />
+            <span>{safeToWithdraw.toFixed(2)}</span>
           </div>
           <p className="text-xs text-green-900 font-sans font-medium">
             {paypalLiveBalance !== null
@@ -1288,22 +1293,34 @@ const AffiliateManager: React.FC = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
                     <div className="p-3 border border-vintage-ink bg-vintage-background/40">
                       <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block">Ready / Due</span>
-                      <div className="text-xl font-display font-bold text-green-900">${readyDue.toFixed(2)}</div>
+                      <div className="flex items-center text-xl font-display font-bold text-green-900">
+                        <DollarSign size={16} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-0.5" />
+                        <span>{readyDue.toFixed(2)}</span>
+                      </div>
                       <span className="text-[9px] opacity-70 block">{readyDue >= 50 ? 'Qualified' : 'Under $50'}</span>
                     </div>
                     <div className="p-3 border border-vintage-ink bg-vintage-background/40">
                       <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block">In Warranty</span>
-                      <div className="text-xl font-display font-bold text-amber-900">${holding.toFixed(2)}</div>
+                      <div className="flex items-center text-xl font-display font-bold text-amber-900">
+                        <DollarSign size={16} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-0.5" />
+                        <span>{holding.toFixed(2)}</span>
+                      </div>
                       <span className="text-[9px] opacity-70 block">14-day hold</span>
                     </div>
                     <div className="p-3 border border-vintage-ink bg-vintage-background/40">
                       <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block">Lifetime Paid</span>
-                      <div className="text-xl font-display font-bold text-vintage-ink">${paid.toFixed(2)}</div>
+                      <div className="flex items-center text-xl font-display font-bold text-vintage-ink">
+                        <DollarSign size={16} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-0.5" />
+                        <span>{paid.toFixed(2)}</span>
+                      </div>
                       <span className="text-[9px] opacity-70 block">Disbursed</span>
                     </div>
                     <div className="p-3 border border-vintage-ink bg-vintage-background/40">
                       <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block">Gross Sales</span>
-                      <div className="text-xl font-display font-bold text-vintage-ink">${grossSales.toFixed(2)}</div>
+                      <div className="flex items-center text-xl font-display font-bold text-vintage-ink">
+                        <DollarSign size={16} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-0.5" />
+                        <span>{grossSales.toFixed(2)}</span>
+                      </div>
                       <span className="text-[9px] opacity-70 block">{partnerComms.length} order(s)</span>
                     </div>
                   </div>
@@ -1399,8 +1416,9 @@ const AffiliateManager: React.FC = () => {
               </div>
               <div className="flex justify-between border-t border-green-200 pt-2 text-sm">
                 <span className="font-bold uppercase tracking-wider">Total Settlement:</span>
-                <span className="font-bold font-display text-green-900 text-lg">
-                  ${payoutModalAffiliate.totalAmount.toFixed(2)} USD
+                <span className="flex items-center font-bold font-display text-green-900 text-lg">
+                  <DollarSign size={16} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-0.5" />
+                  <span>{payoutModalAffiliate.totalAmount.toFixed(2)} USD</span>
                 </span>
               </div>
             </div>

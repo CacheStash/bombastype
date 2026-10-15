@@ -97,16 +97,23 @@ const AffiliatePortal: React.FC = () => {
     if (user) {
       setUserEmail(user.email || '');
 
-      // Fetch legal full name from fontbuyer profile
-      const { data: buyerData } = await supabase
-        .from('fontbuyer')
-        .select('full_name, address')
-        .eq('id', user.id)
-        .maybeSingle();
+      // 1. Fetch legal full name from fontbuyer profile, fallback to user metadata
+      let resolvedName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+      try {
+        const { data: buyerData } = await supabase
+          .from('fontbuyer')
+          .select('full_name, address')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      if (buyerData?.full_name) {
-        setEditFullName(buyerData.full_name);
-        setOriginalFullName(buyerData.full_name);
+        if (buyerData?.full_name) {
+          resolvedName = buyerData.full_name;
+        }
+      } catch (_) {}
+
+      if (resolvedName) {
+        setEditFullName(resolvedName);
+        setOriginalFullName(resolvedName);
       }
 
       const { data: affData } = await supabase
@@ -170,8 +177,23 @@ const AffiliatePortal: React.FC = () => {
             setCouponCodeCustom(couponRow.code);
             setCouponDiscountPercent(Number(couponRow.discount_percentage || couponRow.discount_value || 10));
           } else {
-            setCouponCodeCustom(`${affData.affiliate_code || ''}10`);
-            setCouponDiscountPercent(10);
+            // Fallback: Check if coupon exists matching affiliate_code pattern
+            const defaultCode = `${affData.affiliate_code || ''}10`;
+            const { data: fallbackCoup } = await supabase
+              .from('coupons')
+              .select('*')
+              .ilike('code', defaultCode)
+              .eq('is_active', true)
+              .maybeSingle();
+
+            if (fallbackCoup) {
+              setAffiliateCoupon(fallbackCoup);
+              setCouponCodeCustom(fallbackCoup.code);
+              setCouponDiscountPercent(Number(fallbackCoup.discount_percentage || fallbackCoup.discount_value || 10));
+            } else {
+              setCouponCodeCustom(defaultCode);
+              setCouponDiscountPercent(10);
+            }
           }
         } catch (_) {
           setCouponCodeCustom(`${affData.affiliate_code || ''}10`);
@@ -436,90 +458,53 @@ const AffiliatePortal: React.FC = () => {
 
     setSavingSettings(true);
     try {
-      if (cleanCode !== affiliate.affiliate_code) {
-        const { data: codeCheck } = await supabase
-          .from('affiliates')
-          .select('id, user_id')
-          .ilike('affiliate_code', cleanCode)
-          .maybeSingle();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Authentication session expired. Please sign in again.");
 
-        if (codeCheck && codeCheck.id !== affiliate.id) {
-          throw new Error(`The vanity code "${cleanCode}" is already taken by another creator. Please select another.`);
-        }
-      }
-
-      const fullUpdate = {
-        paypal_email: cleanEmail,
-        affiliate_code: cleanCode,
-        phone_code: editPhoneCode,
-        phone_number: editPhoneNumber.trim(),
-        country: editCountry.trim(),
-        state_province: editStateProvince.trim(),
-        city: editCity.trim(),
-        postal_code: editPostalCode.trim(),
-        street_address: editStreetAddress.trim(),
-        auto_payout_enabled: autoPayoutEnabled,
-        updated_at: new Date().toISOString()
-      };
-
-      let updatedData = null;
-      const { data, error } = await supabase
-        .from('affiliates')
-        .update(fullUpdate)
-        .eq('id', affiliate.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.warn('Update with full address failed, falling back to base fields:', error.message);
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('affiliates')
-          .update({
-            paypal_email: cleanEmail,
-            affiliate_code: cleanCode,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', affiliate.id)
-          .select()
-          .single();
-
-        if (fallbackError) throw fallbackError;
-        updatedData = fallbackData;
-      } else {
-        updatedData = data;
-      }
-
-      // Two-Way Sync to fontbuyer (Primary User Profile)
-      const fullAddress = [
-        editStreetAddress.trim(),
-        editCity.trim(),
-        [editStateProvince.trim(), editPostalCode.trim()].filter(Boolean).join(' '),
-        editCountry.trim()
-      ].filter(Boolean).join(', ');
-
-      await supabase.from('fontbuyer').upsert({
-        id: affiliate.user_id,
-        full_name: editFullName.trim(),
-        address: fullAddress
+      const res = await fetch('/api/affiliate/save-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          fullName: editFullName.trim(),
+          paypalEmail: cleanEmail,
+          affiliateCode: cleanCode,
+          phoneCode: editPhoneCode,
+          phoneNumber: editPhoneNumber.trim(),
+          country: editCountry.trim(),
+          stateProvince: editStateProvince.trim(),
+          city: editCity.trim(),
+          postalCode: editPostalCode.trim(),
+          streetAddress: editStreetAddress.trim(),
+          autoPayoutEnabled: autoPayoutEnabled,
+          customCouponCode: couponCodeCustom.trim().toUpperCase(),
+          couponDiscount: couponDiscountPercent
+        })
       });
 
-      localStorage.setItem(`aff_auto_payout_${affiliate.id}`, autoPayoutEnabled ? '1' : '0');
-      // Sync audience coupon with updated code and custom discount
-      const syncedCoupon = await syncAffiliateCoupon(
-        supabase, 
-        affiliate.id, 
-        cleanCode,
-        couponCodeCustom.trim().toUpperCase(),
-        couponDiscountPercent
-      );
-
-      setAffiliate(updatedData);
-      setOriginalFullName(editFullName.trim());
-      setEditPaypalEmail(updatedData.paypal_email);
-      setEditVanityCode(updatedData.affiliate_code);
-      if (syncedCoupon) {
-        setCouponCodeCustom(syncedCoupon);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Failed to save settings.');
       }
+
+      if (data.affiliate) {
+        setAffiliate(data.affiliate);
+        setEditPaypalEmail(data.affiliate.paypal_email || '');
+        setEditVanityCode(data.affiliate.affiliate_code || '');
+      }
+      if (data.fullName) {
+        setEditFullName(data.fullName);
+        setOriginalFullName(data.fullName);
+      }
+      if (data.coupon) {
+        setAffiliateCoupon(data.coupon);
+        setCouponCodeCustom(data.coupon.code);
+        setCouponDiscountPercent(Number(data.coupon.discount_percentage || data.coupon.discount_value || 10));
+      }
+
+      localStorage.setItem(`aff_auto_payout_${affiliate.id}`, autoPayoutEnabled ? '1' : '0');
       setSettingsSuccess('Affiliate account profile & audience coupon updated successfully!');
     } catch (err: any) {
       setSettingsError(err.message || 'Failed to update account settings.');

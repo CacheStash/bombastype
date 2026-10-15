@@ -4226,7 +4226,292 @@ export default {
       }
     }
 
-    // --- 6G. API Live PayPal Account Balance (Bombastype Admin Only) ---
+    // --- 6G. API Self-Service Affiliate Settings Update (Profile, Address, Coupon) ---
+    if (url.pathname === '/api/affiliate/save-settings' && request.method === 'POST') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user) {
+          return new Response(JSON.stringify({ error: "UNAUTHORIZED", message: "User authentication required." }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+        const body = await request.json().catch(() => ({}));
+        const {
+          fullName,
+          paypalEmail,
+          affiliateCode,
+          phoneCode,
+          phoneNumber,
+          country,
+          stateProvince,
+          city,
+          postalCode,
+          streetAddress,
+          autoPayoutEnabled,
+          customCouponCode,
+          couponDiscount
+        } = body;
+
+        // 1. Fetch current affiliate record
+        const affRes = await fetch(`${supabaseUrl}/rest/v1/affiliates?user_id=eq.${user.id}&select=*`, {
+          headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+        });
+        const affiliates = affRes.ok ? await affRes.json() : [];
+        if (!affiliates || affiliates.length === 0) {
+          return new Response(JSON.stringify({ error: "NOT_FOUND", message: "Affiliate record not found." }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+        const currentAffiliate = affiliates[0];
+
+        // 2. Validate clean code
+        const cleanCode = (affiliateCode || currentAffiliate.affiliate_code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+        if (cleanCode.length < 3) {
+          return new Response(JSON.stringify({ error: "INVALID_CODE", message: "Affiliate code must be at least 3 characters." }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // Check if affiliate code is taken by another affiliate
+        const codeCheckRes = await fetch(`${supabaseUrl}/rest/v1/affiliates?affiliate_code=eq.${encodeURIComponent(cleanCode)}&id=neq.${currentAffiliate.id}&select=id`, {
+          headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+        });
+        const existingAffCode = codeCheckRes.ok ? await codeCheckRes.json() : [];
+        if (existingAffCode && existingAffCode.length > 0) {
+          return new Response(JSON.stringify({ error: "CODE_TAKEN", message: "This affiliate code is already taken by another creator." }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // 3. Update affiliates table
+        const cleanEmail = (paypalEmail || currentAffiliate.paypal_email || user.email || '').trim().toLowerCase();
+        const updateAffPayload = {
+          paypal_email: cleanEmail,
+          affiliate_code: cleanCode,
+          phone_code: phoneCode || '+62',
+          phone_number: (phoneNumber || '').trim(),
+          country: (country || '').trim(),
+          state_province: (stateProvince || '').trim(),
+          city: (city || '').trim(),
+          postal_code: (postalCode || '').trim(),
+          street_address: (streetAddress || '').trim(),
+          auto_payout_enabled: autoPayoutEnabled !== false,
+          updated_at: new Date().toISOString()
+        };
+
+        let updateAffRes = await fetch(`${supabaseUrl}/rest/v1/affiliates?id=eq.${currentAffiliate.id}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(updateAffPayload)
+        });
+
+        // Fallback to base fields if full address columns don't exist in affiliates table
+        if (!updateAffRes.ok) {
+          updateAffRes = await fetch(`${supabaseUrl}/rest/v1/affiliates?id=eq.${currentAffiliate.id}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+              paypal_email: cleanEmail,
+              affiliate_code: cleanCode,
+              auto_payout_enabled: autoPayoutEnabled !== false,
+              updated_at: new Date().toISOString()
+            })
+          });
+        }
+        const updatedAffiliateData = updateAffRes.ok ? await updateAffRes.json() : [currentAffiliate];
+
+        // 4. Upsert fontbuyer record (Primary buyer profile) & Supabase user metadata
+        const trimmedFullName = (fullName || '').trim();
+        const fullAddress = [
+          (streetAddress || '').trim(),
+          (city || '').trim(),
+          [(stateProvince || '').trim(), (postalCode || '').trim()].filter(Boolean).join(' '),
+          (country || '').trim()
+        ].filter(Boolean).join(', ');
+
+        if (trimmedFullName) {
+          // Check if fontbuyer exists for this user
+          const fbCheckRes = await fetch(`${supabaseUrl}/rest/v1/fontbuyer?id=eq.${user.id}&select=id`, {
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+          });
+          const fbExisting = fbCheckRes.ok ? await fbCheckRes.json() : [];
+
+          if (fbExisting && fbExisting.length > 0) {
+            await fetch(`${supabaseUrl}/rest/v1/fontbuyer?id=eq.${user.id}`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                full_name: trimmedFullName,
+                address: fullAddress || null,
+                updated_at: new Date().toISOString()
+              })
+            });
+          } else {
+            await fetch(`${supabaseUrl}/rest/v1/fontbuyer`, {
+              method: 'POST',
+              headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                id: user.id,
+                email: user.email,
+                full_name: trimmedFullName,
+                address: fullAddress || null,
+                updated_at: new Date().toISOString()
+              })
+            });
+          }
+
+          // Also update Supabase Auth user metadata
+          try {
+            await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
+              method: 'PUT',
+              headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                user_metadata: {
+                  ...(user.user_metadata || {}),
+                  full_name: trimmedFullName
+                }
+              })
+            });
+          } catch (_) {}
+        }
+
+        // 5. Sync/Update Affiliate Coupon
+        const clampedDiscount = Math.min(30, Math.max(10, Math.round(Number(couponDiscount) || 10)));
+        const finalCouponCode = (customCouponCode || `${cleanCode}${clampedDiscount}`).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+
+        let savedCoupon = null;
+        if (finalCouponCode.length >= 3) {
+          // Check if coupon code is taken by another affiliate / campaign
+          const couponCheckRes = await fetch(`${supabaseUrl}/rest/v1/coupons?code=eq.${encodeURIComponent(finalCouponCode)}&select=id,affiliate_id`, {
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+          });
+          const existingCouponData = couponCheckRes.ok ? await couponCheckRes.json() : [];
+          if (existingCouponData && existingCouponData.length > 0) {
+            const coup = existingCouponData[0];
+            if (coup.affiliate_id && coup.affiliate_id !== currentAffiliate.id) {
+              return new Response(JSON.stringify({ error: "COUPON_TAKEN", message: `Coupon code "${finalCouponCode}" is already registered to another partner.` }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+          }
+
+          // Deactivate any old active coupons registered to this affiliate if they have a different code
+          await fetch(`${supabaseUrl}/rest/v1/coupons?affiliate_id=eq.${currentAffiliate.id}&code=neq.${encodeURIComponent(finalCouponCode)}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_active: false })
+          });
+
+          // Upsert the new coupon
+          const today = new Date().toISOString().split('T')[0];
+          const oneYearLater = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+          if (existingCouponData && existingCouponData.length > 0) {
+            const updateCoupRes = await fetch(`${supabaseUrl}/rest/v1/coupons?id=eq.${existingCouponData[0].id}`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+              },
+              body: JSON.stringify({
+                affiliate_id: currentAffiliate.id,
+                discount_percentage: clampedDiscount,
+                discount_value: clampedDiscount,
+                discount_type: 'percentage',
+                start_date: today,
+                end_date: oneYearLater,
+                is_active: true
+              })
+            });
+            if (updateCoupRes.ok) {
+              const resData = await updateCoupRes.json();
+              savedCoupon = resData[0];
+            }
+          } else {
+            const insertCoupRes = await fetch(`${supabaseUrl}/rest/v1/coupons`, {
+              method: 'POST',
+              headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+              },
+              body: JSON.stringify({
+                code: finalCouponCode,
+                discount_percentage: clampedDiscount,
+                discount_value: clampedDiscount,
+                discount_type: 'percentage',
+                is_active: true,
+                affiliate_id: currentAffiliate.id,
+                start_date: today,
+                end_date: oneYearLater,
+                max_uses: null
+              })
+            });
+            if (insertCoupRes.ok) {
+              const resData = await insertCoupRes.json();
+              savedCoupon = resData[0];
+            }
+          }
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          affiliate: updatedAffiliateData[0] || currentAffiliate,
+          coupon: savedCoupon || { code: finalCouponCode, discount_percentage: clampedDiscount, is_active: true },
+          fullName: trimmedFullName
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        console.error('Error saving affiliate settings:', err);
+        return new Response(JSON.stringify({ error: "INTERNAL_ERROR", message: err.message || "Failed to save settings." }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // --- 6H. API Live PayPal Account Balance (Bombastype Admin Only) ---
     if (url.pathname === '/api/admin/paypal-balance' && request.method === 'GET') {
       try {
         const authHeader = request.headers.get('Authorization');
