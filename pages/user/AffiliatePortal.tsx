@@ -9,7 +9,7 @@ import {
   Copy, Check, ArrowRight, Clock, CheckCircle2, DollarSign, CircleDollarSign,
   AlertCircle, Share2, ExternalLink, Settings, Save, Mail, Hash,
   Tag, MapPin, Phone, Calendar, Wallet, ChevronRight, FileText,
-  Zap, RefreshCw, X, Sparkles, Info, ShieldCheck, Percent, Timer, Award, Star
+  Zap, RefreshCw, X, Sparkles, Info, ShieldCheck, Percent, Timer, Award, Star, UserCheck, User
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { 
@@ -47,8 +47,11 @@ const AffiliatePortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'payouts' | 'settings'>('overview');
 
   // Account Settings Form State
+  const [editFullName, setEditFullName] = useState('');
+  const [originalFullName, setOriginalFullName] = useState('');
   const [editPaypalEmail, setEditPaypalEmail] = useState('');
   const [editVanityCode, setEditVanityCode] = useState('');
+  const [vanityCodeAvailability, setVanityCodeAvailability] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [editPhoneCode, setEditPhoneCode] = useState('+62');
   const [editPhoneNumber, setEditPhoneNumber] = useState('');
   const [editCountry, setEditCountry] = useState('Indonesia');
@@ -87,6 +90,19 @@ const AffiliatePortal: React.FC = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setUserEmail(user.email || '');
+
+      // Fetch legal full name from fontbuyer profile
+      const { data: buyerData } = await supabase
+        .from('fontbuyer')
+        .select('full_name, address')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (buyerData?.full_name) {
+        setEditFullName(buyerData.full_name);
+        setOriginalFullName(buyerData.full_name);
+      }
+
       const { data: affData } = await supabase
         .from('affiliates')
         .select('*')
@@ -220,6 +236,38 @@ const AffiliatePortal: React.FC = () => {
     setLoading(false);
   };
 
+  // Real-time custom vanity code availability checker
+  useEffect(() => {
+    const clean = editVanityCode.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    if (clean.length < 3) {
+      setVanityCodeAvailability('idle');
+      return;
+    }
+    if (affiliate && clean === affiliate.affiliate_code) {
+      setVanityCodeAvailability('idle');
+      return;
+    }
+    setVanityCodeAvailability('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from('affiliates')
+          .select('id, user_id')
+          .ilike('affiliate_code', clean)
+          .maybeSingle();
+
+        if (data && data.id !== affiliate?.id) {
+          setVanityCodeAvailability('taken');
+        } else {
+          setVanityCodeAvailability('available');
+        }
+      } catch (_) {
+        setVanityCodeAvailability('idle');
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [editVanityCode, affiliate]);
+
   useEffect(() => {
     const pendingComms = commissions.filter(c => c.status === 'pending_clearance' && new Date(c.cleared_at) > new Date());
     if (pendingComms.length === 0) {
@@ -346,6 +394,11 @@ const AffiliatePortal: React.FC = () => {
     setSettingsSuccess('');
     setSettingsError('');
 
+    if (!editFullName.trim() || editFullName.trim().length < 2) {
+      setSettingsError('Legal Full Name is required for partner compliance and payout verification.');
+      return;
+    }
+
     const cleanEmail = editPaypalEmail.trim().toLowerCase();
     const cleanCode = editVanityCode.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
@@ -360,13 +413,18 @@ const AffiliatePortal: React.FC = () => {
       return;
     }
 
+    if (vanityCodeAvailability === 'taken') {
+      setSettingsError(`The vanity code "${cleanCode}" is already taken by another creator. Please select another.`);
+      return;
+    }
+
     if (!editPhoneNumber.trim()) {
       setSettingsError('Phone number is required for partner identification.');
       return;
     }
 
-    if (!editStreetAddress.trim() || !editCity.trim() || !editPostalCode.trim()) {
-      setSettingsError('Physical address details (Street, City, Postal Code) are required.');
+    if (!editCountry.trim() || !editStateProvince.trim() || !editCity.trim() || !editPostalCode.trim() || !editStreetAddress.trim()) {
+      setSettingsError('All physical address details (Country, State/Province, City, Postal Code, Street Address) are required for partner compliance.');
       return;
     }
 
@@ -425,6 +483,20 @@ const AffiliatePortal: React.FC = () => {
         updatedData = data;
       }
 
+      // Two-Way Sync to fontbuyer (Primary User Profile)
+      const fullAddress = [
+        editStreetAddress.trim(),
+        editCity.trim(),
+        [editStateProvince.trim(), editPostalCode.trim()].filter(Boolean).join(' '),
+        editCountry.trim()
+      ].filter(Boolean).join(', ');
+
+      await supabase.from('fontbuyer').upsert({
+        id: affiliate.user_id,
+        full_name: editFullName.trim(),
+        address: fullAddress
+      });
+
       localStorage.setItem(`aff_auto_payout_${affiliate.id}`, autoPayoutEnabled ? '1' : '0');
       // Sync audience coupon with updated code and custom discount
       const syncedCoupon = await syncAffiliateCoupon(
@@ -436,6 +508,7 @@ const AffiliatePortal: React.FC = () => {
       );
 
       setAffiliate(updatedData);
+      setOriginalFullName(editFullName.trim());
       setEditPaypalEmail(updatedData.paypal_email);
       setEditVanityCode(updatedData.affiliate_code);
       if (syncedCoupon) {
@@ -1404,9 +1477,27 @@ const AffiliatePortal: React.FC = () => {
                 </span>
               </div>
 
+              {/* Legal Full Name Field */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider block flex items-center gap-1.5 text-vintage-ink font-sans">
+                  <User size={14} className="text-vintage-accent" /> Legal Full Name
+                </label>
+                <input 
+                  type="text"
+                  required
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  placeholder="e.g. Johnathan Doe"
+                  className="w-full border border-vintage-ink/30 px-4 py-3 font-sans text-sm bg-white outline-none focus:border-vintage-ink text-vintage-ink"
+                />
+                <span className="text-xs text-vintage-ink/80 font-sans block">
+                  Your legal personal or business entity name for financial payouts, tax reporting, and purchaser profile sync.
+                </span>
+              </div>
+
               {/* PayPal Email Field */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider block flex items-center gap-1.5 text-vintage-ink">
+                <label className="text-xs font-bold uppercase tracking-wider block flex items-center gap-1.5 text-vintage-ink font-sans">
                   <Mail size={14} className="text-vintage-accent" /> PayPal Payout Email Address
                 </label>
                 <input 
@@ -1415,7 +1506,7 @@ const AffiliatePortal: React.FC = () => {
                   value={editPaypalEmail}
                   onChange={(e) => setEditPaypalEmail(e.target.value)}
                   placeholder="payouts@yourdomain.com"
-                  className="w-full border border-vintage-ink/30 px-4 py-3 font-mono text-sm bg-vintage-paper focus:bg-white outline-none focus:border-vintage-ink"
+                  className="w-full border border-vintage-ink/30 px-4 py-3 font-mono text-sm bg-vintage-paper focus:bg-white outline-none focus:border-vintage-ink text-vintage-ink"
                 />
                 <span className="text-xs text-vintage-ink/80 font-sans block">
                   All cleared commission earnings will be disbursed directly to this PayPal address.
@@ -1463,7 +1554,27 @@ const AffiliatePortal: React.FC = () => {
                     placeholder="STUDIO_NAME"
                     className="grow px-4 py-3 font-mono text-sm font-bold uppercase bg-transparent outline-none text-vintage-ink"
                   />
+                  {vanityCodeAvailability === 'checking' && (
+                    <span className="px-3 text-xs text-vintage-ink/60 font-sans flex items-center gap-1">
+                      <RefreshCw size={12} className="animate-spin" /> Checking...
+                    </span>
+                  )}
+                  {vanityCodeAvailability === 'available' && (
+                    <span className="px-3 text-xs text-emerald-800 font-bold font-sans flex items-center gap-1">
+                      <Check size={14} className="text-emerald-700" /> Available
+                    </span>
+                  )}
+                  {vanityCodeAvailability === 'taken' && (
+                    <span className="px-3 text-xs text-rose-800 font-bold font-sans flex items-center gap-1">
+                      <AlertCircle size={14} className="text-rose-700" /> Taken
+                    </span>
+                  )}
                 </div>
+                {vanityCodeAvailability === 'taken' && (
+                  <span className="text-xs text-rose-700 font-bold font-sans block">
+                    This custom referral code is already taken by another creator. Please choose another code.
+                  </span>
+                )}
                 <span className="text-xs text-vintage-ink/80 font-sans block leading-relaxed">
                   Alphanumeric only (3–20 chars). Updating your code sets your custom referral link (<code>bombastype.com/c/{editVanityCode || 'CODE'}</code>). Note: When opened in an address bar, the slug cleans itself to show a pristine link while retaining your 30-day referral attribution.
                 </span>
@@ -1717,6 +1828,7 @@ const AffiliatePortal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    setEditFullName(originalFullName);
                     setEditPaypalEmail(affiliate.paypal_email || '');
                     setEditVanityCode(affiliate.affiliate_code || '');
                     if (affiliate.phone_code) setEditPhoneCode(affiliate.phone_code);

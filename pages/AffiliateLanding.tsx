@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, CheckCircle2, ShieldCheck, Zap, Coins, ArrowRight, Copy, Check, Tag, MapPin, Phone, UserCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ShieldCheck, Zap, Coins, ArrowRight, Copy, Check, Tag, MapPin, Phone, UserCheck, RefreshCcw, CheckCircle, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon, findCountryByName } from '../utils/affiliateGeo';
 import { CountryCombobox } from '../components/CountryCombobox';
@@ -15,7 +15,9 @@ import { PhoneDialCombobox } from '../components/PhoneDialCombobox';
 const AffiliateLanding: React.FC = () => {
   const [sessionUser, setSessionUser] = useState<any>(null);
   const [existingAffiliate, setExistingAffiliate] = useState<any>(null);
+  const [fullName, setFullName] = useState('');
   const [affiliateCode, setAffiliateCode] = useState('');
+  const [codeAvailability, setCodeAvailability] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [paypalEmail, setPaypalEmail] = useState('');
   
   // Phone & Address State
@@ -47,6 +49,14 @@ const AffiliateLanding: React.FC = () => {
           .eq('user_id', user.id)
           .maybeSingle();
 
+        // Pre-fill full name and address from fontbuyer if exists
+        const { data: buyer } = await supabase
+          .from('fontbuyer')
+          .select('full_name, address')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (buyer?.full_name) setFullName(buyer.full_name);
+
         if (data) {
           setExistingAffiliate(data);
           setAffiliateCode(data.affiliate_code || '');
@@ -73,12 +83,42 @@ const AffiliateLanding: React.FC = () => {
             setCity(dummy.city);
             setPostalCode(dummy.postal_code);
             setStreetAddress(dummy.street_address);
+          } else if (buyer?.address) {
+            setStreetAddress(buyer.address);
           }
         }
       }
     };
     checkAuthAndAffiliate();
   }, []);
+
+  // Real-time custom slug code availability checker
+  useEffect(() => {
+    const clean = affiliateCode.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    if (clean.length < 3) {
+      setCodeAvailability('idle');
+      return;
+    }
+    setCodeAvailability('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from('affiliates')
+          .select('id, user_id')
+          .ilike('affiliate_code', clean)
+          .maybeSingle();
+
+        if (data && (!sessionUser || data.user_id !== sessionUser.id)) {
+          setCodeAvailability('taken');
+        } else {
+          setCodeAvailability('available');
+        }
+      } catch (_) {
+        setCodeAvailability('idle');
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [affiliateCode, sessionUser]);
 
   const handleCountryChange = (selectedCountry: string, dialCode?: string) => {
     setCountry(selectedCountry);
@@ -108,9 +148,19 @@ const AffiliateLanding: React.FC = () => {
       return;
     }
 
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      setErrorMsg('Legal Full Name is required for affiliate partner verification and tax compliance.');
+      return;
+    }
+
     const cleanCode = affiliateCode.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
     if (cleanCode.length < 3 || cleanCode.length > 20) {
       setErrorMsg('Affiliate code must be 3-20 alphanumeric characters (A-Z, 0-9, dash, underscore).');
+      return;
+    }
+
+    if (codeAvailability === 'taken') {
+      setErrorMsg(`The partner code "${cleanCode}" is already taken by another creator. Please pick another.`);
       return;
     }
 
@@ -125,8 +175,8 @@ const AffiliateLanding: React.FC = () => {
       return;
     }
 
-    if (!streetAddress.trim() || !city.trim() || !postalCode.trim()) {
-      setErrorMsg('Complete address details (Street, City, Postal Code) are required.');
+    if (!country.trim() || !stateProvince.trim() || !city.trim() || !postalCode.trim() || !streetAddress.trim()) {
+      setErrorMsg('All physical address details (Country, State/Province, City, Postal Code, Street Address) are required for partner payouts.');
       return;
     }
 
@@ -193,6 +243,21 @@ const AffiliateLanding: React.FC = () => {
       } else {
         affRecord = data;
       }
+
+      // Two-Way Sync to fontbuyer (Primary Buyer Profile)
+      const fullAddress = [
+        streetAddress.trim(),
+        city.trim(),
+        [stateProvince.trim(), postalCode.trim()].filter(Boolean).join(' '),
+        country.trim()
+      ].filter(Boolean).join(', ');
+
+      await supabase.from('fontbuyer').upsert({
+        id: sessionUser.id,
+        email: sessionUser.email,
+        full_name: fullName.trim(),
+        address: fullAddress
+      });
 
       // Automatically generate/sync the 10% OFF promo coupon for their audience
       await syncAffiliateCoupon(supabase, affRecord.id, cleanCode);
@@ -431,10 +496,28 @@ const AffiliateLanding: React.FC = () => {
                 </div>
               )}
 
+              {/* 0. LEGAL FULL NAME */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block flex items-center gap-1.5 font-sans">
+                  <UserCheck size={14} className="text-vintage-accent" /> Legal Full Name *
+                </label>
+                <input 
+                  type="text" 
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value.replace(/\b\w/g, l => l.toUpperCase()))}
+                  placeholder="e.g. Johnathan Doe" 
+                  required
+                  className="w-full p-3 border border-vintage-ink bg-white font-sans text-sm outline-none text-vintage-ink font-bold"
+                />
+                <p className="text-xs text-vintage-ink mt-1 block font-sans">
+                  Your legal identity for partner compliance and tax validation. Synced with your buyer account.
+                </p>
+              </div>
+
               {/* 1. VANITY SLUG */}
               <div className="space-y-1">
                 <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block">
-                  Requested Partner Code (Vanity Slug & Promo Base)
+                  Requested Partner Code (Vanity Slug & Promo Base) *
                 </label>
                 <div className="flex items-center border border-vintage-ink bg-white">
                   <span className="px-3 py-3 font-mono text-sm font-bold border-r border-vintage-ink bg-vintage-ink/5 text-vintage-ink">
@@ -449,6 +532,24 @@ const AffiliateLanding: React.FC = () => {
                     className="w-full p-3 font-mono text-sm font-bold uppercase outline-none bg-transparent text-vintage-ink"
                   />
                 </div>
+
+                {/* Live Vanity Code Availability Feedback */}
+                {codeAvailability === 'checking' && (
+                  <span className="text-xs font-sans text-vintage-ink/70 flex items-center gap-1 mt-1">
+                    <RefreshCcw size={12} className="animate-spin" /> Checking availability...
+                  </span>
+                )}
+                {codeAvailability === 'available' && (
+                  <span className="text-xs font-sans text-emerald-800 font-bold flex items-center gap-1 mt-1">
+                    <CheckCircle size={13} /> Partner code "{affiliateCode.trim().toUpperCase()}" is available!
+                  </span>
+                )}
+                {codeAvailability === 'taken' && (
+                  <span className="text-xs font-sans text-red-800 font-bold flex items-center gap-1 mt-1">
+                    <AlertCircle size={13} /> Partner code "{affiliateCode.trim().toUpperCase()}" is already taken by another creator.
+                  </span>
+                )}
+
                 <p className="text-xs text-vintage-ink mt-1 block">
                   Creates link <code className="font-bold">/c/{affiliateCode || 'YOURNAME'}</code> and promo code <code className="font-bold">{(affiliateCode || 'YOURNAME')}10</code> (10% OFF for your audience).
                 </p>

@@ -6,7 +6,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCart } from '../../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Copy, Download, ShieldCheck, DollarSign, Tag, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Copy, Download, ShieldCheck, DollarSign, Tag, Sparkles, Lock } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { supabase } from '../../lib/supabase';
 import { User } from '@supabase/supabase-js';
@@ -509,25 +509,51 @@ const Checkout: React.FC = () => {
               <div className="space-y-10">
                 {/* 00. PURCHASER INFO */}
                 <div className="p-8 border border-vintage-accent/30 bg-vintage-accent/5">
-                  <label className="block text-[10px] font-bold tracking-[0.3em] mb-6 text-vintage-accent italic">00. PROVIDE_PURCHASER_INFO*</label>
+                  <div className="flex items-center justify-between mb-6">
+                    <label className="block text-[10px] font-bold tracking-[0.3em] text-vintage-accent italic">00. PROVIDE_PURCHASER_INFO*</label>
+                    {Boolean(user) && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-vintage-ink text-vintage-paper text-[9px] font-bold tracking-wider uppercase font-sans">
+                        <Lock size={11} className="text-vintage-accent" /> Account Locked
+                      </span>
+                    )}
+                  </div>
+
+                  {Boolean(user) && (
+                    <div className="mb-4 p-3 bg-vintage-background/80 border border-vintage-ink/15 text-[11px] font-sans text-vintage-ink flex items-start gap-2.5 leading-relaxed">
+                      <Lock size={14} className="text-vintage-accent shrink-0 mt-0.5" />
+                      <span>
+                        Profile details are locked to your authenticated buyer account. To update your name, email, or billing address, please visit <Link to="/dashboard" className="underline font-bold text-vintage-accent hover:text-vintage-ink">Account Settings</Link> in your dashboard.
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex flex-col gap-px bg-vintage-ink/10 border border-vintage-ink/10 overflow-hidden mb-6">
                     <input 
                       type="text" value={name} 
-                      onChange={(e) => setName(e.target.value.replace(/\b\w/g, l => l.toUpperCase()))}
-                      className="w-full p-5 bg-vintage-background font-bold outline-none text-sm placeholder:text-vintage-ink/20 border-b border-vintage-ink/10" 
+                      readOnly={Boolean(user)}
+                      onChange={(e) => !user && setName(e.target.value.replace(/\b\w/g, l => l.toUpperCase()))}
+                      className={`w-full p-5 bg-vintage-background font-bold outline-none text-sm placeholder:text-vintage-ink/20 border-b border-vintage-ink/10 ${
+                        user ? 'cursor-not-allowed text-vintage-ink/80 select-none bg-vintage-ink/2' : ''
+                      }`}
                       placeholder="FULL NAME" required 
                     />
                     <input 
                       type="email" value={email} 
-                      onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                      className="w-full p-5 bg-vintage-background font-bold outline-none text-sm placeholder:text-vintage-ink/20 border-b border-vintage-ink/10" 
+                      readOnly={Boolean(user)}
+                      onChange={(e) => !user && setEmail(e.target.value.toLowerCase())}
+                      className={`w-full p-5 bg-vintage-background font-bold outline-none text-sm placeholder:text-vintage-ink/20 border-b border-vintage-ink/10 ${
+                        user ? 'cursor-not-allowed text-vintage-ink/80 select-none bg-vintage-ink/2' : ''
+                      }`}
                       placeholder="EMAIL@DOMAIN.COM" required 
                     />
                     <textarea 
                       value={address} 
-                      onChange={(e) => setAddress(e.target.value.replace(/\b\w/g, l => l.toUpperCase()))}
-                      className="w-full p-5 bg-vintage-background font-bold outline-none text-sm placeholder:text-vintage-ink/20 min-h-24 resize-none" 
-                      placeholder="COMPLETE ADDRESS (STREET, CITY, ZIP CODE) — OPTIONAL" 
+                      readOnly={Boolean(user)}
+                      onChange={(e) => !user && setAddress(e.target.value.replace(/\b\w/g, l => l.toUpperCase()))}
+                      className={`w-full p-5 bg-vintage-background font-bold outline-none text-sm placeholder:text-vintage-ink/20 min-h-24 resize-none ${
+                        user ? 'cursor-not-allowed text-vintage-ink/80 select-none bg-vintage-ink/2' : ''
+                      }`}
+                      placeholder={user ? "NO BILLING ADDRESS RECORDED (OPTIONAL)" : "COMPLETE ADDRESS (STREET, CITY, ZIP CODE) — OPTIONAL"} 
                     />
                   </div>
 

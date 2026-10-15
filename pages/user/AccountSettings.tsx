@@ -5,37 +5,121 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ShieldCheck, Key, Copy, RefreshCcw, ShoppingBag } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  Key, 
+  Copy, 
+  RefreshCcw, 
+  ShoppingBag, 
+  UserCheck, 
+  Mail, 
+  MapPin, 
+  AlertCircle, 
+  CheckCircle,
+  FileText
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CountryCombobox } from '../../components/CountryCombobox';
+import { COUNTRIES, PROVINCES_BY_COUNTRY, findCountryByName } from '../../utils/affiliateGeo';
+import { validateLegitEmail } from '../../lib/emailValidator';
 
 const AccountSettings = () => {
+  // Password State
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  // Transaction Keys State
   const [checkoutCodes, setCheckoutCodes] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
   const [selectedCode, setSelectedCode] = useState('');
+
+  // Profile Details State
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [userEmail, setUserEmail] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [country, setCountry] = useState('Indonesia');
+  const [stateProvince, setStateProvince] = useState('DKI Jakarta');
+  const [city, setCity] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [streetAddress, setStreetAddress] = useState('');
+  const [isAffiliate, setIsAffiliate] = useState(false);
+
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState('');
+  const [profileError, setProfileError] = useState('');
 
   useEffect(() => {
-    const getAllCheckoutCodes = async () => {
+    const loadUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      if (user.email) setUserEmail(user.email);
-      
-      const { data } = await supabase
+      setCurrentUser(user);
+      const emailVal = user.email || '';
+      setUserEmail(emailVal);
+      setEditEmail(emailVal);
+
+      // 1. Fetch from fontbuyer (User Profile & Base Address)
+      const { data: buyer } = await supabase
+        .from('fontbuyer')
+        .select('full_name, address, email')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (buyer) {
+        if (buyer.full_name) setFullName(buyer.full_name);
+        if (buyer.email && !emailVal) {
+          setUserEmail(buyer.email);
+          setEditEmail(buyer.email);
+        }
+      }
+
+      // 2. Fetch from affiliates to sync structured address if user is also an affiliate
+      const { data: aff } = await supabase
+        .from('affiliates')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (aff) {
+        setIsAffiliate(true);
+        if (aff.country) setCountry(aff.country);
+        if (aff.state_province) setStateProvince(aff.state_province);
+        if (aff.city) setCity(aff.city);
+        if (aff.postal_code) setPostalCode(aff.postal_code);
+        if (aff.street_address) setStreetAddress(aff.street_address);
+      } else if (buyer?.address) {
+        // Fallback: If address is a single text string, prefill street address
+        setStreetAddress(buyer.address);
+      }
+
+      // 3. Fetch purchase history transaction codes
+      const { data: history } = await supabase
         .from('font_history')
         .select('transaction_id')
         .eq('user_id', user.id)
         .order('download_date', { ascending: false });
 
-      if (data && data.length > 0) {
-        const codes = data.map((item: any) => item.transaction_id);
+      if (history && history.length > 0) {
+        const codes = history.map((item: any) => item.transaction_id);
         setCheckoutCodes(codes);
         setSelectedCode(codes[0]);
       }
     };
-    getAllCheckoutCodes();
+
+    loadUserData();
   }, []);
+
+  const handleCountryChange = (selectedCountry: string) => {
+    setCountry(selectedCountry);
+    const provinces = PROVINCES_BY_COUNTRY[selectedCountry];
+    if (provinces && provinces.length > 0) {
+      setStateProvince(provinces[0]);
+    } else {
+      setStateProvince('');
+    }
+  };
 
   const handleCopy = () => {
     if (!selectedCode) return;
@@ -43,31 +127,319 @@ const AccountSettings = () => {
     alert("KEY COPIED TO ARCHIVE: " + selectedCode);
   };
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileError('');
+    setProfileSuccess('');
+
+    if (!fullName.trim()) {
+      setProfileError('Full Name is required for your commercial license certificate.');
+      return;
+    }
+
+    const cleanEmail = editEmail.trim().toLowerCase();
+    if (!cleanEmail) {
+      setProfileError('Email address is required.');
+      return;
+    }
+
+    // Layered Anti-Dummy Email Validation (Disposable domains, typos, live MX check)
+    if (cleanEmail !== userEmail) {
+      setProfileLoading(true);
+      const emailCheck = await validateLegitEmail(cleanEmail);
+      if (!emailCheck.isValid) {
+        setProfileLoading(false);
+        setProfileError(emailCheck.message || 'Disposable, fake, or invalid email address detected. Please provide a genuine email.');
+        return;
+      }
+    }
+
+    setProfileLoading(true);
+
+    try {
+      const fullAddress = [
+        streetAddress.trim(),
+        city.trim(),
+        [stateProvince.trim(), postalCode.trim()].filter(Boolean).join(' '),
+        country.trim()
+      ].filter(Boolean).join(', ');
+
+      // 1. Update fontbuyer profile (Primary buyer identity table)
+      const { error: buyerError } = await supabase
+        .from('fontbuyer')
+        .upsert({
+          id: currentUser.id,
+          email: cleanEmail,
+          full_name: fullName.trim(),
+          address: fullAddress
+        });
+
+      if (buyerError) throw buyerError;
+
+      // 2. Two-Way Sync: If user is also an affiliate, sync structured address to affiliates table
+      if (isAffiliate) {
+        await supabase
+          .from('affiliates')
+          .update({
+            country: country.trim(),
+            state_province: stateProvince.trim(),
+            city: city.trim(),
+            postal_code: postalCode.trim(),
+            street_address: streetAddress.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', currentUser.id);
+      }
+
+      // 3. If email changed, update Supabase Auth User (Login Credential)
+      if (cleanEmail !== userEmail) {
+        const { error: authError } = await supabase.auth.updateUser({ email: cleanEmail });
+        if (authError) throw authError;
+        setUserEmail(cleanEmail);
+        setProfileSuccess('Profile and login credentials updated successfully! Note: A confirmation link may have been sent to your new email. Your new info will apply to all future licenses, and you can re-download past licenses from Purchase History.');
+      } else {
+        setProfileSuccess('Account profile updated successfully! Your updated name and billing address will appear on future licenses, and you can re-download updated certificates from Purchase History.');
+      }
+    } catch (err: any) {
+      setProfileError(err.message || 'Failed to update account details.');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) return alert("Security keys do not match!");
-    setLoading(true);
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match!");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setPasswordLoading(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) alert(error.message);
-    else {
-      alert("Security credentials updated successfully!");
+    if (error) {
+      setPasswordError(error.message);
+    } else {
+      setPasswordSuccess("Security password updated successfully!");
       setNewPassword('');
       setConfirmPassword('');
     }
-    setLoading(false);
+    setPasswordLoading(false);
   };
 
+  const provinceOptions = PROVINCES_BY_COUNTRY[country] || [];
+
   return (
-    <div className="max-w-2xl space-y-12 pb-20">
+    <div className="max-w-3xl space-y-12 pb-20">
       {/* HEADER */}
       <div className="border-b border-vintage-ink pb-8">
-        <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Security & Access</h2>
+        <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Account & Security</h2>
         <p className="text-xs font-bold tracking-widest text-vintage-accent uppercase mt-2 font-sans">
-          Manage your account password and order transaction keys
+          Manage your purchaser profile, billing details, and security credentials
         </p>
       </div>
 
-      {/* ACCESSION KEYS CARD */}
+      {/* 1. ACCOUNT PROFILE & BILLING DETAILS CARD */}
+      <div className="vintage-card bg-vintage-paper border border-vintage-ink/20 shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-vintage-ink/20 pb-4">
+          <div className="flex items-center gap-3">
+            <UserCheck size={18} className="text-vintage-accent" />
+            <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
+              Purchaser & Billing Profile
+            </h3>
+          </div>
+          {isAffiliate && (
+            <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 bg-vintage-accent text-vintage-paper font-sans">
+              Affiliate Partner Synced
+            </span>
+          )}
+        </div>
+
+        {/* Informative Guidance Banner */}
+        <div className="p-4 bg-white border border-vintage-ink/20 text-xs text-vintage-ink font-sans leading-relaxed space-y-2">
+          <div className="flex items-start gap-2">
+            <FileText size={16} className="text-vintage-accent shrink-0 mt-0.5" />
+            <p>
+              <strong>License Updates:</strong> Any changes made to your Full Name or Billing Address will automatically reflect on all future font licenses. You can also re-download previous font packages and updated license certificates at any time in your <Link to="/dashboard" onClick={() => window.location.hash = 'library'} className="underline font-bold text-vintage-accent hover:text-vintage-ink">Purchase History</Link>.
+            </p>
+          </div>
+          <div className="flex items-start gap-2 pt-1 border-t border-vintage-ink/10">
+            <Mail size={16} className="text-vintage-accent shrink-0 mt-0.5" />
+            <p>
+              <strong>Login Username:</strong> Your email address serves as your account login username. If you change your email, your previous email will immediately become invalid for signing in.
+            </p>
+          </div>
+        </div>
+
+        {profileSuccess && (
+          <div className="p-4 bg-emerald-50 border border-emerald-700 text-emerald-900 text-xs font-sans font-bold flex items-center gap-2">
+            <CheckCircle size={16} className="text-emerald-700 shrink-0" />
+            <span>{profileSuccess}</span>
+          </div>
+        )}
+
+        {profileError && (
+          <div className="p-4 bg-red-50 border border-red-800 text-red-900 text-xs font-sans font-bold flex items-center gap-2">
+            <AlertCircle size={16} className="text-red-800 shrink-0" />
+            <span>{profileError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleUpdateProfile} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Full Name */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
+                Legal Full Name *
+              </label>
+              <input 
+                type="text" 
+                value={fullName} 
+                onChange={e => setFullName(e.target.value.replace(/\b\w/g, l => l.toUpperCase()))} 
+                placeholder="e.g. Johnathan Doe" 
+                required 
+                className="w-full border border-vintage-ink/30 p-3 bg-white outline-none font-sans text-sm focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/40 text-vintage-ink"
+              />
+              <span className="text-[10px] text-vintage-ink/60 font-sans block">
+                Printed as the licensee entity on commercial PDF receipts.
+              </span>
+            </div>
+
+            {/* Email / Username */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">
+                Account Email / Username *
+              </label>
+              <input 
+                type="email" 
+                value={editEmail} 
+                onChange={e => setEditEmail(e.target.value.toLowerCase())} 
+                placeholder="name@domain.com" 
+                required 
+                className="w-full border border-vintage-ink/30 p-3 bg-white outline-none font-sans text-sm focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/40 text-vintage-ink"
+              />
+              <span className="text-[10px] text-vintage-ink/60 font-sans block">
+                Used to sign in. Real mailbox required (anti-dummy check active).
+              </span>
+            </div>
+          </div>
+
+          {/* Structured Address Section */}
+          <div className="p-5 border border-vintage-ink/20 bg-vintage-background/60 space-y-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-vintage-accent block flex items-center gap-1.5 font-sans">
+              <MapPin size={14} /> Commercial Billing Address
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Country */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block font-sans">
+                  Country
+                </label>
+                <CountryCombobox 
+                  value={country} 
+                  onChange={(c) => handleCountryChange(c)}
+                  theme="vintage"
+                />
+              </div>
+
+              {/* State / Province */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block font-sans">
+                  State / Province
+                </label>
+                {provinceOptions.length > 0 ? (
+                  <select
+                    value={stateProvince}
+                    onChange={(e) => setStateProvince(e.target.value)}
+                    className="w-full p-3 border border-vintage-ink/30 bg-white font-sans text-xs font-bold outline-none cursor-pointer text-vintage-ink"
+                  >
+                    {provinceOptions.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input 
+                    type="text" 
+                    value={stateProvince}
+                    onChange={(e) => setStateProvince(e.target.value)}
+                    placeholder="State, Region, or Province" 
+                    className="w-full p-3 border border-vintage-ink/30 bg-white font-sans text-xs font-bold outline-none text-vintage-ink placeholder:text-vintage-ink/40"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* City */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block font-sans">
+                  City / Municipality
+                </label>
+                <input 
+                  type="text" 
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="e.g. London, New York, Jakarta" 
+                  className="w-full p-3 border border-vintage-ink/30 bg-white font-sans text-xs font-bold outline-none text-vintage-ink placeholder:text-vintage-ink/40"
+                />
+              </div>
+
+              {/* Postal / ZIP */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block font-sans">
+                  Postal / ZIP Code
+                </label>
+                <input 
+                  type="text" 
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="e.g. 10110" 
+                  className="w-full p-3 border border-vintage-ink/30 bg-white font-sans text-xs font-bold outline-none text-vintage-ink placeholder:text-vintage-ink/40"
+                />
+              </div>
+            </div>
+
+            {/* Street Address */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block font-sans">
+                Street Address / Suite / Building
+              </label>
+              <input 
+                type="text" 
+                value={streetAddress}
+                onChange={(e) => setStreetAddress(e.target.value)}
+                placeholder="e.g. 124 Heritage Boulevard, Suite 400" 
+                className="w-full p-3 border border-vintage-ink/30 bg-white font-sans text-xs font-bold outline-none text-vintage-ink placeholder:text-vintage-ink/40"
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit"
+            disabled={profileLoading} 
+            className="vintage-btn btn-reverse w-full py-4 text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-3 font-sans"
+          >
+            {profileLoading ? (
+              <RefreshCcw className="animate-spin" size={16} />
+            ) : (
+              <>
+                <UserCheck size={16} /> SAVE PROFILE & BILLING DETAILS
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
+      {/* 2. ACCESSION / ORDER KEYS CARD */}
       <div className="vintage-card bg-vintage-paper border border-vintage-ink/20 shadow-xs space-y-6">
         <div className="flex items-center gap-3 border-b border-vintage-ink/20 pb-4">
           <Key size={18} className="text-vintage-accent" />
@@ -126,14 +498,14 @@ const AccountSettings = () => {
         </div>
       </div>
 
-      {/* CHANGE PASSWORD FORM */}
+      {/* 3. CHANGE PASSWORD FORM */}
       <div className="vintage-card bg-vintage-paper border border-vintage-ink/20 shadow-xs">
         <form onSubmit={handleUpdatePassword} className="space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-vintage-ink/20 pb-4">
             <div className="flex items-center gap-3">
               <ShieldCheck size={18} className="text-vintage-accent" />
               <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
-                Update Password
+                Change Password
               </h3>
             </div>
             {userEmail && (
@@ -143,6 +515,20 @@ const AccountSettings = () => {
             )}
           </div>
 
+          {passwordSuccess && (
+            <div className="p-4 bg-emerald-50 border border-emerald-700 text-emerald-900 text-xs font-sans font-bold flex items-center gap-2">
+              <CheckCircle size={16} className="text-emerald-700 shrink-0" />
+              <span>{passwordSuccess}</span>
+            </div>
+          )}
+
+          {passwordError && (
+            <div className="p-4 bg-red-50 border border-red-800 text-red-900 text-xs font-sans font-bold flex items-center gap-2">
+              <AlertCircle size={16} className="text-red-800 shrink-0" />
+              <span>{passwordError}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">New Password</label>
@@ -150,7 +536,7 @@ const AccountSettings = () => {
                 type="password" 
                 value={newPassword} 
                 onChange={e => setNewPassword(e.target.value)} 
-                className="w-full border border-vintage-ink/30 p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50"
+                className="w-full border border-vintage-ink/30 p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50 text-vintage-ink"
                 placeholder="Enter new password..."
                 required 
               />
@@ -161,7 +547,7 @@ const AccountSettings = () => {
                 type="password" 
                 value={confirmPassword} 
                 onChange={e => setConfirmPassword(e.target.value)} 
-                className="w-full border border-vintage-ink/30 p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50"
+                className="w-full border border-vintage-ink/30 p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50 text-vintage-ink"
                 placeholder="Verify new password..."
                 required 
               />
@@ -169,14 +555,15 @@ const AccountSettings = () => {
           </div>
 
           <button 
-            disabled={loading} 
+            type="submit"
+            disabled={passwordLoading} 
             className="vintage-btn btn-reverse w-full py-4 text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-3 font-sans"
           >
-            {loading ? (
+            {passwordLoading ? (
               <RefreshCcw className="animate-spin" size={16} />
             ) : (
               <>
-                <ShieldCheck size={16} /> SAVE NEW PASSWORD
+                <ShieldCheck size={16} /> UPDATE PASSWORD
               </>
             )}
           </button>
