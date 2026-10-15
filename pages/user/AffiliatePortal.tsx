@@ -205,7 +205,7 @@ const AffiliatePortal: React.FC = () => {
           <div className="border-4 border-double border-vintage-ink p-6 bg-vintage-background/80 space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent block">
-                Your Clean Vanity Link (100% Anti-Adblocker & Safari Immune)
+                Your Personal Vanity Share Link (30-Day Attribution Window)
               </label>
               <button 
                 onClick={() => setActiveTab('settings')}

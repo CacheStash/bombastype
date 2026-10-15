@@ -170,7 +170,7 @@ const AffiliateLanding: React.FC = () => {
             <span className="w-10 h-10 mx-auto rounded-full border border-vintage-ink flex items-center justify-center font-display text-lg bg-vintage-background">1</span>
             <h3 className="font-display text-xl">Get Your Vanity Path</h3>
             <p className="text-xs text-vintage-ink/70 leading-relaxed italic">
-              Receive a clean, aesthetic vanity URL (<code className="font-mono font-bold text-[11px] bg-vintage-background px-1 py-0.5">bombastype.com/c/NAME</code>) that is 100% immune to adblockers and tracking prevention.
+              Receive an aesthetic personal vanity URL (<code className="font-mono font-bold text-[11px] bg-vintage-background px-1 py-0.5">bombastype.com/c/NAME</code>) crafted specifically for seamless sharing across portfolios and social media.
             </p>
           </div>
           <div className="p-8 text-center space-y-3">
