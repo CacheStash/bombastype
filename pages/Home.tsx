@@ -371,7 +371,7 @@ export default function Home() {
                     />
                   )}
                   <div className="absolute top-3 right-3 bg-vintage-paper/95 px-2.5 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink flex items-center">
-                    <DollarSign size={14} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                    <DollarSign size={11} strokeWidth={2.2} className="text-vintage-accent shrink-0 mr-0.5" />
                     <span>{font.price}</span>
                   </div>
                 </div>
