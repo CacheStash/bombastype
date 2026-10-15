@@ -326,18 +326,18 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
       <div className="space-y-12 animate-in fade-in duration-500">
         <div className="flex items-center justify-between border-b border-vintage-ink pb-8 mb-8">
           <h2 className="text-4xl font-display uppercase tracking-widest text-vintage-ink">
-            {editingPromo ? 'Refine Provision' : 'New Provision'}
+            {editingPromo ? 'Edit Promo Campaign' : 'New Promo Campaign'}
           </h2>
-          <button onClick={handleClose} className="text-[10px] font-bold uppercase tracking-[0.2em] hover:text-vintage-accent transition-colors">← Back to Folio</button>
+          <button onClick={handleClose} className="text-[10px] font-bold uppercase tracking-[0.2em] hover:text-vintage-accent transition-colors">← Back to Campaigns</button>
         </div>
 
         <div className="max-w-4xl">
           <form onSubmit={handleSavePromo} className="space-y-10">
             <div className="space-y-2">
-              <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Campaign Designation</label>
+              <label className="text-[9px] font-bold uppercase tracking-widest text-vintage-accent">Campaign Name</label>
               <input 
                 type="text" 
-                placeholder="e.g. Summer Solstice Archive..." 
+                placeholder="e.g. Summer Sale, Black Friday..." 
                 className="w-full border-b border-vintage-ink/20 py-3 bg-transparent outline-none font-display text-3xl focus:border-vintage-ink transition-colors placeholder:text-vintage-ink/60"
                 value={promoName} 
                 onChange={e => setPromoName(e.target.value)}
@@ -470,7 +470,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                   : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5'
               }`}
             >
-              Buyer Coupons (Bargain)
+              Discount Coupons
             </button>
           </div>
         </div>
@@ -481,7 +481,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
               onClick={() => setIsAdding(true)}
               className="vintage-btn btn-reverse px-10 py-4 text-[11px]"
             >
-              <Plus size={16} className="inline mr-2" /> New Provision
+              <Plus size={16} className="inline mr-2" /> New Promo Campaign
             </button>
           ) : (
             <>
@@ -498,7 +498,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                 onClick={() => setIsAddingCoupon(true)}
                 className="vintage-btn btn-reverse px-8 py-4 text-[11px]"
               >
-                <Plus size={16} className="inline mr-2" /> Generate Coupon
+                <Plus size={16} className="inline mr-2" /> Create Coupon
               </button>
             </>
           )}
@@ -508,12 +508,12 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
       {/* TAB 1: CAMPAIGNS */}
       {activeTab === 'campaigns' && (
         <div className="space-y-4">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Active Ledger Provisions</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Active Promotional Campaigns</h3>
           {loading ? (
-            <div className="p-20 text-center italic opacity-40 font-serif">Consulting Campaign Registry...</div>
+            <div className="p-20 text-center italic opacity-40 font-serif">Loading campaigns...</div>
           ) : promos.length === 0 ? (
             <div className="p-20 border border-dashed border-vintage-ink/20 text-center">
-              <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">No active provisions found in folio.</p>
+              <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">No active promotions found.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -522,7 +522,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                   <div>
                     <div className="flex justify-between items-start mb-6">
                       <div className="bg-vintage-ink text-vintage-paper px-3 py-1 text-[10px] font-bold tracking-widest border border-vintage-ink uppercase">
-                        {p.discount_percent}% Reduction
+                        {p.discount_percent}% OFF
                       </div>
                       <div className="flex items-center gap-2 text-[9px] font-bold text-vintage-ink/40 uppercase tracking-tighter">
                         <Calendar size={12} /> {new Date(p.end_date).toLocaleDateString()}
@@ -530,7 +530,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                     </div>
                     <h3 className="text-2xl font-display text-vintage-ink leading-tight mb-2 uppercase">{p.name}</h3>
                     <p className="text-[10px] font-bold text-vintage-accent uppercase tracking-[0.2em] italic mb-6">
-                      {p.type === 'global' ? 'Studio-wide Provision' : `${p.font_ids?.length} Selected Artifacts`}
+                      {p.type === 'global' ? 'Store-wide Discount' : `${p.font_ids?.length} Selected Fonts`}
                     </p>
                   </div>
 
@@ -539,13 +539,13 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                       onClick={() => handleEdit(p)} 
                       className="text-[10px] font-bold uppercase tracking-widest hover:text-vintage-accent transition-colors flex items-center gap-2"
                     >
-                      <Edit3 size={14} /> Refine
+                      <Edit3 size={14} /> Edit
                     </button>
                     <button 
                       onClick={() => handleDelete(p.id)} 
                       className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-2"
                     >
-                      <Trash2 size={14} /> Terminate
+                      <Trash2 size={14} /> Delete
                     </button>
                   </div>
                 </div>
@@ -579,7 +579,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
             </button>
           </div>
 
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Exclusive Bargain & Promo Tokens</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Discount Coupons & Promo Codes</h3>
           {coupons.length === 0 ? (
             <div className="p-20 border border-dashed border-vintage-ink/20 text-center">
               <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">No coupons generated yet.</p>
@@ -614,7 +614,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                       onClick={() => handleDeleteCoupon(c.id)} 
                       className="text-[10px] font-bold uppercase tracking-widest text-red-900/60 hover:text-red-600 transition-colors flex items-center gap-1.5"
                     >
-                      <Trash2 size={13} /> Revoke
+                      <Trash2 size={13} /> Delete
                     </button>
                   </div>
                 </div>
@@ -630,8 +630,8 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
           <div className="bg-vintage-paper border border-vintage-ink/20 p-8 max-w-lg w-full shadow-2xl text-vintage-ink animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
               <div>
-                <span className="text-[9px] font-bold tracking-[0.3em] text-vintage-accent uppercase block mb-1">Coupon Minting</span>
-                <h3 className="text-3xl font-display uppercase">Bargain Token Generator</h3>
+                <span className="text-[9px] font-bold tracking-[0.3em] text-vintage-accent uppercase block mb-1">Create Coupon</span>
+                <h3 className="text-3xl font-display uppercase">Create New Coupon</h3>
               </div>
               <button onClick={() => setIsAddingCoupon(false)} className="p-1 hover:text-vintage-accent transition-colors"><X size={20} /></button>
             </div>
@@ -639,7 +639,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
             {/* KALKULATOR */}
             <div className="p-5 bg-vintage-ink/3 border border-vintage-ink/10 mb-6 space-y-4">
               <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-vintage-accent flex items-center gap-2">
-                <Calculator size={14} /> BARGAIN CALCULATOR (Auto Percentage)
+                <Calculator size={14} /> DISCOUNT CALCULATOR (Auto Percentage)
               </span>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -675,7 +675,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
             <form onSubmit={handleSaveCoupon} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/50">Token Code</label>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-vintage-ink/50">Coupon Code</label>
                   <input 
                     type="text" 
                     value={couponCode} 
@@ -728,7 +728,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                 disabled={isSaving}
                 className="vintage-btn btn-reverse w-full py-5 text-[10px] tracking-[0.3em] uppercase flex justify-center items-center gap-2 mt-4"
               >
-                {isSaving ? <Loader2 className="animate-spin" size={16} /> : "Save & Activate Token"}
+                {isSaving ? <Loader2 className="animate-spin" size={16} /> : "Save & Activate Coupon"}
               </button>
             </form>
           </div>
@@ -742,9 +742,9 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
           <div className="bg-vintage-paper border border-vintage-ink max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl text-vintage-ink animate-in zoom-in-95">
             <div className="flex justify-between items-start mb-6 border-b border-vintage-ink/10 pb-4">
               <div>
-                <span className="text-[9px] font-bold tracking-[0.3em] text-vintage-accent uppercase block mb-1">Direct Outreach</span>
+                <span className="text-[9px] font-bold tracking-[0.3em] text-vintage-accent uppercase block mb-1">Email Buyer Directly</span>
                 <h3 className="text-3xl font-display uppercase flex items-center gap-2">
-                  <MailCheck size={26} /> Send Coupon Gift
+                  <MailCheck size={26} /> Send Coupon to Buyer
                 </h3>
               </div>
               <button onClick={() => setIsSendingCoupon(false)} className="p-1 hover:text-vintage-accent transition-colors"><X size={20} /></button>

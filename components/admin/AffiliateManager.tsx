@@ -356,9 +356,9 @@ const AffiliateManager: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-vintage-ink pb-6">
         <div>
           <span className="text-xs font-bold text-vintage-accent uppercase tracking-wider block font-sans">
-            Partner Treasury & Payout Ledger
+            Affiliate & Commission Management
           </span>
-          <h2 className="text-3xl font-display text-vintage-ink">Affiliate Command Center</h2>
+          <h2 className="text-3xl font-display text-vintage-ink">Affiliate Program & Commissions</h2>
         </div>
         <div className="flex items-center gap-3">
           <button 
@@ -379,7 +379,7 @@ const AffiliateManager: React.FC = () => {
 
       {/* 4 CORE FINANCIAL RECONCILIATION CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+        <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5 shadow-xs">
           <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">Gross Sales Inbound</span>
           <div className="text-2xl font-display font-bold text-vintage-ink">
             ${totalGrossSales.toFixed(2)}
@@ -387,7 +387,7 @@ const AffiliateManager: React.FC = () => {
           <p className="text-xs text-vintage-ink/80 font-sans">Total paid by buyers via PayPal</p>
         </div>
 
-        <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+        <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5 shadow-xs">
           <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block font-sans">PayPal Inbound Fees</span>
           <div className="text-2xl font-display font-bold text-red-900">
             -${totalPayPalFees.toFixed(2)}
@@ -395,7 +395,7 @@ const AffiliateManager: React.FC = () => {
           <p className="text-xs text-vintage-ink/80 font-sans">Payment gateway transaction cost</p>
         </div>
 
-        <div className="p-5 border-2 border-vintage-ink bg-vintage-paper text-left space-y-1.5 shadow-sm">
+        <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5 shadow-xs">
           <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block font-sans">Affiliate Reserved Pool</span>
           <div className="text-2xl font-display font-bold text-amber-900">
             ${affiliateReservedPool.toFixed(2)}
@@ -403,7 +403,7 @@ const AffiliateManager: React.FC = () => {
           <p className="text-xs text-amber-900 font-sans font-medium">Commissions due + in-warranty hold</p>
         </div>
 
-        <div className="p-5 border-2 border-vintage-ink bg-green-50/70 text-left space-y-1.5 shadow-sm">
+        <div className="p-5 border border-green-900/20 bg-green-50/70 text-left space-y-1.5 shadow-xs">
           <span className="text-xs font-bold uppercase tracking-wider text-green-950 block font-sans">
             SAFE TO WITHDRAW (NET PROFIT)
           </span>
@@ -470,7 +470,7 @@ const AffiliateManager: React.FC = () => {
       {activeTab === 'due_payouts' && (
         <div className="space-y-6">
           {/* Policy Banner */}
-          <div className="p-5 border-2 border-vintage-ink bg-amber-50/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="p-5 border border-amber-900/20 bg-amber-50/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
               <Calendar size={22} className="text-amber-800 shrink-0 mt-0.5" />
               <div>
@@ -502,14 +502,14 @@ const AffiliateManager: React.FC = () => {
             </div>
 
             {qualifiedPayouts.length === 0 ? (
-              <div className="p-6 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
+              <div className="p-6 border border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
                 No affiliates currently have cleared balances &ge; ${AFFILIATE_MIN_PAYOUT_USD.toFixed(2)} USD. All qualifying earnings under $50 roll over until the threshold is met.
               </div>
             ) : (
-              <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
+              <div className="border border-vintage-ink/20 overflow-x-auto bg-vintage-paper shadow-xs">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b-2 border-vintage-ink bg-green-100/70 text-xs font-bold tracking-wider uppercase text-green-950 font-sans">
+                    <tr className="border-b border-vintage-ink/20 bg-green-100/70 text-xs font-bold tracking-wider uppercase text-green-950 font-sans">
                       <th className="p-3 border-r border-vintage-ink">Partner Code</th>
                       <th className="p-3 border-r border-vintage-ink">PayPal Payout Account</th>
                       <th className="p-3 border-r border-vintage-ink text-right">Cleared Balance (Due)</th>
@@ -553,7 +553,7 @@ const AffiliateManager: React.FC = () => {
                             <button
                               onClick={() => setInspectedPartner(item.affiliate)}
                               className="p-1 border border-vintage-ink/30 hover:border-vintage-ink text-vintage-ink hover:text-vintage-accent"
-                              title="Inspect Financial Ledger"
+                              title="Inspect Financial Details"
                             >
                               <Eye size={14} />
                             </button>
@@ -580,14 +580,14 @@ const AffiliateManager: React.FC = () => {
             </div>
 
             {accumulatingPayouts.length === 0 ? (
-              <div className="p-6 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
+              <div className="p-6 border border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
                 No affiliates currently in accumulating status.
               </div>
             ) : (
-              <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
+              <div className="border border-vintage-ink/20 overflow-x-auto bg-vintage-paper shadow-xs">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
+                    <tr className="border-b border-vintage-ink/20 bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
                       <th className="p-3 border-r border-vintage-ink">Partner Code</th>
                       <th className="p-3 border-r border-vintage-ink">PayPal Payout Account</th>
                       <th className="p-3 border-r border-vintage-ink text-right">Cleared Balance</th>
@@ -654,14 +654,14 @@ const AffiliateManager: React.FC = () => {
           </div>
 
           {affiliates.length === 0 ? (
-            <div className="p-8 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
+            <div className="p-8 border border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
               No affiliates registered yet. Activate a partner code from the /affiliate landing page to test.
             </div>
           ) : (
-            <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
+            <div className="border border-vintage-ink/20 overflow-x-auto bg-vintage-paper shadow-xs">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
+                  <tr className="border-b border-vintage-ink/20 bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
                     <th className="p-3 border-r border-vintage-ink">Partner Code</th>
                     <th className="p-3 border-r border-vintage-ink">Vanity Path</th>
                     <th className="p-3 border-r border-vintage-ink">Country / Phone</th>
@@ -669,7 +669,7 @@ const AffiliateManager: React.FC = () => {
                     <th className="p-3 border-r border-vintage-ink text-right">Cleared Balance</th>
                     <th className="p-3 border-r border-vintage-ink text-right">In Holding</th>
                     <th className="p-3 border-r border-vintage-ink text-center">Status</th>
-                    <th className="p-3 text-center">Audit Statement</th>
+                    <th className="p-3 text-center">View Statement</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-vintage-ink/20 font-mono text-xs">
@@ -717,7 +717,7 @@ const AffiliateManager: React.FC = () => {
                             onClick={() => setInspectedPartner(a)}
                             className="vintage-btn py-1 px-3 text-[10px] tracking-wider uppercase font-bold inline-flex items-center gap-1"
                           >
-                            <Eye size={12} /> View Ledger
+                            <Eye size={12} /> View Details
                           </button>
                         </td>
                       </tr>
@@ -739,14 +739,14 @@ const AffiliateManager: React.FC = () => {
           </div>
 
           {payouts.length === 0 ? (
-            <div className="p-8 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
+            <div className="p-8 border border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
               No completed payouts recorded yet. Payouts recorded via batch execution will appear here.
             </div>
           ) : (
-            <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
+            <div className="border border-vintage-ink/20 overflow-x-auto bg-vintage-paper shadow-xs">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
+                  <tr className="border-b border-vintage-ink/20 bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
                     <th className="p-3 border-r border-vintage-ink">Settled Date</th>
                     <th className="p-3 border-r border-vintage-ink">Partner Code</th>
                     <th className="p-3 border-r border-vintage-ink">PayPal Account</th>
@@ -803,7 +803,7 @@ const AffiliateManager: React.FC = () => {
                   placeholder="Search order, font, partner..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="vintage-input py-1.5 px-3 text-xs w-48 sm:w-64 font-mono font-medium border-2 border-vintage-ink bg-white"
+                  className="vintage-input py-1.5 px-3 text-xs w-48 sm:w-64 font-mono font-medium border border-vintage-ink/30 bg-white"
                 />
               </div>
             </div>
@@ -813,7 +813,7 @@ const AffiliateManager: React.FC = () => {
                 <button
                   key={f}
                   onClick={() => setStatusFilter(f)}
-                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider border-2 transition-all font-sans ${
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all font-sans ${
                     statusFilter === f 
                       ? 'bg-vintage-ink text-vintage-paper border-vintage-ink shadow-xs' 
                       : 'bg-vintage-paper text-vintage-ink/75 border-vintage-ink/30 hover:text-vintage-ink hover:border-vintage-ink'
@@ -826,14 +826,14 @@ const AffiliateManager: React.FC = () => {
           </div>
 
           {filteredCommissions.length === 0 ? (
-            <div className="p-8 border-2 border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
+            <div className="p-8 border border-dashed border-vintage-ink/30 text-center font-medium text-xs sm:text-sm text-vintage-ink/80 bg-vintage-paper">
               No commissions matching the selected filter or search query.
             </div>
           ) : (
-            <div className="border-2 border-vintage-ink overflow-x-auto bg-vintage-paper shadow-sm">
+            <div className="border border-vintage-ink/20 overflow-x-auto bg-vintage-paper shadow-xs">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b-2 border-vintage-ink bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
+                  <tr className="border-b border-vintage-ink/20 bg-vintage-ink/5 text-xs font-bold tracking-wider uppercase font-sans text-vintage-ink">
                     <th className="p-3 border-r border-vintage-ink">Order ID</th>
                     <th className="p-3 border-r border-vintage-ink">Partner</th>
                     <th className="p-3 border-r border-vintage-ink">Typeface</th>
@@ -917,7 +917,7 @@ const AffiliateManager: React.FC = () => {
       {/* INDIVIDUAL PARTNER AUDIT / FINANCIAL INSPECTOR MODAL */}
       {inspectedPartner && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-vintage-paper border-2 border-vintage-ink max-w-4xl w-full p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200 my-8 shadow-2xl">
+          <div className="bg-vintage-paper border border-vintage-ink/30 max-w-4xl w-full p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200 my-8 shadow-2xl">
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-vintage-ink pb-4">
               <div>
@@ -1066,7 +1066,7 @@ const AffiliateManager: React.FC = () => {
       {/* PROCESS PAYOUT RECORDING DIALOG */}
       {payoutModalAffiliate && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-vintage-paper border-2 border-vintage-ink max-w-lg w-full p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200 shadow-2xl">
+          <div className="bg-vintage-paper border border-vintage-ink/30 max-w-lg w-full p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200 shadow-2xl">
             <div className="border-b border-vintage-ink pb-4">
               <span className="text-[10px] font-bold text-green-800 uppercase tracking-widest block">
                 Official Payout Disbursement

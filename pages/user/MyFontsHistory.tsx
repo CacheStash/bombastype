@@ -74,7 +74,7 @@ const MyFontsHistory = () => {
     }
   };
 
-  if (loading) return <div className="p-10 text-center italic opacity-40 font-serif">Consulting Archival Registry...</div>;
+  if (loading) return <div className="p-10 text-center italic opacity-40 font-serif">Loading your font library...</div>;
 
   return (
     <div className="space-y-12 pb-20">
@@ -88,13 +88,13 @@ const MyFontsHistory = () => {
 
       {history.length === 0 ? (
         <div className="border border-dashed border-vintage-ink/30 p-20 text-center bg-vintage-paper/50">
-          <p className="text-sm font-semibold tracking-wider uppercase text-vintage-ink/80">Your purchase archive is currently empty.</p>
+          <p className="text-sm font-semibold tracking-wider uppercase text-vintage-ink/80">Your purchase history is currently empty.</p>
           <p className="text-xs text-vintage-ink/70 mt-2 font-sans">Fonts you license or test will appear here with perpetual download access.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {history.map((item) => (
-            <div key={item.id} className="vintage-card p-0 overflow-hidden bg-vintage-paper border-2 border-vintage-ink flex flex-col md:flex-row group hover:border-vintage-accent transition-all duration-300 shadow-sm">
+            <div key={item.id} className="vintage-card p-0 overflow-hidden bg-vintage-paper border border-vintage-ink/20 flex flex-col md:flex-row group hover:border-vintage-accent transition-all duration-300 shadow-xs">
               
               {/* ASSET INFO */}
               <div className="p-8 grow space-y-4">
@@ -116,13 +116,13 @@ const MyFontsHistory = () => {
                     ? 'border-vintage-accent text-vintage-accent bg-vintage-accent/10' 
                     : 'border-vintage-ink bg-vintage-ink text-vintage-paper'
                   }`}>
-                    {item.download_type === 'trial' ? 'Demo Archive' : 'Full Commercial'}
+                    {item.download_type === 'trial' ? 'Demo Version' : 'Commercial License'}
                   </div>
                 </div>
               </div>
               
               {/* ACTIONS */}
-              <div className="bg-vintage-ink/5 border-t md:border-t-0 md:border-l border-vintage-ink p-6 md:w-80 flex flex-col justify-center gap-3">
+              <div className="bg-vintage-ink/5 border-t md:border-t-0 md:border-l border-vintage-ink/20 p-6 md:w-80 flex flex-col justify-center gap-3">
                 <button 
                   onClick={() => handleSecureDownload(
                     item.download_type === 'trial' ? item.fonts.trial_file_url : item.fonts.font_files[0],
@@ -140,7 +140,7 @@ const MyFontsHistory = () => {
                   className="vintage-btn w-full py-3.5 text-xs font-bold uppercase tracking-wider border-vintage-ink flex items-center justify-center gap-3 hover:bg-vintage-paper transition-all"
                 >
                   <ShieldCheck size={16} />
-                  VIEW LICENSE RECORD
+                  VIEW LICENSE RECEIPT
                 </Link>
               </div>
 
@@ -150,14 +150,14 @@ const MyFontsHistory = () => {
       )}
 
       {/* FOOTER NOTE - HIGH CONTRAST & READABLE */}
-      <div className="mt-8 flex items-start gap-4 p-5 sm:p-6 bg-vintage-paper border-2 border-vintage-ink shadow-sm">
+      <div className="mt-8 flex items-start gap-4 p-5 sm:p-6 bg-vintage-paper border border-vintage-ink/20 shadow-xs">
         <FileText size={24} className="text-vintage-accent shrink-0 mt-0.5" />
         <div className="space-y-1.5">
           <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
-            License Terms & Commercial Usage Provision
+            License Terms & Usage Notice
           </p>
           <p className="text-xs sm:text-sm text-vintage-ink font-medium leading-relaxed font-sans">
-            All downloaded assets are bound by the terms of your acquisition license. The Demo version is for personal testing only, while the Full version provides commercial authority as per your certificate.
+            All downloaded fonts are governed by your purchase license. The Demo version is strictly for personal evaluation, while Commercial orders grant full commercial production rights according to your license tier.
           </p>
         </div>
       </div>

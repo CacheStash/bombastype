@@ -239,7 +239,7 @@ const AffiliateLanding: React.FC = () => {
           <ArrowLeft size={16} /> Back to Catalog
         </Link>
         <span className="border border-vintage-ink px-3 py-1 uppercase tracking-widest text-xs font-bold bg-vintage-background text-vintage-ink">
-          Partner Guild · 20% Net Commission
+          Affiliate Program · 20% Net Commission
         </span>
       </div>
 
@@ -304,11 +304,11 @@ const AffiliateLanding: React.FC = () => {
         <div className="w-full p-8 md:p-14 max-w-3xl mx-auto">
           {existingAffiliate ? (
             /* ACTIVE AFFILIATE CARD */
-            <div className="border-2 border-vintage-ink p-8 bg-vintage-background space-y-6">
+            <div className="border border-vintage-ink/20 p-8 bg-vintage-background space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-vintage-ink pb-4">
                 <div>
-                  <span className="text-xs font-bold text-vintage-accent uppercase tracking-[0.25em] block mb-1">Guild Partner Status</span>
-                  <h4 className="text-2xl font-display text-vintage-ink">Active Partner ({existingAffiliate.affiliate_code})</h4>
+                  <span className="text-xs font-bold text-vintage-accent uppercase tracking-[0.25em] block mb-1">Affiliate Account Status</span>
+                  <h4 className="text-2xl font-display text-vintage-ink">Active Affiliate ({existingAffiliate.affiliate_code})</h4>
                 </div>
                 <Link 
                   to="/user/dashboard" 
@@ -627,7 +627,7 @@ const AffiliateLanding: React.FC = () => {
       </div>
 
       <div className="mt-8 text-xs font-bold tracking-[0.3em] text-vintage-ink uppercase">
-        ** BombasType Archival Partner Guild **
+        ** BombasType Affiliate Partner Program **
       </div>
     </div>
   );

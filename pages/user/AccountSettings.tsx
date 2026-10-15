@@ -60,16 +60,16 @@ const AccountSettings = () => {
       <div className="border-b border-vintage-ink pb-8">
         <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Security & Access</h2>
         <p className="text-xs font-bold tracking-widest text-vintage-accent uppercase mt-2 font-sans">
-          Management of Account Credentials & Accession Keys
+          Manage your account password and order transaction keys
         </p>
       </div>
 
       {/* ACCESSION KEYS CARD */}
-      <div className="vintage-card bg-vintage-paper border-2 border-vintage-ink shadow-sm space-y-6">
+      <div className="vintage-card bg-vintage-paper border border-vintage-ink/20 shadow-xs space-y-6">
         <div className="flex items-center gap-3 border-b border-vintage-ink/20 pb-4">
           <Key size={18} className="text-vintage-accent" />
           <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
-            Archival Accession Keys
+            Order Transaction Keys
           </h3>
         </div>
 
@@ -78,7 +78,7 @@ const AccountSettings = () => {
             <select 
               value={selectedCode}
               onChange={(e) => setSelectedCode(e.target.value)}
-              className="w-full bg-vintage-paper border-2 border-vintage-ink p-3.5 outline-none appearance-none cursor-pointer font-mono font-bold text-base focus:border-vintage-accent transition-all text-vintage-ink shadow-sm"
+              className="w-full bg-vintage-paper border border-vintage-ink/30 p-3.5 outline-none appearance-none cursor-pointer font-mono font-bold text-base focus:border-vintage-accent transition-all text-vintage-ink shadow-xs"
             >
               {checkoutCodes.length > 0 ? (
                 checkoutCodes.map((code: string, idx: number) => (
@@ -96,20 +96,20 @@ const AccountSettings = () => {
           <button 
             type="button"
             onClick={handleCopy}
-            className="vintage-btn px-6 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-2 border-vintage-ink"
+            className="vintage-btn px-6 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-vintage-ink"
           >
             <Copy size={16} /> COPY KEY
           </button>
         </div>
 
-        <div className="p-4 bg-white border border-vintage-ink text-xs sm:text-sm text-vintage-ink font-sans leading-relaxed space-y-1">
-          <p className="font-semibold text-vintage-ink">• All accession keys listed are valid as master account identifier tokens.</p>
-          <p className="text-vintage-ink/90">• Should you lose your password, use any order transaction identifier to restore access to your account.</p>
+        <div className="p-4 bg-white border border-vintage-ink/20 text-xs sm:text-sm text-vintage-ink font-sans leading-relaxed space-y-1">
+          <p className="font-semibold text-vintage-ink">• All order keys listed correspond to your past font purchases.</p>
+          <p className="text-vintage-ink/90">• If you ever need to verify account ownership or restore access, use any of your order transaction IDs.</p>
         </div>
       </div>
 
       {/* CHANGE PASSWORD FORM */}
-      <div className="vintage-card bg-vintage-paper border-2 border-vintage-ink shadow-sm">
+      <div className="vintage-card bg-vintage-paper border border-vintage-ink/20 shadow-xs">
         <form onSubmit={handleUpdatePassword} className="space-y-8">
           <div className="flex items-center gap-3 border-b border-vintage-ink/20 pb-4">
             <ShieldCheck size={18} className="text-vintage-accent" />
@@ -125,7 +125,7 @@ const AccountSettings = () => {
                 type="password" 
                 value={newPassword} 
                 onChange={e => setNewPassword(e.target.value)} 
-                className="w-full border-2 border-vintage-ink p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50"
+                className="w-full border border-vintage-ink/30 p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50"
                 placeholder="Enter new password..."
                 required 
               />
@@ -136,7 +136,7 @@ const AccountSettings = () => {
                 type="password" 
                 value={confirmPassword} 
                 onChange={e => setConfirmPassword(e.target.value)} 
-                className="w-full border-2 border-vintage-ink p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50"
+                className="w-full border border-vintage-ink/30 p-3 bg-white outline-none font-sans text-base focus:border-vintage-accent transition-colors placeholder:text-vintage-ink/50"
                 placeholder="Verify new password..."
                 required 
               />

@@ -458,7 +458,7 @@ const ProductManager = () => {
                 />
               </th>
               <th className="p-3 w-16 text-center text-xs uppercase font-bold tracking-wider text-vintage-ink font-sans">Flags</th>
-              <th className="p-3 text-xs uppercase font-bold tracking-wider text-vintage-ink font-sans">Designation</th>
+              <th className="p-3 text-xs uppercase font-bold tracking-wider text-vintage-ink font-sans">Font Name</th>
               <th className="p-3 text-right text-xs uppercase font-bold tracking-wider text-vintage-ink w-32 font-sans">Base Price</th>
               <th className="p-3 text-xs uppercase font-bold tracking-wider text-right text-vintage-ink font-sans">Management</th>
             </tr>
@@ -466,11 +466,11 @@ const ProductManager = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="p-20 text-center italic text-vintage-ink/70 font-serif text-sm">Consulting Archive Ledger...</td>
+                <td colSpan={5} className="p-20 text-center italic text-vintage-ink/70 font-serif text-sm">Loading font catalog...</td>
               </tr>
             ) : paginatedFonts.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-20 text-center italic text-vintage-ink/70 font-serif text-sm">No artifacts found in this section.</td>
+                <td colSpan={5} className="p-20 text-center italic text-vintage-ink/70 font-serif text-sm">No fonts found in this category.</td>
               </tr>
             ) : (
               paginatedFonts.map((f, i) => {
@@ -605,7 +605,7 @@ const ProductManager = () => {
       {/* BATCH PRICE ADJUSTMENT MODAL */}
       {showBatchPriceModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-vintage-paper border-2 border-vintage-ink max-w-xl w-full p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200 my-8 shadow-2xl">
+          <div className="bg-vintage-paper border border-vintage-ink/30 max-w-xl w-full p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200 my-8 shadow-2xl">
             
             {/* Header */}
             <div className="flex items-start justify-between border-b border-vintage-ink pb-4">

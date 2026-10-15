@@ -98,14 +98,14 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="relative w-full max-w-md vintage-card bg-vintage-paper p-0 overflow-hidden shadow-2xl border-2 border-vintage-ink z-10 font-serif"
+            className="relative w-full max-w-md vintage-card bg-vintage-paper p-0 overflow-hidden shadow-2xl border border-vintage-ink/30 z-10 font-serif"
           >
             {/* Header */}
-            <div className="px-6 py-4 border-b border-vintage-ink bg-vintage-ink/5 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-vintage-ink/20 bg-vintage-ink/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShieldCheck size={16} className="text-vintage-accent" />
                 <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-vintage-ink">
-                  Staff Command
+                  Admin Access
                 </span>
               </div>
               <button

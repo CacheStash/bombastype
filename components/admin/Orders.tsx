@@ -523,9 +523,9 @@ const Orders = () => {
     <div className="space-y-8 pb-20">
       {/* HEADER */}
       <div className="border-b border-vintage-ink pb-6">
-        <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Sales Folio</h2>
+        <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink">Orders & Sales</h2>
         <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mt-2 italic flex items-center gap-2">
-          <ShoppingBag size={12} /> Registry of Acquisitions & Licensing
+          <ShoppingBag size={12} /> Registry of Orders & Font Licenses
         </p>
       </div>
 
@@ -581,21 +581,21 @@ const Orders = () => {
         <table className="w-full text-left border-collapse min-w-250">
           <thead>
             <tr className="bg-vintage-ink/5 border-b border-vintage-ink text-[10px] font-bold tracking-widest text-vintage-ink/60 uppercase">
-              <th className="p-5">Registry Date</th>
+              <th className="p-5">Order Date</th>
               <th className="p-5">Order & License Ref</th>
-              <th className="p-5">Client Identity</th>
-              <th className="p-5">Typeface</th>
-              <th className="p-5 text-center">Valuation</th>
+              <th className="p-5">Customer Email</th>
+              <th className="p-5">Font Name</th>
+              <th className="p-5 text-center">Amount</th>
               <th className="p-5 text-center">Status</th>
               <th className="p-5 text-center">Email Delivery</th>
               <th className="p-5 text-center">License Certificate</th>
               <th className="p-5">Tier & Metrics</th>
-              <th className="p-5">License Provisions</th>
+              <th className="p-5">License Tier</th>
             </tr>
           </thead>
           <tbody className="text-[11px] font-serif">
             {loading ? (
-              <tr><td colSpan={10} className="p-20 text-center animate-pulse italic opacity-40">Consulting Archive Ledger...</td></tr>
+              <tr><td colSpan={10} className="p-20 text-center animate-pulse italic opacity-40">Loading orders...</td></tr>
             ) : orders.length === 0 ? (
               <tr><td colSpan={10} className="p-20 text-center opacity-40 italic">No records found matching "{searchTerm}"</td></tr>
             ) : orders.map((order) => (
@@ -712,7 +712,7 @@ const Orders = () => {
             <ChevronLeft size={18} />
           </button>
           <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-vintage-ink/60">
-            Folio {currentPage} <span className="mx-2 opacity-30">/</span> {totalPages}
+            Page {currentPage} <span className="mx-2 opacity-30">/</span> {totalPages}
           </span>
           <button 
             disabled={currentPage === totalPages} 

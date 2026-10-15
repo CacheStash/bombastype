@@ -134,9 +134,9 @@ const ContentManager = () => {
     <div className="space-y-8 pb-20">
       {/* HEADER */}
       <div className="border-b border-vintage-ink pb-6">
-        <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink mb-6">Content Ledger</h2>
+        <h2 className="text-3xl md:text-5xl font-script capitalize text-vintage-ink mb-6">Content Management</h2>
         <p className="text-[11px] font-bold tracking-[0.2em] text-vintage-accent uppercase mb-6 italic">
-          Management of Static Documentation & Page Narratives
+          Manage static pages, policies, and editorial content
         </p>
         
         {/* CATEGORIES - Clear Active High-Contrast Tabs */}
@@ -273,14 +273,14 @@ const ContentManager = () => {
         {/* Dynamic Category Indicator Heading */}
         <div className="flex items-center justify-between border-b border-vintage-ink/10 pb-3 mb-6">
           <h3 className="text-[11px] font-bold uppercase tracking-[0.3em] text-vintage-ink">
-            Active Ledger Records <span className="text-vintage-accent ml-2">[{currentCategory.toUpperCase()}]</span>
+            Content Entries <span className="text-vintage-accent ml-2">[{currentCategory.toUpperCase()}]</span>
           </h3>
           <span className="text-[9px] font-bold tracking-widest text-vintage-ink/40 uppercase">
-            {items.length} {items.length === 1 ? 'Entry' : 'Entries'} in Folio
+            {items.length} {items.length === 1 ? 'Entry' : 'Entries'}
           </span>
         </div>
         {loading ? (
-          <div className="p-20 text-center italic opacity-40 font-serif">Syncing Ledger...</div>
+          <div className="p-20 text-center italic opacity-40 font-serif">Loading content...</div>
         ) : (
           <div className="space-y-3">
             {items.map((item, index) => (
