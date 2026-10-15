@@ -428,6 +428,9 @@ const AffiliatePortal: React.FC = () => {
     setShowWithdrawModal(true);
   };
 
+  // Safe fallback alias for any button referencing the legacy name
+  const handleInstantWithdraw = handleOpenWithdrawModal;
+
   const executeWithdrawal = async () => {
     setIsWithdrawing(true);
     setWithdrawError('');
@@ -845,7 +848,7 @@ const AffiliatePortal: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={handleInstantWithdraw}
+                  onClick={handleOpenWithdrawModal}
                   disabled={!isQualifiedForPayout || isWithdrawing}
                   className={`vintage-btn py-2 px-5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shrink-0 ${
                     isQualifiedForPayout
