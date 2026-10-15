@@ -726,9 +726,9 @@ const AffiliatePortal: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-vintage-ink font-sans">
-                <span>Visitors clicking this link are tagged for 30 days.</span>
-                <Link to="/font/salvatore" className="underline font-bold text-vintage-accent hover:text-vintage-ink flex items-center gap-1">
+              <div className="flex items-center justify-between text-xs text-vintage-ink font-sans pt-1">
+                <span className="truncate pr-2">Visitors clicking this link are tagged for 30 days.</span>
+                <Link to="/fonts" className="underline font-bold text-vintage-accent hover:text-vintage-ink flex items-center gap-1 whitespace-nowrap shrink-0">
                   Browse Fonts <ExternalLink size={12} />
                 </Link>
               </div>
