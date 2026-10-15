@@ -19,8 +19,12 @@ interface ContentItem {
 const transformHTMLContent = (html: string): React.ReactNode => {
   let transformed = html
     .replace(/text-black/g, 'text-vintage-ink')
-    .replace(/text-gray-600/g, 'text-vintage-ink/70')
-    .replace(/text-gray-400/g, 'text-vintage-ink/50')
+    .replace(/text-gray-\d+/g, 'text-vintage-ink')
+    .replace(/text-gray-600/g, 'text-vintage-ink')
+    .replace(/text-gray-400/g, 'text-vintage-ink')
+    .replace(/text-vintage-ink\/\d+/g, 'text-vintage-ink')
+    .replace(/opacity-\d+/g, '')
+    .replace(/text-opacity-\d+/g, '')
     .replace(/text-\d+xl/g, 'text-lg md:text-xl')
     .replace(/class="([^"]*)"/g, (match, classes) => {
       const classList = classes
@@ -33,7 +37,7 @@ const transformHTMLContent = (html: string): React.ReactNode => {
   return (
     <div
       dangerouslySetInnerHTML={{ __html: transformed }}
-      className="space-y-6 [&_p]:text-base [&_p]:md:text-lg [&_p]:leading-relaxed [&_div]:flex [&_div]:gap-6 [&_div]:items-start [&_span]:font-bold"
+      className="space-y-6 [&_p]:text-base [&_p]:md:text-lg [&_p]:leading-relaxed [&_p]:text-vintage-ink [&_p.italic]:text-vintage-ink [&_em]:text-vintage-ink [&_i]:text-vintage-ink [&_span]:text-vintage-ink [&_div]:flex [&_div]:gap-6 [&_div]:items-start [&_span]:font-bold"
     />
   );
 };
@@ -47,7 +51,7 @@ const LicenseTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ heade
             {headers.map((h, i) => (
               <th
                 key={i}
-                className="p-3 border-r border-vintage-ink last:border-0 font-bold text-xs uppercase tracking-wider text-vintage-ink/70"
+                className="p-3 border-r border-vintage-ink last:border-0 font-bold text-xs uppercase tracking-wider text-vintage-ink"
               >
                 {h}
               </th>
@@ -153,7 +157,7 @@ const License: React.FC = () => {
         <motion.h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display mb-6 leading-tight">
           License Agreement
         </motion.h2>
-        <motion.p className="text-base md:text-lg lg:text-xl italic text-vintage-ink/60 leading-relaxed">
+        <motion.p className="text-base md:text-lg lg:text-xl italic text-vintage-ink leading-relaxed">
           Clear Additive Terms for Creative Freedom
         </motion.p>
       </section>
@@ -227,7 +231,7 @@ const License: React.FC = () => {
 
       {/* Last Updated Footer */}
       <section className="text-center py-12 px-4 border-t border-vintage-ink/20">
-        <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-vintage-ink/60">
+        <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-vintage-ink">
           Last Updated: {lastUpdated || 'N/A'}
         </p>
       </section>
