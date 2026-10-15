@@ -35,8 +35,17 @@ const FontDetail: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '');
+    let fontQuery = supabase.from('fonts').select('*');
+    if (isUuid) {
+      fontQuery = fontQuery.eq('id', id);
+    } else {
+      const cleanName = (id || '').replace(/-/g, ' ').trim();
+      fontQuery = fontQuery.ilike('name', cleanName);
+    }
+
     const [fontRes, promosRes, { data: { session } }] = await Promise.all([
-      supabase.from('fonts').select('*').eq('id', id).single(),
+      fontQuery.maybeSingle(),
       supabase.from('promotions').select('*').eq('is_active', true),
       supabase.auth.getSession()
     ]);
@@ -327,12 +336,12 @@ const FontDetail: React.FC = () => {
                 Partner Quick Share:
               </span>
               <code className="font-mono text-xs font-bold text-vintage-ink bg-vintage-ink/10 px-2 py-1 border border-vintage-ink">
-                {`${window.location.origin}/c/${affiliateCode}/${font.id}`}
+                {`${window.location.origin.replace('://www.', '://')}/c/${affiliateCode}/${font.id}`}
               </code>
             </div>
             <button 
               onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/c/${affiliateCode}/${font.id}`);
+                navigator.clipboard.writeText(`${window.location.origin.replace('://www.', '://')}/c/${affiliateCode}/${font.id}`);
                 setAffiliateCopied(true);
                 setTimeout(() => setAffiliateCopied(false), 2000);
               }}

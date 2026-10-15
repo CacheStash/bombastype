@@ -223,8 +223,8 @@ const CartCard: React.FC<CartCardProps> = ({
                               <button key={t.key} onClick={() => setSelectedTiers(prev => ({...prev, [u.id]: t.key}))}
                                 className={`vintage-btn flex-1 min-w-35 py-3 px-2 text-[9px] font-bold tracking-widest transition-all duration-300 ${
                                   selectedTiers[u.id] === t.key 
-                                  ? 'bg-vintage-ink! text-vintage-background!' 
-                                  : 'bg-transparent border-vintage-ink/10 text-vintage-ink/60'
+                                  ? 'bg-vintage-ink! text-vintage-background! border-vintage-ink!' 
+                                  : 'bg-transparent border-vintage-ink/30 text-vintage-ink hover:bg-vintage-ink! hover:text-vintage-background!'
                                 }`}>
                                 {t.label}
                               </button>

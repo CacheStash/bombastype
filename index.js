@@ -1479,6 +1479,18 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // --- 0. CANONICAL APEX HOST REDIRECTION (Prevent auth session fragmentation) ---
+    if (url.hostname === 'www.bombastype.com') {
+      const canonicalUrl = new URL(request.url);
+      canonicalUrl.hostname = 'bombastype.com';
+      return Response.redirect(canonicalUrl.toString(), 301);
+    }
+    if (url.hostname === 'www.subqi.com') {
+      const canonicalUrl = new URL(request.url);
+      canonicalUrl.hostname = 'subqi.com';
+      return Response.redirect(canonicalUrl.toString(), 301);
+    }
+
     // 1. Handling CORS (Preflight)
     if (request.method === 'OPTIONS') {
       const origin = request.headers.get('Origin') || '';
@@ -1509,9 +1521,12 @@ export default {
       const fontTarget = parts[1] ? parts[1].trim() : '';
 
       const targetPath = fontTarget ? `/font/${fontTarget}` : '/';
-      const cookieHeader = `__ctx_ref=${encodeURIComponent(affCode)}; Max-Age=2592000; Path=/; SameSite=Lax; HttpOnly; Secure`;
+      const rootHost = url.hostname.replace(/^www\./i, '');
+      const canonicalOrigin = `${url.protocol}//${rootHost}`;
+      const domainAttr = (rootHost === 'bombastype.com' || rootHost === 'subqi.com') ? `; Domain=.${rootHost}` : '';
+      const cookieHeader = `__ctx_ref=${encodeURIComponent(affCode)}; Max-Age=2592000; Path=/; SameSite=Lax; HttpOnly; Secure${domainAttr}`;
 
-      const redirectUrl = new URL(targetPath, url.origin);
+      const redirectUrl = new URL(targetPath, canonicalOrigin);
       return new Response(null, {
         status: 302,
         headers: {
