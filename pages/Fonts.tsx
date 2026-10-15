@@ -13,7 +13,9 @@ import {
   Plus, 
   Eye, // Tambah Eye Icon
   LayoutGrid,
-  Type
+  Type,
+  Copy,
+  DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -39,7 +41,7 @@ const SlantedSpacer = () => (
 );
 
 // --- COMPONENT: THUMBNAIL CARD (3x4 Style) ---
-const ThumbnailCard = ({ font, promo, onAdd, onView }: any) => {
+const ThumbnailCard = ({ font, promo, onAdd, onView, affiliateCode, copiedFontId, onCopyAffiliate }: any) => {
   const basePrice = font.price || 25;
   const displayPrice = promo ? (basePrice * (1 - (promo.discount_percent / 100))).toFixed(0) : basePrice;
 
@@ -60,8 +62,9 @@ const ThumbnailCard = ({ font, promo, onAdd, onView }: any) => {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
           />
         )}
-        <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink">
-          <span className="text-vintage-accent mr-0.5">$</span>{displayPrice}
+        <div className="absolute top-3 right-3 bg-vintage-paper/95 px-2.5 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink flex items-center">
+          <DollarSign size={14} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+          <span>{displayPrice}</span>
         </div>
         {promo && (
           <div className="absolute top-3 left-3 bg-vintage-accent text-vintage-paper px-2 py-1 text-[9px] font-black uppercase tracking-tighter">
@@ -79,16 +82,28 @@ const ThumbnailCard = ({ font, promo, onAdd, onView }: any) => {
             {Array.isArray(font.font_files) ? font.font_files.length : 1} Styles Available
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-           <button 
-            onClick={(e) => { e.stopPropagation(); onAdd(); }}
-            className="vintage-btn py-2 text-[10px] flex items-center justify-center gap-1 group/btn"
-          >
-            <Plus size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> ADD
-          </button>
-          <button className="vintage-btn btn-reverse py-2 text-[10px] flex items-center justify-center gap-1 group/btn">
-            <Eye size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> VIEW
-          </button>
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onAdd(); }}
+              className="vintage-btn py-2 text-[10px] flex items-center justify-center gap-1 group/btn"
+            >
+              <Plus size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> ADD
+            </button>
+            <button className="vintage-btn btn-reverse py-2 text-[10px] flex items-center justify-center gap-1 group/btn">
+              <Eye size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> VIEW
+            </button>
+          </div>
+          {affiliateCode && (
+            <button 
+              type="button"
+              onClick={(e) => onCopyAffiliate(e, font.id)}
+              className="vintage-btn py-2 text-[10px] w-full flex items-center justify-center gap-1.5 uppercase font-bold tracking-wider"
+            >
+              <Copy size={13} className="opacity-60" />
+              <span>{copiedFontId === font.id ? 'COPIED!' : 'COPY AFFILIATE LINK'}</span>
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
@@ -96,7 +111,7 @@ const ThumbnailCard = ({ font, promo, onAdd, onView }: any) => {
 };
 
 // --- COMPONENT: CHARACTER CARD (4x3 Style / Text View) ---
-const CharacterCard = ({ font, promo, onAdd, onView }: any) => {
+const CharacterCard = ({ font, promo, onAdd, onView, affiliateCode, copiedFontId, onCopyAffiliate }: any) => {
   const primaryIdx = font.metadata?.primary_font_index || 0;
   const basePrice = font.price || 25;
   const displayPrice = promo ? (basePrice * (1 - (promo.discount_percent / 100))).toFixed(0) : basePrice;
@@ -168,8 +183,16 @@ const CharacterCard = ({ font, promo, onAdd, onView }: any) => {
       <div className="mt-8 w-full flex flex-col gap-3">
         <div className="text-base md:text-lg font-bold text-vintage-ink tracking-tight flex items-center justify-center mb-2">
           <span className="opacity-60 mr-1.5">Starting at</span>
-          <span className="text-vintage-accent mr-0.5">$</span>{displayPrice}
-          {promo && <span className="ml-2 text-xs line-through opacity-30 decoration-vintage-accent">${basePrice}</span>}
+          <div className="inline-flex items-center text-vintage-ink font-bold">
+            <DollarSign size={16} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+            <span>{displayPrice}</span>
+          </div>
+          {promo && (
+            <span className="ml-2 text-xs line-through opacity-30 decoration-vintage-accent inline-flex items-center">
+              <DollarSign size={12} strokeWidth={2} className="shrink-0 -mr-0.5" />
+              {basePrice}
+            </span>
+          )}
         </div>
         
         <button 
@@ -184,6 +207,17 @@ const CharacterCard = ({ font, promo, onAdd, onView }: any) => {
           <Eye size={16} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
           VIEW FONTS
         </button>
+
+        {affiliateCode && (
+          <button 
+            type="button"
+            onClick={(e) => onCopyAffiliate(e, font.id)}
+            className="vintage-btn py-3 text-[12px] w-full flex items-center justify-center gap-2 font-bold tracking-wider"
+          >
+            <Copy size={15} className="opacity-60" />
+            <span>{copiedFontId === font.id ? 'COPIED!' : 'COPY LINK'}</span>
+          </button>
+        )}
       </div>
     </motion.div>
   );
@@ -197,6 +231,8 @@ const Fonts: React.FC = () => {
   const [viewMode, setViewMode] = useState<'thumbnail' | 'character'>('thumbnail');
   const [activePromoId, setActivePromoId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
+  const [copiedFontId, setCopiedFontId] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const { openConfigurator } = useCart();
@@ -223,13 +259,32 @@ const Fonts: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [fontsRes, promosRes] = await Promise.all([
+    const [fontsRes, promosRes, sessionRes] = await Promise.all([
       supabase.from('fonts').select('*').order('display_order', { ascending: true }),
-      supabase.from('promotions').select('*').eq('is_active', true)
+      supabase.from('promotions').select('*').eq('is_active', true),
+      supabase.auth.getSession()
     ]);
     if (fontsRes.data) setFonts(fontsRes.data);
     if (promosRes.data) setPromos(promosRes.data);
+    if (sessionRes.data.session?.user) {
+      const { data: affData } = await supabase
+        .from('affiliates')
+        .select('affiliate_code')
+        .eq('user_id', sessionRes.data.session.user.id)
+        .maybeSingle();
+      if (affData?.affiliate_code) {
+        setAffiliateCode(affData.affiliate_code);
+      }
+    }
     setLoading(false);
+  };
+
+  const handleCopyAffiliate = (e: React.MouseEvent, fontId: string) => {
+    e.stopPropagation();
+    if (!affiliateCode) return;
+    navigator.clipboard.writeText(`${window.location.origin}/c/${affiliateCode}/${fontId}`);
+    setCopiedFontId(fontId);
+    setTimeout(() => setCopiedFontId(null), 2000);
   };
 
   const getActivePromo = (fontId: string) => {
@@ -341,7 +396,10 @@ const Fonts: React.FC = () => {
                     font,
                     promo,
                     onAdd: () => openConfigurator({ ...font, trialFileUrl: font.trial_file_url, activeDiscount: promo?.discount_percent || 0 }),
-                    onView: () => navigate(`/font/${font.id}`)
+                    onView: () => navigate(`/font/${font.id}`),
+                    affiliateCode,
+                    copiedFontId,
+                    onCopyAffiliate: handleCopyAffiliate
                   };
                   return viewMode === 'thumbnail' ? <ThumbnailCard {...props} /> : <CharacterCard {...props} />;
                 })}

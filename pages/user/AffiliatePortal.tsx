@@ -951,8 +951,9 @@ const AffiliatePortal: React.FC = () => {
                 <span>Pending (14-Day Hold)</span>
                 <Clock size={16} className="text-amber-800" />
               </div>
-              <div className="text-3xl font-display font-bold text-amber-900">
-                ${pendingAmount.toFixed(2)}
+              <div className="text-3xl font-display font-bold text-amber-900 flex items-center">
+                <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                <span>{pendingAmount.toFixed(2)}</span>
               </div>
               <p className="text-xs text-vintage-ink font-sans leading-relaxed">14-day clearance hold against refund disputes</p>
               {countdownStr ? (
@@ -973,8 +974,9 @@ const AffiliatePortal: React.FC = () => {
                   <span>Available for Payout</span>
                   <CheckCircle2 size={16} className="text-green-800" />
                 </div>
-                <div className="text-3xl font-display font-bold text-green-900">
-                  ${readyAmount.toFixed(2)}
+                <div className="text-3xl font-display font-bold text-green-900 flex items-center">
+                  <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                  <span>{readyAmount.toFixed(2)}</span>
                 </div>
                 <p className="text-xs text-vintage-ink font-sans leading-relaxed">
                   {isQualifiedForPayout 
@@ -1010,8 +1012,9 @@ const AffiliatePortal: React.FC = () => {
                 <span>Total Paid Out</span>
                 <CircleDollarSign size={16} className="text-vintage-ink" />
               </div>
-              <div className="text-3xl font-display font-bold text-vintage-ink">
-                ${totalPaidAmount.toFixed(2)}
+              <div className="text-3xl font-display font-bold text-vintage-ink flex items-center">
+                <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                <span>{totalPaidAmount.toFixed(2)}</span>
               </div>
               <p className="text-xs text-vintage-ink font-sans leading-relaxed">Lifetime payouts received to PayPal</p>
             </div>

@@ -338,7 +338,7 @@ const FontDetail: React.FC = () => {
               }}
               className="vintage-btn py-2 px-4 text-xs tracking-widest shrink-0 uppercase font-bold"
             >
-              {affiliateCopied ? 'COPIED TO CLIPBOARD' : 'COPY SPECIMEN LINK'}
+              {affiliateCopied ? 'COPIED!' : 'COPY LINK'}
             </button>
           </div>
         </section>

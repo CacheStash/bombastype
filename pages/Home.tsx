@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
-import { Plus, Eye, ChevronLeft, ChevronRight, Shuffle } from 'lucide-react';
+import { Plus, Eye, ChevronLeft, ChevronRight, Shuffle, DollarSign, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import TypeTester from '../components/TypeTester';
@@ -29,13 +29,19 @@ const FontCard = ({
   price, 
   onClick, 
   onAdd,
-  primaryIndex = 0 
+  primaryIndex = 0,
+  affiliateCode,
+  isCopied,
+  onCopyAffiliate
 }: { 
   fontName: string, 
   price: number, 
   onClick: () => void, 
   onAdd: () => void,
-  primaryIndex?: number 
+  primaryIndex?: number,
+  affiliateCode?: string | null,
+  isCopied?: boolean,
+  onCopyAffiliate?: () => void
 }) => (
   <motion.div 
     whileHover={{ scale: 1.02 }}
@@ -89,7 +95,10 @@ const FontCard = ({
     <div className="mt-8 w-full shrink-0 flex flex-col gap-3">
       <div className="text-base md:text-lg font-bold text-vintage-ink tracking-tight flex items-center justify-center mb-2">
         <span className="opacity-60 mr-1.5 font-bold">Starting at</span>
-        <span className="text-vintage-accent mr-0.5">$</span>{price}
+        <div className="inline-flex items-center text-vintage-ink font-bold">
+          <DollarSign size={16} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+          <span>{price}</span>
+        </div>
       </div>
       
       <button 
@@ -104,6 +113,16 @@ const FontCard = ({
         <Eye size={16} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
         VIEW FONTS
       </button>
+
+      {affiliateCode && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); onCopyAffiliate?.(); }}
+          className="vintage-btn py-3 text-[12px] w-full flex items-center justify-center gap-2 font-bold tracking-wider"
+        >
+          <Copy size={15} className="opacity-60" />
+          <span>{isCopied ? 'COPIED!' : 'COPY LINK'}</span>
+        </button>
+      )}
     </div>
   </motion.div>
 );
@@ -117,6 +136,8 @@ export default function Home() {
   const [allFonts, setAllFonts] = useState<any[]>([]);
   const [currentTesterFontIndex, setCurrentTesterFontIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
+  const [copiedFontId, setCopiedFontId] = useState<string | null>(null);
 
   const HEADER_IMAGES = [
     '/header.webp',
@@ -211,11 +232,32 @@ export default function Home() {
           setCurrentTesterFontIndex(0);
         }
       }
+
+      // Check affiliate session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: affData } = await supabase
+          .from('affiliates')
+          .select('affiliate_code')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        if (affData?.affiliate_code) {
+          setAffiliateCode(affData.affiliate_code);
+        }
+      }
     } catch (err) {
       console.error("Data retrieval failed:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopyAffiliate = (e: React.MouseEvent, fontId: string) => {
+    e.stopPropagation();
+    if (!affiliateCode) return;
+    navigator.clipboard.writeText(`${window.location.origin}/c/${affiliateCode}/${fontId}`);
+    setCopiedFontId(fontId);
+    setTimeout(() => setCopiedFontId(null), 2000);
   };
 
   const activeTesterFont = allFonts[currentTesterFontIndex] || null;
@@ -328,8 +370,9 @@ export default function Home() {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105" 
                     />
                   )}
-                  <div className="absolute top-3 right-3 bg-vintage-paper/95 px-3 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink">
-                    <span className="text-vintage-accent mr-0.5">$</span>{font.price}
+                  <div className="absolute top-3 right-3 bg-vintage-paper/95 px-2.5 py-1 text-[12px] font-bold tracking-widest border border-vintage-ink flex items-center">
+                    <DollarSign size={14} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                    <span>{font.price}</span>
                   </div>
                 </div>
                 <div className="p-6 text-center grow flex flex-col justify-between gap-4">
@@ -340,18 +383,30 @@ export default function Home() {
                       {Array.isArray(font.font_files) ? font.font_files.length : 1} Styles Available
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); openConfigurator({ ...font, trialFileUrl: font.trial_file_url }); }}
-                      className="vintage-btn py-2 text-[10px] flex items-center justify-center gap-1 group/btn"
-                    >
-                      <Plus size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
-                      ADD
-                    </button>
-                    <button className="vintage-btn btn-reverse py-2 text-[10px] flex items-center justify-center gap-1 group/btn">
-                      <Eye size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
-                      VIEW
-                    </button>
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); openConfigurator({ ...font, trialFileUrl: font.trial_file_url }); }}
+                        className="vintage-btn py-2 text-[10px] flex items-center justify-center gap-1 group/btn"
+                      >
+                        <Plus size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
+                        ADD
+                      </button>
+                      <button className="vintage-btn btn-reverse py-2 text-[10px] flex items-center justify-center gap-1 group/btn">
+                        <Eye size={14} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100" /> 
+                        VIEW
+                      </button>
+                    </div>
+                    {affiliateCode && (
+                      <button 
+                        type="button"
+                        onClick={(e) => handleCopyAffiliate(e, font.id)}
+                        className="vintage-btn py-2 text-[10px] w-full flex items-center justify-center gap-1.5 uppercase font-bold tracking-wider"
+                      >
+                        <Copy size={13} className="opacity-60" />
+                        <span>{copiedFontId === font.id ? 'COPIED!' : 'COPY AFFILIATE LINK'}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -443,11 +498,12 @@ export default function Home() {
 
             {/* Action Footer: Price + Add to Cart + View Detail */}
             <div className="p-6 md:p-8 bg-vintage-ink/3 border-t border-vintage-ink/20 flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="flex items-baseline gap-2">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase font-bold tracking-widest opacity-60">Starting at</span>
-                <span className="text-3xl md:text-4xl font-display text-vintage-ink">
-                  <span className="text-vintage-accent text-2xl mr-0.5">$</span>{activeTesterFont.price || 25}
-                </span>
+                <div className="flex items-center text-vintage-ink font-display text-3xl md:text-4xl">
+                  <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                  <span>{activeTesterFont.price || 25}</span>
+                </div>
               </div>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
@@ -465,6 +521,15 @@ export default function Home() {
                   <Eye size={15} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100 shrink-0" />
                   <span>VIEW FONT</span>
                 </button>
+                {affiliateCode && (
+                  <button 
+                    onClick={(e) => handleCopyAffiliate(e, activeTesterFont.id)}
+                    className="vintage-btn py-3 px-6 text-xs whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-2 font-bold tracking-wider"
+                  >
+                    <Copy size={15} className="opacity-60" />
+                    <span>{copiedFontId === activeTesterFont.id ? 'COPIED!' : 'COPY LINK'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -485,6 +550,14 @@ export default function Home() {
               primaryIndex={font.metadata?.primary_font_index || 0}
               onAdd={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url })}
               onClick={() => navigate(`/font/${font.id}`)}
+              affiliateCode={affiliateCode}
+              isCopied={copiedFontId === font.id}
+              onCopyAffiliate={() => {
+                if (!affiliateCode) return;
+                navigator.clipboard.writeText(`${window.location.origin}/c/${affiliateCode}/${font.id}`);
+                setCopiedFontId(font.id);
+                setTimeout(() => setCopiedFontId(null), 2000);
+              }}
             />
           ))}
         </div>
