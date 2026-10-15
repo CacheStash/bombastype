@@ -4170,6 +4170,28 @@ export default {
           });
         }
 
+        // Record payout in affiliate_payouts table
+        try {
+          await fetch(`${supabaseUrl}/rest/v1/affiliate_payouts`, {
+            method: 'POST',
+            headers: {
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              affiliate_id: affiliate.id,
+              payout_batch_id: paypalBatchId,
+              amount: Number(payoutAmountFormatted),
+              currency: 'USD',
+              paypal_email: paypalEmail,
+              status: 'completed',
+              commission_ids: commissionsToMarkPaid.map(c => c.id),
+              notes: 'Self-Service Instant Withdrawal'
+            })
+          });
+        } catch (_) {}
+
         return new Response(JSON.stringify({
           success: true,
           amount: Number(payoutAmountFormatted),
