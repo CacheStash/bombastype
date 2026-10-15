@@ -34,3 +34,12 @@ sentclaude/
 .env
 .env.*
 !.env.example
+
+# AI Rules, Prompts, & Private Files
+GEMINI.md
+gemini.md
+README.md
+readme.md
+scratch/
+.agents/
+.system_generated/
