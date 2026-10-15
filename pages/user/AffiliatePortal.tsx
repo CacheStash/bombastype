@@ -30,6 +30,8 @@ interface PayoutItem {
   id: string;
   paid_at: string;
   amount: number;
+  fee?: number;
+  net_amount?: number;
   currency: string;
   payout_batch_id: string;
   commission_count: number;
@@ -45,6 +47,8 @@ const AffiliatePortal: React.FC = () => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCoupon, setCopiedCoupon] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'payouts' | 'settings'>('overview');
+  const [salesPage, setSalesPage] = useState(1);
+  const SALES_PER_PAGE = 10;
 
   // Account Settings Form State
   const [editFullName, setEditFullName] = useState('');
@@ -243,16 +247,23 @@ const AffiliatePortal: React.FC = () => {
             .order('paid_at', { ascending: false });
 
           if (pData && pData.length > 0) {
-            setPayoutHistory(pData.map((p: any) => ({
-              id: p.id,
-              paid_at: p.paid_at || p.created_at,
-              amount: Number(p.amount || 0),
-              currency: p.currency || 'USD',
-              payout_batch_id: p.payout_batch_id || 'PP-BATCH',
-              commission_count: Array.isArray(p.commission_ids) ? p.commission_ids.length : 1,
-              status: p.status || 'completed',
-              notes: p.notes
-            })));
+            setPayoutHistory(pData.map((p: any) => {
+              const amount = Number(p.amount || 0);
+              const fee = Number(p.payout_fee ?? p.fee ?? Math.min(20, +(amount * 0.02).toFixed(2)));
+              const netAmount = Number(p.net_amount ?? Math.max(0, +(amount - fee).toFixed(2)));
+              return {
+                id: p.id,
+                paid_at: p.paid_at || p.created_at,
+                amount,
+                fee,
+                net_amount: netAmount,
+                currency: p.currency || 'USD',
+                payout_batch_id: p.payout_batch_id || 'PP-BATCH',
+                commission_count: Array.isArray(p.commission_ids) ? p.commission_ids.length : 1,
+                status: p.status || 'completed',
+                notes: p.notes
+              };
+            }));
           } else {
             synthesizePayoutHistory(loadedComms);
           }
@@ -352,15 +363,22 @@ const AffiliatePortal: React.FC = () => {
       groupMap.set(dateKey, existing);
     });
 
-    const list = Array.from(groupMap.values()).map(g => ({
-      id: g.id,
-      paid_at: g.paid_at,
-      amount: g.amount,
-      currency: 'USD',
-      payout_batch_id: g.reference,
-      commission_count: g.count,
-      status: 'completed'
-    }));
+    const list = Array.from(groupMap.values()).map(g => {
+      const total = Number(g.amount || 0);
+      const fee = +(Math.min(20, total * 0.02)).toFixed(2);
+      const netAmount = +(Math.max(0, total - fee)).toFixed(2);
+      return {
+        id: g.id,
+        paid_at: g.paid_at,
+        amount: total,
+        fee,
+        net_amount: netAmount,
+        currency: 'USD',
+        payout_batch_id: g.reference,
+        commission_count: g.count,
+        status: 'completed'
+      };
+    });
 
     list.sort((a, b) => new Date(b.paid_at).getTime() - new Date(a.paid_at).getTime());
     setPayoutHistory(list);
@@ -641,6 +659,9 @@ const AffiliatePortal: React.FC = () => {
     }
   };
 
+  const totalSalesPages = Math.ceil(commissions.length / SALES_PER_PAGE) || 1;
+  const paginatedCommissions = commissions.slice((salesPage - 1) * SALES_PER_PAGE, salesPage * SALES_PER_PAGE);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans text-vintage-ink">
       
@@ -753,6 +774,233 @@ const AffiliatePortal: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-8 animate-in fade-in duration-300">
           
+          {/* 3 FINANCIAL RECONCILIATION CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-vintage-ink font-sans">
+                <span>Pending (14-Day Hold)</span>
+                <Clock size={16} className="text-amber-800" />
+              </div>
+              <div className="text-3xl font-display font-bold text-amber-900 flex items-center">
+                <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                <span>{pendingAmount.toFixed(2)}</span>
+              </div>
+              <p className="text-xs text-vintage-ink font-sans leading-relaxed">14-day clearance hold against refund disputes</p>
+              {countdownStr ? (
+                <div className="mt-2 pt-2 border-t border-vintage-ink/10 flex items-center gap-1.5 text-[11px] font-mono font-bold text-amber-900">
+                  <Timer size={13} className="text-amber-800" />
+                  <span>Earliest release: {countdownStr}</span>
+                </div>
+              ) : (
+                <div className="mt-2 pt-2 border-t border-vintage-ink/10 text-[10px] text-vintage-ink/50 font-sans italic">
+                  No active clearance holds
+                </div>
+              )}
+            </div>
+
+            <div className="p-5 border border-green-800/30 bg-green-50/50 text-left space-y-2 flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-green-950 font-sans">
+                  <span>Available for Payout</span>
+                  <CheckCircle2 size={16} className="text-green-800" />
+                </div>
+                <div className="text-3xl font-display font-bold text-green-900 flex items-center">
+                  <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                  <span>{readyAmount.toFixed(2)}</span>
+                </div>
+                <p className="text-xs text-vintage-ink font-sans leading-relaxed">
+                  {isQualifiedForPayout 
+                    ? `Passed 14-day clearance. Ready for immediate withdrawal!` 
+                    : `$${remainingForThreshold.toFixed(2)} more needed to unlock withdrawal ($50 min).`}
+                </p>
+              </div>
+
+              <button
+                onClick={handleOpenWithdrawModal}
+                disabled={!isQualifiedForPayout || isWithdrawing}
+                className={`w-full mt-2 vintage-btn py-2 px-3 text-xs uppercase font-bold tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  isQualifiedForPayout
+                    ? 'bg-vintage-accent! text-white! hover:bg-vintage-ink! cursor-pointer'
+                    : 'bg-vintage-ink/10 text-vintage-ink/40 border-vintage-ink/20 cursor-not-allowed shadow-none'
+                }`}
+                title={isQualifiedForPayout ? "Withdraw cleared funds instantly to PayPal" : "Requires $50.00 minimum cleared balance"}
+              >
+                {isWithdrawing ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" /> Transferring...
+                  </>
+                ) : (
+                  <>
+                    <Zap size={13} /> {isQualifiedForPayout ? `Instant Withdraw ($${readyAmount.toFixed(2)})` : `Withdraw ($50 Min)`}
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-vintage-ink font-sans">
+                <span>Total Paid Out</span>
+                <CircleDollarSign size={16} className="text-vintage-ink" />
+              </div>
+              <div className="text-3xl font-display font-bold text-vintage-ink flex items-center">
+                <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                <span>{totalPaidAmount.toFixed(2)}</span>
+              </div>
+              <p className="text-xs text-vintage-ink font-sans leading-relaxed">Lifetime payouts received to PayPal</p>
+            </div>
+          </div>
+
+          {/* 14-DAY WARRANTY HOLD CLARITY BANNER */}
+          <div className="border border-vintage-ink/20 bg-amber-50/70 p-4 flex items-start gap-3">
+            <Clock size={20} className="text-amber-800 shrink-0 mt-0.5" />
+            <div className="space-y-1 font-sans grow">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">
+                  Why is there a 14-Day Clearance Period on new sales?
+                </span>
+                {countdownStr && (
+                  <span className="text-[11px] font-mono font-bold bg-amber-100 text-amber-900 px-2 py-0.5 border border-amber-300 inline-flex items-center gap-1 shrink-0 self-start sm:self-auto">
+                    <Timer size={12} /> Next Release: {countdownStr}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-amber-900/90 leading-relaxed max-w-3xl">
+                To protect our creator network and partner payouts against fraudulent card use, unauthorized disputes, and chargebacks, every new sale is held in a 14-day warranty clearance window. Once the 14 days expire without customer dispute, funds automatically clear into <strong>Ready For Payout</strong> and can be withdrawn immediately to your PayPal account.
+              </p>
+            </div>
+          </div>
+
+          {/* REFERRAL SALES & COMMISSION LEDGER (MOVED TO TOP WITH AUTO-PAGINATION) */}
+          <div className="border border-vintage-ink/20 bg-vintage-paper overflow-hidden">
+            <div className="p-4 border-b border-vintage-ink/20 bg-vintage-paper flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
+                  Referral Sales & Commission Ledger
+                </h3>
+                <span className="text-xs text-vintage-ink/80 font-sans">
+                  Transactions referred via your vanity slug or promo coupon code
+                </span>
+              </div>
+              <span className="text-xs font-mono font-bold px-3 py-1 bg-white border border-vintage-ink">
+                {commissions.length} Sales Recorded
+              </span>
+            </div>
+
+            {commissions.length === 0 ? (
+              <div className="p-12 text-center space-y-2">
+                <AlertCircle size={32} className="mx-auto text-vintage-ink/40" />
+                <p className="text-sm font-bold text-vintage-ink font-sans">No referred orders recorded yet</p>
+                <p className="text-xs text-vintage-ink/80 max-w-sm mx-auto font-sans leading-relaxed">
+                  Share your vanity link or discount coupon on your social platforms and portfolio to begin recording 20% net earnings.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-vintage-ink/20 bg-vintage-ink/3 font-mono uppercase text-xs font-bold text-vintage-ink">
+                      <th className="p-3">Date</th>
+                      <th className="p-3">Typeface / Order</th>
+                      <th className="p-3">Attribution</th>
+                      <th className="p-3 text-right">Gross</th>
+                      <th className="p-3 text-right">Net Store</th>
+                      <th className="p-3 text-right">Your 20% Net</th>
+                      <th className="p-3 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-vintage-ink/15 font-mono">
+                    {paginatedCommissions.map((comm) => (
+                      <tr key={comm.id} className="hover:bg-vintage-ink/5 transition-colors">
+                        <td className="p-3 text-vintage-ink text-xs whitespace-nowrap font-medium">
+                          {new Date(comm.created_at).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </td>
+                        <td className="p-3">
+                          <span className="font-bold text-vintage-ink block font-sans text-xs sm:text-sm">
+                            {comm.font_name || 'Font License'}
+                          </span>
+                          <span className="text-xs text-vintage-ink/70 truncate block max-w-[200px]">
+                            ID: {comm.order_id}
+                          </span>
+                        </td>
+                        <td className="p-3 whitespace-nowrap">
+                          {comm.coupon_code || comm.attribution_type === 'coupon' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-purple-800/30 text-purple-900 bg-purple-50 font-sans">
+                              <Tag size={10} className="text-vintage-accent" /> Coupon: {comm.coupon_code || 'PROMO'}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-vintage-ink/20 text-vintage-ink/80 bg-vintage-ink/5 font-sans">
+                              <Share2 size={10} className="text-vintage-ink/60" /> Shared Link
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right text-vintage-ink font-semibold">
+                          ${Number(comm.gross_amount || 0).toFixed(2)}
+                        </td>
+                        <td className="p-3 text-right text-vintage-ink/80 font-medium">
+                          ${Number(comm.net_store_amount || 0).toFixed(2)}
+                        </td>
+                        <td className="p-3 text-right font-bold text-vintage-accent text-sm">
+                          +${Number(comm.commission_amount || 0).toFixed(2)}
+                        </td>
+                        <td className="p-3 text-center">
+                          {comm.status === 'pending_clearance' && (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-amber-800/40 text-amber-900 bg-amber-50">
+                              <Clock size={11} /> Holding
+                            </span>
+                          )}
+                          {comm.status === 'approved' && (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800/40 text-green-900 bg-green-50">
+                              <CheckCircle2 size={11} /> Cleared
+                            </span>
+                          )}
+                          {comm.status === 'paid' && (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-blue-800/40 text-blue-900 bg-blue-50">
+                              <DollarSign size={11} /> Paid Out
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* AUTO PAGINATION CONTROLS */}
+                {commissions.length > SALES_PER_PAGE && (
+                  <div className="p-3 border-t border-vintage-ink/20 bg-vintage-paper flex flex-col sm:flex-row items-center justify-between gap-2 font-sans text-xs">
+                    <span className="text-vintage-ink/75">
+                      Showing <strong className="text-vintage-ink">{(salesPage - 1) * SALES_PER_PAGE + 1}</strong> to <strong className="text-vintage-ink">{Math.min(salesPage * SALES_PER_PAGE, commissions.length)}</strong> of <strong className="text-vintage-ink">{commissions.length}</strong> sales
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setSalesPage(p => Math.max(1, p - 1))}
+                        disabled={salesPage === 1}
+                        className="px-2.5 py-1 border border-vintage-ink/30 bg-white hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer uppercase font-bold text-[10px]"
+                      >
+                        Prev
+                      </button>
+                      <span className="px-2 font-mono font-bold text-vintage-ink text-[11px]">
+                        Page {salesPage} of {totalSalesPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSalesPage(p => Math.min(totalSalesPages, p + 1))}
+                        disabled={salesPage >= totalSalesPages}
+                        className="px-2.5 py-1 border border-vintage-ink/30 bg-white hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer uppercase font-bold text-[10px]"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* DUAL PROMO TOOLS: VANITY LINK + AUDIENCE COUPON */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
@@ -989,203 +1237,6 @@ const AffiliatePortal: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* 14-DAY WARRANTY HOLD CLARITY BANNER */}
-          <div className="border border-vintage-ink/20 bg-amber-50/70 p-4 flex items-start gap-3">
-            <Clock size={20} className="text-amber-800 shrink-0 mt-0.5" />
-            <div className="space-y-1 font-sans grow">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">
-                  Why is there a 14-Day Clearance Period on new sales?
-                </span>
-                {countdownStr && (
-                  <span className="text-[11px] font-mono font-bold bg-amber-100 text-amber-900 px-2 py-0.5 border border-amber-300 inline-flex items-center gap-1 shrink-0 self-start sm:self-auto">
-                    <Timer size={12} /> Next Release: {countdownStr}
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-amber-900/90 leading-relaxed max-w-3xl">
-                To protect our creator network and partner payouts against fraudulent card use, unauthorized disputes, and chargebacks, every new sale is held in a 14-day warranty clearance window. Once the 14 days expire without customer dispute, funds automatically clear into <strong>Ready For Payout</strong> and can be withdrawn immediately to your PayPal account.
-              </p>
-            </div>
-          </div>
-
-          {/* 3 FINANCIAL RECONCILIATION CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-vintage-ink font-sans">
-                <span>Pending (14-Day Hold)</span>
-                <Clock size={16} className="text-amber-800" />
-              </div>
-              <div className="text-3xl font-display font-bold text-amber-900 flex items-center">
-                <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
-                <span>{pendingAmount.toFixed(2)}</span>
-              </div>
-              <p className="text-xs text-vintage-ink font-sans leading-relaxed">14-day clearance hold against refund disputes</p>
-              {countdownStr ? (
-                <div className="mt-2 pt-2 border-t border-vintage-ink/10 flex items-center gap-1.5 text-[11px] font-mono font-bold text-amber-900">
-                  <Timer size={13} className="text-amber-800" />
-                  <span>Earliest release: {countdownStr}</span>
-                </div>
-              ) : (
-                <div className="mt-2 pt-2 border-t border-vintage-ink/10 text-[10px] text-vintage-ink/50 font-sans italic">
-                  No active clearance holds
-                </div>
-              )}
-            </div>
-
-            <div className="p-5 border border-green-800/30 bg-green-50/50 text-left space-y-2 flex flex-col justify-between">
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-green-950 font-sans">
-                  <span>Available for Payout</span>
-                  <CheckCircle2 size={16} className="text-green-800" />
-                </div>
-                <div className="text-3xl font-display font-bold text-green-900 flex items-center">
-                  <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
-                  <span>{readyAmount.toFixed(2)}</span>
-                </div>
-                <p className="text-xs text-vintage-ink font-sans leading-relaxed">
-                  {isQualifiedForPayout 
-                    ? `Passed 14-day clearance. Ready for immediate withdrawal!` 
-                    : `$${remainingForThreshold.toFixed(2)} more needed to unlock withdrawal ($50 min).`}
-                </p>
-              </div>
-
-              <button
-                onClick={handleOpenWithdrawModal}
-                disabled={!isQualifiedForPayout || isWithdrawing}
-                className={`w-full mt-2 vintage-btn py-2 px-3 text-xs uppercase font-bold tracking-wider flex items-center justify-center gap-2 transition-all ${
-                  isQualifiedForPayout
-                    ? 'bg-vintage-accent! text-white! hover:bg-vintage-ink! cursor-pointer'
-                    : 'bg-vintage-ink/10 text-vintage-ink/40 border-vintage-ink/20 cursor-not-allowed shadow-none'
-                }`}
-                title={isQualifiedForPayout ? "Withdraw cleared funds instantly to PayPal" : "Requires $50.00 minimum cleared balance"}
-              >
-                {isWithdrawing ? (
-                  <>
-                    <RefreshCw size={13} className="animate-spin" /> Transferring...
-                  </>
-                ) : (
-                  <>
-                    <Zap size={13} /> {isQualifiedForPayout ? `Instant Withdraw ($${readyAmount.toFixed(2)})` : `Withdraw ($50 Min)`}
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="p-5 border border-vintage-ink/20 bg-vintage-paper text-left space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-vintage-ink font-sans">
-                <span>Total Paid Out</span>
-                <CircleDollarSign size={16} className="text-vintage-ink" />
-              </div>
-              <div className="text-3xl font-display font-bold text-vintage-ink flex items-center">
-                <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
-                <span>{totalPaidAmount.toFixed(2)}</span>
-              </div>
-              <p className="text-xs text-vintage-ink font-sans leading-relaxed">Lifetime payouts received to PayPal</p>
-            </div>
-          </div>
-
-          {/* COMMISSIONS & SALES TRANSACTION TABLE */}
-          <div className="border border-vintage-ink/20 bg-vintage-paper overflow-hidden">
-            <div className="p-4 border-b border-vintage-ink/20 bg-vintage-paper flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-vintage-ink font-sans">
-                  Referred Orders & Commissions
-                </h3>
-                <span className="text-xs text-vintage-ink/80 font-sans">
-                  Transactions referred via your vanity slug or promo coupon code
-                </span>
-              </div>
-              <span className="text-xs font-mono font-bold px-3 py-1 bg-white border border-vintage-ink">
-                {commissions.length} Sales Recorded
-              </span>
-            </div>
-
-            {commissions.length === 0 ? (
-              <div className="p-12 text-center space-y-2">
-                <AlertCircle size={32} className="mx-auto text-vintage-ink/40" />
-                <p className="text-sm font-bold text-vintage-ink font-sans">No referred orders recorded yet</p>
-                <p className="text-xs text-vintage-ink/80 max-w-sm mx-auto font-sans leading-relaxed">
-                  Share your vanity link or discount coupon on your social platforms and portfolio to begin recording 20% net earnings.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-vintage-ink/20 bg-vintage-ink/3 font-mono uppercase text-xs font-bold text-vintage-ink">
-                      <th className="p-3">Date</th>
-                      <th className="p-3">Typeface / Order</th>
-                      <th className="p-3">Attribution</th>
-                      <th className="p-3 text-right">Gross</th>
-                      <th className="p-3 text-right">Net Store</th>
-                      <th className="p-3 text-right">Your 20% Net</th>
-                      <th className="p-3 text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-vintage-ink/15 font-mono">
-                    {commissions.map((comm) => (
-                      <tr key={comm.id} className="hover:bg-vintage-ink/5 transition-colors">
-                        <td className="p-3 text-vintage-ink text-xs whitespace-nowrap font-medium">
-                          {new Date(comm.created_at).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </td>
-                        <td className="p-3">
-                          <span className="font-bold text-vintage-ink block font-sans text-xs sm:text-sm">
-                            {comm.font_name || 'Font License'}
-                          </span>
-                          <span className="text-xs text-vintage-ink/70 truncate block max-w-[200px]">
-                            ID: {comm.order_id}
-                          </span>
-                        </td>
-                        <td className="p-3 whitespace-nowrap">
-                          {comm.coupon_code || comm.attribution_type === 'coupon' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-purple-800/30 text-purple-900 bg-purple-50 font-sans">
-                              <Tag size={10} className="text-vintage-accent" /> Coupon: {comm.coupon_code || 'PROMO'}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 border border-vintage-ink/20 text-vintage-ink/80 bg-vintage-ink/5 font-sans">
-                              <Share2 size={10} className="text-vintage-ink/60" /> Shared Link
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3 text-right text-vintage-ink font-semibold">
-                          ${Number(comm.gross_amount || 0).toFixed(2)}
-                        </td>
-                        <td className="p-3 text-right text-vintage-ink/80 font-medium">
-                          ${Number(comm.net_store_amount || 0).toFixed(2)}
-                        </td>
-                        <td className="p-3 text-right font-bold text-vintage-accent text-sm">
-                          +${Number(comm.commission_amount || 0).toFixed(2)}
-                        </td>
-                        <td className="p-3 text-center">
-                          {comm.status === 'pending_clearance' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-amber-800/40 text-amber-900 bg-amber-50">
-                              <Clock size={11} /> Holding
-                            </span>
-                          )}
-                          {comm.status === 'approved' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800/40 text-green-900 bg-green-50">
-                              <CheckCircle2 size={11} /> Cleared
-                            </span>
-                          )}
-                          {comm.status === 'paid' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-blue-800/40 text-blue-900 bg-blue-50">
-                              <DollarSign size={11} /> Paid Out
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </div>
       )}
 
@@ -1376,45 +1427,57 @@ const AffiliatePortal: React.FC = () => {
                       <th className="p-3">Payout Date</th>
                       <th className="p-3">Reference / Batch ID</th>
                       <th className="p-3">Destination</th>
-                      <th className="p-3 text-right">Amount</th>
+                      <th className="p-3 text-right">Gross Sent</th>
+                      <th className="p-3 text-right">PayPal Fee (2% max $20)</th>
+                      <th className="p-3 text-right">Net Received</th>
                       <th className="p-3 text-center">Orders Settled</th>
                       <th className="p-3 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-vintage-ink/15 font-mono">
-                    {payoutHistory.map((p) => (
-                      <tr key={p.id} className="hover:bg-vintage-ink/5 transition-colors">
-                        <td className="p-3 text-vintage-ink text-xs whitespace-nowrap font-medium">
-                          {new Date(p.paid_at).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </td>
-                        <td className="p-3 font-mono font-bold text-vintage-accent truncate max-w-[180px]">
-                          {p.payout_batch_id}
-                        </td>
-                        <td className="p-3 text-vintage-ink truncate max-w-[200px] font-medium">
-                          {affiliate.paypal_email}
-                        </td>
-                        <td className="p-3 text-right">
-                          <div className="font-bold text-green-900 text-sm">
-                            ${p.amount.toFixed(2)} {p.currency}
-                          </div>
-                          <div className="text-[10px] text-vintage-ink/60 font-sans">
-                            Gross sent (PayPal fee may apply)
-                          </div>
-                        </td>
-                        <td className="p-3 text-center font-bold">
-                          {p.commission_count}
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800/40 text-green-900 bg-green-50">
-                            <Check size={11} /> Completed
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {payoutHistory.map((p) => {
+                      const fee = p.fee ?? Math.min(20, +(p.amount * 0.02).toFixed(2));
+                      const netReceived = p.net_amount ?? Math.max(0, +(p.amount - fee).toFixed(2));
+                      return (
+                        <tr key={p.id} className="hover:bg-vintage-ink/5 transition-colors">
+                          <td className="p-3 text-vintage-ink text-xs whitespace-nowrap font-medium">
+                            {new Date(p.paid_at).toLocaleDateString(undefined, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </td>
+                          <td className="p-3 font-mono font-bold text-vintage-accent truncate max-w-[180px]">
+                            {p.payout_batch_id}
+                          </td>
+                          <td className="p-3 text-vintage-ink truncate max-w-[200px] font-medium">
+                            {affiliate.paypal_email}
+                          </td>
+                          <td className="p-3 text-right font-medium text-vintage-ink">
+                            ${p.amount.toFixed(2)}
+                          </td>
+                          <td className="p-3 text-right font-mono font-medium text-amber-900">
+                            -${fee.toFixed(2)}
+                          </td>
+                          <td className="p-3 text-right">
+                            <span className="font-bold text-green-900 text-sm font-mono">
+                              ${netReceived.toFixed(2)}
+                            </span>
+                            <span className="text-[10px] text-vintage-ink/60 font-sans block">
+                              {p.currency}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center font-bold">
+                            {p.commission_count}
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800/40 text-green-900 bg-green-50">
+                              <Check size={11} /> Completed
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -4365,8 +4365,7 @@ export default {
               },
               body: JSON.stringify({
                 full_name: trimmedFullName,
-                address: fullAddress || null,
-                updated_at: new Date().toISOString()
+                address: fullAddress || null
               })
             });
           } else {
@@ -4381,8 +4380,7 @@ export default {
                 id: user.id,
                 email: user.email,
                 full_name: trimmedFullName,
-                address: fullAddress || null,
-                updated_at: new Date().toISOString()
+                address: fullAddress || null
               })
             });
           }

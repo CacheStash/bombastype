@@ -4,13 +4,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Library, Settings, LogOut, ArrowLeft, Menu, X, Mail, Share2 } from 'lucide-react';
+import { Library, Settings, LogOut, ArrowLeft, Menu, X, Mail, Share2, LifeBuoy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import MyFontsHistory from './MyFontsHistory';
 import AccountSettings from './AccountSettings'; 
 import UserMessages from './UserMessages';
 import AffiliatePortal from './AffiliatePortal';
+import Support from './Support';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('library');
@@ -127,7 +128,8 @@ const UserDashboard = () => {
           {[
             { id: 'library', label: 'Purchase History', icon: Library },
             { id: 'settings', label: 'Security & Access', icon: Settings },
-            ...(isAffiliateAllowed ? [{ id: 'affiliate', label: 'Affiliate Portal', icon: Share2 }] : [])
+            ...(isAffiliateAllowed ? [{ id: 'affiliate', label: 'Affiliate Portal', icon: Share2 }] : []),
+            { id: 'support', label: 'Support', icon: LifeBuoy }
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -179,6 +181,7 @@ const UserDashboard = () => {
           {activeTab === 'library' && <MyFontsHistory />}
           {activeTab === 'settings' && <AccountSettings />}
           {activeTab === 'affiliate' && <AffiliatePortal />}
+          {activeTab === 'support' && <Support />}
         </div>
       </main>
     </div>
