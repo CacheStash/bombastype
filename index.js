@@ -2550,7 +2550,22 @@ export default {
                       const commissionAmount = parseFloat((netStore * rate).toFixed(2));
 
                       if (commissionAmount > 0) {
-                        const isDummyTestAffiliate = (aff.affiliate_code && aff.affiliate_code.toUpperCase().includes('GOTRAINER')) || (aff.paypal_email && aff.paypal_email.toLowerCase().includes('gotrainer'));
+                        let isDummyTestAffiliate = false;
+                        if (aff.user_id) {
+                          try {
+                            const uRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${aff.user_id}`, {
+                              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+                            });
+                            if (uRes.ok) {
+                              const uData = await uRes.json();
+                              if ((uData?.email || '').toLowerCase().trim() === 'gotrainer19@gmail.com') {
+                                isDummyTestAffiliate = true;
+                              }
+                            }
+                          } catch (uErr) {
+                            console.error('Error verifying affiliate auth user email:', uErr);
+                          }
+                        }
                         const holdDays = isDummyTestAffiliate ? -14 : 14;
                         const clearedAtDate = new Date(Date.now() + holdDays * 24 * 60 * 60 * 1000).toISOString();
                         const commStatus = isDummyTestAffiliate ? 'approved' : 'pending_clearance';
@@ -3056,6 +3071,48 @@ export default {
       }
     }
 
+    // --- 6F2. API Admin Affiliate User Mapping (Look up registered account emails) ---
+    if (url.pathname === '/api/admin/affiliate-users' && request.method === 'GET') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        const userMap = {};
+
+        if (supabaseUrl && serviceRoleKey) {
+          const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=1000`, {
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+          });
+          if (authRes.ok) {
+            const authData = await authRes.json();
+            const userList = authData?.users || [];
+            userList.forEach(u => {
+              if (u.id && u.email) {
+                userMap[u.id] = u.email;
+              }
+            });
+          }
+        }
+
+        return new Response(JSON.stringify({ success: true, users: userMap }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
     // --- 6G. API Admin Broadcast Data (Audience, Quota & Campaign State) ---
     if (url.pathname === '/api/admin/broadcast-data' && request.method === 'GET') {
       try {
@@ -3081,17 +3138,25 @@ export default {
         const safetyReserve = quotaData.safetyReserve || 15;
         const allowedToday = quotaData.allowedToday ?? Math.max(0, totalRemaining - safetyReserve);
 
-        // 2. Fetch audience numbers from fontbuyer and fontsubscribers
+        // 2. Fetch audience numbers from fontbuyer, fontsubscribers, and affiliates
         let buyers = [];
         let subscribers = [];
+        let affiliates = [];
+        let authUsers = [];
         let campaigns = [];
 
         if (supabaseUrl && serviceRoleKey) {
-          const [bRes, sRes, cRes] = await Promise.all([
+          const [bRes, sRes, affRes, authRes, cRes] = await Promise.all([
             fetch(`${supabaseUrl}/rest/v1/fontbuyer?select=email,full_name`, {
               headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
             }),
             fetch(`${supabaseUrl}/rest/v1/fontsubscribers?status=eq.active&select=email`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            }),
+            fetch(`${supabaseUrl}/rest/v1/affiliates?status=eq.active&select=user_id,paypal_email`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            }),
+            fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=1000`, {
               headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
             }),
             fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.broadcast_campaigns&select=value`, {
@@ -3101,6 +3166,11 @@ export default {
 
           if (bRes.ok) buyers = await bRes.json();
           if (sRes.ok) subscribers = await sRes.json();
+          if (affRes.ok) affiliates = await affRes.json();
+          if (authRes.ok) {
+            const aData = await authRes.json();
+            authUsers = aData?.users || [];
+          }
           if (cRes.ok) {
             const cData = await cRes.json();
             if (cData?.[0]?.value) {
@@ -3109,9 +3179,23 @@ export default {
           }
         }
 
+        const authUserEmailMap = new Map((authUsers || []).map(u => [u.id, (u.email || '').trim().toLowerCase()]));
         const uniqueBuyers = Array.from(new Set((buyers || []).map(b => (b.email || '').trim().toLowerCase()).filter(e => e)));
         const uniqueSubscribers = Array.from(new Set((subscribers || []).map(s => (s.email || '').trim().toLowerCase()).filter(e => e)));
-        const allUniqueAudience = Array.from(new Set([...uniqueBuyers, ...uniqueSubscribers]));
+        const buyerSet = new Set(uniqueBuyers);
+
+        // Affiliate audience: include registered auth email and paypal email, but EXCLUDE anyone already in uniqueBuyers!
+        const rawAffiliateEmails = new Set();
+        (affiliates || []).forEach(a => {
+          if (a.paypal_email) rawAffiliateEmails.add(a.paypal_email.trim().toLowerCase());
+          if (a.user_id && authUserEmailMap.has(a.user_id)) {
+            const uMail = authUserEmailMap.get(a.user_id);
+            if (uMail) rawAffiliateEmails.add(uMail);
+          }
+        });
+        const uniqueAffiliates = Array.from(rawAffiliateEmails).filter(e => e && !buyerSet.has(e));
+
+        const allUniqueAudience = Array.from(new Set([...uniqueBuyers, ...uniqueSubscribers, ...uniqueAffiliates]));
 
         return new Response(JSON.stringify({
           success: true,
@@ -3124,6 +3208,7 @@ export default {
           audience: {
             buyersCount: uniqueBuyers.length,
             subscribersCount: uniqueSubscribers.length,
+            affiliatesCount: uniqueAffiliates.length,
             totalUniqueCount: allUniqueAudience.length
           },
           campaigns: Array.isArray(campaigns) ? campaigns : []
@@ -3199,10 +3284,44 @@ export default {
             promises.push(Promise.resolve([]));
           }
 
-          const [buyerRows, subRows] = await Promise.all(promises);
+          if (audience === 'all' || audience === 'affiliates') {
+            promises.push(
+              Promise.all([
+                fetch(`${supabaseUrl}/rest/v1/affiliates?status=eq.active&select=user_id,paypal_email`, {
+                  headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+                }).then(r => r.ok ? r.json() : []),
+                fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=1000`, {
+                  headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+                }).then(r => r.ok ? r.json() : { users: [] }),
+                fetch(`${supabaseUrl}/rest/v1/fontbuyer?select=email`, {
+                  headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+                }).then(r => r.ok ? r.json() : [])
+              ]).then(([affRows, authRes, buyerCheckRows]) => {
+                const buyerEmailsSet = new Set((buyerCheckRows || []).map(b => (b.email || '').trim().toLowerCase()));
+                const authUserMap = new Map((authRes?.users || []).map(u => [u.id, (u.email || '').trim().toLowerCase()]));
+                const affEmails = [];
+                (affRows || []).forEach(a => {
+                  if (a.paypal_email) {
+                    const pe = a.paypal_email.trim().toLowerCase();
+                    if (!buyerEmailsSet.has(pe)) affEmails.push(pe);
+                  }
+                  if (a.user_id && authUserMap.has(a.user_id)) {
+                    const ue = authUserMap.get(a.user_id);
+                    if (ue && !buyerEmailsSet.has(ue)) affEmails.push(ue);
+                  }
+                });
+                return affEmails;
+              })
+            );
+          } else {
+            promises.push(Promise.resolve([]));
+          }
+
+          const [buyerRows, subRows, affEmailsList] = await Promise.all(promises);
           const emailSet = new Set();
           (buyerRows || []).forEach(b => { if (b.email) emailSet.add(b.email.trim().toLowerCase()); });
           (subRows || []).forEach(s => { if (s.email) emailSet.add(s.email.trim().toLowerCase()); });
+          (affEmailsList || []).forEach(e => { if (e) emailSet.add(e.trim().toLowerCase()); });
           targetEmails = Array.from(emailSet);
         }
 

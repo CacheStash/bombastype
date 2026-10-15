@@ -494,7 +494,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                   : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5'
               }`}
             >
-              Discount Coupons
+              Store Coupons ({coupons.filter(c => !c.affiliate_id).length})
             </button>
             <button 
               type="button"
@@ -614,14 +614,18 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
             </button>
           </div>
 
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Discount Coupons & Promo Codes</h3>
-          {coupons.length === 0 ? (
-            <div className="p-20 border border-dashed border-vintage-ink/20 text-center">
-              <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">No coupons generated yet.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {coupons.map(c => (
+          {(() => {
+            const storeCoupons = coupons.filter(c => !c.affiliate_id);
+            return (
+              <>
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-vintage-ink/80 mb-6 px-1">Store Coupons & Promo Codes</h3>
+                {storeCoupons.length === 0 ? (
+                  <div className="p-20 border border-dashed border-vintage-ink/20 text-center">
+                    <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-30 italic">No store coupons generated yet.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {storeCoupons.map(c => (
                 <div key={c.id} className="vintage-card bg-white/40 flex flex-col justify-between group hover:border-vintage-accent transition-all duration-500">
                   <div>
                     <div className="flex justify-between items-start mb-6">
@@ -656,6 +660,9 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
               ))}
             </div>
           )}
+              </>
+            );
+          })()}
         </div>
       )}
 

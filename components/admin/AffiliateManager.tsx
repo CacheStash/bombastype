@@ -73,6 +73,7 @@ const AffiliateManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'due_payouts' | 'partners' | 'commissions' | 'history'>('due_payouts');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [userEmailsMap, setUserEmailsMap] = useState<Record<string, string>>({});
 
   // Live PayPal balance state
   const [paypalLiveBalance, setPaypalLiveBalance] = useState<{
@@ -134,6 +135,24 @@ const AffiliateManager: React.FC = () => {
       ]);
       
       const loadedAffiliates = affData || [];
+
+      // Fetch registered account emails for each affiliate
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const uRes = await fetch('/api/admin/affiliate-users', {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+          if (uRes.ok) {
+            const uData = await uRes.json() as any;
+            if (uData.success && uData.users) {
+              setUserEmailsMap(uData.users);
+            }
+          }
+        }
+      } catch (uErr) {
+        console.warn("Could not load affiliate user emails:", uErr);
+      }
       
       // Query font_history metadata for attribution details
       const orderIds = (commData || []).map(c => c.order_id).filter(Boolean);
@@ -760,6 +779,9 @@ const AffiliateManager: React.FC = () => {
                       <tr key={item.affiliate.id} className="hover:bg-green-50/50 transition-colors">
                         <td className="p-3 border-r border-vintage-ink/20 font-bold text-vintage-accent font-sans">
                           {item.affiliate.affiliate_code}
+                          <span className="block font-mono text-[10px] font-normal text-vintage-ink/70">
+                            {userEmailsMap[item.affiliate.user_id] || item.affiliate.paypal_email}
+                          </span>
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[200px] text-vintage-ink">
                           {item.affiliate.paypal_email}
@@ -850,6 +872,9 @@ const AffiliateManager: React.FC = () => {
                         <tr key={item.affiliate.id} className="hover:bg-vintage-background/40 transition-colors">
                           <td className="p-3 border-r border-vintage-ink/20 font-bold font-sans text-vintage-ink">
                             {item.affiliate.affiliate_code}
+                            <span className="block font-mono text-[10px] font-normal text-vintage-ink/70">
+                              {userEmailsMap[item.affiliate.user_id] || item.affiliate.paypal_email}
+                            </span>
                           </td>
                           <td className="p-3 border-r border-vintage-ink/20 font-bold truncate max-w-[200px] text-vintage-ink">
                             {item.affiliate.paypal_email}
@@ -924,6 +949,9 @@ const AffiliateManager: React.FC = () => {
                       <tr key={a.id} className="hover:bg-vintage-background/40 transition-colors">
                         <td className="p-3 border-r border-vintage-ink/20 font-bold text-vintage-accent font-sans">
                           {a.affiliate_code}
+                          <span className="block font-mono text-[10px] font-normal text-vintage-ink/70">
+                            {userEmailsMap[a.user_id] || a.paypal_email}
+                          </span>
                         </td>
                         <td className="p-3 border-r border-vintage-ink/20 font-mono">
                           <a 
@@ -1222,6 +1250,7 @@ const AffiliateManager: React.FC = () => {
               <div>
                 <h4 className="text-[10px] font-bold uppercase tracking-widest text-vintage-ink/60 mb-1">Disbursement Details</h4>
                 <div className="space-y-1">
+                  <p><span className="font-bold">User Account:</span> <span className="font-mono font-bold text-vintage-ink">{userEmailsMap[inspectedPartner.user_id] || inspectedPartner.paypal_email}</span></p>
                   <p><span className="font-bold">PayPal Account:</span> <span className="font-mono font-bold text-vintage-accent">{inspectedPartner.paypal_email}</span></p>
                   <p><span className="font-bold">Telephone:</span> {inspectedPartner.phone_code} {inspectedPartner.phone_number || '—'}</p>
                   <p><span className="font-bold">Net Commission Rate:</span> {(Number(inspectedPartner.commission_rate || 0.20) * 100).toFixed(0)}%</p>
