@@ -3186,14 +3186,11 @@ export default {
         const uniqueSubscribers = Array.from(new Set((subscribers || []).map(s => (s.email || '').trim().toLowerCase()).filter(e => e)));
         const buyerSet = new Set(uniqueBuyers);
 
-        // Affiliate audience: include registered auth email and paypal email, but EXCLUDE anyone already in uniqueBuyers!
+        // Affiliate audience: pick single primary contact email per partner (prefer auth email, fallback paypal_email), and EXCLUDE anyone already in uniqueBuyers!
         const rawAffiliateEmails = new Set();
         (affiliates || []).forEach(a => {
-          if (a.paypal_email) rawAffiliateEmails.add(a.paypal_email.trim().toLowerCase());
-          if (a.user_id && authUserEmailMap.has(a.user_id)) {
-            const uMail = authUserEmailMap.get(a.user_id);
-            if (uMail) rawAffiliateEmails.add(uMail);
-          }
+          const contactEmail = (a.user_id && authUserEmailMap.get(a.user_id)) || (a.paypal_email ? a.paypal_email.trim().toLowerCase() : null);
+          if (contactEmail) rawAffiliateEmails.add(contactEmail);
         });
         const uniqueAffiliates = Array.from(rawAffiliateEmails).filter(e => e && !buyerSet.has(e));
 
@@ -3303,13 +3300,9 @@ export default {
                 const authUserMap = new Map((authRes?.users || []).map(u => [u.id, (u.email || '').trim().toLowerCase()]));
                 const affEmails = [];
                 (affRows || []).forEach(a => {
-                  if (a.paypal_email) {
-                    const pe = a.paypal_email.trim().toLowerCase();
-                    if (!buyerEmailsSet.has(pe)) affEmails.push(pe);
-                  }
-                  if (a.user_id && authUserMap.has(a.user_id)) {
-                    const ue = authUserMap.get(a.user_id);
-                    if (ue && !buyerEmailsSet.has(ue)) affEmails.push(ue);
+                  const contactEmail = (a.user_id && authUserMap.get(a.user_id)) || (a.paypal_email ? a.paypal_email.trim().toLowerCase() : null);
+                  if (contactEmail && !buyerEmailsSet.has(contactEmail) && !affEmails.includes(contactEmail)) {
+                    affEmails.push(contactEmail);
                   }
                 });
                 return affEmails;
@@ -4534,7 +4527,7 @@ export default {
         }
 
         const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
-        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_ANON_KEY;
 
         // Determine Sandbox vs Live mode
         let isSandbox = true;
@@ -4560,10 +4553,12 @@ export default {
 
         if (!clientId || !clientSecret) {
           return new Response(JSON.stringify({ 
+            success: false,
             error: "PAYPAL_CREDENTIALS_MISSING", 
-            message: "PayPal integration credentials are not configured on the server." 
+            message: "PayPal integration credentials are not configured on the server.",
+            is_sandbox: isSandbox
           }), {
-            status: 500,
+            status: 200,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
           });
         }
@@ -4583,7 +4578,15 @@ export default {
 
         const tokenData = await tokenRes.json();
         if (!tokenRes.ok || !tokenData.access_token) {
-          throw new Error(`PayPal OAuth Failed (${tokenRes.status}): ${tokenData.error_description || tokenData.error || 'Invalid credentials'}`);
+          return new Response(JSON.stringify({
+            success: false,
+            error: "PAYPAL_OAUTH_FAILED",
+            message: `PayPal OAuth Failed (${tokenRes.status}): ${tokenData.error_description || tokenData.error || 'Invalid credentials'}`,
+            is_sandbox: isSandbox
+          }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
         }
         const accessToken = tokenData.access_token;
 
@@ -4597,7 +4600,15 @@ export default {
 
         if (!balRes.ok) {
           const errText = await balRes.text();
-          throw new Error(`PayPal Balance API Failed (${balRes.status}): ${errText}`);
+          return new Response(JSON.stringify({
+            success: false,
+            error: "PAYPAL_BALANCE_API_ERROR",
+            message: `PayPal Balance API (${balRes.status}): ${errText}`,
+            is_sandbox: isSandbox
+          }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
         }
 
         const balData = await balRes.json();
@@ -4615,8 +4626,13 @@ export default {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
       } catch (err) {
-        return new Response(JSON.stringify({ success: false, error: err.message }), {
-          status: 500,
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "PAYPAL_BALANCE_SYNC_FAILED",
+          message: err.message,
+          is_sandbox: isSandbox
+        }), {
+          status: 200,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
       }

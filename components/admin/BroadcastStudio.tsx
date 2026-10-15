@@ -1366,7 +1366,7 @@ export default function BroadcastStudio() {
                   }`}
                 >
                   <div className="font-bold">AFFILIATES</div>
-                  <div className="text-[10px] opacity-70 mt-1">{data.audience.affiliatesCount || 0} Partners (Excl. Buyers)</div>
+                  <div className="text-[10px] opacity-70 mt-1">{data.audience.affiliatesCount || 0} {(data.audience.affiliatesCount || 0) === 1 ? 'Partner' : 'Partners'} (Excl. Buyers)</div>
                 </button>
               </div>
             )}

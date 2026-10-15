@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Type, ShoppingCart, LogOut, 
   Tag, Menu, X, Mail, FileText, Power, Loader2, CreditCard, Megaphone,
-  Sparkles, ExternalLink, Share2
+  Sparkles, ExternalLink, Share2, Users
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { openCanvasWithSession } from '../../lib/canvasSession';
@@ -17,6 +17,7 @@ import Orders from './Orders';
 import EmailStudio from './EmailStudio';
 import Statistics from './Statistics';
 import BroadcastStudio from './BroadcastStudio';
+import AudienceDirectory from './AudienceDirectory';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('products');
@@ -149,6 +150,7 @@ const AdminDashboard = () => {
   const navItems = [
     { id: 'stats', label: 'Dashboard Overview', icon: LayoutDashboard },
     { id: 'broadcast', label: 'Broadcast Studio', icon: Megaphone },
+    { id: 'audience', label: 'Audience Directory', icon: Users },
     { id: 'products', label: 'Typeface Inventory', icon: Type },
     { id: 'promotions', label: 'Promotional Deals', icon: Tag },
     { id: 'affiliates', label: 'Affiliates & Payouts', icon: Share2 },
@@ -166,6 +168,7 @@ const AdminDashboard = () => {
       case 'stats': return <Statistics />;
       case 'broadcast': return <BroadcastStudio />;
       case 'inbox': return <BroadcastStudio />;
+      case 'audience': return <AudienceDirectory />;
       case 'products': return <ProductManager />;
       case 'promotions': return <PromotionsManager onNavigateTab={setActiveTab} />;
       case 'affiliates': return <AffiliateManager />;
