@@ -11,7 +11,9 @@ import {
   Tag, MapPin, Phone
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon } from '../../utils/affiliateGeo';
+import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon, findCountryByName } from '../../utils/affiliateGeo';
+import { CountryCombobox } from '../../components/CountryCombobox';
+import { PhoneDialCombobox } from '../../components/PhoneDialCombobox';
 
 const AffiliatePortal: React.FC = () => {
   const [affiliate, setAffiliate] = useState<any>(null);
@@ -92,11 +94,15 @@ const AffiliatePortal: React.FC = () => {
     setLoading(false);
   };
 
-  const handleCountryChange = (selectedCountry: string) => {
+  const handleCountryChange = (selectedCountry: string, dialCode?: string) => {
     setEditCountry(selectedCountry);
-    const countryObj = COUNTRIES.find(c => c.name === selectedCountry);
-    if (countryObj) {
-      setEditPhoneCode(countryObj.dial);
+    if (dialCode) {
+      setEditPhoneCode(dialCode);
+    } else {
+      const countryObj = findCountryByName(selectedCountry);
+      if (countryObj) {
+        setEditPhoneCode(countryObj.dial);
+      }
     }
     const provinces = PROVINCES_BY_COUNTRY[selectedCountry];
     if (provinces && provinces.length > 0) {
@@ -574,17 +580,11 @@ const AffiliatePortal: React.FC = () => {
                   <Phone size={14} className="text-vintage-accent" /> Phone Number (With Dial Code)
                 </label>
                 <div className="flex border border-vintage-ink bg-vintage-paper">
-                  <select
+                  <PhoneDialCombobox
                     value={editPhoneCode}
-                    onChange={(e) => setEditPhoneCode(e.target.value)}
-                    className="p-3 bg-vintage-background/60 border-r border-vintage-ink font-mono text-xs font-bold outline-none cursor-pointer text-vintage-ink shrink-0 max-w-[140px]"
-                  >
-                    {COUNTRIES.map((c) => (
-                      <option key={`${c.code}-${c.dial}`} value={c.dial}>
-                        {c.code} ({c.dial})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setEditPhoneCode}
+                    theme="vintage"
+                  />
                   <input 
                     type="tel"
                     required
@@ -605,19 +605,14 @@ const AffiliatePortal: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
-                      Country
+                      Country (Type to search or choose)
                     </label>
-                    <select
+                    <CountryCombobox
                       value={editCountry}
-                      onChange={(e) => handleCountryChange(e.target.value)}
-                      className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none cursor-pointer text-vintage-ink"
-                    >
-                      {COUNTRIES.map((c) => (
-                        <option key={c.code} value={c.name}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={handleCountryChange}
+                      theme="vintage"
+                      required
+                    />
                   </div>
 
                   <div className="space-y-1">

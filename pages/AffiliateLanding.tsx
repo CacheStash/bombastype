@@ -8,7 +8,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, CheckCircle2, ShieldCheck, Zap, Coins, ArrowRight, Copy, Check, Tag, MapPin, Phone, UserCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon } from '../utils/affiliateGeo';
+import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon, findCountryByName } from '../utils/affiliateGeo';
+import { CountryCombobox } from '../components/CountryCombobox';
+import { PhoneDialCombobox } from '../components/PhoneDialCombobox';
 
 const AffiliateLanding: React.FC = () => {
   const [sessionUser, setSessionUser] = useState<any>(null);
@@ -78,11 +80,15 @@ const AffiliateLanding: React.FC = () => {
     checkAuthAndAffiliate();
   }, []);
 
-  const handleCountryChange = (selectedCountry: string) => {
+  const handleCountryChange = (selectedCountry: string, dialCode?: string) => {
     setCountry(selectedCountry);
-    const countryObj = COUNTRIES.find(c => c.name === selectedCountry);
-    if (countryObj) {
-      setPhoneCode(countryObj.dial);
+    if (dialCode) {
+      setPhoneCode(dialCode);
+    } else {
+      const countryObj = findCountryByName(selectedCountry);
+      if (countryObj) {
+        setPhoneCode(countryObj.dial);
+      }
     }
     const provinces = PROVINCES_BY_COUNTRY[selectedCountry];
     if (provinces && provinces.length > 0) {
@@ -472,17 +478,11 @@ const AffiliateLanding: React.FC = () => {
                   <Phone size={14} /> Phone Number (For Payout Verification)
                 </label>
                 <div className="flex border border-vintage-ink bg-white">
-                  <select
+                  <PhoneDialCombobox
                     value={phoneCode}
-                    onChange={(e) => setPhoneCode(e.target.value)}
-                    className="p-3 bg-vintage-ink/5 border-r border-vintage-ink font-mono text-xs font-bold outline-none cursor-pointer text-vintage-ink shrink-0 max-w-[140px]"
-                  >
-                    {COUNTRIES.map((c) => (
-                      <option key={`${c.code}-${c.dial}`} value={c.dial}>
-                        {c.code} ({c.dial})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setPhoneCode}
+                    theme="vintage"
+                  />
                   <input 
                     type="tel" 
                     value={phoneNumber}
@@ -503,19 +503,14 @@ const AffiliateLanding: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
-                      Country
+                      Country (Type to search or choose)
                     </label>
-                    <select
+                    <CountryCombobox
                       value={country}
-                      onChange={(e) => handleCountryChange(e.target.value)}
-                      className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none cursor-pointer text-vintage-ink"
-                    >
-                      {COUNTRIES.map((c) => (
-                        <option key={c.code} value={c.name}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={handleCountryChange}
+                      theme="vintage"
+                      required
+                    />
                   </div>
 
                   <div className="space-y-1">
