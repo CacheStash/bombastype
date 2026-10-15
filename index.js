@@ -3555,6 +3555,182 @@ export default {
       }
     }
 
+    // --- 6E. API Automated PayPal Payout to Affiliates (Bombastype Admin Only) ---
+    if (url.pathname === '/api/admin/paypal-payout' && request.method === 'POST') {
+      try {
+        const authHeader = request.headers.get('Authorization');
+        const user = await getSupabaseUser(authHeader, env);
+        if (!user || !(await isUserAdmin(user.id, env))) {
+          return new Response(JSON.stringify({ error: "ADMIN_ONLY_ACCESS" }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const body = await request.json();
+        const { payouts, notes = "Monthly affiliate payout" } = body;
+
+        if (!Array.isArray(payouts) || payouts.length === 0) {
+          return new Response(JSON.stringify({ error: "NO_PAYOUTS_SPECIFIED" }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+        const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        const clientId = env.PAYPAL_CLIENT_ID;
+        const clientSecret = env.PAYPAL_CLIENT_SECRET;
+
+        if (!clientId || !clientSecret) {
+          return new Response(JSON.stringify({ 
+            error: "PAYPAL_CREDENTIALS_MISSING", 
+            message: "PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET is not configured on the server." 
+          }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // Determine Sandbox vs Live mode
+        let isSandbox = true;
+        try {
+          const { data: settingData } = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode`, {
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+          }).then(r => r.json());
+          if (settingData && settingData.length > 0) {
+            isSandbox = settingData[0].value === true || settingData[0].value === 'true';
+          }
+        } catch (_) {}
+
+        const paypalHost = isSandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+
+        // 1. Request OAuth2 Access Token from PayPal
+        const basicAuth = btoa(`${clientId}:${clientSecret}`);
+        const tokenRes = await fetch(`${paypalHost}/v1/oauth2/token`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${basicAuth}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: 'grant_type=client_credentials'
+        });
+
+        const tokenData = await tokenRes.json();
+        if (!tokenRes.ok || !tokenData.access_token) {
+          throw new Error(`PayPal OAuth Failed (${tokenRes.status}): ${tokenData.error_description || tokenData.error || 'Invalid credentials'}`);
+        }
+        const accessToken = tokenData.access_token;
+
+        // 2. Prepare Batch Payout Items
+        const batchTimestamp = new Date().toISOString().substring(0, 10).replace(/-/g, '');
+        const senderBatchId = `BT-PAYOUT-${batchTimestamp}-${Date.now().toString(36).toUpperCase()}`;
+
+        const items = payouts.map((p, idx) => {
+          const cleanEmail = (p.paypal_email || '').trim().toLowerCase();
+          const amountVal = Number(p.amount || 0).toFixed(2);
+          return {
+            recipient_type: 'EMAIL',
+            amount: {
+              value: amountVal,
+              currency: p.currency || 'USD'
+            },
+            note: notes || `BombasType Affiliate Commission Payout (${p.affiliate_code})`,
+            sender_item_id: `COMM-${p.affiliate_code || idx}-${Date.now().toString(36)}-${idx}`,
+            receiver: cleanEmail
+          };
+        });
+
+        // 3. Send Payouts Batch to PayPal REST API
+        const payoutRes = await fetch(`${paypalHost}/v1/payments/payouts`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender_batch_header: {
+              sender_batch_id: senderBatchId,
+              email_subject: "You have an affiliate commission payout from BombasType!",
+              email_message: "Here is your affiliate commission payout from BombasType. Thank you for your partnership!"
+            },
+            items
+          })
+        });
+
+        const payoutResult = await payoutRes.json();
+        if (!payoutRes.ok) {
+          throw new Error(`PayPal Payouts Rejected (${payoutRes.status}): ${payoutResult.message || JSON.stringify(payoutResult)}`);
+        }
+
+        const paypalBatchId = payoutResult.batch_header?.payout_batch_id || senderBatchId;
+        const nowIso = new Date().toISOString();
+
+        // 4. Update Supabase Database
+        for (const p of payouts) {
+          const commIds = Array.isArray(p.commission_ids) ? p.commission_ids : [];
+          if (commIds.length > 0) {
+            await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?id=in.(${commIds.join(',')})`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                status: 'paid',
+                paid_at: nowIso,
+                payout_reference: paypalBatchId
+              })
+            });
+          }
+
+          // Record payout entry
+          try {
+            await fetch(`${supabaseUrl}/rest/v1/affiliate_payouts`, {
+              method: 'POST',
+              headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                affiliate_id: p.affiliate_id,
+                payout_batch_id: paypalBatchId,
+                amount: Number(p.amount),
+                currency: p.currency || 'USD',
+                paypal_email: p.paypal_email,
+                status: 'completed',
+                commission_ids: commIds,
+                paid_at: nowIso,
+                notes: notes
+              })
+            });
+          } catch (insertErr) {
+            console.warn("affiliate_payouts table record notice:", insertErr);
+          }
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          payoutBatchId: paypalBatchId,
+          batchStatus: payoutResult.batch_header?.batch_status || 'PENDING',
+          itemCount: items.length,
+          totalAmount: payouts.reduce((sum, p) => sum + Number(p.amount || 0), 0)
+        }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ 
+          error: "PAYOUT_EXECUTION_FAILED", 
+          message: err.message 
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
     // --- 7. API Secure ZIP Download (For Buyers) ---
     if (url.pathname.startsWith('/api/download-zip')) {
       const rawFile = url.searchParams.get('file') || ''; // AMBIL PARAM MENTAH

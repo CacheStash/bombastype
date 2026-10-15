@@ -9,7 +9,7 @@ import {
   Share2, Users, DollarSign, Clock, CheckCircle2, 
   AlertCircle, Download, Check, ShieldCheck, RefreshCw, 
   ExternalLink, Calendar, Eye, FileText, ArrowUpRight, 
-  Search, X, Filter, ChevronRight, Wallet
+  Search, X, Filter, ChevronRight, Wallet, Zap
 } from 'lucide-react';
 import { AFFILIATE_MIN_PAYOUT_USD, getNextMonthlyPayoutDate } from '../../utils/affiliateGeo';
 
@@ -334,6 +334,106 @@ const AffiliateManager: React.FC = () => {
     }
   };
 
+  // Execute live PayPal REST API payout for a single affiliate
+  const handleLivePayPalPayout = async () => {
+    if (!payoutModalAffiliate) return;
+    const { affiliate, dueCommissions, totalAmount } = payoutModalAffiliate;
+    const commissionIds = dueCommissions.map(c => c.id);
+
+    if (commissionIds.length === 0) {
+      alert("No commissions to settle.");
+      return;
+    }
+
+    const confirmMsg = `EXECUTE LIVE PAYPAL TRANSFER?\n\n- Recipient: ${affiliate.paypal_email}\n- Partner Code: ${affiliate.affiliate_code}\n- Amount: $${totalAmount.toFixed(2)} USD\n- Orders: ${commissionIds.length}\n\nThis will trigger an immediate transfer from your PayPal account via PayPal REST API.\nProceed?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsSubmittingPayout(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Session expired. Please log in again.");
+
+      const res = await fetch('/api/admin/paypal-payout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          payouts: [
+            {
+              affiliate_id: affiliate.id,
+              affiliate_code: affiliate.affiliate_code,
+              paypal_email: affiliate.paypal_email,
+              amount: totalAmount,
+              commission_ids: commissionIds
+            }
+          ],
+          notes: payoutNotes || `BombasType Monthly Payout for ${affiliate.affiliate_code}`
+        })
+      });
+
+      const data = await res.json() as any;
+      if (!res.ok) throw new Error(data.error || data.message || "Payout request failed.");
+
+      setPayoutModalAffiliate(null);
+      await fetchData();
+      alert(`SUCCESS! PayPal Payout Batch ID: ${data.payoutBatchId}\nStatus: ${data.batchStatus}\nAmount: $${totalAmount.toFixed(2)} USD successfully transferred to ${affiliate.paypal_email}!`);
+    } catch (err: any) {
+      alert("PayPal Payout Failed: " + err.message);
+    } finally {
+      setIsSubmittingPayout(false);
+    }
+  };
+
+  // Execute live PayPal REST API batch payout for ALL qualified affiliates (>= $50)
+  const handleBatchLivePayPalPayout = async () => {
+    if (qualifiedPayouts.length === 0) {
+      alert("No affiliates currently meet the $50.00 minimum threshold for batch payout.");
+      return;
+    }
+
+    const totalBatchAmount = qualifiedPayouts.reduce((sum, item) => sum + item.dueAmount, 0);
+    const confirmMsg = `EXECUTE BATCH PAYPAL PAYOUT?\n\n- Qualified Partners: ${qualifiedPayouts.length}\n- Total Transfer Amount: $${totalBatchAmount.toFixed(2)} USD\n\nFunds will be sent to their registered PayPal accounts via PayPal REST API.\nProceed with live disbursement?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsSubmittingPayout(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Session expired. Please log in again.");
+
+      const payloadPayouts = qualifiedPayouts.map(item => ({
+        affiliate_id: item.affiliate.id,
+        affiliate_code: item.affiliate.affiliate_code,
+        paypal_email: item.affiliate.paypal_email,
+        amount: item.dueAmount,
+        commission_ids: item.dueCommissions.map(c => c.id)
+      }));
+
+      const res = await fetch('/api/admin/paypal-payout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          payouts: payloadPayouts,
+          notes: "BombasType Monthly Automated Batch Payout"
+        })
+      });
+
+      const data = await res.json() as any;
+      if (!res.ok) throw new Error(data.error || data.message || "Batch payout failed.");
+
+      await fetchData();
+      alert(`BATCH PAYPAL PAYOUT SUCCESSFUL!\n\n- Batch ID: ${data.payoutBatchId}\n- Partners Paid: ${data.itemCount}\n- Total Disbursed: $${Number(data.totalAmount || 0).toFixed(2)} USD\n\nAll records updated in Supabase!`);
+    } catch (err: any) {
+      alert("Batch Payout Failed: " + err.message);
+    } finally {
+      setIsSubmittingPayout(false);
+    }
+  };
+
   // Filter commissions for general ledger view
   const filteredCommissions = commissions.filter(c => {
     if (statusFilter !== 'all' && c.status !== statusFilter) return false;
@@ -373,6 +473,17 @@ const AffiliateManager: React.FC = () => {
             className="vintage-btn bg-vintage-ink! text-vintage-background! py-2.5 px-5 text-xs tracking-wider flex items-center gap-2 uppercase font-bold font-sans"
           >
             <Download size={15} /> EXPORT QUALIFIED PAYPAL CSV
+          </button>
+          <button 
+            onClick={handleBatchLivePayPalPayout}
+            disabled={loading || isSubmittingPayout || qualifiedPayouts.length === 0}
+            className={`vintage-btn py-2.5 px-5 text-xs tracking-wider flex items-center gap-2 uppercase font-bold font-sans transition-all ${
+              qualifiedPayouts.length > 0 
+                ? 'bg-vintage-accent! text-white! hover:bg-vintage-ink! cursor-pointer' 
+                : 'bg-vintage-ink/10 text-vintage-ink/40 border-vintage-ink/20 cursor-not-allowed shadow-none'
+            }`}
+          >
+            <Zap size={14} className={isSubmittingPayout ? 'animate-spin' : ''} /> Auto-Disburse via PayPal ({qualifiedPayouts.length})
           </button>
         </div>
       </div>
@@ -1123,7 +1234,7 @@ const AffiliateManager: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-vintage-ink/20">
+            <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-vintage-ink/20">
               <button
                 type="button"
                 onClick={() => setPayoutModalAffiliate(null)}
@@ -1136,15 +1247,24 @@ const AffiliateManager: React.FC = () => {
                 type="button"
                 onClick={handleExecutePayout}
                 disabled={isSubmittingPayout}
-                className="vintage-btn bg-green-900! text-white! py-2 px-6 text-xs uppercase font-bold tracking-wider flex items-center gap-2"
+                className="vintage-btn bg-vintage-paper! text-vintage-ink! border border-vintage-ink/30 py-2 px-4 text-xs uppercase font-bold tracking-wider flex items-center gap-2 hover:bg-vintage-ink/10"
+                title="Manually mark these commissions as paid without calling PayPal API"
+              >
+                <Check size={14} /> MANUAL MARK PAID
+              </button>
+              <button
+                type="button"
+                onClick={handleLivePayPalPayout}
+                disabled={isSubmittingPayout}
+                className="vintage-btn bg-vintage-accent! text-white! hover:bg-vintage-ink! py-2 px-6 text-xs uppercase font-bold tracking-wider flex items-center gap-2 cursor-pointer"
               >
                 {isSubmittingPayout ? (
                   <>
-                    <RefreshCw size={12} className="animate-spin" /> RECORDING...
+                    <RefreshCw size={12} className="animate-spin" /> DISBURSING...
                   </>
                 ) : (
                   <>
-                    <Check size={14} /> CONFIRM & MARK PAID
+                    <Zap size={14} /> Send Live PayPal Payout (${payoutModalAffiliate.totalAmount.toFixed(2)})
                   </>
                 )}
               </button>
