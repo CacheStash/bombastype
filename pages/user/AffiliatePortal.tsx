@@ -49,6 +49,8 @@ const AffiliatePortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'payouts' | 'settings'>('overview');
   const [salesPage, setSalesPage] = useState(1);
   const SALES_PER_PAGE = 10;
+  const [payoutPage, setPayoutPage] = useState(1);
+  const PAYOUTS_PER_PAGE = 10;
 
   // Account Settings Form State
   const [editFullName, setEditFullName] = useState('');
@@ -350,17 +352,18 @@ const AffiliatePortal: React.FC = () => {
     }>();
 
     paidComms.forEach(c => {
-      const dateKey = c.paid_at ? c.paid_at.substring(0, 10) : 'settled';
-      const existing = groupMap.get(dateKey) || {
-        id: dateKey,
+      // Group per withdrawal event (batch ID, payout reference, or exact ISO timestamp)
+      const withdrawKey = c.payout_batch_id || c.payout_reference || (c.paid_at ? c.paid_at.substring(0, 19) : `item-${c.id}`);
+      const existing = groupMap.get(withdrawKey) || {
+        id: withdrawKey,
         paid_at: c.paid_at || c.created_at,
         amount: 0,
         count: 0,
-        reference: c.payout_reference || 'PP-DISBURSEMENT'
+        reference: c.payout_batch_id || c.payout_reference || 'PP-DISBURSEMENT'
       };
       existing.amount += Number(c.commission_amount || 0);
       existing.count += 1;
-      groupMap.set(dateKey, existing);
+      groupMap.set(withdrawKey, existing);
     });
 
     const list = Array.from(groupMap.values()).map(g => {
@@ -662,6 +665,9 @@ const AffiliatePortal: React.FC = () => {
   const totalSalesPages = Math.ceil(commissions.length / SALES_PER_PAGE) || 1;
   const paginatedCommissions = commissions.slice((salesPage - 1) * SALES_PER_PAGE, salesPage * SALES_PER_PAGE);
 
+  const totalPayoutPages = Math.ceil(payoutHistory.length / PAYOUTS_PER_PAGE) || 1;
+  const paginatedPayouts = payoutHistory.slice((payoutPage - 1) * PAYOUTS_PER_PAGE, payoutPage * PAYOUTS_PER_PAGE);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans text-vintage-ink">
       
@@ -866,6 +872,19 @@ const AffiliatePortal: React.FC = () => {
               </div>
               <p className="text-[11px] text-amber-900/90 leading-relaxed max-w-3xl">
                 To protect our creator network and partner payouts against fraudulent card use, unauthorized disputes, and chargebacks, every new sale is held in a 14-day warranty clearance window. Once the 14 days expire without customer dispute, funds automatically clear into <strong>Ready For Payout</strong> and can be withdrawn immediately to your PayPal account.
+              </p>
+            </div>
+          </div>
+
+          {/* TRANSPARENT PAYMENT GATEWAY FEE NOTICE */}
+          <div className="border border-vintage-ink/20 bg-vintage-paper p-4 flex items-start gap-3">
+            <Info size={20} className="text-vintage-accent shrink-0 mt-0.5" />
+            <div className="space-y-1 font-sans grow">
+              <span className="text-xs font-bold uppercase tracking-wider text-vintage-ink block">
+                Transparent Payment Gateway Fee Notice
+              </span>
+              <p className="text-[11px] text-vintage-ink/80 leading-relaxed max-w-3xl">
+                As an independent type foundry, sales transactions already incur payment gateway fees (~4.4% + $0.30) upon checkout, meaning the store receives net revenue rather than 100% of gross sales. In addition, PayPal charges an outbound transfer fee (standard 2% cross-border transfer, capped at $20.00 USD) on automated payouts. To maintain sustainable store operations, this outbound transfer fee is deducted from the withdrawal amount. We sincerely apologize for this gateway transfer cost and deeply appreciate your understanding and valuable partnership!
               </p>
             </div>
           </div>
@@ -1435,7 +1454,7 @@ const AffiliatePortal: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-vintage-ink/15 font-mono">
-                    {payoutHistory.map((p) => {
+                    {paginatedPayouts.map((p) => {
                       const fee = p.fee ?? Math.min(20, +(p.amount * 0.02).toFixed(2));
                       const netReceived = p.net_amount ?? Math.max(0, +(p.amount - fee).toFixed(2));
                       return (
@@ -1480,6 +1499,36 @@ const AffiliatePortal: React.FC = () => {
                     })}
                   </tbody>
                 </table>
+
+                {/* AUTO PAGINATION CONTROLS */}
+                {payoutHistory.length > PAYOUTS_PER_PAGE && (
+                  <div className="p-3 border-t border-vintage-ink/20 bg-vintage-paper flex flex-col sm:flex-row items-center justify-between gap-2 font-sans text-xs">
+                    <span className="text-vintage-ink/75">
+                      Showing <strong className="text-vintage-ink">{(payoutPage - 1) * PAYOUTS_PER_PAGE + 1}</strong> to <strong className="text-vintage-ink">{Math.min(payoutPage * PAYOUTS_PER_PAGE, payoutHistory.length)}</strong> of <strong className="text-vintage-ink">{payoutHistory.length}</strong> disbursements
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setPayoutPage(p => Math.max(1, p - 1))}
+                        disabled={payoutPage === 1}
+                        className="px-2.5 py-1 border border-vintage-ink/30 bg-white hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer uppercase font-bold text-[10px]"
+                      >
+                        Prev
+                      </button>
+                      <span className="px-2 font-mono font-bold text-vintage-ink text-[11px]">
+                        Page {payoutPage} of {totalPayoutPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPayoutPage(p => Math.min(totalPayoutPages, p + 1))}
+                        disabled={payoutPage >= totalPayoutPages}
+                        className="px-2.5 py-1 border border-vintage-ink/30 bg-white hover:bg-vintage-ink hover:text-vintage-paper transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer uppercase font-bold text-[10px]"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -2077,17 +2126,6 @@ const AffiliatePortal: React.FC = () => {
                     <span className="font-medium text-vintage-ink/70 uppercase text-[11px]">Partner Code</span>
                     <span className="font-mono font-bold text-vintage-ink">{affiliate.affiliate_code}</span>
                   </div>
-                </div>
-
-                {/* Transparent Payment Gateway Fee Disclosure */}
-                <div className="p-3 border border-vintage-ink/20 bg-vintage-ink/5 space-y-1 text-xs rounded-xs">
-                  <div className="flex items-center gap-1.5 font-bold uppercase text-vintage-ink text-[11px]">
-                    <Info size={13} className="text-vintage-accent shrink-0" />
-                    <span>Transparent Payment Gateway Fee Notice</span>
-                  </div>
-                  <p className="text-[11px] text-vintage-ink/80 leading-relaxed font-sans">
-                    As an independent type foundry, sales transactions already incur payment gateway fees (~4.4% + $0.30) upon checkout, meaning the store receives net revenue rather than 100% of gross sales. In addition, PayPal charges an outbound transfer fee (standard 2% cross-border transfer, capped at $20.00 USD) on automated payouts. To maintain sustainable store operations, this outbound transfer fee is deducted from the withdrawal amount. We sincerely apologize for this gateway transfer cost and deeply appreciate your understanding and valuable partnership!
-                  </p>
                 </div>
 
                 {/* Warning Callout */}

@@ -41,7 +41,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
     { name: "FONTS", href: "/fonts" },
     { name: "CANVAS", href: "/canvas", isNew: true },
     { name: "LICENSE", href: "/license" },
-    { name: "ABOUT", href: "/about" },
+    { name: "AFFILIATE", href: "/affiliate" },
     { name: "CONTACT", href: "/contact" },
     { name: "POLICY", href: "/policy" },
     { name: "FAQ", href: "/faq" },

@@ -128,7 +128,7 @@ const UserDashboard = () => {
           {[
             { id: 'library', label: 'Purchase History', icon: Library },
             { id: 'settings', label: 'Security & Access', icon: Settings },
-            ...(isAffiliateAllowed ? [{ id: 'affiliate', label: 'Affiliate Portal', icon: Share2 }] : []),
+            { id: 'affiliate', label: 'Affiliate Portal', icon: Share2 },
             { id: 'support', label: 'Support', icon: LifeBuoy }
           ].map((item) => {
             const Icon = item.icon;
