@@ -2465,6 +2465,8 @@ export default {
                 if (match) affCode = decodeURIComponent(match[1]).trim().toUpperCase();
               }
 
+              let aff = null;
+
               if (affCode && supabaseUrl && serviceRoleKey) {
                 const affRes = await fetch(`${supabaseUrl}/rest/v1/affiliates?affiliate_code=ilike.${encodeURIComponent(affCode)}&status=eq.active&select=id,user_id,paypal_email,commission_rate`, {
                   headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
@@ -2472,7 +2474,34 @@ export default {
                 if (affRes.ok) {
                   const affData = await affRes.json();
                   if (affData && affData.length > 0) {
-                    const aff = affData[0];
+                    aff = affData[0];
+                  }
+                }
+              }
+
+              // Fallback: If no link was clicked, but an affiliate-linked coupon was redeemed
+              if (!aff && metadata?.coupon_code && supabaseUrl && serviceRoleKey) {
+                const couponRes = await fetch(`${supabaseUrl}/rest/v1/coupons?code=eq.${encodeURIComponent(metadata.coupon_code)}&select=affiliate_id,is_active`, {
+                  headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+                });
+                if (couponRes.ok) {
+                  const couponData = await couponRes.json();
+                  if (couponData && couponData.length > 0 && couponData[0].affiliate_id) {
+                    const affId = couponData[0].affiliate_id;
+                    const affByIdRes = await fetch(`${supabaseUrl}/rest/v1/affiliates?id=eq.${affId}&status=eq.active&select=id,user_id,paypal_email,commission_rate`, {
+                      headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+                    });
+                    if (affByIdRes.ok) {
+                      const affByIdData = await affByIdRes.json();
+                      if (affByIdData && affByIdData.length > 0) {
+                        aff = affByIdData[0];
+                      }
+                    }
+                  }
+                }
+              }
+
+              if (aff) {
                     const isSelfReferral = aff.user_id === targetUserId || (aff.paypal_email && aff.paypal_email.toLowerCase() === email.toLowerCase());
                     if (!isSelfReferral) {
                       const breakdown = metadata?.paypal_breakdown;
@@ -2518,8 +2547,6 @@ export default {
                       }
                     }
                   }
-                }
-              }
             } catch (affErr) {
               console.error("Affiliate attribution error (silent fallback):", affErr);
             }

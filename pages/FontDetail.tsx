@@ -318,15 +318,15 @@ const FontDetail: React.FC = () => {
         </div>
       </section>
 
-      {/* STEALTH AFFILIATE QUICK SHARE BAR (Admin Only) */}
-      {isAdmin && affiliateCode && (
+      {/* STEALTH AFFILIATE QUICK SHARE BAR (Active Affiliate Session) */}
+      {Boolean(affiliateCode) && (
         <section className="max-w-7xl mx-auto px-6 mb-8">
-          <div className="border border-vintage-accent bg-vintage-background/90 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs shadow-sm">
+          <div className="border border-vintage-ink bg-vintage-background p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <span className="font-bold text-[9px] uppercase tracking-widest text-vintage-accent shrink-0">
+              <span className="font-bold text-xs uppercase tracking-widest text-vintage-accent shrink-0">
                 Guild Partner Quick Share:
               </span>
-              <code className="font-mono text-xs font-bold text-vintage-ink bg-white/60 px-2 py-1 border border-vintage-ink/20">
+              <code className="font-mono text-xs font-bold text-vintage-ink bg-vintage-ink/10 px-2 py-1 border border-vintage-ink">
                 {`${window.location.origin}/c/${affiliateCode}/${font.id}`}
               </code>
             </div>
@@ -336,7 +336,7 @@ const FontDetail: React.FC = () => {
                 setAffiliateCopied(true);
                 setTimeout(() => setAffiliateCopied(false), 2000);
               }}
-              className="vintage-btn py-1.5 px-4 text-[9px] tracking-widest shrink-0 uppercase"
+              className="vintage-btn py-2 px-4 text-xs tracking-widest shrink-0 uppercase font-bold"
             >
               {affiliateCopied ? 'COPIED TO CLIPBOARD' : 'COPY SPECIMEN LINK'}
             </button>

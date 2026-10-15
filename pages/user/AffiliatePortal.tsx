@@ -7,20 +7,31 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { 
   Copy, Check, ArrowRight, Clock, CheckCircle2, DollarSign, 
-  AlertCircle, Share2, ExternalLink, Settings, Save, Mail, Hash 
+  AlertCircle, Share2, ExternalLink, Settings, Save, Mail, Hash,
+  Tag, MapPin, Phone
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon } from '../../utils/affiliateGeo';
 
 const AffiliatePortal: React.FC = () => {
   const [affiliate, setAffiliate] = useState<any>(null);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCoupon, setCopiedCoupon] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
 
   // Account Settings Form State
   const [editPaypalEmail, setEditPaypalEmail] = useState('');
   const [editVanityCode, setEditVanityCode] = useState('');
+  const [editPhoneCode, setEditPhoneCode] = useState('+62');
+  const [editPhoneNumber, setEditPhoneNumber] = useState('');
+  const [editCountry, setEditCountry] = useState('Indonesia');
+  const [editStateProvince, setEditStateProvince] = useState('DKI Jakarta');
+  const [editCity, setEditCity] = useState('');
+  const [editPostalCode, setEditPostalCode] = useState('');
+  const [editStreetAddress, setEditStreetAddress] = useState('');
+
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState('');
   const [settingsError, setSettingsError] = useState('');
@@ -42,9 +53,33 @@ const AffiliatePortal: React.FC = () => {
       setAffiliate(affData);
 
       if (affData) {
-        setEditPaypalEmail(affData.paypal_email || '');
+        setEditPaypalEmail(affData.paypal_email || user.email || '');
         setEditVanityCode(affData.affiliate_code || '');
+        if (affData.phone_code) setEditPhoneCode(affData.phone_code);
+        if (affData.phone_number) setEditPhoneNumber(affData.phone_number);
+        if (affData.country) {
+          setEditCountry(affData.country);
+          if (affData.state_province) setEditStateProvince(affData.state_province);
+        }
+        if (affData.city) setEditCity(affData.city);
+        if (affData.postal_code) setEditPostalCode(affData.postal_code);
+        if (affData.street_address) setEditStreetAddress(affData.street_address);
 
+        // Pre-fill dummy data if test account has empty address
+        if (!affData.phone_number && user.email === 'gotrainer19@gmail.com') {
+          const dummy = getDummyAffiliateData(user.email);
+          if (dummy) {
+            setEditPhoneCode(dummy.phone_code);
+            setEditPhoneNumber(dummy.phone_number);
+            setEditCountry(dummy.country);
+            setEditStateProvince(dummy.state_province);
+            setEditCity(dummy.city);
+            setEditPostalCode(dummy.postal_code);
+            setEditStreetAddress(dummy.street_address);
+          }
+        }
+
+        // Fetch commissions
         const { data: commData } = await supabase
           .from('affiliate_commissions')
           .select('*')
@@ -55,6 +90,20 @@ const AffiliatePortal: React.FC = () => {
       }
     }
     setLoading(false);
+  };
+
+  const handleCountryChange = (selectedCountry: string) => {
+    setEditCountry(selectedCountry);
+    const countryObj = COUNTRIES.find(c => c.name === selectedCountry);
+    if (countryObj) {
+      setEditPhoneCode(countryObj.dial);
+    }
+    const provinces = PROVINCES_BY_COUNTRY[selectedCountry];
+    if (provinces && provinces.length > 0) {
+      setEditStateProvince(provinces[0]);
+    } else {
+      setEditStateProvince('');
+    }
   };
 
   const handleUpdateSettings = async (e: React.FormEvent) => {
@@ -76,6 +125,16 @@ const AffiliatePortal: React.FC = () => {
       return;
     }
 
+    if (!editPhoneNumber.trim()) {
+      setSettingsError('Phone number is required for partner identification.');
+      return;
+    }
+
+    if (!editStreetAddress.trim() || !editCity.trim() || !editPostalCode.trim()) {
+      setSettingsError('Physical address details (Street, City, Postal Code) are required.');
+      return;
+    }
+
     setSavingSettings(true);
     try {
       if (cleanCode !== affiliate.affiliate_code) {
@@ -90,23 +149,54 @@ const AffiliatePortal: React.FC = () => {
         }
       }
 
-      const { data: updated, error } = await supabase
+      const fullUpdate = {
+        paypal_email: cleanEmail,
+        affiliate_code: cleanCode,
+        phone_code: editPhoneCode,
+        phone_number: editPhoneNumber.trim(),
+        country: editCountry.trim(),
+        state_province: editStateProvince.trim(),
+        city: editCity.trim(),
+        postal_code: editPostalCode.trim(),
+        street_address: editStreetAddress.trim(),
+        updated_at: new Date().toISOString()
+      };
+
+      let updatedData = null;
+      const { data, error } = await supabase
         .from('affiliates')
-        .update({
-          paypal_email: cleanEmail,
-          affiliate_code: cleanCode,
-          updated_at: new Date().toISOString()
-        })
+        .update(fullUpdate)
         .eq('id', affiliate.id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Fallback in case columns not migrated yet
+        console.warn('Update with full address failed, falling back to base fields:', error.message);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('affiliates')
+          .update({
+            paypal_email: cleanEmail,
+            affiliate_code: cleanCode,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', affiliate.id)
+          .select()
+          .single();
 
-      setAffiliate(updated);
-      setEditPaypalEmail(updated.paypal_email);
-      setEditVanityCode(updated.affiliate_code);
-      setSettingsSuccess('Affiliate account & payout settings saved successfully!');
+        if (fallbackError) throw fallbackError;
+        updatedData = fallbackData;
+      } else {
+        updatedData = data;
+      }
+
+      // Sync audience coupon with updated code
+      await syncAffiliateCoupon(supabase, affiliate.id, cleanCode);
+
+      setAffiliate(updatedData);
+      setEditPaypalEmail(updatedData.paypal_email);
+      setEditVanityCode(updatedData.affiliate_code);
+      setSettingsSuccess('Affiliate account profile & audience coupon updated successfully!');
     } catch (err: any) {
       setSettingsError(err.message || 'Failed to update account settings.');
     } finally {
@@ -141,11 +231,18 @@ const AffiliatePortal: React.FC = () => {
   }
 
   const shareUrl = `${window.location.origin}/c/${affiliate.affiliate_code}`;
+  const couponCode = `${affiliate.affiliate_code}10`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleCopyCoupon = () => {
+    navigator.clipboard.writeText(couponCode);
+    setCopiedCoupon(true);
+    setTimeout(() => setCopiedCoupon(false), 2000);
   };
 
   const pendingAmount = commissions
@@ -157,6 +254,7 @@ const AffiliatePortal: React.FC = () => {
     .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
 
   const totalPaidAmount = Number(affiliate.total_paid || 0);
+  const provinceOptions = PROVINCES_BY_COUNTRY[editCountry] || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -201,42 +299,74 @@ const AffiliatePortal: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-8 animate-in fade-in duration-300">
           
-          {/* VANITY LINK PROMO BOX */}
-          <div className="border-4 border-double border-vintage-ink p-6 bg-vintage-background/80 space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent block">
-                Your Personal Vanity Share Link (30-Day Attribution Window)
-              </label>
-              <button 
-                onClick={() => setActiveTab('settings')}
-                className="text-[9px] font-bold uppercase tracking-widest text-vintage-ink hover:text-vintage-accent flex items-center gap-1 underline"
-              >
-                <Settings size={10} /> Edit Code / Payout
-              </button>
-            </div>
+          {/* DUAL PROMO TOOLS: VANITY LINK + AUDIENCE COUPON */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            <div className="flex items-center border border-vintage-ink bg-vintage-paper p-2">
-              <input 
-                type="text" 
-                readOnly 
-                value={shareUrl} 
-                className="w-full bg-transparent font-mono text-xs font-bold text-vintage-ink outline-none px-2"
-              />
-              <button 
-                onClick={handleCopyLink}
-                className="vintage-btn py-2 px-4 text-[10px] tracking-widest uppercase flex items-center gap-1 shrink-0"
-              >
-                {copied ? <Check size={12} /> : <Copy size={12} />}
-                {copied ? 'COPIED' : 'COPY'}
-              </button>
+            {/* TOOL 1: VANITY LINK */}
+            <div className="border-4 border-double border-vintage-ink p-5 bg-vintage-background/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent block">
+                  1. Personal Vanity Link
+                </label>
+                <span className="text-[9px] font-mono text-vintage-ink/70">30-day cookie window</span>
+              </div>
+              
+              <div className="flex items-center border border-vintage-ink bg-vintage-paper p-1.5">
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={shareUrl} 
+                  className="w-full bg-transparent font-mono text-xs font-bold text-vintage-ink outline-none px-2 truncate"
+                />
+                <button 
+                  onClick={handleCopyLink}
+                  className="vintage-btn py-1.5 px-3 text-[10px] tracking-widest uppercase flex items-center gap-1 shrink-0 font-bold"
+                >
+                  {copiedLink ? <Check size={12} className="text-green-800" /> : <Copy size={12} />}
+                  {copiedLink ? 'COPIED' : 'COPY'}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between text-[10px] italic text-vintage-ink/70">
+                <span>Visitors clicking this link are tagged for 30 days.</span>
+                <Link to="/font/salvatore" className="underline hover:text-vintage-accent flex items-center gap-1">
+                  Specimens <ExternalLink size={10} />
+                </Link>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[10px] italic text-vintage-ink/70 gap-2 font-serif">
-              <span>Visitors are tagged server-side via HttpOnly cookie for 30 consecutive days.</span>
-              <span className="font-sans font-bold text-vintage-ink not-italic text-[10px]">
-                Payout Destination: <span className="text-vintage-accent">{affiliate.paypal_email}</span>
-              </span>
+            {/* TOOL 2: AUDIENCE PROMO COUPON */}
+            <div className="border-4 border-double border-vintage-ink p-5 bg-vintage-background/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-vintage-accent block flex items-center gap-1">
+                  <Tag size={12} /> 2. Audience 10% OFF Promo Code
+                </label>
+                <span className="text-[9px] font-bold text-green-900 bg-green-100 px-1.5 py-0.5 border border-green-300">
+                  Active in Checkout
+                </span>
+              </div>
+              
+              <div className="flex items-center border border-vintage-ink bg-vintage-paper p-1.5">
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={couponCode} 
+                  className="w-full bg-transparent font-mono text-xs font-bold text-vintage-ink outline-none px-2 tracking-wider"
+                />
+                <button 
+                  onClick={handleCopyCoupon}
+                  className="vintage-btn py-1.5 px-3 text-[10px] tracking-widest uppercase flex items-center gap-1 shrink-0 font-bold"
+                >
+                  {copiedCoupon ? <Check size={12} className="text-green-800" /> : <Copy size={12} />}
+                  {copiedCoupon ? 'COPIED' : 'COPY'}
+                </button>
+              </div>
+
+              <div className="text-[10px] italic text-vintage-ink/70">
+                Gives your audience 10% discount while directly crediting your 20% Net commission.
+              </div>
             </div>
+
           </div>
 
           {/* 3 FINANCIAL RECONCILIATION CARDS */}
@@ -260,85 +390,108 @@ const AffiliatePortal: React.FC = () => {
               <div className="text-3xl font-display font-bold text-green-900">
                 ${readyAmount.toFixed(2)}
               </div>
-              <p className="text-[10px] italic text-green-900/70">Disbursed monthly (Min. $50.00 threshold)</p>
+              <p className="text-[10px] italic text-vintage-ink/60">
+                {readyAmount >= 50 
+                  ? 'Threshold reached ($50+). Scheduled for next monthly run.' 
+                  : `$${(50 - readyAmount).toFixed(2)} more needed to trigger payout ($50 min).`}
+              </p>
             </div>
 
-            <div className="p-5 border border-vintage-ink bg-vintage-background/60 text-left space-y-1">
-              <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-vintage-accent">
+            <div className="p-5 border border-vintage-ink bg-vintage-paper text-left space-y-1">
+              <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-vintage-ink/60">
                 <span>Total Disbursed</span>
-                <DollarSign size={14} />
+                <DollarSign size={14} className="text-vintage-ink/60" />
               </div>
               <div className="text-3xl font-display font-bold text-vintage-ink">
                 ${totalPaidAmount.toFixed(2)}
               </div>
-              <p className="text-[10px] italic text-vintage-ink/60">All-time PayPal payouts completed</p>
+              <p className="text-[10px] italic text-vintage-ink/60">Lifetime payouts received to PayPal</p>
             </div>
           </div>
 
-          {/* COMMISSIONS LEDGER TABLE */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xl font-display">Attributed Orders Ledger</h4>
-              <span className="text-[10px] font-mono opacity-60 uppercase">{commissions.length} Attributed Sales</span>
+          {/* COMMISSIONS & SALES TRANSACTION TABLE */}
+          <div className="border border-vintage-ink bg-vintage-paper overflow-hidden">
+            <div className="p-4 border-b border-vintage-ink bg-vintage-background flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-vintage-ink">
+                  Referral Sales & Commission Ledger
+                </h3>
+                <span className="text-[11px] font-serif italic text-vintage-ink/70">
+                  Transactions referred via your vanity slug or promo coupon code
+                </span>
+              </div>
+              <span className="text-xs font-mono font-bold px-2 py-1 bg-white border border-vintage-ink">
+                {commissions.length} Sales Recorded
+              </span>
             </div>
 
             {commissions.length === 0 ? (
-              <div className="p-12 border border-vintage-ink/20 text-center italic text-xs text-vintage-ink/60 bg-vintage-background/40">
-                No referral transactions recorded yet. Share your vanity link to begin earning commissions.
+              <div className="p-12 text-center space-y-2">
+                <AlertCircle size={28} className="mx-auto text-vintage-ink/30" />
+                <p className="text-sm font-bold text-vintage-ink">No referred orders recorded yet</p>
+                <p className="text-xs font-serif italic text-vintage-ink/60 max-w-sm mx-auto">
+                  Share your vanity link or discount coupon on your social platforms and portfolio to begin recording 20% net earnings.
+                </p>
               </div>
             ) : (
-              <div className="border border-vintage-ink overflow-x-auto bg-vintage-paper">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-vintage-ink bg-vintage-background/80 text-[10px] font-bold tracking-widest uppercase">
-                      <th className="p-3 border-r border-vintage-ink">Date</th>
-                      <th className="p-3 border-r border-vintage-ink">Typeface</th>
-                      <th className="p-3 border-r border-vintage-ink text-right">Gross Paid</th>
-                      <th className="p-3 border-r border-vintage-ink text-right">Net Store</th>
-                      <th className="p-3 border-r border-vintage-ink text-right">Your Commission</th>
+                    <tr className="border-b border-vintage-ink bg-vintage-background/40 font-mono uppercase text-[10px] text-vintage-ink/70">
+                      <th className="p-3">Date</th>
+                      <th className="p-3">Typeface / Order</th>
+                      <th className="p-3 text-right">Gross</th>
+                      <th className="p-3 text-right">Net Store</th>
+                      <th className="p-3 text-right">Your 20% Net</th>
                       <th className="p-3 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-vintage-ink/20 font-mono text-[11px]">
-                    {commissions.map((c) => {
-                      const dateStr = new Date(c.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric', month: 'short', day: 'numeric'
-                      });
-
-                      return (
-                        <tr key={c.id} className="hover:bg-vintage-background/40">
-                          <td className="p-3 border-r border-vintage-ink/20">{dateStr}</td>
-                          <td className="p-3 border-r border-vintage-ink/20 font-sans font-bold">{c.font_name || 'Specimen License'}</td>
-                          <td className="p-3 border-r border-vintage-ink/20 text-right">${Number(c.gross_amount || 0).toFixed(2)}</td>
-                          <td className="p-3 border-r border-vintage-ink/20 text-right opacity-60">${Number(c.net_store_amount || 0).toFixed(2)}</td>
-                          <td className="p-3 border-r border-vintage-ink/20 text-right font-bold text-green-900">
-                            +${Number(c.commission_amount || 0).toFixed(2)}
-                          </td>
-                          <td className="p-3 text-center">
-                            {c.status === 'pending_clearance' && (
-                              <span className="px-2 py-0.5 border border-amber-300 bg-amber-50 text-amber-900 text-[9px] uppercase font-bold">
-                                Holding (14D)
-                              </span>
-                            )}
-                            {c.status === 'approved' && (
-                              <span className="px-2 py-0.5 border border-green-300 bg-green-50 text-green-900 text-[9px] uppercase font-bold">
-                                Ready Payout
-                              </span>
-                            )}
-                            {c.status === 'paid' && (
-                              <span className="px-2 py-0.5 border border-vintage-ink/20 bg-vintage-background text-vintage-ink text-[9px] uppercase font-bold">
-                                Settled
-                              </span>
-                            )}
-                            {c.status === 'voided' && (
-                              <span className="px-2 py-0.5 border border-red-300 bg-red-50 text-red-900 text-[9px] uppercase font-bold">
-                                Voided
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                  <tbody className="divide-y divide-vintage-ink/20 font-mono">
+                    {commissions.map((comm) => (
+                      <tr key={comm.id} className="hover:bg-vintage-ink/5 transition-colors">
+                        <td className="p-3 text-vintage-ink/80 text-[11px] whitespace-nowrap">
+                          {new Date(comm.created_at).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </td>
+                        <td className="p-3">
+                          <span className="font-bold text-vintage-ink block font-sans text-xs">
+                            {comm.font_name || 'Specimen License'}
+                          </span>
+                          <span className="text-[10px] text-vintage-ink/50 truncate block max-w-[200px]">
+                            ID: {comm.order_id}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right text-vintage-ink">
+                          ${Number(comm.gross_amount || 0).toFixed(2)}
+                        </td>
+                        <td className="p-3 text-right text-vintage-ink/70">
+                          ${Number(comm.net_store_amount || 0).toFixed(2)}
+                        </td>
+                        <td className="p-3 text-right font-bold text-vintage-accent text-sm">
+                          +${Number(comm.commission_amount || 0).toFixed(2)}
+                        </td>
+                        <td className="p-3 text-center">
+                          {comm.status === 'pending_clearance' && (
+                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 border border-amber-800 text-amber-900 bg-amber-50">
+                              <Clock size={10} /> Holding
+                            </span>
+                          )}
+                          {comm.status === 'approved' && (
+                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 border border-green-800 text-green-900 bg-green-50">
+                              <CheckCircle2 size={10} /> Cleared
+                            </span>
+                          )}
+                          {comm.status === 'paid' && (
+                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 border border-blue-800 text-blue-900 bg-blue-50">
+                              <DollarSign size={10} /> Paid Out
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -350,27 +503,24 @@ const AffiliatePortal: React.FC = () => {
       {/* TAB 2: ACCOUNT & PAYOUT SETTINGS */}
       {activeTab === 'settings' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="border-4 border-double border-vintage-ink p-8 bg-vintage-background/80 space-y-6">
-            
-            <div className="border-b border-vintage-ink pb-4">
-              <span className="text-[9px] font-bold text-vintage-accent uppercase tracking-[0.3em] block">
-                Configuration Vault
-              </span>
-              <h3 className="text-2xl font-display">
-                Partner Account & Payout Preferences
+          <div className="border border-vintage-ink bg-vintage-paper p-6 sm:p-8 space-y-6 max-w-3xl">
+            <div>
+              <h3 className="text-xl font-display italic text-vintage-ink">
+                Partner Account Profile & Payment Configuration
               </h3>
-              <p className="text-xs italic text-vintage-ink/70 mt-1">
-                Keep your payout email and custom vanity route up to date.
+              <p className="text-xs font-serif italic text-vintage-ink/70 mt-1">
+                Keep your payout destination, vanity credentials, and physical address up-to-date.
               </p>
             </div>
 
             {settingsSuccess && (
-              <div className="p-4 border border-green-600 bg-green-50 text-green-900 font-bold text-xs flex items-center gap-2">
-                <Check size={16} /> {settingsSuccess}
+              <div className="p-4 border border-green-800 bg-green-50 text-green-900 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 size={16} /> {settingsSuccess}
               </div>
             )}
+
             {settingsError && (
-              <div className="p-4 border border-red-600 bg-red-50 text-red-900 font-bold text-xs flex items-center gap-2">
+              <div className="p-4 border border-red-800 bg-red-50 text-red-900 text-xs font-bold flex items-center gap-2">
                 <AlertCircle size={16} /> {settingsError}
               </div>
             )}
@@ -414,8 +564,134 @@ const AffiliatePortal: React.FC = () => {
                   />
                 </div>
                 <span className="text-[11px] font-serif italic text-vintage-ink/60 block">
-                  Alphanumeric only (3–20 chars). Updating your code updates your referral URL immediately.
+                  Alphanumeric only (3–20 chars). Updating your code syncs your vanity URL and promo coupon (<code className="font-bold">{editVanityCode || 'CODE'}10</code>).
                 </span>
+              </div>
+
+              {/* Phone Field */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider block flex items-center gap-1.5 text-vintage-ink">
+                  <Phone size={14} className="text-vintage-accent" /> Phone Number (With Dial Code)
+                </label>
+                <div className="flex border border-vintage-ink bg-vintage-paper">
+                  <select
+                    value={editPhoneCode}
+                    onChange={(e) => setEditPhoneCode(e.target.value)}
+                    className="p-3 bg-vintage-background/60 border-r border-vintage-ink font-mono text-xs font-bold outline-none cursor-pointer text-vintage-ink shrink-0 max-w-[140px]"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={`${c.code}-${c.dial}`} value={c.dial}>
+                        {c.code} ({c.dial})
+                      </option>
+                    ))}
+                  </select>
+                  <input 
+                    type="tel"
+                    required
+                    value={editPhoneNumber}
+                    onChange={(e) => setEditPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="81234567890"
+                    className="w-full px-4 py-3 font-mono text-sm font-bold outline-none bg-transparent text-vintage-ink"
+                  />
+                </div>
+              </div>
+
+              {/* Physical Address Section */}
+              <div className="p-4 border border-vintage-ink bg-vintage-background/60 space-y-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-vintage-accent block flex items-center gap-1.5">
+                  <MapPin size={14} /> Physical Address / Tax Verification
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                      Country
+                    </label>
+                    <select
+                      value={editCountry}
+                      onChange={(e) => handleCountryChange(e.target.value)}
+                      className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none cursor-pointer text-vintage-ink"
+                    >
+                      {COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                      State / Province
+                    </label>
+                    {provinceOptions.length > 0 ? (
+                      <select
+                        value={editStateProvince}
+                        onChange={(e) => setEditStateProvince(e.target.value)}
+                        className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none cursor-pointer text-vintage-ink"
+                      >
+                        {provinceOptions.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input 
+                        type="text" 
+                        value={editStateProvince}
+                        onChange={(e) => setEditStateProvince(e.target.value)}
+                        placeholder="State or Region" 
+                        required
+                        className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                      City / District
+                    </label>
+                    <input 
+                      type="text" 
+                      value={editCity}
+                      onChange={(e) => setEditCity(e.target.value)}
+                      placeholder="e.g. Jakarta Selatan" 
+                      required
+                      className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                      Postal / ZIP Code
+                    </label>
+                    <input 
+                      type="text" 
+                      value={editPostalCode}
+                      onChange={(e) => setEditPostalCode(e.target.value)}
+                      placeholder="e.g. 12190" 
+                      required
+                      className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-vintage-ink block">
+                    Street Address
+                  </label>
+                  <input 
+                    type="text" 
+                    value={editStreetAddress}
+                    onChange={(e) => setEditStreetAddress(e.target.value)}
+                    placeholder="Street name, suite, unit, building" 
+                    required
+                    className="w-full p-2.5 border border-vintage-ink bg-white font-mono text-xs font-bold outline-none text-vintage-ink"
+                  />
+                </div>
               </div>
 
               {/* Fixed Details Summary Card */}
@@ -455,6 +731,13 @@ const AffiliatePortal: React.FC = () => {
                   onClick={() => {
                     setEditPaypalEmail(affiliate.paypal_email || '');
                     setEditVanityCode(affiliate.affiliate_code || '');
+                    if (affiliate.phone_code) setEditPhoneCode(affiliate.phone_code);
+                    if (affiliate.phone_number) setEditPhoneNumber(affiliate.phone_number);
+                    if (affiliate.country) setEditCountry(affiliate.country);
+                    if (affiliate.state_province) setEditStateProvince(affiliate.state_province);
+                    if (affiliate.city) setEditCity(affiliate.city);
+                    if (affiliate.postal_code) setEditPostalCode(affiliate.postal_code);
+                    if (affiliate.street_address) setEditStreetAddress(affiliate.street_address);
                     setSettingsError('');
                     setSettingsSuccess('');
                   }}

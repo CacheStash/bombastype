@@ -195,7 +195,9 @@ const Checkout: React.FC = () => {
             order_id: finalOrderId,
             cart_items: cart,
             paypal_breakdown: paypalBreakdown || null,
-            affiliate_ref: storedRef
+            affiliate_ref: storedRef,
+            coupon_code: appliedCoupon?.code || null,
+            coupon_id: appliedCoupon?.id || null
           }
         })
       });
