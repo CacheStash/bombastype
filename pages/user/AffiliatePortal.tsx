@@ -9,7 +9,7 @@ import {
   Copy, Check, ArrowRight, Clock, CheckCircle2, DollarSign, 
   AlertCircle, Share2, ExternalLink, Settings, Save, Mail, Hash,
   Tag, MapPin, Phone, Calendar, Wallet, ChevronRight, FileText,
-  Zap, RefreshCw, X, Sparkles, Info, ShieldCheck, Percent, Timer, Award
+  Zap, RefreshCw, X, Sparkles, Info, ShieldCheck, Percent, Timer, Award, Star
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { 
@@ -22,7 +22,7 @@ import {
   getNextMonthlyPayoutDate,
   AFFILIATE_MIN_PAYOUT_USD
 } from '../../utils/affiliateGeo';
-import { calculateAffiliateMilestone, getClaimedMilestones } from '../../utils/affiliateMilestone';
+import { calculateAffiliateMilestone, getClaimedMilestones, getAffiliateEarningBadge } from '../../utils/affiliateMilestone';
 import { CountryCombobox } from '../../components/CountryCombobox';
 import { PhoneDialCombobox } from '../../components/PhoneDialCombobox';
 
@@ -511,6 +511,7 @@ const AffiliatePortal: React.FC = () => {
   const totalGrossSales = commissions.reduce((sum, c) => sum + Number(c.gross_amount || 0), 0);
   const claimedMilestones = affiliate ? getClaimedMilestones(affiliate.id, Math.floor(totalGrossSales / 1000)) : [];
   const milestoneInfo = calculateAffiliateMilestone(totalGrossSales, claimedMilestones);
+  const earningBadge = getAffiliateEarningBadge(totalGrossSales);
 
   const isQualifiedForPayout = readyAmount >= AFFILIATE_MIN_PAYOUT_USD;
   const thresholdPercentage = Math.min(100, (readyAmount / AFFILIATE_MIN_PAYOUT_USD) * 100);
@@ -579,13 +580,69 @@ const AffiliatePortal: React.FC = () => {
       
       {/* HEADER SECTION WITH SUB-NAV */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-vintage-ink/20 pb-6">
-        <div>
-          <span className="text-xs font-bold text-vintage-accent uppercase tracking-wider block font-sans">
-            Affiliate Account
-          </span>
-          <h2 className="text-3xl font-display">
-            Affiliate Code: <span className="font-bold text-vintage-ink">{affiliate.affiliate_code}</span>
-          </h2>
+        <div className="flex items-center gap-3.5">
+          {/* EARNING BADGE (Envato Style Star/Medal with Tier Number) */}
+          <div 
+            className="group relative flex items-center justify-center shrink-0 cursor-help"
+            title={earningBadge.hasEarned 
+              ? `${earningBadge.label} (Total Gross Sales: $${totalGrossSales.toFixed(2)})`
+              : `Creator Earning Badge: Reach $100 gross sales to unlock Level 1 (Current: $${totalGrossSales.toFixed(2)})`}
+          >
+            <div className={`relative w-12 h-12 rounded-full flex flex-col items-center justify-center border transition-all ${
+              earningBadge.hasEarned 
+                ? 'bg-gradient-to-br from-[#F5DFB3] via-[#D4AF37] to-[#8E6D38] border-[#785928] text-vintage-ink shadow-md shadow-amber-900/15'
+                : 'bg-vintage-paper border-vintage-ink/20 text-vintage-ink/40'
+            }`}>
+              <div className="flex items-center justify-center leading-none -mb-0.5">
+                <Star 
+                  size={11} 
+                  className={earningBadge.hasEarned ? "fill-amber-900 text-amber-900" : "fill-vintage-ink/20 text-vintage-ink/30"} 
+                />
+              </div>
+              <span className={`text-lg font-black leading-none font-display ${
+                earningBadge.hasEarned ? 'text-vintage-ink' : 'text-vintage-ink/40'
+              }`}>
+                {earningBadge.level > 0 ? earningBadge.level : '0'}
+              </span>
+              <span className={`text-[7px] font-bold uppercase tracking-tighter leading-none ${
+                earningBadge.hasEarned ? 'text-vintage-ink/80 font-sans' : 'text-vintage-ink/30 font-sans'
+              }`}>
+                LVL
+              </span>
+            </div>
+
+            {/* Hover Tooltip Card */}
+            <div className="absolute left-0 top-full mt-2 hidden group-hover:flex flex-col z-30 w-56 p-2.5 bg-vintage-ink text-vintage-paper text-xs shadow-xl border border-vintage-accent/40 rounded-none pointer-events-none font-sans">
+              <div className="flex items-center gap-1.5 font-bold text-vintage-accent text-[11px] uppercase tracking-wider mb-1">
+                <Award size={13} />
+                {earningBadge.hasEarned ? `Level ${earningBadge.level} Creator` : 'Creator Earning Badge'}
+              </div>
+              <p className="text-[11px] leading-tight text-vintage-paper/90 mb-1.5">
+                {earningBadge.hasEarned 
+                  ? `Achieved author milestone badge based on total gross sales.` 
+                  : `Reach $100 in gross referral sales to unlock your Level 1 badge!`}
+              </p>
+              <div className="text-[10px] font-mono border-t border-vintage-paper/20 pt-1 flex justify-between">
+                <span className="text-vintage-paper/60">Total Gross:</span>
+                <span className="font-bold text-vintage-accent">${totalGrossSales.toFixed(2)}</span>
+              </div>
+              {earningBadge.nextMinGross && (
+                <div className="text-[10px] font-mono flex justify-between mt-0.5">
+                  <span className="text-vintage-paper/60">Next Level ({earningBadge.level + 1}):</span>
+                  <span className="font-bold text-vintage-paper">${earningBadge.nextMinGross}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <span className="text-xs font-bold text-vintage-accent uppercase tracking-wider block font-sans">
+              Affiliate Account
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-display">
+              Affiliate Code: <span className="font-bold text-vintage-ink">{affiliate.affiliate_code}</span>
+            </h2>
+          </div>
         </div>
 
         {/* SUB TAB CONTROLS */}
@@ -656,6 +713,17 @@ const AffiliatePortal: React.FC = () => {
                   {copiedLink ? <Check size={14} className="text-green-800" /> : <Copy size={14} />}
                   {copiedLink ? 'COPIED' : 'COPY'}
                 </button>
+              </div>
+
+              {/* ADDRESS BAR AUTO-CLEAN NOTICE */}
+              <div className="p-2.5 bg-vintage-accent/5 border border-vintage-accent/20 text-xs text-vintage-ink space-y-1 font-sans">
+                <div className="flex items-center gap-1.5 font-bold text-vintage-accent text-[11px] uppercase tracking-wider">
+                  <Info size={13} />
+                  <span>Address Bar Auto-Clean Notice</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-vintage-ink/80">
+                  When visitors open your link in their address bar, the slug tag automatically dissolves into a clean URL for a pristine browsing experience. This is our standard platform behavior—your referral cookie is securely recorded for 30 days and commissions will track seamlessly!
+                </p>
               </div>
 
               <div className="flex items-center justify-between text-xs text-vintage-ink font-sans">
@@ -1393,8 +1461,8 @@ const AffiliatePortal: React.FC = () => {
                     className="grow px-4 py-3 font-mono text-sm font-bold uppercase bg-transparent outline-none text-vintage-ink"
                   />
                 </div>
-                <span className="text-xs text-vintage-ink/80 font-sans block">
-                  Alphanumeric only (3–20 chars). Updating your code sets your custom referral link (<code>bombastype.com/c/{editVanityCode || 'CODE'}</code>).
+                <span className="text-xs text-vintage-ink/80 font-sans block leading-relaxed">
+                  Alphanumeric only (3–20 chars). Updating your code sets your custom referral link (<code>bombastype.com/c/{editVanityCode || 'CODE'}</code>). Note: When opened in an address bar, the slug cleans itself to show a pristine link while retaining your 30-day referral attribution.
                 </span>
               </div>
 

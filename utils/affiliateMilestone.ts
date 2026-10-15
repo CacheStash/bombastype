@@ -126,3 +126,56 @@ export function markMilestoneClaimed(affiliateId: string, currentCycle: number, 
     }
   } catch (_) {}
 }
+
+export interface EarningBadgeInfo {
+  level: number;
+  label: string;
+  minGross: number;
+  nextMinGross: number | null;
+  hasEarned: boolean;
+  totalGrossSales: number;
+}
+
+export const EARNING_BADGE_LEVELS = [
+  { level: 1, threshold: 100, label: 'Level 1 Creator ($100+ Gross)' },
+  { level: 2, threshold: 500, label: 'Level 2 Creator ($500+ Gross)' },
+  { level: 3, threshold: 1000, label: 'Level 3 Creator ($1,000+ Gross)' },
+  { level: 4, threshold: 2500, label: 'Level 4 Creator ($2,500+ Gross)' },
+  { level: 5, threshold: 5000, label: 'Level 5 Creator ($5,000+ Gross)' },
+  { level: 6, threshold: 10000, label: 'Level 6 Creator ($10,000+ Gross)' },
+  { level: 7, threshold: 25000, label: 'Level 7 Creator ($25,000+ Gross)' },
+  { level: 8, threshold: 50000, label: 'Level 8 Creator ($50,000+ Gross)' },
+  { level: 9, threshold: 100000, label: 'Level 9 Creator ($100,000+ Gross)' },
+  { level: 10, threshold: 250000, label: 'Level 10 Creator ($250,000+ Gross)' }
+];
+
+export function getAffiliateEarningBadge(totalGrossSales: number): EarningBadgeInfo {
+  const safeGross = Math.max(0, Number(totalGrossSales) || 0);
+  let currentLevel = 0;
+  let currentLabel = 'New Creator';
+  let minGross = 0;
+  let nextMinGross: number | null = EARNING_BADGE_LEVELS[0].threshold;
+
+  for (let i = 0; i < EARNING_BADGE_LEVELS.length; i++) {
+    if (safeGross >= EARNING_BADGE_LEVELS[i].threshold) {
+      currentLevel = EARNING_BADGE_LEVELS[i].level;
+      currentLabel = EARNING_BADGE_LEVELS[i].label;
+      minGross = EARNING_BADGE_LEVELS[i].threshold;
+      nextMinGross = EARNING_BADGE_LEVELS[i + 1]?.threshold || null;
+    } else {
+      if (currentLevel === 0) {
+        nextMinGross = EARNING_BADGE_LEVELS[i].threshold;
+      }
+      break;
+    }
+  }
+
+  return {
+    level: currentLevel,
+    label: currentLabel,
+    minGross,
+    nextMinGross,
+    hasEarned: currentLevel > 0,
+    totalGrossSales: safeGross
+  };
+}
