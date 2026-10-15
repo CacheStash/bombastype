@@ -336,12 +336,12 @@ const FontDetail: React.FC = () => {
                 Partner Quick Share:
               </span>
               <code className="font-mono text-xs font-bold text-vintage-ink bg-vintage-ink/10 px-2 py-1 border border-vintage-ink">
-                {`${window.location.origin.replace('://www.', '://')}/c/${affiliateCode}/${font.id}`}
+                {`${window.location.origin}/c/${affiliateCode}/${font.id}`}
               </code>
             </div>
             <button 
               onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin.replace('://www.', '://')}/c/${affiliateCode}/${font.id}`);
+                navigator.clipboard.writeText(`${window.location.origin}/c/${affiliateCode}/${font.id}`);
                 setAffiliateCopied(true);
                 setTimeout(() => setAffiliateCopied(false), 2000);
               }}

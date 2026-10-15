@@ -475,8 +475,7 @@ const AffiliatePortal: React.FC = () => {
     );
   }
 
-  const cleanOrigin = window.location.origin.replace('://www.', '://');
-  const shareUrl = `${cleanOrigin}/c/${affiliate.affiliate_code}`;
+  const shareUrl = `${window.location.origin}/c/${affiliate.affiliate_code}`;
   const couponCode = couponCodeCustom || (affiliateCoupon?.code) || `${affiliate.affiliate_code}${couponDiscountPercent}`;
 
   const handleCopyLink = () => {

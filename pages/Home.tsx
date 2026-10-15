@@ -255,8 +255,7 @@ export default function Home() {
   const handleCopyAffiliate = (e: React.MouseEvent, fontId: string) => {
     e.stopPropagation();
     if (!affiliateCode) return;
-    const cleanOrigin = window.location.origin.replace('://www.', '://');
-    navigator.clipboard.writeText(`${cleanOrigin}/c/${affiliateCode}/${fontId}`);
+    navigator.clipboard.writeText(`${window.location.origin}/c/${affiliateCode}/${fontId}`);
     setCopiedFontId(fontId);
     setTimeout(() => setCopiedFontId(null), 2000);
   };
