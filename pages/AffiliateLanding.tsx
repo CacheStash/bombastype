@@ -110,13 +110,22 @@ const AffiliateLanding: React.FC = () => {
     setCodeAvailability('checking');
     const timer = setTimeout(async () => {
       try {
-        const { data } = await supabase
-          .from('affiliates')
-          .select('id, user_id')
-          .ilike('affiliate_code', clean)
-          .maybeSingle();
+        if (existingAffiliate?.affiliate_code && existingAffiliate.affiliate_code.toUpperCase() === clean) {
+          setCodeAvailability('available');
+          return;
+        }
 
-        if (data && (!sessionUser || data.user_id !== sessionUser.id)) {
+        const { data: isTaken, error } = await supabase.rpc('affiliate_code_exists', {
+          check_code: clean
+        });
+
+        if (error) {
+          console.warn('RPC affiliate_code_exists check failed:', error.message);
+          setCodeAvailability('idle');
+          return;
+        }
+
+        if (isTaken) {
           setCodeAvailability('taken');
         } else {
           setCodeAvailability('available');
@@ -126,7 +135,7 @@ const AffiliateLanding: React.FC = () => {
       }
     }, 350);
     return () => clearTimeout(timer);
-  }, [affiliateCode, sessionUser]);
+  }, [affiliateCode, sessionUser, existingAffiliate]);
 
   const handleCountryChange = (selectedCountry: string, dialCode?: string) => {
     setCountry(selectedCountry);
@@ -197,14 +206,14 @@ const AffiliateLanding: React.FC = () => {
     setLoading(true);
     try {
       // Check if code taken by someone else
-      const { data: takenCheck } = await supabase
-        .from('affiliates')
-        .select('id, user_id')
-        .ilike('affiliate_code', cleanCode)
-        .maybeSingle();
+      if (!existingAffiliate?.affiliate_code || existingAffiliate.affiliate_code.toUpperCase() !== cleanCode) {
+        const { data: isTaken } = await supabase.rpc('affiliate_code_exists', {
+          check_code: cleanCode
+        });
 
-      if (takenCheck && takenCheck.user_id !== sessionUser.id) {
-        throw new Error('This partner code is already reserved by another creator. Please pick another.');
+        if (isTaken) {
+          throw new Error('This partner code is already reserved by another creator. Please pick another.');
+        }
       }
 
       const fullPayload = {

@@ -57,6 +57,92 @@ async function getSupabaseUser(authHeader, env) {
   return null;
 }
 
+// In-memory cache for PayPal OAuth access tokens
+let cachedPaypalTokens = {};
+
+async function getPaypalSandboxMode(supabaseUrl, serviceRoleKey, env) {
+  let isSandbox = env.PAYPAL_SANDBOX_MODE === 'true' || env.PAYPAL_SANDBOX_MODE === true;
+  try {
+    const sRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_sandbox_mode&select=value`, {
+      headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+    });
+    if (sRes.ok) {
+      const sData = await sRes.json();
+      if (sData && sData.length > 0) {
+        const val = sData[0].value;
+        isSandbox = val === true || val === 'true';
+      }
+    }
+  } catch (_) {}
+  return isSandbox;
+}
+
+async function getPaypalAccessToken(env, isSandbox) {
+  const clientId = isSandbox 
+    ? (env.PAYPAL_SANDBOX_CLIENT_ID || env.PAYPAL_CLIENT_ID) 
+    : (env.PAYPAL_CLIENT_ID || env.PAYPAL_SANDBOX_CLIENT_ID);
+  const clientSecret = isSandbox 
+    ? (env.PAYPAL_SANDBOX_CLIENT_SECRET || env.PAYPAL_CLIENT_SECRET) 
+    : (env.PAYPAL_CLIENT_SECRET || env.PAYPAL_SANDBOX_CLIENT_SECRET);
+
+  if (!clientId || !clientSecret) return null;
+
+  const cacheKey = `${clientId}:${isSandbox}`;
+  const now = Date.now();
+  if (cachedPaypalTokens[cacheKey] && cachedPaypalTokens[cacheKey].expiresAt > now + 60000) {
+    return cachedPaypalTokens[cacheKey];
+  }
+
+  const paypalHost = isSandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+  const basicAuth = btoa(`${clientId}:${clientSecret}`);
+  const tokenRes = await fetch(`${paypalHost}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${basicAuth}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: 'grant_type=client_credentials'
+  });
+
+  if (!tokenRes.ok) return null;
+  const tokenData = await tokenRes.json();
+  if (!tokenData.access_token) return null;
+
+  const expiresInSec = tokenData.expires_in || 3600;
+  const authObj = {
+    token: tokenData.access_token,
+    host: paypalHost,
+    expiresAt: now + (expiresInSec * 1000)
+  };
+  cachedPaypalTokens[cacheKey] = authObj;
+  return authObj;
+}
+
+async function verifyPaypalOrderCapture(paypalOrderId, expectedTotal, env, isSandbox) {
+  if (!paypalOrderId) return null;
+  const auth = await getPaypalAccessToken(env, isSandbox);
+  if (!auth) return null;
+
+  const orderRes = await fetch(`${auth.host}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}`, {
+    headers: { 'Authorization': `Bearer ${auth.token}` }
+  });
+
+  if (!orderRes.ok) return null;
+  const orderData = await orderRes.json();
+  const capture = orderData.purchase_units?.[0]?.payments?.captures?.[0];
+  if (orderData.status !== 'COMPLETED' || capture?.status !== 'COMPLETED') return null;
+
+  if (expectedTotal !== null && expectedTotal !== undefined && expectedTotal > 0) {
+    const capturedVal = parseFloat(capture.amount?.value || '0');
+    if (Math.abs(capturedVal - expectedTotal) > 0.05) {
+      console.warn(`PayPal capture amount mismatch: captured=${capturedVal}, expected=${expectedTotal}`);
+      return null;
+    }
+  }
+
+  return capture;
+}
+
 // Fungsi ini membungkus file mentah menjadi kontainer ZIP yang valid secara manual
 // Ultra-fast Slicing-by-8 CRC32 table (Intel algorithm, ~5x faster in Cloudflare V8)
 const CRC_TABLE_8 = new Uint32Array(256 * 8);
@@ -2329,7 +2415,35 @@ export default {
         const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
         const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-        const transactionId = metadata?.order_id || `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        const items = metadata?.cart_items || [];
+        const isTrialOrder = type === 'trial' || (items.length > 0 && items.every(i => Number(i.price) === 0));
+
+        // Server-Side PayPal Capture Verification for Paid Orders
+        let verifiedCapture = null;
+        if (!isTrialOrder) {
+          const paypalOrderId = metadata?.paypal_order_id;
+          const isSandbox = await getPaypalSandboxMode(supabaseUrl, serviceRoleKey, env);
+
+          if (paypalOrderId) {
+            verifiedCapture = await verifyPaypalOrderCapture(paypalOrderId, null, env, isSandbox);
+          }
+
+          const clientId = isSandbox 
+            ? (env.PAYPAL_SANDBOX_CLIENT_ID || env.PAYPAL_CLIENT_ID) 
+            : (env.PAYPAL_CLIENT_ID || env.PAYPAL_SANDBOX_CLIENT_ID);
+
+          if (clientId && !verifiedCapture) {
+            return new Response(JSON.stringify({ 
+              error: "PAYMENT_NOT_VERIFIED", 
+              message: "PayPal payment transaction could not be verified on the server. If your payment was captured, please contact support." 
+            }), { 
+              status: 400, 
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+            });
+          }
+        }
+
+        const transactionId = metadata?.order_id || (verifiedCapture?.id ? verifiedCapture.id : `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
 
         // 1. Cari/Update User (Logic Resetter)
         const userCheckRes = await fetch(`${supabaseUrl}/rest/v1/fontbuyer?email=eq.${email}&select=id`, {
@@ -2355,17 +2469,7 @@ export default {
             })
           });
 
-          // B. Update Password Auth ke Order ID Transaksi Baru
-          await fetch(`${supabaseUrl}/auth/v1/admin/users/${targetUserId}`, {
-            method: 'PUT',
-            headers: { 
-              'apikey': env.SUPABASE_SERVICE_ROLE_KEY, 
-              'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, 
-              'Content-Type': 'application/json' 
-            },
-            body: JSON.stringify({ password: transactionId })
-          });
-
+          // Password of existing user is NEVER overwritten (fixes Account Takeover vulnerability)
         } else {
           // Hanya user BARU yang dibuatkan password otomatis menggunakan Order ID
           const createRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
@@ -2397,7 +2501,6 @@ export default {
 
         // 2. Masukkan ke font_history (Sinkronisasi Granular Tier)
         let historyEntries = [];
-        const items = metadata?.cart_items || [];
 
         const checkIds = items.length > 0 
           ? items.map(i => i.id) 
@@ -2464,7 +2567,12 @@ export default {
 
         const historyRes = await fetch(`${supabaseUrl}/rest/v1/font_history`, {
           method: 'POST',
-          headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
+          headers: { 
+            'apikey': serviceRoleKey, 
+            'Authorization': `Bearer ${serviceRoleKey}`, 
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=ignore-duplicates'
+          },
           body: JSON.stringify(historyEntries)
         });
 
@@ -2533,7 +2641,7 @@ export default {
               if (aff) {
                     const isSelfReferral = aff.user_id === targetUserId || (aff.paypal_email && aff.paypal_email.toLowerCase() === email.toLowerCase());
                     if (!isSelfReferral) {
-                      const breakdown = metadata?.paypal_breakdown;
+                      const breakdown = verifiedCapture?.seller_receivable_breakdown || metadata?.paypal_breakdown;
                       let gross = 0;
                       let inboundFee = 0;
                       let netStore = 0;
@@ -2542,6 +2650,10 @@ export default {
                         gross = parseFloat(breakdown.gross_amount.value);
                         inboundFee = parseFloat(breakdown.paypal_fee.value);
                         netStore = breakdown.net_amount?.value ? parseFloat(breakdown.net_amount.value) : (gross - inboundFee);
+                      } else if (verifiedCapture?.amount?.value) {
+                        gross = parseFloat(verifiedCapture.amount.value);
+                        inboundFee = (gross * 0.044) + 0.30;
+                        netStore = Math.max(0, gross - inboundFee);
                       } else {
                         gross = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
                         inboundFee = (gross * 0.044) + 0.30;
@@ -2552,25 +2664,9 @@ export default {
                       const commissionAmount = parseFloat((netStore * rate).toFixed(2));
 
                       if (commissionAmount > 0) {
-                        let isDummyTestAffiliate = false;
-                        if (aff.user_id) {
-                          try {
-                            const uRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${aff.user_id}`, {
-                              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
-                            });
-                            if (uRes.ok) {
-                              const uData = await uRes.json();
-                              if ((uData?.email || '').toLowerCase().trim() === 'gotrainer19@gmail.com') {
-                                isDummyTestAffiliate = true;
-                              }
-                            }
-                          } catch (uErr) {
-                            console.error('Error verifying affiliate auth user email:', uErr);
-                          }
-                        }
-                        const holdDays = isDummyTestAffiliate ? -14 : 14;
+                        const holdDays = 14;
                         const clearedAtDate = new Date(Date.now() + holdDays * 24 * 60 * 60 * 1000).toISOString();
-                        const commStatus = isDummyTestAffiliate ? 'approved' : 'pending_clearance';
+                        const commStatus = 'pending_clearance';
 
                         const commRecord = {
                           affiliate_id: aff.id,
@@ -2585,9 +2681,6 @@ export default {
                           status: commStatus,
                           cleared_at: clearedAtDate
                         };
-                        if (isDummyTestAffiliate) {
-                          commRecord.created_at = clearedAtDate;
-                        }
 
                         if (commissionAttributionType) commRecord.attribution_type = commissionAttributionType;
                         if (commissionCouponCode) commRecord.coupon_code = commissionCouponCode;
@@ -2597,7 +2690,8 @@ export default {
                           headers: {
                             'apikey': serviceRoleKey,
                             'Authorization': `Bearer ${serviceRoleKey}`,
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'Prefer': 'resolution=ignore-duplicates'
                           },
                           body: JSON.stringify(commRecord)
                         });
@@ -2611,7 +2705,8 @@ export default {
                             headers: {
                               'apikey': serviceRoleKey,
                               'Authorization': `Bearer ${serviceRoleKey}`,
-                              'Content-Type': 'application/json'
+                              'Content-Type': 'application/json',
+                              'Prefer': 'resolution=ignore-duplicates'
                             },
                             body: JSON.stringify(commRecord)
                           });
@@ -3860,26 +3955,55 @@ export default {
           };
         });
 
-        // 3. Send Payouts Batch to PayPal REST API
-        const payoutRes = await fetch(`${paypalHost}/v1/payments/payouts`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            sender_batch_header: {
-              sender_batch_id: senderBatchId,
-              email_subject: "You have an affiliate commission payout from BombasType!",
-              email_message: "Here is your affiliate commission payout from BombasType. Thank you for your partnership!"
+        // 2b. Lock targeted commissions atomically to 'processing' before PayPal dispatch
+        const allTargetCommIds = payouts.flatMap(p => Array.isArray(p.commission_ids) ? p.commission_ids : []).filter(Boolean);
+        if (allTargetCommIds.length > 0) {
+          await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?id=in.(${allTargetCommIds.join(',')})&status=in.(approved,pending_clearance)`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json'
             },
-            items
-          })
-        });
+            body: JSON.stringify({
+              status: 'processing',
+              payout_batch_id: senderBatchId
+            })
+          });
+        }
 
-        const payoutResult = await payoutRes.json();
-        if (!payoutRes.ok) {
-          throw new Error(`PayPal Payouts Rejected (${payoutRes.status}): ${payoutResult.message || JSON.stringify(payoutResult)}`);
+        // 3. Send Payouts Batch to PayPal REST API
+        let payoutResult;
+        try {
+          const payoutRes = await fetch(`${paypalHost}/v1/payments/payouts`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              sender_batch_header: {
+                sender_batch_id: senderBatchId,
+                email_subject: "You have an affiliate commission payout from BombasType!",
+                email_message: "Here is your affiliate commission payout from BombasType. Thank you for your partnership!"
+              },
+              items
+            })
+          });
+
+          payoutResult = await payoutRes.json();
+          if (!payoutRes.ok) {
+            throw new Error(`PayPal Payouts Rejected (${payoutRes.status}): ${payoutResult.message || JSON.stringify(payoutResult)}`);
+          }
+        } catch (paypalErr) {
+          if (allTargetCommIds.length > 0) {
+            await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?payout_batch_id=eq.${senderBatchId}&status=eq.processing`, {
+              method: 'PATCH',
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'approved', payout_batch_id: null })
+            });
+          }
+          throw paypalErr;
         }
 
         const paypalBatchId = payoutResult.batch_header?.payout_batch_id || senderBatchId;
@@ -4007,9 +4131,12 @@ export default {
         const affiliates = affRes.ok ? await affRes.json() : [];
         const affiliate = affiliates[0];
 
-        if (!affiliate) {
-          return new Response(JSON.stringify({ error: "AFFILIATE_NOT_FOUND", message: "You are not registered as an affiliate partner." }), {
-            status: 404,
+        if (!affiliate || affiliate.status !== 'active') {
+          return new Response(JSON.stringify({ 
+            error: "AFFILIATE_INACTIVE", 
+            message: "Your affiliate account is not active or has been suspended. Please contact support." 
+          }), {
+            status: 403,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
           });
         }
@@ -4025,22 +4152,44 @@ export default {
           });
         }
 
-        // 2. Query Eligible Commissions from Database (Server-Side Recalculation)
-        const commRes = await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?affiliate_id=eq.${affiliate.id}&status=in.(pending_clearance,approved)&select=*`, {
-          headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+        // 2. Atomically Claim Eligible Commissions to status='processing'
+        const batchTimestamp = new Date().toISOString().substring(0, 10).replace(/-/g, '');
+        const senderBatchId = `BT-WITHDRAW-${batchTimestamp}-${affiliate.id.substring(0, 8)}-${Date.now().toString(36).toUpperCase()}`;
+
+        const claimRpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/claim_commissions`, {
+          method: 'POST',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            p_aff_id: affiliate.id,
+            p_batch_id: senderBatchId
+          })
         });
-        const allComms = commRes.ok ? await commRes.json() : [];
-        const now = new Date();
 
-        // Must be approved OR pending_clearance with cleared_at <= now
-        const eligibleComms = allComms.filter(c => 
-          c.status === 'approved' || (c.status === 'pending_clearance' && new Date(c.cleared_at) <= now)
-        );
+        const claimedRows = claimRpcRes.ok ? await claimRpcRes.json() : [];
+        if (!claimedRows || claimedRows.length === 0) {
+          return new Response(JSON.stringify({ 
+            error: "NO_COMMISSIONS_AVAILABLE", 
+            message: "No cleared commissions are currently available for withdrawal, or a payout is already processing." 
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
 
-        const readyAmount = eligibleComms.reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+        const readyAmount = claimedRows.reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
         const MIN_WITHDRAW_THRESHOLD = 50.00;
 
         if (readyAmount < MIN_WITHDRAW_THRESHOLD) {
+          // Rollback claimed commissions back to 'approved'
+          await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?payout_batch_id=eq.${senderBatchId}&status=eq.processing`, {
+            method: 'PATCH',
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'approved', payout_batch_id: null })
+          });
           return new Response(JSON.stringify({ 
             error: "THRESHOLD_NOT_MET", 
             message: `Minimum withdrawal threshold is $${MIN_WITHDRAW_THRESHOLD.toFixed(2)} USD. Your cleared balance is currently $${readyAmount.toFixed(2)} USD.` 
@@ -4060,6 +4209,11 @@ export default {
         if (reqBody.amount !== undefined && reqBody.amount !== null && reqBody.amount !== '') {
           const parsed = Number(reqBody.amount);
           if (isNaN(parsed) || parsed < MIN_WITHDRAW_THRESHOLD) {
+            await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?payout_batch_id=eq.${senderBatchId}&status=eq.processing`, {
+              method: 'PATCH',
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'approved', payout_batch_id: null })
+            });
             return new Response(JSON.stringify({ 
               error: "INVALID_AMOUNT", 
               message: `Withdrawal amount must be at least $${MIN_WITHDRAW_THRESHOLD.toFixed(2)} USD.` 
@@ -4069,6 +4223,11 @@ export default {
             });
           }
           if (parsed > readyAmount + 0.001) {
+            await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?payout_batch_id=eq.${senderBatchId}&status=eq.processing`, {
+              method: 'PATCH',
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'approved', payout_batch_id: null })
+            });
             return new Response(JSON.stringify({ 
               error: "EXCEEDS_BALANCE", 
               message: `Requested amount ($${parsed.toFixed(2)}) exceeds your cleared balance ($${readyAmount.toFixed(2)}).` 
@@ -4096,63 +4255,73 @@ export default {
 
         const tokenData = await tokenRes.json();
         if (!tokenRes.ok || !tokenData.access_token) {
+          await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?payout_batch_id=eq.${senderBatchId}&status=eq.processing`, {
+            method: 'PATCH',
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'approved', payout_batch_id: null })
+          });
           throw new Error(`PayPal OAuth Failed (${tokenRes.status}): ${tokenData.error_description || tokenData.error || 'Invalid credentials'}`);
         }
         const accessToken = tokenData.access_token;
 
         // 5. Execute PayPal REST API Payout with Outbound Gateway Fee Deduction
-        const batchTimestamp = new Date().toISOString().substring(0, 10).replace(/-/g, '');
-        const senderBatchId = `BT-WITHDRAW-${batchTimestamp}-${Date.now().toString(36).toUpperCase()}`;
-        
         const grossAmount = withdrawTarget;
         const payoutFee = Math.min(20.00, Math.round(grossAmount * 0.02 * 100) / 100);
         const netPayoutAmount = Math.max(0.01, Math.round((grossAmount - payoutFee) * 100) / 100);
         const netPayoutFormatted = netPayoutAmount.toFixed(2);
 
-        const payoutRes = await fetch(`${paypalHost}/v1/payments/payouts`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            sender_batch_header: {
-              sender_batch_id: senderBatchId,
-              email_subject: "Instant Affiliate Commission Withdrawal from BombasType!",
-              email_message: `Here is your affiliate withdrawal from BombasType: $${netPayoutFormatted} USD (Gross: $${grossAmount.toFixed(2)}, Gateway fee: $${payoutFee.toFixed(2)}). Thank you for partnering with us!`
+        let payoutResult;
+        try {
+          const payoutRes = await fetch(`${paypalHost}/v1/payments/payouts`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
             },
-            items: [
-              {
-                recipient_type: 'EMAIL',
-                amount: {
-                  value: netPayoutFormatted,
-                  currency: 'USD'
-                },
-                note: `BombasType Affiliate Withdrawal (${affiliate.affiliate_code}) - Net $${netPayoutFormatted} (Gateway Fee: $${payoutFee.toFixed(2)})`,
-                sender_item_id: `WITHDRAW-${affiliate.affiliate_code}-${Date.now().toString(36)}`,
-                receiver: paypalEmail
-              }
-            ]
-          })
-        });
+            body: JSON.stringify({
+              sender_batch_header: {
+                sender_batch_id: senderBatchId,
+                email_subject: "Instant Affiliate Commission Withdrawal from BombasType!",
+                email_message: `Here is your affiliate withdrawal from BombasType: $${netPayoutFormatted} USD (Gross: $${grossAmount.toFixed(2)}, Gateway fee: $${payoutFee.toFixed(2)}). Thank you for partnering with us!`
+              },
+              items: [
+                {
+                  recipient_type: 'EMAIL',
+                  amount: {
+                    value: netPayoutFormatted,
+                    currency: 'USD'
+                  },
+                  note: `BombasType Affiliate Withdrawal (${affiliate.affiliate_code}) - Net $${netPayoutFormatted} (Gateway Fee: $${payoutFee.toFixed(2)})`,
+                  sender_item_id: `WITHDRAW-${affiliate.affiliate_code}-${Date.now().toString(36)}`,
+                  receiver: paypalEmail
+                }
+              ]
+            })
+          });
 
-        const payoutResult = await payoutRes.json();
-        if (!payoutRes.ok) {
-          throw new Error(`PayPal Transfer Failed (${payoutRes.status}): ${payoutResult.message || JSON.stringify(payoutResult)}`);
+          payoutResult = await payoutRes.json();
+          if (!payoutRes.ok) {
+            throw new Error(`PayPal Transfer Failed (${payoutRes.status}): ${payoutResult.message || JSON.stringify(payoutResult)}`);
+          }
+        } catch (paypalErr) {
+          // Rollback claimed commissions back to 'approved' on PayPal failure
+          await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?payout_batch_id=eq.${senderBatchId}&status=eq.processing`, {
+            method: 'PATCH',
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'approved', payout_batch_id: null })
+          });
+          throw paypalErr;
         }
 
         const paypalBatchId = payoutResult.batch_header?.payout_batch_id || senderBatchId;
         const nowIso = new Date().toISOString();
 
         // 6. Allocate commissions & Update Database Records
-        // Sort oldest cleared first for FIFO allocation
-        eligibleComms.sort((a, b) => new Date(a.cleared_at).getTime() - new Date(b.cleared_at).getTime());
-
         let remainingToPay = Math.round(withdrawTarget * 100) / 100;
         const commissionsToMarkPaid = [];
         let splitCommissionToInsert = null;
 
-        for (const comm of eligibleComms) {
+        for (const comm of claimedRows) {
           if (remainingToPay <= 0) break;
           const commAmt = Math.round(Number(comm.commission_amount || 0) * 100) / 100;
 
@@ -4216,6 +4385,17 @@ export default {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify(splitCommissionToInsert)
+          });
+        }
+
+        // Release any claimed commissions that were not needed for this payout back to 'approved'
+        const usedIds = new Set(commissionsToMarkPaid.map(c => c.id));
+        const unusedIds = claimedRows.filter(r => !usedIds.has(r.id)).map(r => r.id);
+        if (unusedIds.length > 0) {
+          await fetch(`${supabaseUrl}/rest/v1/affiliate_commissions?id=in.(${unusedIds.join(',')})&status=eq.processing`, {
+            method: 'PATCH',
+            headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'approved', payout_batch_id: null })
           });
         }
 
@@ -4312,8 +4492,26 @@ export default {
 
         // 2. Validate clean code
         const cleanCode = (affiliateCode || currentAffiliate.affiliate_code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-        if (cleanCode.length < 3) {
-          return new Response(JSON.stringify({ error: "INVALID_CODE", message: "Affiliate code must be at least 3 characters." }), {
+        if (cleanCode.length < 3 || cleanCode.length > 24) {
+          return new Response(JSON.stringify({ error: "INVALID_CODE", message: "Partner code must be between 3 and 24 characters." }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const RESERVED_VANITY_CODES = new Set([
+          'ADMIN', 'API', 'AUTH', 'LOGIN', 'REGISTER', 'CHECKOUT', 'CART', 'SHOP',
+          'FONTS', 'USER', 'SETTINGS', 'DASHBOARD', 'TERMS', 'PRIVACY', 'SUPPORT',
+          'AFFILIATE', 'AFFILIATES', 'PARTNER', 'PARTNERS', 'COMMISSION', 'WITHDRAW',
+          'PAYPAL', 'PAYMENT', 'HELP', 'ABOUT', 'CONTACT', 'PRICING', 'BLOG', 'VAULT',
+          'CANVAS', 'TESTER', 'TYPE', 'FOUNDRY', 'SUBQI', 'BOMBASTYPE', 'NULL', 'UNDEFINED'
+        ]);
+
+        if (RESERVED_VANITY_CODES.has(cleanCode)) {
+          return new Response(JSON.stringify({ 
+            error: "RESERVED_CODE", 
+            message: `The partner code "${cleanCode}" is reserved by the system. Please pick another.` 
+          }), {
             status: 400,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
           });
