@@ -150,7 +150,8 @@ export const CountryCombobox: React.FC<CountryComboboxProps> = ({
           ) : (
             <ul className="divide-y divide-current/10 font-mono text-xs">
               {filtered.map((country) => {
-                const isSelected = country.name.toLowerCase() === value.trim().toLowerCase();
+                const cleanVal = (value || '').trim().toLowerCase();
+                const isSelected = cleanVal ? country.name.toLowerCase() === cleanVal : false;
                 return (
                   <li key={`${country.code}-${country.name}`}>
                     <button
