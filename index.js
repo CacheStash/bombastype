@@ -3149,7 +3149,7 @@ export default {
 
         if (supabaseUrl && serviceRoleKey) {
           const [bRes, sRes, affRes, authRes, cRes] = await Promise.all([
-            fetch(`${supabaseUrl}/rest/v1/fontbuyer?select=email,full_name`, {
+            fetch(`${supabaseUrl}/rest/v1/fontbuyer?select=id,email,full_name`, {
               headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
             }),
             fetch(`${supabaseUrl}/rest/v1/fontsubscribers?status=eq.active&select=email`, {
@@ -3182,19 +3182,32 @@ export default {
         }
 
         const authUserEmailMap = new Map((authUsers || []).map(u => [u.id, (u.email || '').trim().toLowerCase()]));
+        const buyerIdEmailMap = new Map((buyers || []).map(b => [b.id, (b.email || '').trim().toLowerCase()]));
         const uniqueBuyers = Array.from(new Set((buyers || []).map(b => (b.email || '').trim().toLowerCase()).filter(e => e)));
         const uniqueSubscribers = Array.from(new Set((subscribers || []).map(s => (s.email || '').trim().toLowerCase()).filter(e => e)));
         const buyerSet = new Set(uniqueBuyers);
 
-        // Affiliate audience: pick single primary contact email per partner (prefer auth email, fallback paypal_email), and EXCLUDE anyone already in uniqueBuyers!
+        // Collect pure payment emails (paypal_email distinct from affiliator account email) to strictly exclude them
+        const paymentEmailsSet = new Set();
+        (affiliates || []).forEach(a => {
+          const pEmail = (a.paypal_email || '').trim().toLowerCase();
+          const accEmail = (a.user_id && (authUserEmailMap.get(a.user_id) || buyerIdEmailMap.get(a.user_id))) || null;
+          if (pEmail && (!accEmail || pEmail !== accEmail)) {
+            paymentEmailsSet.add(pEmail);
+          }
+        });
+
+        // Affiliate audience: strictly target the affiliator's login/account email, NEVER pure payment email (paypal_email)!
         const rawAffiliateEmails = new Set();
         (affiliates || []).forEach(a => {
-          const contactEmail = (a.user_id && authUserEmailMap.get(a.user_id)) || (a.paypal_email ? a.paypal_email.trim().toLowerCase() : null);
-          if (contactEmail) rawAffiliateEmails.add(contactEmail);
+          const affiliatorEmail = a.user_id ? (authUserEmailMap.get(a.user_id) || buyerIdEmailMap.get(a.user_id)) : null;
+          if (affiliatorEmail && !paymentEmailsSet.has(affiliatorEmail)) {
+            rawAffiliateEmails.add(affiliatorEmail);
+          }
         });
         const uniqueAffiliates = Array.from(rawAffiliateEmails).filter(e => e && !buyerSet.has(e));
 
-        const allUniqueAudience = Array.from(new Set([...uniqueBuyers, ...uniqueSubscribers, ...uniqueAffiliates]));
+        const allUniqueAudience = Array.from(new Set([...uniqueBuyers, ...uniqueSubscribers, ...uniqueAffiliates])).filter(e => e && !paymentEmailsSet.has(e));
 
         return new Response(JSON.stringify({
           success: true,
@@ -3292,31 +3305,56 @@ export default {
                 fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=1000`, {
                   headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
                 }).then(r => r.ok ? r.json() : { users: [] }),
-                fetch(`${supabaseUrl}/rest/v1/fontbuyer?select=email`, {
+                fetch(`${supabaseUrl}/rest/v1/fontbuyer?select=id,email`, {
                   headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
                 }).then(r => r.ok ? r.json() : [])
               ]).then(([affRows, authRes, buyerCheckRows]) => {
                 const buyerEmailsSet = new Set((buyerCheckRows || []).map(b => (b.email || '').trim().toLowerCase()));
                 const authUserMap = new Map((authRes?.users || []).map(u => [u.id, (u.email || '').trim().toLowerCase()]));
-                const affEmails = [];
+                const buyerIdMap = new Map((buyerCheckRows || []).map(b => [b.id, (b.email || '').trim().toLowerCase()]));
+
+                // Collect separate payment emails to strictly exclude them from broadcasts
+                const paymentEmailsToExclude = new Set();
                 (affRows || []).forEach(a => {
-                  const contactEmail = (a.user_id && authUserMap.get(a.user_id)) || (a.paypal_email ? a.paypal_email.trim().toLowerCase() : null);
-                  if (contactEmail && !buyerEmailsSet.has(contactEmail) && !affEmails.includes(contactEmail)) {
-                    affEmails.push(contactEmail);
+                  const pEmail = (a.paypal_email || '').trim().toLowerCase();
+                  const accEmail = (a.user_id && (authUserMap.get(a.user_id) || buyerIdMap.get(a.user_id))) || null;
+                  if (pEmail && (!accEmail || pEmail !== accEmail)) {
+                    paymentEmailsToExclude.add(pEmail);
                   }
                 });
-                return affEmails;
+
+                const affEmails = [];
+                (affRows || []).forEach(a => {
+                  // Only pick the affiliator's registered account email, NEVER pure payment email (paypal_email)
+                  const affiliatorEmail = a.user_id ? (authUserMap.get(a.user_id) || buyerIdMap.get(a.user_id)) : null;
+                  if (affiliatorEmail && !buyerEmailsSet.has(affiliatorEmail) && !paymentEmailsToExclude.has(affiliatorEmail) && !affEmails.includes(affiliatorEmail)) {
+                    affEmails.push(affiliatorEmail);
+                  }
+                });
+                return { affEmails, paymentEmailsToExclude };
               })
             );
           } else {
             promises.push(Promise.resolve([]));
           }
 
-          const [buyerRows, subRows, affEmailsList] = await Promise.all(promises);
+          const [buyerRows, subRows, affData] = await Promise.all(promises);
+          const affEmailsList = affData?.affEmails || (Array.isArray(affData) ? affData : []);
+          const paymentEmailsToExclude = affData?.paymentEmailsToExclude || new Set();
+
           const emailSet = new Set();
-          (buyerRows || []).forEach(b => { if (b.email) emailSet.add(b.email.trim().toLowerCase()); });
-          (subRows || []).forEach(s => { if (s.email) emailSet.add(s.email.trim().toLowerCase()); });
-          (affEmailsList || []).forEach(e => { if (e) emailSet.add(e.trim().toLowerCase()); });
+          (buyerRows || []).forEach(b => { 
+            const e = (b.email || '').trim().toLowerCase();
+            if (e && !paymentEmailsToExclude.has(e)) emailSet.add(e); 
+          });
+          (subRows || []).forEach(s => { 
+            const e = (s.email || '').trim().toLowerCase();
+            if (e && !paymentEmailsToExclude.has(e)) emailSet.add(e); 
+          });
+          (affEmailsList || []).forEach(e => { 
+            const clean = (e || '').trim().toLowerCase();
+            if (clean && !paymentEmailsToExclude.has(clean)) emailSet.add(clean); 
+          });
           targetEmails = Array.from(emailSet);
         }
 
