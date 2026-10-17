@@ -4057,6 +4057,39 @@ export default {
           }
         }
 
+        // Deduct disbursed amount from cached balance in Supabase site_settings
+        if (supabaseUrl && serviceRoleKey) {
+          try {
+            const cacheRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_balance_cache&select=value`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            });
+            if (cacheRes.ok) {
+              const cacheRows = await cacheRes.json();
+              if (cacheRows?.[0]?.value) {
+                const cached = typeof cacheRows[0].value === 'string' ? JSON.parse(cacheRows[0].value) : cacheRows[0].value;
+                const totalDisbursed = payouts.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                if (cached && typeof cached.available_balance === 'number') {
+                  cached.available_balance = Math.max(0, Math.round((cached.available_balance - totalDisbursed) * 100) / 100);
+                  cached.total_balance = Math.max(0, Math.round((cached.total_balance - totalDisbursed) * 100) / 100);
+                  cached.cached_at = nowIso;
+                  await fetch(`${supabaseUrl}/rest/v1/site_settings`, {
+                    method: 'POST',
+                    headers: {
+                      'apikey': serviceRoleKey,
+                      'Authorization': `Bearer ${serviceRoleKey}`,
+                      'Content-Type': 'application/json',
+                      'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify({ key: 'paypal_balance_cache', value: cached })
+                  });
+                }
+              }
+            }
+          } catch (deductErr) {
+            console.warn("Notice: could not deduct paypal_balance_cache:", deductErr.message);
+          }
+        }
+
         return new Response(JSON.stringify({
           success: true,
           payoutBatchId: paypalBatchId,
@@ -4780,6 +4813,40 @@ export default {
           }
         } catch (_) {}
 
+        const forceRefresh = url.searchParams.get('refresh') === 'true';
+
+        // --- CACHE CHECK (Supabase site_settings 'paypal_balance_cache') ---
+        if (!forceRefresh && supabaseUrl && serviceRoleKey) {
+          try {
+            const cacheRes = await fetch(`${supabaseUrl}/rest/v1/site_settings?key=eq.paypal_balance_cache&select=value`, {
+              headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
+            });
+            if (cacheRes.ok) {
+              const cacheRows = await cacheRes.json();
+              if (cacheRows?.[0]?.value) {
+                const cached = typeof cacheRows[0].value === 'string' ? JSON.parse(cacheRows[0].value) : cacheRows[0].value;
+                if (cached && typeof cached.available_balance === 'number' && cached.is_sandbox === isSandbox) {
+                  return new Response(JSON.stringify({
+                    success: true,
+                    available_balance: cached.available_balance,
+                    total_balance: cached.total_balance,
+                    currency: cached.currency || 'USD',
+                    account_id: cached.account_id || null,
+                    as_of_time: cached.as_of_time || cached.cached_at,
+                    cached_at: cached.cached_at,
+                    is_cached: true,
+                    is_sandbox: isSandbox
+                  }), {
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+                  });
+                }
+              }
+            }
+          } catch (cErr) {
+            console.warn("Failed reading paypal_balance_cache from site_settings:", cErr.message);
+          }
+        }
+
         const clientId = isSandbox 
           ? (env.PAYPAL_SANDBOX_CLIENT_ID || env.PAYPAL_CLIENT_ID) 
           : (env.PAYPAL_CLIENT_ID || env.PAYPAL_SANDBOX_CLIENT_ID);
@@ -4850,14 +4917,43 @@ export default {
         const balData = await balRes.json();
         const primaryBal = balData.balances?.find(b => b.currency === 'USD') || balData.balances?.[0];
 
-        return new Response(JSON.stringify({
-          success: true,
+        const nowIso = new Date().toISOString();
+        const payloadToCache = {
           available_balance: primaryBal?.available_balance?.value ? parseFloat(primaryBal.available_balance.value) : 0,
           total_balance: primaryBal?.total_balance?.value ? parseFloat(primaryBal.total_balance.value) : 0,
           currency: primaryBal?.currency || 'USD',
           account_id: balData.account_id || null,
-          as_of_time: balData.as_of_time || new Date().toISOString(),
+          as_of_time: balData.as_of_time || nowIso,
+          cached_at: nowIso,
+          cached_date: nowIso.split('T')[0],
           is_sandbox: isSandbox
+        };
+
+        // Cache into Supabase site_settings table
+        if (supabaseUrl && serviceRoleKey) {
+          try {
+            await fetch(`${supabaseUrl}/rest/v1/site_settings`, {
+              method: 'POST',
+              headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates'
+              },
+              body: JSON.stringify({
+                key: 'paypal_balance_cache',
+                value: payloadToCache
+              })
+            });
+          } catch (saveErr) {
+            console.warn("Failed saving paypal_balance_cache to site_settings:", saveErr.message);
+          }
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          ...payloadToCache,
+          is_cached: false
         }), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });

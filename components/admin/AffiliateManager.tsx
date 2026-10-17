@@ -86,6 +86,8 @@ const AffiliateManager: React.FC = () => {
     total: number;
     asOf: string;
     isSandbox: boolean;
+    isCached?: boolean;
+    cachedAt?: string;
   } | null>(null);
   const [isFetchingBalance, setIsFetchingBalance] = useState(false);
   
@@ -113,7 +115,7 @@ const AffiliateManager: React.FC = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const res = await fetch('/api/admin/paypal-balance', {
+      const res = await fetch(`/api/admin/paypal-balance${isManual ? '?refresh=true' : ''}`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       const data = await res.json() as any;
@@ -124,11 +126,13 @@ const AffiliateManager: React.FC = () => {
         setPaypalLiveBalance({
           available: Number(data.available_balance || 0),
           total: Number(data.total_balance || 0),
-          asOf: data.as_of_time,
-          isSandbox: data.is_sandbox
+          asOf: data.as_of_time || data.cached_at,
+          isSandbox: data.is_sandbox,
+          isCached: Boolean(data.is_cached),
+          cachedAt: data.cached_at
         });
         if (isManual) {
-          alert(`PayPal Balance Synced:\nEnvironment: ${data.is_sandbox ? 'SANDBOX' : 'LIVE'}\nAvailable Balance: $${Number(data.available_balance || 0).toFixed(2)} USD\nTotal Balance: $${Number(data.total_balance || 0).toFixed(2)} USD`);
+          alert(`PayPal Balance Synced:\nEnvironment: ${data.is_sandbox ? 'SANDBOX' : 'LIVE'}\nAvailable Balance: $${Number(data.available_balance || 0).toFixed(2)} USD\nTotal Balance: $${Number(data.total_balance || 0).toFixed(2)} USD\nSource: Live PayPal API (Saved to Supabase Cache)`);
         }
       } else {
         if (isManual) {
@@ -413,7 +417,7 @@ const AffiliateManager: React.FC = () => {
 
       alert(`PAYPAL TRANSFER SUCCESSFUL!\n\nPayPal Batch ID: ${data.payoutBatchId}\nStatus: ${data.batchStatus}\nGross Settled: $${dueAmount.toFixed(2)} USD\nPayPal Fee: -$${fee.toFixed(2)} USD\nNet Transferred: $${netAmount.toFixed(2)} USD to ${affiliate.paypal_email}!\nCommissions updated to paid.`);
       await fetchData();
-      fetchPayPalBalance();
+      fetchPayPalBalance(true);
     } catch (err: any) {
       alert("PayPal Payout Failed: " + err.message);
     } finally {
@@ -555,6 +559,7 @@ const AffiliateManager: React.FC = () => {
 
       setPayoutModalAffiliate(null);
       await fetchData();
+      fetchPayPalBalance(true);
       alert(`SUCCESS! PayPal Payout Batch ID: ${data.payoutBatchId}\nStatus: ${data.batchStatus}\nAmount: $${totalAmount.toFixed(2)} USD successfully transferred to ${affiliate.paypal_email}!`);
     } catch (err: any) {
       alert("PayPal Payout Failed: " + err.message);
@@ -603,6 +608,7 @@ const AffiliateManager: React.FC = () => {
       if (!res.ok) throw new Error(data.error || data.message || "Batch payout failed.");
 
       await fetchData();
+      fetchPayPalBalance(true);
       alert(`BATCH PAYPAL PAYOUT SUCCESSFUL!\n\n- Batch ID: ${data.payoutBatchId}\n- Partners Paid: ${data.itemCount}\n- Total Disbursed: $${Number(data.totalAmount || 0).toFixed(2)} USD\n\nAll records updated in Supabase!`);
     } catch (err: any) {
       alert("Batch Payout Failed: " + err.message);
@@ -734,11 +740,16 @@ const AffiliateManager: React.FC = () => {
               }`}>
                 {isSandboxMode ? 'SANDBOX' : 'LIVE'}
               </span>
+              {paypalLiveBalance?.isCached && (
+                <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 border border-green-900/30 bg-white/70 text-green-950" title="Loaded from Supabase cache without consuming PayPal API invocation">
+                  CACHED
+                </span>
+              )}
             </div>
             <button
               onClick={() => fetchPayPalBalance(true)}
               disabled={isFetchingBalance}
-              title="Sync live PayPal balance"
+              title="Sync live PayPal balance from PayPal API"
               className="text-[9px] font-bold uppercase flex items-center gap-1 px-1.5 py-0.5 border border-green-900/30 bg-white text-green-950 hover:bg-green-100 transition-all cursor-pointer shadow-2xs"
             >
               <RefreshCw size={9} className={isFetchingBalance ? 'animate-spin' : ''} /> {isFetchingBalance ? 'Syncing...' : 'Sync PP'}
@@ -748,13 +759,20 @@ const AffiliateManager: React.FC = () => {
             <DollarSign size={22} strokeWidth={2.5} className="text-vintage-accent shrink-0 mr-1" />
             <span>{safeToWithdraw.toFixed(2)}</span>
           </div>
-          <p className="text-xs text-green-900 font-sans font-medium">
-            {paypalLiveBalance !== null
-              ? `${paypalLiveBalance.isSandbox ? 'Sandbox' : 'Live'} PayPal ($${paypalLiveBalance.available.toFixed(2)}) - Pool ($${affiliateReservedPool.toFixed(2)})`
-              : isSandboxMode
-                ? `Simulated Net ($${Math.max(0, totalNetStore - affiliateReservedPool).toFixed(2)}) - Pool ($${affiliateReservedPool.toFixed(2)})`
-                : 'Live Account Balance: $0.00 (Click Sync PP)'}
-          </p>
+          <div className="flex flex-col gap-0.5">
+            <p className="text-xs text-green-900 font-sans font-medium">
+              {paypalLiveBalance !== null
+                ? `${paypalLiveBalance.isSandbox ? 'Sandbox' : 'Live'} PayPal ($${paypalLiveBalance.available.toFixed(2)}) - Pool ($${affiliateReservedPool.toFixed(2)})`
+                : isSandboxMode
+                  ? `Simulated Net ($${Math.max(0, totalNetStore - affiliateReservedPool).toFixed(2)}) - Pool ($${affiliateReservedPool.toFixed(2)})`
+                  : 'Live Account Balance: $0.00 (Click Sync PP)'}
+            </p>
+            {paypalLiveBalance?.cachedAt && (
+              <span className="text-[9px] font-mono text-green-900/60">
+                {paypalLiveBalance.isCached ? 'Cache time' : 'Synced'}: {new Date(paypalLiveBalance.cachedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(paypalLiveBalance.cachedAt).toLocaleDateString()})
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
