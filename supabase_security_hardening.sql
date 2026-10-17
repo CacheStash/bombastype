@@ -83,7 +83,23 @@ $$;
 GRANT EXECUTE ON FUNCTION public.verify_affiliate_code(TEXT) TO anon, authenticated;
 
 
--- 6. UNIQUE CONSTRAINTS FOR IDEMPOTENCY (PREVENTS DOUBLE COMMISSIONS & ORDERS)
+-- 6. PRUNE HISTORICAL DUPLICATES & CREATE UNIQUE CONSTRAINTS FOR IDEMPOTENCY
+-- Prune duplicate commissions from previous testing (keep only 1 row per order_id + affiliate_id)
+DELETE FROM public.affiliate_commissions a
+USING public.affiliate_commissions b
+WHERE a.ctid > b.ctid
+  AND a.order_id = b.order_id
+  AND a.affiliate_id = b.affiliate_id;
+
+-- Prune duplicate font_history full downloads (keep only 1 row per transaction_id + font_id)
+DELETE FROM public.font_history a
+USING public.font_history b
+WHERE a.ctid > b.ctid
+  AND a.transaction_id = b.transaction_id
+  AND a.font_id = b.font_id
+  AND a.download_type = 'full'
+  AND b.download_type = 'full';
+
 CREATE UNIQUE INDEX IF NOT EXISTS uq_comm_order_aff 
 ON public.affiliate_commissions (order_id, affiliate_id);
 
