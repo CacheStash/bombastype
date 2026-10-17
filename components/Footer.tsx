@@ -110,8 +110,8 @@ export default function Footer() {
   };
 
   return (
-    <footer className="w-full bg-vintage-ink text-vintage-paper px-4 md:px-8 lg:px-12 py-12 md:py-16 mt-16 md:mt-24 border-t border-vintage-ink selection:bg-vintage-paper selection:text-vintage-ink">
-      <div className="w-full mx-auto">
+    <footer className="w-full bg-vintage-ink text-vintage-paper -mx-6 md:-mx-12 lg:-mx-20 -mb-6 md:-mb-12 lg:-mb-20 px-6 md:px-12 lg:px-20 py-12 md:py-16 mt-16 md:mt-24 border-t border-vintage-ink selection:bg-vintage-paper selection:text-vintage-ink">
+      <div className="w-full">
         
         {/* BARIS ATAS: Subscribe Form (Full Width) */}
         <div className="mb-16">

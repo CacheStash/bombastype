@@ -129,106 +129,109 @@ const FontDetail: React.FC = () => {
         </motion.p>
       </section>
 
-      {/* 2. TOP SLIDER SECTION (Ratio 1160x772 Container Width with Scrollable Long Images) */}
+      {/* 2. TOP SLIDER SECTION (Main Preview with Vertical Thumbnail Rail on the Right) */}
       <section className="relative w-full max-w-[1720px] mx-auto px-4 md:px-8 group mb-20">
-        <div className="relative w-full overflow-hidden border border-vintage-ink/20 aspect-1160/772 bg-vintage-paper/50 shadow-sm">
-          <AnimatePresence mode="wait">
-            <motion.div 
-              key={currentSlide}
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className={`w-full h-full relative ${
-                isLongImage 
-                  ? 'overflow-y-auto overflow-x-hidden custom-scrollbar' 
-                  : 'overflow-hidden'
-              }`}
-            >
-              {displayImages[currentSlide] ? (
-                <div 
-                  onClick={() => setIsFullscreenOpen(true)}
-                  className={`w-full cursor-zoom-in group/mainimg relative ${
-                    isLongImage ? 'min-h-full' : 'h-full'
-                  }`}
-                  title="Click to view full screen"
-                >
-                  <img 
-                    src={resolvePreviewUrl(displayImages[currentSlide])!} 
-                    onLoad={handleImageLoad}
-                    className={`w-full block ${
-                      isLongImage 
-                        ? 'h-auto object-top' 
-                        : 'h-full object-cover object-center'
-                    }`} 
-                    alt={`Specimen ${currentSlide + 1}`} 
-                  />
-                  
-                  {/* Floating zoom hint */}
-                  <div className="absolute top-4 right-4 bg-vintage-paper/90 border border-vintage-ink text-vintage-ink p-2 opacity-0 group-hover/mainimg:opacity-100 transition-opacity duration-300 pointer-events-none shadow-md z-20">
-                    <Maximize2 size={16} />
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full h-full bg-vintage-ink/5" />
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Navigation Arrows */}
-          {totalSlides > 1 && (
-            <>
-              <button 
-                type="button"
-                onClick={(e) => { e.stopPropagation(); prevSlide(); }} 
-                className="absolute left-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30 cursor-pointer"
-                aria-label="Previous Slide"
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch w-full">
+          {/* Main Preview Container */}
+          <div className="flex-1 min-w-0 relative overflow-hidden border border-vintage-ink/20 aspect-1160/772 bg-vintage-paper/50 shadow-sm">
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={currentSlide}
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className={`w-full h-full relative ${
+                  isLongImage 
+                    ? 'overflow-y-auto overflow-x-hidden custom-scrollbar' 
+                    : 'overflow-hidden'
+                }`}
               >
-                <ChevronLeft size={44} strokeWidth={1} className="drop-shadow-md text-white" />
-              </button>
-              <button 
-                type="button"
-                onClick={(e) => { e.stopPropagation(); nextSlide(); }} 
-                className="absolute right-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30 cursor-pointer"
-                aria-label="Next Slide"
-              >
-                <ChevronRight size={44} strokeWidth={1} className="drop-shadow-md text-white" />
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* HORIZONTAL IMAGE THUMBNAILS (Top-Cropped) */}
-        {totalSlides > 1 && (
-          <div className="w-full pt-6 pb-2">
-            <div className="flex items-center justify-center gap-3 overflow-x-auto custom-scrollbar py-2">
-              {displayImages.map((img, i) => {
-                const imgUrl = resolvePreviewUrl(img);
-                if (!imgUrl) return null;
-                const isActive = currentSlide === i;
-
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setCurrentSlide(i)}
-                    className={`relative shrink-0 h-16 md:h-20 aspect-1160/772 overflow-hidden border transition-all duration-300 cursor-pointer ${
-                      isActive 
-                        ? 'border-vintage-accent ring-2 ring-vintage-accent/40 opacity-100 scale-105 shadow-md' 
-                        : 'border-vintage-ink/20 opacity-40 hover:opacity-80 hover:border-vintage-ink/50'
+                {displayImages[currentSlide] ? (
+                  <div 
+                    onClick={() => setIsFullscreenOpen(true)}
+                    className={`w-full cursor-zoom-in group/mainimg relative ${
+                      isLongImage ? 'min-h-full' : 'h-full'
                     }`}
+                    title="Click to view full screen"
                   >
                     <img 
-                      src={imgUrl} 
-                      alt={`Thumbnail ${i + 1}`} 
-                      className="w-full h-full object-cover object-top" 
+                      src={resolvePreviewUrl(displayImages[currentSlide])!} 
+                      onLoad={handleImageLoad}
+                      className={`w-full block ${
+                        isLongImage 
+                          ? 'h-auto object-top' 
+                          : 'h-full object-cover object-center'
+                      }`} 
+                      alt={`Specimen ${currentSlide + 1}`} 
                     />
-                  </button>
-                );
-              })}
-            </div>
+                    
+                    {/* Floating zoom hint */}
+                    <div className="absolute top-4 right-4 bg-vintage-paper/90 border border-vintage-ink text-vintage-ink p-2 opacity-0 group-hover/mainimg:opacity-100 transition-opacity duration-300 pointer-events-none shadow-md z-20">
+                      <Maximize2 size={16} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-vintage-ink/5" />
+                )}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Navigation Arrows */}
+            {totalSlides > 1 && (
+              <>
+                <button 
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); prevSlide(); }} 
+                  className="absolute left-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30 cursor-pointer"
+                  aria-label="Previous Slide"
+                >
+                  <ChevronLeft size={44} strokeWidth={1} className="drop-shadow-md text-white" />
+                </button>
+                <button 
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); nextSlide(); }} 
+                  className="absolute right-0 top-0 h-full w-14 md:w-20 flex items-center justify-center bg-black/0 hover:bg-black/10 text-vintage-paper transition-all opacity-0 group-hover:opacity-100 z-30 cursor-pointer"
+                  aria-label="Next Slide"
+                >
+                  <ChevronRight size={44} strokeWidth={1} className="drop-shadow-md text-white" />
+                </button>
+              </>
+            )}
           </div>
-        )}
+
+          {/* VERTICAL THUMBNAIL PICKER (Right Side on Desktop, Scrolling Up/Down) */}
+          {totalSlides > 1 && (
+            <div className="w-full lg:w-36 xl:w-44 shrink-0 relative">
+              <div className="flex flex-row lg:flex-col gap-2.5 overflow-x-auto lg:overflow-x-hidden lg:overflow-y-auto custom-scrollbar max-h-24 lg:max-h-none lg:absolute lg:inset-0 py-1 pr-1">
+                {displayImages.map((img, i) => {
+                  const imgUrl = resolvePreviewUrl(img);
+                  if (!imgUrl) return null;
+                  const isActive = currentSlide === i;
+
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setCurrentSlide(i)}
+                      className={`relative shrink-0 w-24 lg:w-full aspect-1160/772 overflow-hidden border transition-all duration-300 cursor-pointer ${
+                        isActive 
+                          ? 'border-vintage-accent ring-2 ring-vintage-accent/40 opacity-100 shadow-md' 
+                          : 'border-vintage-ink/20 opacity-40 hover:opacity-80 hover:border-vintage-ink/50'
+                      }`}
+                    >
+                      <img 
+                        src={imgUrl} 
+                        alt={`Thumbnail ${i + 1}`} 
+                        className="w-full h-full object-cover object-top" 
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* FULLSCREEN POP-OUT MODAL */}
@@ -313,25 +316,17 @@ const FontDetail: React.FC = () => {
       </section>
 
       {/* 4. DESCRIPTION & TAGS SECTION */}
-      <section className="w-full max-w-[1600px] mx-auto px-6 md:px-12 py-20 md:py-28 relative z-10">
-        <div className="max-w-5xl xl:max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center gap-4 mb-8">
-            <span className="h-px w-12 bg-vintage-accent/40" />
-            <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-vintage-accent">
-              Background & Characteristics
-            </h4>
-            <span className="h-px w-12 bg-vintage-accent/40" />
-          </div>
-          <p className="text-xl sm:text-2xl md:text-3xl text-vintage-ink/85 leading-relaxed italic font-serif mb-12">
-            {font.description}
-          </p>
-          <div className="flex flex-wrap justify-center gap-2.5 max-w-4xl mx-auto">
-            {tags.map((tag: string) => (
-              <span key={tag} className="text-[11px] font-bold uppercase tracking-widest px-4 py-2 border border-vintage-ink/20 rounded-full bg-vintage-paper/80 text-vintage-ink/80 hover:border-vintage-ink/40 transition-colors">
-                #{tag.trim()}
-              </span>
-            ))}
-          </div>
+      <section className="w-full max-w-6xl mx-auto px-6 py-24 text-center relative z-10">
+        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-10">Background & Characteristics</h4>
+        <p className="text-lg md:text-xl text-vintage-ink/80 leading-relaxed italic font-serif mb-12">
+          {font.description}
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {tags.map((tag: string) => (
+            <span key={tag} className="text-[10px] font-bold uppercase tracking-widest px-4 py-2 border border-vintage-ink/10 rounded-full opacity-60">
+              #{tag.trim()}
+            </span>
+          ))}
         </div>
       </section>
 
