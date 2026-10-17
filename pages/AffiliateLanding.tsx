@@ -464,17 +464,22 @@ const AffiliateLanding: React.FC = () => {
         {/* RECURRING MILESTONE DISCOUNT CYCLES */}
         <div className="w-full p-8 md:p-14 border-b border-vintage-ink bg-vintage-background/40">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center max-w-2xl mx-auto mb-10">
-              <span className="text-xs uppercase tracking-[0.25em] font-bold text-vintage-accent block mb-2">
-                Creator Reward Engine · Infinite Cycles
-              </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-display text-vintage-ink mb-3">
-                Milestone Discount Cycles.
-              </h2>
-              <p className="text-sm text-vintage-ink/80 leading-relaxed font-sans">
-                In addition to your standard <strong>20% Net Commission</strong>, unlock steep personal discounts to expand your private foundry library. Every $1,000 in gross referral sales, the reward cycle automatically resets so you can earn them repeatedly.
-              </p>
-            </div>
+            {(() => {
+              const a5 = getItem('AF05', 'Milestone Discount Cycles', 'In addition to your standard <strong>20% Net Commission</strong>, unlock steep personal discounts to expand your private foundry library. Every $1,000 in gross referral sales, the reward cycle automatically resets so you can earn them repeatedly.');
+              return (
+                <InContextCardWrapper item={a5} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
+                  <div className="text-center max-w-2xl mx-auto mb-10">
+                    <span className="text-xs uppercase tracking-[0.25em] font-bold text-vintage-accent block mb-2">
+                      Creator Reward Engine · Infinite Cycles
+                    </span>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-display text-vintage-ink mb-3">
+                      {a5.title}
+                    </h2>
+                    <div className="text-sm text-vintage-ink/80 leading-relaxed font-sans" dangerouslySetInnerHTML={{ __html: a5.content }} />
+                  </div>
+                </InContextCardWrapper>
+              );
+            })()}
 
             {/* 4 MILESTONE TIERS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -555,42 +560,52 @@ const AffiliateLanding: React.FC = () => {
             </div>
 
             {/* CYCLE RESET BANNER */}
-            <div className="p-6 border border-vintage-ink/20 bg-vintage-ink text-vintage-paper flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1 max-w-2xl">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-vintage-accent">
-                  <RotateCcw size={14} />
-                  <span>Continuous Compounding Rewards</span>
-                </div>
-                <p className="text-xs text-vintage-paper/85 leading-relaxed font-sans">
-                  The milestone cycle never expires. Once you reach $1,000 in gross referral sales and claim your <strong>50% OFF Master Reward</strong>, the cycle counter rolls over into <strong>Cycle 2</strong>. You can unlock 10%, 20%, 30%, and 50% discounts again and again.
-                </p>
-              </div>
-              <div className="shrink-0 font-mono text-left sm:text-right border-t sm:border-t-0 sm:border-l border-vintage-paper/20 pt-3 sm:pt-0 sm:pl-6">
-                <span className="text-[10px] uppercase tracking-widest text-vintage-accent block mb-0.5">Cycle Reset</span>
-                <span className="text-xl font-display text-vintage-paper">Every $1,000</span>
-                <span className="text-[10px] text-vintage-paper/60 block mt-0.5 font-sans">Perpetual loop</span>
-              </div>
-            </div>
+            {(() => {
+              const a6 = getItem('AF06', 'Continuous Compounding Rewards', 'The milestone cycle never expires. Once you reach $1,000 in gross referral sales and claim your <strong>50% OFF Master Reward</strong>, the cycle counter rolls over into <strong>Cycle 2</strong>. You can unlock 10%, 20%, 30%, and 50% discounts again and again.');
+              return (
+                <InContextCardWrapper item={a6} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
+                  <div className="p-6 border border-vintage-ink/20 bg-vintage-ink text-vintage-paper flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1 max-w-2xl">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-vintage-accent">
+                        <RotateCcw size={14} />
+                        <span>{a6.title}</span>
+                      </div>
+                      <div className="text-xs text-vintage-paper/85 leading-relaxed font-sans" dangerouslySetInnerHTML={{ __html: a6.content }} />
+                    </div>
+                    <div className="shrink-0 font-mono text-left sm:text-right border-t sm:border-t-0 sm:border-l border-vintage-paper/20 pt-3 sm:pt-0 sm:pl-6">
+                      <span className="text-[10px] uppercase tracking-widest text-vintage-accent block mb-0.5">Cycle Reset</span>
+                      <span className="text-xl font-display text-vintage-paper">Every $1,000</span>
+                      <span className="text-[10px] text-vintage-paper/60 block mt-0.5 font-sans">Perpetual loop</span>
+                    </div>
+                  </div>
+                </InContextCardWrapper>
+              );
+            })()}
           </div>
         </div>
 
         {/* CREATOR PRESTIGE LEVEL BADGES */}
         <div className="w-full p-8 md:p-14 border-b border-vintage-ink bg-vintage-paper">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center max-w-2xl mx-auto mb-10">
-              <span className="text-xs uppercase tracking-[0.25em] font-bold text-vintage-accent block mb-2">
-                Prestige & Industry Standing
-              </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-display text-vintage-ink mb-3">
-                Creator Level Badges.
-              </h2>
-              <p className="text-sm text-vintage-ink/80 leading-relaxed font-sans">
-                Progress through 10 official partner tiers based on gross referral volume. Display your prestige badge across your partner profile, specimen credits, and design channels.
-              </p>
-            </div>
+            {(() => {
+              const a7 = getItem('AF07', 'Creator Level Badges', 'Progress through 10 official partner tiers based on gross referral volume. Display your prestige badge across your partner profile, specimen credits, and design channels.');
+              return (
+                <InContextCardWrapper item={a7} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
+                  <div className="text-center max-w-2xl mx-auto mb-10">
+                    <span className="text-xs uppercase tracking-[0.25em] font-bold text-vintage-accent block mb-2">
+                      Prestige & Industry Standing
+                    </span>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-display text-vintage-ink mb-3">
+                      {a7.title}
+                    </h2>
+                    <div className="text-sm text-vintage-ink/80 leading-relaxed font-sans" dangerouslySetInnerHTML={{ __html: a7.content }} />
+                  </div>
+                </InContextCardWrapper>
+              );
+            })()}
 
             {/* 10 LEVEL BADGES GRID */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
               {EARNING_BADGE_LEVELS.map((tier) => (
                 <div 
                   key={tier.level}
@@ -628,31 +643,6 @@ const AffiliateLanding: React.FC = () => {
                 </div>
               ))}
             </div>
-
-            {/* BADGE PRIVILEGES STRIP */}
-            <div className="border border-vintage-ink/15 bg-vintage-background/60 p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={16} className="text-vintage-accent shrink-0 mt-0.5" />
-                <div>
-                  <strong className="block text-vintage-ink font-bold">Verified Author Credential</strong>
-                  <span className="text-vintage-ink/75">Official star badge featured next to your vanity code in our typography portal.</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Zap size={16} className="text-vintage-accent shrink-0 mt-0.5" />
-                <div>
-                  <strong className="block text-vintage-ink font-bold">Early Specimen Access</strong>
-                  <span className="text-vintage-ink/75">Level 3+ associates receive private pre-release testing builds of upcoming fonts.</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Trophy size={16} className="text-vintage-accent shrink-0 mt-0.5" />
-                <div>
-                  <strong className="block text-vintage-ink font-bold">Foundry Co-Marketing</strong>
-                  <span className="text-vintage-ink/75">Top level partners are featured in BombasType email newsletters and case studies.</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -673,82 +663,92 @@ const AffiliateLanding: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Tool 1 */}
-              <div className="border border-vintage-ink/20 bg-white p-6 sm:p-8 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-vintage-accent">
-                      Tool 01 · Direct Referral
-                    </span>
-                    <span className="text-[10px] font-mono font-bold bg-vintage-ink text-vintage-paper px-2 py-0.5">
-                      30-Day Cookie
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-display text-vintage-ink mb-2">
-                    Vanity Share URL (/c/slug)
-                  </h3>
-                  <p className="text-xs text-vintage-ink/80 leading-relaxed mb-5 font-sans">
-                    Ideal for font specimen showcase decks, YouTube video descriptions, design portfolios, and client presentation resources.
-                  </p>
-                  <div className="space-y-2 border-t border-vintage-ink/15 pt-4 text-xs font-sans">
-                    <div className="flex items-center gap-2 text-vintage-ink font-medium">
-                      <Check size={14} className="text-vintage-accent shrink-0" />
-                      <span>Credited on 100% catalog retail price for maximum commission dollar yield</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-vintage-ink/75">
-                      <Check size={14} className="text-vintage-ink/40 shrink-0" />
-                      <span>URL seamlessly auto-cleans in browser address bar for pristine presentation</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-vintage-ink/75">
-                      <Check size={14} className="text-vintage-ink/40 shrink-0" />
-                      <span>Follower is tagged for 30 full days across any subsequent font licenses</span>
-                    </div>
-                  </div>
-                </div>
+              {(() => {
+                const a8 = getItem('AF08', 'Vanity Share URL (/c/slug)', 'Ideal for font specimen showcase decks, YouTube video descriptions, design portfolios, and client presentation resources. Credited on 100% catalog retail price for maximum commission dollar yield.');
+                return (
+                  <InContextCardWrapper item={a8} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
+                    <div className="border border-vintage-ink/20 bg-white p-6 sm:p-8 flex flex-col justify-between h-full">
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-vintage-accent">
+                            Tool 01 · Direct Referral
+                          </span>
+                          <span className="text-[10px] font-mono font-bold bg-vintage-ink text-vintage-paper px-2 py-0.5">
+                            30-Day Cookie
+                          </span>
+                        </div>
+                        <h3 className="text-2xl font-display text-vintage-ink mb-2">
+                          {a8.title}
+                        </h3>
+                        <div className="text-xs text-vintage-ink/80 leading-relaxed mb-5 font-sans" dangerouslySetInnerHTML={{ __html: a8.content }} />
+                        <div className="space-y-2 border-t border-vintage-ink/15 pt-4 text-xs font-sans">
+                          <div className="flex items-center gap-2 text-vintage-ink font-medium">
+                            <Check size={14} className="text-vintage-accent shrink-0" />
+                            <span>Credited on 100% catalog retail price for maximum commission dollar yield</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-vintage-ink/75">
+                            <Check size={14} className="text-vintage-ink/40 shrink-0" />
+                            <span>URL seamlessly auto-cleans in browser address bar for pristine presentation</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-vintage-ink/75">
+                            <Check size={14} className="text-vintage-ink/40 shrink-0" />
+                            <span>Follower is tagged for 30 full days across any subsequent font licenses</span>
+                          </div>
+                        </div>
+                      </div>
 
-                <div className="mt-6 pt-4 border-t border-vintage-ink/15 font-mono text-[11px] bg-vintage-paper p-3 border border-vintage-ink/20 flex items-center justify-between">
-                  <span className="text-vintage-ink/60 uppercase">Share URL:</span>
-                  <span className="font-bold text-vintage-ink">bombastype.com/c/YOUR_CODE</span>
-                </div>
-              </div>
+                      <div className="mt-6 pt-4 border-t border-vintage-ink/15 font-mono text-[11px] bg-vintage-paper p-3 border border-vintage-ink/20 flex items-center justify-between">
+                        <span className="text-vintage-ink/60 uppercase">Share URL:</span>
+                        <span className="font-bold text-vintage-ink">bombastype.com/c/YOUR_CODE</span>
+                      </div>
+                    </div>
+                  </InContextCardWrapper>
+                );
+              })()}
 
               {/* Tool 2 */}
-              <div className="border border-vintage-ink/20 bg-white p-6 sm:p-8 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-green-800">
-                      Tool 02 · Impulse Converter
-                    </span>
-                    <span className="text-[10px] font-mono font-bold bg-green-100 text-green-900 px-2 py-0.5 border border-green-800/30">
-                      High Conversion
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-display text-vintage-ink mb-2">
-                    Audience Promo Coupon Code
-                  </h3>
-                  <p className="text-xs text-vintage-ink/80 leading-relaxed mb-5 font-sans">
-                    Provide your followers with an instant <strong>10% to 30% OFF</strong> promo discount at checkout. Significantly accelerates sales conversions for budget-conscious buyers.
-                  </p>
-                  <div className="space-y-2 border-t border-vintage-ink/15 pt-4 text-xs font-sans">
-                    <div className="flex items-center gap-2 text-vintage-ink font-medium">
-                      <Check size={14} className="text-vintage-accent shrink-0" />
-                      <span>Functions seamlessly even if buyers utilize strict privacy extensions</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-vintage-ink/75">
-                      <Check size={14} className="text-vintage-ink/40 shrink-0" />
-                      <span>Customizable discount percentage (10% to 30%) in your Associate Settings</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-vintage-ink/75">
-                      <Check size={14} className="text-vintage-ink/40 shrink-0" />
-                      <span>Commission (20%) is credited transparently on the discounted checkout total</span>
-                    </div>
-                  </div>
-                </div>
+              {(() => {
+                const a9 = getItem('AF09', 'Audience Promo Coupon Code', 'Provide your followers with an instant <strong>10% to 30% OFF</strong> promo discount at checkout. Significantly accelerates sales conversions for budget-conscious buyers.');
+                return (
+                  <InContextCardWrapper item={a9} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
+                    <div className="border border-vintage-ink/20 bg-white p-6 sm:p-8 flex flex-col justify-between h-full">
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-green-800">
+                            Tool 02 · Impulse Converter
+                          </span>
+                          <span className="text-[10px] font-mono font-bold bg-green-100 text-green-900 px-2 py-0.5 border border-green-800/30">
+                            High Conversion
+                          </span>
+                        </div>
+                        <h3 className="text-2xl font-display text-vintage-ink mb-2">
+                          {a9.title}
+                        </h3>
+                        <div className="text-xs text-vintage-ink/80 leading-relaxed mb-5 font-sans" dangerouslySetInnerHTML={{ __html: a9.content }} />
+                        <div className="space-y-2 border-t border-vintage-ink/15 pt-4 text-xs font-sans">
+                          <div className="flex items-center gap-2 text-vintage-ink font-medium">
+                            <Check size={14} className="text-vintage-accent shrink-0" />
+                            <span>Functions seamlessly even if buyers utilize strict privacy extensions</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-vintage-ink/75">
+                            <Check size={14} className="text-vintage-ink/40 shrink-0" />
+                            <span>Customizable discount percentage (10% to 30%) in your Associate Settings</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-vintage-ink/75">
+                            <Check size={14} className="text-vintage-ink/40 shrink-0" />
+                            <span>Commission (20%) is credited transparently on the discounted checkout total</span>
+                          </div>
+                        </div>
+                      </div>
 
-                <div className="mt-6 pt-4 border-t border-vintage-ink/15 font-mono text-[11px] bg-vintage-paper p-3 border border-vintage-ink/20 flex items-center justify-between">
-                  <span className="text-vintage-ink/60 uppercase">Coupon Format:</span>
-                  <span className="font-bold text-vintage-ink">YOUR_CODE10</span>
-                </div>
-              </div>
+                      <div className="mt-6 pt-4 border-t border-vintage-ink/15 font-mono text-[11px] bg-vintage-paper p-3 border border-vintage-ink/20 flex items-center justify-between">
+                        <span className="text-vintage-ink/60 uppercase">Coupon Format:</span>
+                        <span className="font-bold text-vintage-ink">YOUR_CODE10</span>
+                      </div>
+                    </div>
+                  </InContextCardWrapper>
+                );
+              })()}
             </div>
 
             {/* FINANCIAL TERMS BAR */}
