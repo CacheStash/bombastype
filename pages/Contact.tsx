@@ -106,7 +106,7 @@ const Contact: React.FC = () => {
   return (
     <div className="pb-12 relative z-10">
       {/* HERO SECTION */}
-      <section className="text-center mb-16 md:mb-24 max-w-3xl mx-auto relative z-10 px-4 pt-12">
+      <section className="text-center mb-16 md:mb-24 max-w-5xl mx-auto relative z-10 px-4 pt-12">
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
           Get in Touch
         </motion.p>
@@ -119,7 +119,7 @@ const Contact: React.FC = () => {
       </section>
 
       {/* SECTION 00: DIRECT DISPATCH */}
-      <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">
+      <section className="px-4 md:px-8 lg:px-12 py-6 md:py-8 relative z-10 max-w-[1720px] mx-auto">
         {(() => {
           const c0 = getItem('CT01', 'Direct Dispatch Protocol', '<p class="italic mb-4">To bypass strict corporate spam filters and keep studio correspondence streamlined, all communications are managed directly via our dedicated Gmail inbox.</p><p class="mb-4">If you prefer not using the contact form below, you can send an inquiry directly to:</p><p class="font-bold text-xl"><a href="mailto:bombastype@gmail.com" class="underline">bombastype@gmail.com</a></p>');
           return (
@@ -136,7 +136,7 @@ const Contact: React.FC = () => {
       </section>
 
       {/* CONTACT FORM SECTION */}
-      <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">
+      <section className="px-4 md:px-8 lg:px-12 py-6 md:py-8 relative z-10 max-w-[1720px] mx-auto">
         <ContactCard 
           number="01" 
           title="Send a Message"

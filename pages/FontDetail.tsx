@@ -115,7 +115,7 @@ const FontDetail: React.FC = () => {
     <div className="relative z-10 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper min-h-screen bg-transparent overflow-x-hidden pb-24">
       
       {/* 1. HEADER SECTION */}
-      <section className="text-center max-w-3xl mx-auto relative z-10 px-6 pt-12 mb-16">
+      <section className="text-center max-w-5xl mx-auto relative z-10 px-6 pt-12 mb-16">
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
           Typeface Archival Specimen
         </motion.p>
@@ -313,17 +313,25 @@ const FontDetail: React.FC = () => {
       </section>
 
       {/* 4. DESCRIPTION & TAGS SECTION */}
-      <section className="max-w-4xl mx-auto px-6 py-24 text-center relative z-10">
-        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-10">Background & Characteristics</h4>
-        <p className="text-lg md:text-xl text-vintage-ink/80 leading-relaxed italic font-serif mb-12">
-          {font.description}
-        </p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {tags.map((tag: string) => (
-            <span key={tag} className="text-[10px] font-bold uppercase tracking-widest px-4 py-2 border border-vintage-ink/10 rounded-full opacity-60">
-              #{tag.trim()}
-            </span>
-          ))}
+      <section className="w-full max-w-[1600px] mx-auto px-6 md:px-12 py-20 md:py-28 relative z-10">
+        <div className="max-w-5xl xl:max-w-6xl mx-auto text-center">
+          <div className="inline-flex items-center gap-4 mb-8">
+            <span className="h-px w-12 bg-vintage-accent/40" />
+            <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-vintage-accent">
+              Background & Characteristics
+            </h4>
+            <span className="h-px w-12 bg-vintage-accent/40" />
+          </div>
+          <p className="text-xl sm:text-2xl md:text-3xl text-vintage-ink/85 leading-relaxed italic font-serif mb-12">
+            {font.description}
+          </p>
+          <div className="flex flex-wrap justify-center gap-2.5 max-w-4xl mx-auto">
+            {tags.map((tag: string) => (
+              <span key={tag} className="text-[11px] font-bold uppercase tracking-widest px-4 py-2 border border-vintage-ink/20 rounded-full bg-vintage-paper/80 text-vintage-ink/80 hover:border-vintage-ink/40 transition-colors">
+                #{tag.trim()}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 

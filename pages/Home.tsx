@@ -313,15 +313,15 @@ export default function Home() {
 
   return (
      <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
-     {/* Hero Section */}
+      {/* Hero Section */}
       <section className="text-center mb-16 w-full max-w-[1720px] mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
-        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mb-6 sm:mb-8 leading-relaxed">
+        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-85 max-w-4xl md:max-w-5xl mx-auto mb-6 sm:mb-8 leading-relaxed font-serif">
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
 
         {/* HERO IMAGES (STANDAR PROPORSI IMAGE TERLEBAR 2434x1844 / 1.32 TANPA TERPOTONG) */}
 
-        <div className="my-6 sm:my-8 md:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-[2434/1844] max-w-6xl xl:max-w-7xl overflow-visible">
+        <div className="my-6 sm:my-8 md:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-[2434/1844] max-w-6xl xl:max-w-[1440px] 2xl:max-w-[1560px] overflow-visible">
           <AnimatePresence mode="popLayout">
             <motion.img
               key={currentHeaderIdx}
@@ -336,7 +336,7 @@ export default function Home() {
           </AnimatePresence>
         </div>
 
-        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mt-6 sm:mt-8 md:mt-10 mb-8 leading-relaxed">
+        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-85 max-w-4xl md:max-w-5xl mx-auto mt-6 sm:mt-8 md:mt-10 mb-8 leading-relaxed font-serif">
           Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, & letterpress design.
         </motion.p>
         <div className="flex justify-center mt-8 w-full max-w-xl mx-auto relative z-30">

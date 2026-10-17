@@ -136,7 +136,7 @@ const FAQ: React.FC = () => {
   return (
     <div className="pb-12 relative z-10">
       {/* Hero Section */}
-      <section className="text-center mb-16 md:mb-24 max-w-3xl mx-auto relative z-10 px-4 pt-12">
+      <section className="text-center mb-16 md:mb-24 max-w-5xl mx-auto relative z-10 px-4 pt-12">
         <motion.p className="text-[9px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-vintage-accent mb-4">
           Clarity & Support
         </motion.p>
@@ -149,7 +149,7 @@ const FAQ: React.FC = () => {
       </section>
 
       {/* Content Section */}
-      <section className="mb-16 md:mb-24 relative z-10 px-4">
+      <section className="mb-16 md:mb-24 relative z-10 px-4 md:px-8 lg:px-12 max-w-[1720px] mx-auto">
         {loading ? (
           <div className="animate-pulse font-bold text-vintage-ink">SYNCING_SUPPORT_RECORDS...</div>
         ) : (
