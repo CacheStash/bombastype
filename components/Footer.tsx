@@ -112,22 +112,22 @@ export default function Footer() {
       </div>
 
       {/* BARIS KEDUA: 4 TEXT-ONLY COLUMNS (Matching Subqi Layout with Bombastype Heritage Styling) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 px-4 md:px-8 lg:px-12 py-10 md:py-14 text-xs font-mono">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 px-4 md:px-8 lg:px-12 py-10 md:py-14 text-xs font-mono text-vintage-paper">
         
         {/* KOLOM 1: DIRECTORY */}
         <div className="flex flex-col gap-3">
-          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px]">DIRECTORY</span>
+          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px] text-vintage-paper">DIRECTORY</span>
           <div className="flex gap-12 sm:gap-16">
             <div className="flex flex-col gap-2.5">
               {footerLinks.slice(0, 3).map((link) => (
-                <Link key={link.name} to={link.href} className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+                <Link key={link.name} to={link.href} className="hover:underline opacity-90 hover:opacity-100 transition-opacity tracking-widest w-fit text-vintage-paper">
                   {link.name}
                 </Link>
               ))}
             </div>
             <div className="flex flex-col gap-2.5">
               {footerLinks.slice(3).map((link) => (
-                <Link key={link.name} to={link.href} className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+                <Link key={link.name} to={link.href} className="hover:underline opacity-90 hover:opacity-100 transition-opacity tracking-widest w-fit text-vintage-paper">
                   {link.name}
                 </Link>
               ))}
@@ -137,12 +137,12 @@ export default function Footer() {
 
         {/* KOLOM 2: TOOLS & LAB (No dropdown, direct clean text links) */}
         <div className="flex flex-col gap-2.5">
-          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px]">TOOLS & LAB</span>
+          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px] text-vintage-paper">TOOLS & LAB</span>
           <a 
             href="https://canvas.bombastype.com" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="hover:underline hover:text-white transition-colors tracking-widest w-fit flex items-center gap-1.5"
+            className="hover:underline opacity-90 hover:opacity-100 transition-opacity tracking-widest w-fit flex items-center gap-1.5 text-vintage-paper"
           >
             <span>FONTCANVAS STUDIO</span>
             <span className="bg-vintage-paper text-vintage-ink text-[7px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start -mt-0.5">BETA</span>
@@ -151,7 +151,7 @@ export default function Footer() {
             href="https://fontshift.bombastype.com" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="hover:underline hover:text-white transition-colors tracking-widest w-fit flex items-center gap-1.5"
+            className="hover:underline opacity-90 hover:opacity-100 transition-opacity tracking-widest w-fit flex items-center gap-1.5 text-vintage-paper"
           >
             <span>FONTSHIFT CONVERTER</span>
             <span className="bg-vintage-accent text-vintage-paper text-[7px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start -mt-0.5">FREE</span>
@@ -164,7 +164,7 @@ export default function Footer() {
               e.preventDefault();
               await openFontopsyWithAuth('https://fontopsy.bombastype.com');
             }}
-            className="hover:underline hover:text-white transition-colors tracking-widest w-fit flex items-center gap-1.5"
+            className="hover:underline opacity-90 hover:opacity-100 transition-opacity tracking-widest w-fit flex items-center gap-1.5 text-vintage-paper"
           >
             <span>FONTOPSY</span>
             <span className="bg-vintage-accent text-vintage-paper text-[7px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start -mt-0.5">FREE</span>
@@ -173,37 +173,37 @@ export default function Footer() {
 
         {/* KOLOM 3: SOCIAL CHANNELS (Text-only, no icons) */}
         <div className="flex flex-col gap-2.5">
-          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px]">SOCIAL CHANNELS</span>
-          <a href="https://www.behance.net/Bombastype" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px] text-vintage-paper">SOCIAL CHANNELS</span>
+          <a href="https://www.behance.net/Bombastype" target="_blank" rel="noopener noreferrer" className="hover:underline opacity-90 hover:opacity-100 transition-opacity tracking-widest w-fit text-vintage-paper">
             BEHANCE
           </a>
-          <a href="https://www.instagram.com/bombastypedotcom/" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+          <a href="https://www.instagram.com/bombastypedotcom/" target="_blank" rel="noopener noreferrer" className="hover:underline opacity-90 hover:opacity-100 transition-opacity tracking-widest w-fit text-vintage-paper">
             INSTAGRAM
           </a>
-          <a href="https://www.facebook.com/bombastype/" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+          <a href="https://www.facebook.com/bombastype/" target="_blank" rel="noopener noreferrer" className="hover:underline opacity-90 hover:opacity-100 transition-opacity tracking-widest w-fit text-vintage-paper">
             FACEBOOK
           </a>
-          <a href="mailto:bombastype@gmail.com" className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+          <a href="mailto:bombastype@gmail.com" className="hover:underline opacity-90 hover:opacity-100 transition-opacity tracking-widest w-fit text-vintage-paper">
             EMAIL INQUIRY
           </a>
         </div>
 
         {/* KOLOM 4: LEGAL & ARCHIVE */}
-        <div className="flex flex-col gap-1 lg:text-right">
-          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px]">LEGAL & ARCHIVE</span>
+        <div className="flex flex-col gap-1 lg:text-right text-vintage-paper">
+          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px] text-vintage-paper">LEGAL & ARCHIVE</span>
           <span className="tracking-widest text-sm font-serif italic text-vintage-paper font-normal">
             © BOMBASTYPE 2026
           </span>
-          <span className="opacity-75 tracking-widest uppercase text-[11px]">
+          <span className="opacity-75 tracking-widest uppercase text-[11px] text-vintage-paper">
             SLEMAN, YOGYAKARTA
           </span>
-          <span className="opacity-75 tracking-widest uppercase text-[11px]">
+          <span className="opacity-75 tracking-widest uppercase text-[11px] text-vintage-paper">
             INDONESIA
           </span>
-          <div className="mt-4 flex lg:justify-end gap-2 opacity-30 text-[9px] tracking-wider">
-            <span className="border border-vintage-paper/40 px-1 py-0.5">VISA</span>
-            <span className="border border-vintage-paper/40 px-1 py-0.5">MC</span>
-            <span className="border border-vintage-paper/40 px-1 py-0.5">PAYPAL</span>
+          <div className="mt-4 flex lg:justify-end gap-2 text-[10px] tracking-wider font-mono">
+            <span className="border border-vintage-paper/60 text-vintage-paper/90 px-1.5 py-0.5">VISA</span>
+            <span className="border border-vintage-paper/60 text-vintage-paper/90 px-1.5 py-0.5">MC</span>
+            <span className="border border-vintage-paper/60 text-vintage-paper/90 px-1.5 py-0.5">PAYPAL</span>
           </div>
         </div>
 

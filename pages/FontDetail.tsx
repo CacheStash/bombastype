@@ -240,24 +240,22 @@ const FontDetail: React.FC = () => {
             <div className="shrink-0 flex flex-col">
               {/* Pricing Header */}
               <div className="flex items-center justify-between pb-4 border-b border-vintage-ink/15 mb-5">
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold uppercase tracking-widest opacity-50 mb-0.5">Starting at</span>
-                  <div className="flex items-baseline text-vintage-ink">
-                    <span className="text-sm font-bold text-vintage-accent mr-1">$</span>
-                    <span className="text-4xl xl:text-5xl font-display tracking-tight leading-none">
-                      {Number(discountPrice).toFixed(2).replace('.', ',')}
-                    </span>
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+                  Starting at
+                </span>
+
+                <div className="flex items-baseline gap-3">
+                  {activePromo && (
+                    <div className="flex items-center text-vintage-ink line-through opacity-40 font-display text-xl">
+                      <DollarSign size={16} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                      <span>{Number(basePrice).toFixed(0)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center text-vintage-ink font-display text-3xl xl:text-4xl">
+                    <DollarSign size={24} strokeWidth={2.5} className="text-vintage-accent shrink-0 -mr-0.5" />
+                    <span>{Number(discountPrice).toFixed(0)}</span>
                   </div>
                 </div>
-
-                {activePromo && (
-                  <div className="flex flex-col items-end">
-                    <span className="text-[9px] font-bold text-orange-600 uppercase tracking-widest mb-0.5">Promo Active</span>
-                    <div className="flex items-center text-vintage-ink line-through opacity-40 text-lg font-display">
-                      <span>${Number(basePrice).toFixed(2).replace('.', ',')}</span>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Action Buttons */}
