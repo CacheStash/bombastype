@@ -1,7 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabase';
+
+interface ContentItem {
+  id: string;
+  title: string;
+  content: string;
+  section_id: string;
+  type?: string;
+  sort_order?: number;
+}
 
 const ContactCard: React.FC<{ 
   number: string, 
@@ -32,6 +42,25 @@ const Contact: React.FC = () => {
   const [subject, setSubject] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [dynamicSections, setDynamicSections] = useState<ContentItem[]>([]);
+
+  useEffect(() => {
+    const fetchContactContent = async () => {
+      try {
+        const { data } = await supabase
+          .from('site_content')
+          .select('*')
+          .eq('category', 'contact')
+          .order('sort_order', { ascending: true });
+        if (data && data.length > 0) {
+          setDynamicSections(data);
+        }
+      } catch (err) {
+        console.warn('Failed to load dynamic contact content:', err);
+      }
+    };
+    fetchContactContent();
+  }, []);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,31 +92,56 @@ const Contact: React.FC = () => {
         </motion.p>
       </section>
 
-      {/* SECTION 00: DIRECT DISPATCH */}
-      <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">
-        <ContactCard 
-          number="00" 
-          title="Direct Dispatch Protocol"
-        >
-          <div className="space-y-6">
-            <p className="text-base md:text-lg leading-relaxed text-vintage-ink/80 italic font-serif">
-              To bypass strict corporate spam filters and keep studio correspondence streamlined, all communications are managed directly via our dedicated Gmail inbox.
-            </p>
-            <p className="text-base md:text-lg leading-relaxed text-vintage-ink/70">
-              If you prefer not using the contact form below, you can send an inquiry directly to:
-            </p>
-            <div className="pt-2">
-              <a 
-                href="mailto:bombastype@gmail.com" 
-                className="group inline-flex items-center gap-4 text-lg md:text-2xl font-display tracking-tight text-vintage-ink hover:text-vintage-accent transition-colors duration-300 pb-2 border-b border-vintage-ink/20 hover:border-vintage-accent"
-              >
-                <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
-                bombastype@gmail.com
-              </a>
+      {/* DYNAMIC CONTENT SECTIONS */}
+      {dynamicSections.length > 0 ? (
+        dynamicSections.map((sec) => (
+          <section key={sec.id} className="px-4 md:px-8 py-6 md:py-8 relative z-10">
+            <ContactCard number={sec.section_id || '00'} title={sec.title}>
+              <div 
+                className="space-y-6 [&_p]:text-base [&_p]:md:text-lg [&_p]:leading-relaxed [&_p]:text-vintage-ink/80 [&_p.italic]:font-serif"
+                dangerouslySetInnerHTML={{ __html: sec.content }}
+              />
+              {sec.section_id === 'CT00' && (
+                <div className="pt-2">
+                  <a 
+                    href="mailto:bombastype@gmail.com" 
+                    className="group inline-flex items-center gap-4 text-lg md:text-2xl font-display tracking-tight text-vintage-ink hover:text-vintage-accent transition-colors duration-300 pb-2 border-b border-vintage-ink/20 hover:border-vintage-accent"
+                  >
+                    <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
+                    bombastype@gmail.com
+                  </a>
+                </div>
+              )}
+            </ContactCard>
+          </section>
+        ))
+      ) : (
+        /* FALLBACK STATIC DIRECT DISPATCH */
+        <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">
+          <ContactCard 
+            number="00" 
+            title="Direct Dispatch Protocol"
+          >
+            <div className="space-y-6">
+              <p className="text-base md:text-lg leading-relaxed text-vintage-ink/80 italic font-serif">
+                To bypass strict corporate spam filters and keep studio correspondence streamlined, all communications are managed directly via our dedicated Gmail inbox.
+              </p>
+              <p className="text-base md:text-lg leading-relaxed text-vintage-ink/70">
+                If you prefer not using the contact form below, you can send an inquiry directly to:
+              </p>
+              <div className="pt-2">
+                <a 
+                  href="mailto:bombastype@gmail.com" 
+                  className="group inline-flex items-center gap-4 text-lg md:text-2xl font-display tracking-tight text-vintage-ink hover:text-vintage-accent transition-colors duration-300 pb-2 border-b border-vintage-ink/20 hover:border-vintage-accent"
+                >
+                  <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
+                  bombastype@gmail.com
+                </a>
+              </div>
             </div>
-          </div>
-        </ContactCard>
-      </section>
+          </ContactCard>
+        </section>
+      )}
 
       {/* CONTACT FORM SECTION */}
       <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">

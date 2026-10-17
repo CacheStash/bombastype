@@ -126,7 +126,7 @@ const ContentManager = () => {
   const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
   const [currentCategory, setCurrentCategory] = useState('faq');
 
-  const categories = ['faq', 'license', 'policy', 'about'];
+  const categories = ['faq', 'license', 'policy', 'canvas', 'contact', 'affiliate'];
 
   const [formData, setFormData] = useState<ContentItem>({
     title: '',
@@ -168,6 +168,9 @@ const ContentManager = () => {
   const generateSectionId = (category: string, index: number) => {
     const displayIndex = index + 1;
     if (category === 'faq') return `Q${displayIndex}`;
+    if (category === 'canvas') return `CV${displayIndex < 10 ? `0${displayIndex}` : `${displayIndex}`}`;
+    if (category === 'contact') return `CT${displayIndex < 10 ? `0${displayIndex}` : `${displayIndex}`}`;
+    if (category === 'affiliate') return `AF${displayIndex < 10 ? `0${displayIndex}` : `${displayIndex}`}`;
     return displayIndex < 10 ? `0${displayIndex}` : `${displayIndex}`;
   };
 
