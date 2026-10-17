@@ -1181,7 +1181,7 @@ export default function BroadcastStudio() {
   );
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 font-serif">
+    <div className="p-6 md:p-10 w-full max-w-none mx-auto space-y-8 font-serif">
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-vintage-ink pb-6">
         <div>

@@ -227,7 +227,7 @@ const App: React.FC = () => {
           <div className="min-h-screen p-2 sm:p-4 md:p-8 lg:p-12 flex justify-center">
             
             {/* Heritage Design: Global Ornate Container (Murni ornate-border sesuai index.css) */}
-            <div className="max-w-7xl w-full ornate-border bg-vintage-paper shadow-2xl relative flex flex-col">
+            <div className="w-full max-w-[1840px] ornate-border bg-vintage-paper shadow-2xl relative flex flex-col">
               
               <Navbar onStateChange={setIsNavActive} />
               

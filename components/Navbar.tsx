@@ -182,7 +182,7 @@ const Navbar = ({ onStateChange }: NavbarProps) => {
           ? "bg-vintage-paper border-b border-vintage-ink" 
           : "bg-vintage-paper border-y border-vintage-ink"
       }`}>
-        <div className="flex items-center px-4 md:px-8 max-w-7xl mx-auto h-8">
+        <div className="flex items-center px-4 md:px-8 lg:px-12 w-full mx-auto h-8">
           
           {/* SISI KIRI: LOGO (Mode Floating) & Menu Mobile */}
           <div className="flex-none flex items-center">

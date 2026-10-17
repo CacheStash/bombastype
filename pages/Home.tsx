@@ -314,7 +314,7 @@ export default function Home() {
   return (
      <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
      {/* Hero Section */}
-      <section className="text-center mb-16 w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
+      <section className="text-center mb-16 w-full max-w-[1720px] mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
         <motion.p className="text-base md:text-lg lg:text-xl italic opacity-80 max-w-3xl mx-auto mb-6 sm:mb-8 leading-relaxed">
           Retro Refinement: Authentic Vintage & Victorian Typefaces
         </motion.p>
@@ -347,7 +347,7 @@ export default function Home() {
       </section>
 
       {/* 2. Featured Fonts Section (Popular Fonts) */}
-      <section className="mb-16 md:mb-24 relative z-10 px-4 max-w-7xl mx-auto">
+      <section className="mb-16 md:mb-24 relative z-10 px-4 md:px-8 lg:px-12 w-full mx-auto">
         <div className="divider">
           <h2 className="text-3xl md:text-5xl font-script capitalize">Popular Fonts</h2>
         </div>
@@ -417,7 +417,7 @@ export default function Home() {
 
       {/* 3. Type Yourself Section (Pindah ke Bawah Popular Fonts) */}
       {activeTesterFont && (
-        <section className="mb-20 md:mb-32 relative z-10 px-4 max-w-7xl mx-auto">
+        <section className="mb-20 md:mb-32 relative z-10 px-4 md:px-8 lg:px-12 w-full mx-auto">
           <div className="divider mb-8">
             <h2 className="text-3xl md:text-5xl font-script capitalize">Type Yourself</h2>
           </div>
@@ -537,7 +537,7 @@ export default function Home() {
       )}
 
       {/* 4. Handpicked Fonts Section (Paling Bawah) */}
-      <section className="mb-16 md:mb-24 relative z-10 px-4 max-w-7xl mx-auto">
+      <section className="mb-16 md:mb-24 relative z-10 px-4 md:px-8 lg:px-12 w-full mx-auto">
         <div className="divider">
           <h2 className="text-3xl md:text-5xl font-script capitalize">Handpicked Fonts</h2>
         </div>

@@ -130,7 +130,7 @@ const FontDetail: React.FC = () => {
       </section>
 
       {/* 2. TOP SLIDER SECTION (Ratio 1160x772 Container Width with Scrollable Long Images) */}
-      <section className="relative w-full max-w-7xl mx-auto px-4 md:px-8 group mb-20">
+      <section className="relative w-full max-w-[1720px] mx-auto px-4 md:px-8 group mb-20">
         <div className="relative w-full overflow-hidden border border-vintage-ink/20 aspect-1160/772 bg-vintage-paper/50 shadow-sm">
           <AnimatePresence mode="wait">
             <motion.div 
@@ -329,7 +329,7 @@ const FontDetail: React.FC = () => {
 
       {/* STEALTH AFFILIATE QUICK SHARE BAR (Active Affiliate Session) */}
       {Boolean(affiliateCode) && (
-        <section className="max-w-7xl mx-auto px-6 mb-8">
+        <section className="w-full max-w-[1720px] mx-auto px-6 mb-8">
           <div className="border border-vintage-ink bg-vintage-background p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <span className="font-bold text-xs uppercase tracking-widest text-vintage-accent shrink-0">
@@ -354,7 +354,7 @@ const FontDetail: React.FC = () => {
       )}
 
       {/* 5. INVESTMENT & ACTION SECTION */}
-      <section className="max-w-7xl mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
+      <section className="w-full max-w-[1720px] mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-4 italic">Pricing Information</span>
           <div className="flex items-end gap-8">
