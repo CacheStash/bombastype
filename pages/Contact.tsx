@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabase';
+import { InContextCardWrapper, InContextAddSectionButton } from '../components/admin/InContextCardWrapper';
+
+interface ContentItem {
+  id?: string;
+  title: string;
+  content: string;
+  section_id: string;
+  category: string;
+  sort_order: number;
+  type?: string;
+}
 
 const ContactCard: React.FC<{ 
   number: string, 
@@ -32,6 +44,49 @@ const Contact: React.FC = () => {
   const [subject, setSubject] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [contactItems, setContactItems] = useState<ContentItem[]>([]);
+
+  const fetchContactContent = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_content')
+        .select('*')
+        .eq('category', 'contact')
+        .order('sort_order', { ascending: true });
+      if (data && data.length > 0) {
+        setContactItems(data);
+      }
+    } catch (err) {
+      console.error('Failed to load contact site content:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchContactContent();
+  }, []);
+
+  const getItem = (secId: string, fallbackTitle: string, fallbackContent: string) => {
+    const found = contactItems.find(i => i.section_id === secId || i.section_id === secId.replace('CT', ''));
+    if (found) {
+      return {
+        id: found.id,
+        title: found.title || fallbackTitle,
+        content: found.content || fallbackContent,
+        section_id: found.section_id || secId,
+        category: 'contact',
+        sort_order: found.sort_order ?? 0,
+        type: found.type || 'page'
+      };
+    }
+    return {
+      title: fallbackTitle,
+      content: fallbackContent,
+      section_id: secId,
+      category: 'contact',
+      sort_order: parseInt(secId.replace('CT', '')) - 1 || 0,
+      type: 'page'
+    };
+  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,28 +120,19 @@ const Contact: React.FC = () => {
 
       {/* SECTION 00: DIRECT DISPATCH */}
       <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">
-        <ContactCard 
-          number="00" 
-          title="Direct Dispatch Protocol"
-        >
-          <div className="space-y-6">
-            <p className="text-base md:text-lg leading-relaxed text-vintage-ink/80 italic font-serif">
-              To bypass strict corporate spam filters and keep studio correspondence streamlined, all communications are managed directly via our dedicated Gmail inbox.
-            </p>
-            <p className="text-base md:text-lg leading-relaxed text-vintage-ink/70">
-              If you prefer not using the contact form below, you can send an inquiry directly to:
-            </p>
-            <div className="pt-2">
-              <a 
-                href="mailto:bombastype@gmail.com" 
-                className="group inline-flex items-center gap-4 text-lg md:text-2xl font-display tracking-tight text-vintage-ink hover:text-vintage-accent transition-colors duration-300 pb-2 border-b border-vintage-ink/20 hover:border-vintage-accent"
+        {(() => {
+          const c0 = getItem('CT01', 'Direct Dispatch Protocol', '<p class="italic mb-4">To bypass strict corporate spam filters and keep studio correspondence streamlined, all communications are managed directly via our dedicated Gmail inbox.</p><p class="mb-4">If you prefer not using the contact form below, you can send an inquiry directly to:</p><p class="font-bold text-xl"><a href="mailto:bombastype@gmail.com" class="underline">bombastype@gmail.com</a></p>');
+          return (
+            <InContextCardWrapper item={c0} category="contact" pagePath="/contact" onRefresh={fetchContactContent}>
+              <ContactCard 
+                number="00" 
+                title={c0.title}
               >
-                <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
-                bombastype@gmail.com
-              </a>
-            </div>
-          </div>
-        </ContactCard>
+                <div className="space-y-6" dangerouslySetInnerHTML={{ __html: c0.content }} />
+              </ContactCard>
+            </InContextCardWrapper>
+          );
+        })()}
       </section>
 
       {/* CONTACT FORM SECTION */}
@@ -165,26 +211,21 @@ const Contact: React.FC = () => {
 
       {/* QUICK RESOURCES SECTION */}
       <section className="px-4 md:px-8 py-6 md:py-8 relative z-10">
-        <ContactCard
-          number="02" 
-          title="Quick Resources"
-        >
-          <div className="space-y-8">
-            <p className="text-base md:text-lg leading-relaxed text-vintage-ink/70">
-              Before sending a message, you might find an instant answer in these resources[cite: 10].
-            </p>
-            <Link 
-              to="/faq" 
-              className="group inline-flex items-center gap-4 text-lg md:text-xl font-display tracking-tight text-vintage-ink hover:text-vintage-accent transition-colors duration-300 pb-2 border-b border-vintage-ink/20 hover:border-vintage-accent"
-            >
-              License FAQ
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <p className="text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-semibold text-vintage-ink/50">
-              Typical response time: Within 24-48 hours[cite: 10].
-            </p>
-          </div>
-        </ContactCard>
+        {(() => {
+          const c2 = getItem('CT02', 'Quick Resources', '<p class="mb-4">Before sending a message, you might find an instant answer in our licensing resources.</p><p class="mb-4"><a href="/faq" class="font-bold underline">License FAQ &rarr;</a></p><p class="text-xs uppercase tracking-widest opacity-60">Typical response time: Within 24-48 hours.</p>');
+          return (
+            <InContextCardWrapper item={c2} category="contact" pagePath="/contact" onRefresh={fetchContactContent}>
+              <ContactCard
+                number="02" 
+                title={c2.title}
+              >
+                <div className="space-y-8" dangerouslySetInnerHTML={{ __html: c2.content }} />
+              </ContactCard>
+            </InContextCardWrapper>
+          );
+        })()}
+
+        <InContextAddSectionButton category="contact" pagePath="/contact" onRefresh={fetchContactContent} />
       </section>
 
       {/* FOOTER */}

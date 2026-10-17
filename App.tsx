@@ -14,6 +14,9 @@ import Footer from './components/Footer';
 import CartCard from './components/CartCard';
 import ContextMenu from './components/ContextMenu';
 import { CartProvider, useCart } from './context/CartContext';
+import { AdminProvider } from './context/AdminContext';
+import { InContextAdminBar } from './components/admin/InContextAdminBar';
+import { InContextEditorModal } from './components/admin/InContextEditorModal';
 
 // Core Public Pages (Home loaded directly for instant initial paint)
 import Home from './pages/Home';
@@ -25,7 +28,6 @@ const CartPage = lazy(() => import('./pages/shop/CartPage'));
 const License = lazy(() => import('./pages/License'));
 const FAQ = lazy(() => import('./pages/Faq')); 
 const Policy = lazy(() => import('./pages/Policy'));
-const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Checkout = lazy(() => import('./pages/shop/Checkout')); 
 const CanvasLanding = lazy(() => import('./pages/CanvasLanding'));
@@ -194,9 +196,10 @@ const App: React.FC = () => {
   }
 
   return (
-    <CartProvider>
-      <Router>
-        <ScrollToHash />
+    <AdminProvider>
+      <CartProvider>
+        <Router>
+          <ScrollToHash />
 
         {isMaintenance && !isAdmin ? (
           <Suspense fallback={<PageLoader />}>
@@ -238,7 +241,7 @@ const App: React.FC = () => {
                     <Route path="/license" element={<License />} />
                     <Route path="/faq" element={<FAQ />} />
                     <Route path="/policy" element={<Policy />} />
-                    <Route path="/about" element={<About />} />
+                    <Route path="/about" element={<Navigate to="/" replace />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/insights" element={<Navigate to="/" replace />} />
                     <Route path="/insight/:id" element={<Navigate to="/" replace />} />
@@ -306,8 +309,13 @@ const App: React.FC = () => {
             />
           </Suspense>
         )}
+
+        {/* WordPress / Notion Style In-Context Live Page Editing Bar & Modal */}
+        <InContextAdminBar />
+        <InContextEditorModal />
       </Router>
     </CartProvider>
+  </AdminProvider>
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
+import { InContextCardWrapper, InContextAddSectionButton } from '../components/admin/InContextCardWrapper';
 
 interface ContentItem {
   id: string;
@@ -83,25 +84,26 @@ const Policy: React.FC = () => {
     }).toUpperCase();
   };
 
-  useEffect(() => {
-    const fetchPolicies = async () => {
-      try {
-        const { data } = await supabase
-          .from('site_content')
-          .select('*')
-          .eq('category', 'policy')
-          .order('sort_order', { ascending: true });
+  const fetchPolicies = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_content')
+        .select('*')
+        .eq('category', 'policy')
+        .order('sort_order', { ascending: true });
 
-        if (data) {
-          setPolicies(data);
-          setLastUpdated(formatLastUpdated(data));
-        }
-      } catch (err) {
-        console.error('Failed to fetch policies:', err);
-      } finally {
-        setLoading(false);
+      if (data) {
+        setPolicies(data);
+        setLastUpdated(formatLastUpdated(data));
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch policies:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchPolicies();
   }, []);
 
@@ -170,66 +172,75 @@ const Policy: React.FC = () => {
             </div>
           ) : policies.length > 0 ? (
             policies.map((item, index) => (
-              <PolicyCard
+              <InContextCardWrapper
                 key={item.id}
-                number={String(index + 1).padStart(2, '0')}
-                title={item.title}
+                item={{ ...item, category: 'policy', page_path: '/policy', sort_order: index }}
+                category="policy"
+                pagePath="/policy"
+                onRefresh={fetchPolicies}
               >
-                {item.content && (
-                  (() => {
-                    // Logika untuk tipe AUTO (HTML + JSON Table)
-                    if (item.type === 'auto') {
-                      const jsonStartIndex = item.content.indexOf('{');
-                      if (jsonStartIndex !== -1) {
-                        const htmlPart = item.content.substring(0, jsonStartIndex).trim();
-                        const jsonPart = item.content.substring(jsonStartIndex).trim();
-                        try {
-                          const tableData = JSON.parse(jsonPart);
-                          return (
-                            <div className="space-y-8">
-                              {htmlPart && transformHTMLContent(htmlPart)}
-                              <PolicyTable headers={tableData.headers} rows={tableData.rows} />
-                            </div>
-                          );
-                        } catch (e) {
-                          console.error("JSON parse failed for auto type:", e);
+                <PolicyCard
+                  number={item.section_id || String(index + 1).padStart(2, '0')}
+                  title={item.title}
+                >
+                  {item.content && (
+                    (() => {
+                      // Logika untuk tipe AUTO (HTML + JSON Table)
+                      if (item.type === 'auto') {
+                        const jsonStartIndex = item.content.indexOf('{');
+                        if (jsonStartIndex !== -1) {
+                          const htmlPart = item.content.substring(0, jsonStartIndex).trim();
+                          const jsonPart = item.content.substring(jsonStartIndex).trim();
+                          try {
+                            const tableData = JSON.parse(jsonPart);
+                            return (
+                              <div className="space-y-8">
+                                {htmlPart && transformHTMLContent(htmlPart)}
+                                <PolicyTable headers={tableData.headers} rows={tableData.rows} />
+                              </div>
+                            );
+                          } catch (e) {
+                            console.error("JSON parse failed for auto type:", e);
+                          }
                         }
                       }
-                    }
 
-                    // Logika untuk tipe TABLE murni
-                    if (item.type === 'table') {
-                      try {
-                        const tableData = JSON.parse(item.content);
-                        return <PolicyTable headers={tableData.headers} rows={tableData.rows} />;
-                      } catch (e) {
-                        return <div className="text-red-500 text-xs">Error rendering table data</div>;
+                      // Logika untuk tipe TABLE murni
+                      if (item.type === 'table') {
+                        try {
+                          const tableData = JSON.parse(item.content);
+                          return <PolicyTable headers={tableData.headers} rows={tableData.rows} />;
+                        } catch (e) {
+                          return <div className="text-red-500 text-xs">Error rendering table data</div>;
+                        }
                       }
-                    }
 
-                    // Default render (Tipe PAGE atau HTML biasa)
-                    return item.content.includes('<') ? (
-                      transformHTMLContent(item.content)
-                    ) : (
-                      <div className="space-y-4">
-                        {item.content.split('\n').map((paragraph, i) => (
-                          paragraph.trim() && (
-                            <p key={i} className="text-base md:text-lg leading-relaxed">
-                              {paragraph.trim()}
-                            </p>
-                          )
-                        ))}
-                      </div>
-                    );
-                  })()
-                )}
-              </PolicyCard>
+                      // Default render (Tipe PAGE atau HTML biasa)
+                      return item.content.includes('<') ? (
+                        transformHTMLContent(item.content)
+                      ) : (
+                        <div className="space-y-4">
+                          {item.content.split('\n').map((paragraph, i) => (
+                            paragraph.trim() && (
+                              <p key={i} className="text-base md:text-lg leading-relaxed">
+                                {paragraph.trim()}
+                              </p>
+                            )
+                          ))}
+                        </div>
+                      );
+                    })()
+                  )}
+                </PolicyCard>
+              </InContextCardWrapper>
             ))
           ) : (
             <div className="text-center py-12 text-vintage-ink/60">
               No policies available
             </div>
           )}
+
+          <InContextAddSectionButton category="policy" pagePath="/policy" onRefresh={fetchPolicies} />
         </div>
       </section>
 

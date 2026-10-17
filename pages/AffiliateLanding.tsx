@@ -11,8 +11,63 @@ import { motion } from 'framer-motion';
 import { COUNTRIES, PROVINCES_BY_COUNTRY, getDummyAffiliateData, syncAffiliateCoupon, findCountryByName, getCitiesForState, detectClientLocation } from '../utils/affiliateGeo';
 import { CountryCombobox } from '../components/CountryCombobox';
 import { PhoneDialCombobox } from '../components/PhoneDialCombobox';
+import { InContextCardWrapper, InContextAddSectionButton } from '../components/admin/InContextCardWrapper';
+
+interface ContentItem {
+  id?: string;
+  title: string;
+  content: string;
+  section_id: string;
+  category: string;
+  sort_order: number;
+  type?: string;
+}
 
 const AffiliateLanding: React.FC = () => {
+  const [affiliateItems, setAffiliateItems] = useState<ContentItem[]>([]);
+
+  const fetchAffiliateContent = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_content')
+        .select('*')
+        .eq('category', 'affiliate')
+        .order('sort_order', { ascending: true });
+      if (data && data.length > 0) {
+        setAffiliateItems(data);
+      }
+    } catch (err) {
+      console.error('Failed to load affiliate site content:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAffiliateContent();
+  }, []);
+
+  const getItem = (secId: string, fallbackTitle: string, fallbackContent: string) => {
+    const found = affiliateItems.find(i => i.section_id === secId || i.section_id === secId.replace('AF', ''));
+    if (found) {
+      return {
+        id: found.id,
+        title: found.title || fallbackTitle,
+        content: found.content || fallbackContent,
+        section_id: found.section_id || secId,
+        category: 'affiliate',
+        sort_order: found.sort_order ?? 0,
+        type: found.type || 'page'
+      };
+    }
+    return {
+      title: fallbackTitle,
+      content: fallbackContent,
+      section_id: secId,
+      category: 'affiliate',
+      sort_order: parseInt(secId.replace('AF', '')) - 1 || 0,
+      type: 'page'
+    };
+  };
+
   const [sessionUser, setSessionUser] = useState<any>(null);
   const [existingAffiliate, setExistingAffiliate] = useState<any>(null);
   const [fullName, setFullName] = useState('');
@@ -361,27 +416,44 @@ const AffiliateLanding: React.FC = () => {
 
         {/* 3 PILLARS / HOW IT WORKS */}
         <div className="w-full grid grid-cols-1 md:grid-cols-3 border-b border-vintage-ink divide-y md:divide-y-0 md:divide-x divide-vintage-ink">
-          <div className="p-8 text-center space-y-3">
-            <span className="w-10 h-10 mx-auto rounded-full border border-vintage-ink flex items-center justify-center font-display text-lg bg-vintage-background text-vintage-ink">1</span>
-            <h3 className="font-display text-xl text-vintage-ink">Vanity Link & Promo Coupon</h3>
-            <p className="text-sm text-vintage-ink leading-relaxed">
-              Receive a clean vanity URL (<code className="font-mono font-bold text-xs bg-vintage-ink/10 px-1.5 py-0.5 text-vintage-ink">bombastype.com/c/NAME</code>) plus an auto-generated 10% OFF discount coupon for your followers.
-            </p>
-          </div>
-          <div className="p-8 text-center space-y-3">
-            <span className="w-10 h-10 mx-auto rounded-full border border-vintage-ink flex items-center justify-center font-display text-lg bg-vintage-background text-vintage-ink">2</span>
-            <h3 className="font-display text-xl text-vintage-ink">Share With Designers</h3>
-            <p className="text-sm text-vintage-ink leading-relaxed">
-              Share in your specimens, client presentations, or social channels. Visitors are attributed via 30-day server cookies or upon coupon redemption.
-            </p>
-          </div>
-          <div className="p-8 text-center space-y-3">
-            <span className="w-10 h-10 mx-auto rounded-full border border-vintage-ink flex items-center justify-center font-display text-lg bg-vintage-background text-vintage-ink">3</span>
-            <h3 className="font-display text-xl text-vintage-ink">Monthly PayPal Payout</h3>
-            <p className="text-sm text-vintage-ink leading-relaxed">
-              Earn 20% on every license sold. After a 14-day warranty holding period, earnings are paid automatically via PayPal once balance reaches $50.
-            </p>
-          </div>
+          {(() => {
+            const a1 = getItem('AF01', 'Vanity Link & Promo Coupon', 'Receive a clean vanity URL (<code class="font-mono font-bold text-xs bg-vintage-ink/10 px-1.5 py-0.5 text-vintage-ink">bombastype.com/c/NAME</code>) plus an auto-generated 10% OFF discount coupon for your followers.');
+            return (
+              <InContextCardWrapper item={a1} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
+                <div className="p-8 text-center space-y-3 h-full">
+                  <span className="w-10 h-10 mx-auto rounded-full border border-vintage-ink flex items-center justify-center font-display text-lg bg-vintage-background text-vintage-ink">1</span>
+                  <h3 className="font-display text-xl text-vintage-ink">{a1.title}</h3>
+                  <div className="text-sm text-vintage-ink leading-relaxed" dangerouslySetInnerHTML={{ __html: a1.content }} />
+                </div>
+              </InContextCardWrapper>
+            );
+          })()}
+
+          {(() => {
+            const a2 = getItem('AF02', 'Share With Designers', 'Share in your specimens, client presentations, or social channels. Visitors are attributed via 30-day server cookies or upon coupon redemption.');
+            return (
+              <InContextCardWrapper item={a2} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
+                <div className="p-8 text-center space-y-3 h-full">
+                  <span className="w-10 h-10 mx-auto rounded-full border border-vintage-ink flex items-center justify-center font-display text-lg bg-vintage-background text-vintage-ink">2</span>
+                  <h3 className="font-display text-xl text-vintage-ink">{a2.title}</h3>
+                  <div className="text-sm text-vintage-ink leading-relaxed" dangerouslySetInnerHTML={{ __html: a2.content }} />
+                </div>
+              </InContextCardWrapper>
+            );
+          })()}
+
+          {(() => {
+            const a3 = getItem('AF03', 'Monthly PayPal Payout', 'Earn 20% on every license sold. After a 14-day warranty holding period, earnings are paid automatically via PayPal once balance reaches $50.');
+            return (
+              <InContextCardWrapper item={a3} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
+                <div className="p-8 text-center space-y-3 h-full">
+                  <span className="w-10 h-10 mx-auto rounded-full border border-vintage-ink flex items-center justify-center font-display text-lg bg-vintage-background text-vintage-ink">3</span>
+                  <h3 className="font-display text-xl text-vintage-ink">{a3.title}</h3>
+                  <div className="text-sm text-vintage-ink leading-relaxed" dangerouslySetInnerHTML={{ __html: a3.content }} />
+                </div>
+              </InContextCardWrapper>
+            );
+          })()}
         </div>
 
         {/* ONBOARDING FORM / STATUS SECTION */}
@@ -753,6 +825,8 @@ const AffiliateLanding: React.FC = () => {
 
         <div className="h-4 w-full bg-vintage-ink/5 border-t border-vintage-ink" />
       </div>
+
+      <InContextAddSectionButton category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent} />
 
       <div className="mt-8 text-xs font-bold tracking-[0.3em] text-vintage-ink uppercase">
         ** BombasType Affiliate Partner Program **
