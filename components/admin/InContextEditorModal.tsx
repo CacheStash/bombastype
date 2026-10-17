@@ -195,7 +195,7 @@ export const InContextEditorModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-200 overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[2000] overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-vintage-paper border border-vintage-ink w-full max-w-3xl shadow-2xl relative text-vintage-ink font-serif animate-in zoom-in-95 duration-200">
         
         {/* Modal Header */}

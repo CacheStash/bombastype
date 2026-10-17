@@ -41,7 +41,7 @@ const BackToTop: React.FC = () => {
           transition={{ duration: 0.4, ease: "easeOut" }}
           onClick={scrollToTop}
           // Style: Menggunakan palet Vintage Paper & Ink
-          className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-999 
+          className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-[999] 
                      bg-vintage-paper/80 backdrop-blur-sm text-vintage-ink 
                      p-3 border border-vintage-ink/20
                      hover:bg-vintage-ink hover:text-vintage-paper 
