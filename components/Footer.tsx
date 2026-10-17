@@ -200,10 +200,10 @@ export default function Footer() {
           <span className="opacity-75 tracking-widest uppercase text-[11px] text-vintage-paper">
             INDONESIA
           </span>
-          <div className="mt-4 flex lg:justify-end gap-2 text-[10px] tracking-wider font-mono">
-            <span className="border border-vintage-paper/60 text-vintage-paper/90 px-1.5 py-0.5">VISA</span>
-            <span className="border border-vintage-paper/60 text-vintage-paper/90 px-1.5 py-0.5">MC</span>
-            <span className="border border-vintage-paper/60 text-vintage-paper/90 px-1.5 py-0.5">PAYPAL</span>
+          <div className="mt-4 flex lg:justify-end gap-2 text-[10px] tracking-wider font-mono opacity-40 text-vintage-paper">
+            <span className="px-1.5 py-0.5 border" style={{ borderColor: 'rgba(253, 246, 227, 0.4)' }}>VISA</span>
+            <span className="px-1.5 py-0.5 border" style={{ borderColor: 'rgba(253, 246, 227, 0.4)' }}>MC</span>
+            <span className="px-1.5 py-0.5 border" style={{ borderColor: 'rgba(253, 246, 227, 0.4)' }}>PAYPAL</span>
           </div>
         </div>
 
