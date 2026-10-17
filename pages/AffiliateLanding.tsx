@@ -774,7 +774,7 @@ const AffiliateLanding: React.FC = () => {
         </div>
 
         {/* ONBOARDING FORM / STATUS SECTION */}
-        <div className="w-full p-8 md:p-14 max-w-4xl mx-auto">
+        <div className="w-full p-8 md:p-14 max-w-7xl mx-auto">
           {existingAffiliate ? (
             /* ACTIVE AFFILIATE CARD */
             <div className="border border-vintage-ink/20 p-8 bg-vintage-background space-y-6">
