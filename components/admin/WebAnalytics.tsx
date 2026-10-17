@@ -154,9 +154,7 @@ const WebAnalytics: React.FC = () => {
                 type="button"
                 key={range}
                 onClick={() => setTimeRange(range)}
-                className={`px-4 py-1.5 text-xs font-bold font-mono border-r border-vintage-ink last:border-r-0 select-none admin-segmented-btn ${
-                  timeRange === range ? 'active' : ''
-                }`}
+                className={`px-4 py-1.5 text-xs font-bold font-mono border-r border-vintage-ink last:border-r-0 select-none admin-segmented-btn ${ timeRange === range ? 'active' : '' }`}
               >
                 {range}D
               </button>
@@ -186,7 +184,7 @@ const WebAnalytics: React.FC = () => {
 
       {/* METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="p-6 border border-vintage-ink bg-vintage-paper/80 shadow-[3px_3px_0px_0px_rgba(40,30,20,0.15)]">
+        <div className="p-6 border border-vintage-ink bg-vintage-paper/80">
           <div className="flex items-center justify-between text-vintage-ink/60 mb-2">
             <span className="text-[10px] font-bold uppercase tracking-widest">Unique Visitors</span>
             <Users size={16} className="text-vintage-ink" />
@@ -197,7 +195,7 @@ const WebAnalytics: React.FC = () => {
           <div className="text-[10px] text-vintage-ink/50 mt-2 font-mono">Zone bombastype.com</div>
         </div>
 
-        <div className="p-6 border border-vintage-ink bg-vintage-paper/80 shadow-[3px_3px_0px_0px_rgba(40,30,20,0.15)]">
+        <div className="p-6 border border-vintage-ink bg-vintage-paper/80">
           <div className="flex items-center justify-between text-vintage-ink/60 mb-2">
             <span className="text-[10px] font-bold uppercase tracking-widest">Total Requests</span>
             <Activity size={16} className="text-vintage-ink" />
@@ -208,7 +206,7 @@ const WebAnalytics: React.FC = () => {
           <div className="text-[10px] text-vintage-ink/50 mt-2 font-mono">{data?.summary.totalPageViews.toLocaleString() || '0'} Pageviews</div>
         </div>
 
-        <div className="p-6 border border-vintage-ink bg-vintage-paper/80 shadow-[3px_3px_0px_0px_rgba(40,30,20,0.15)]">
+        <div className="p-6 border border-vintage-ink bg-vintage-paper/80">
           <div className="flex items-center justify-between text-vintage-ink/60 mb-2">
             <span className="text-[10px] font-bold uppercase tracking-widest">Bandwidth</span>
             <HardDrive size={16} className="text-vintage-ink" />
@@ -219,7 +217,7 @@ const WebAnalytics: React.FC = () => {
           <div className="text-[10px] text-vintage-ink/50 mt-2 font-mono">Egress Edge Cloudflare</div>
         </div>
 
-        <div className="p-6 border border-vintage-ink bg-vintage-paper/80 shadow-[3px_3px_0px_0px_rgba(40,30,20,0.15)]">
+        <div className="p-6 border border-vintage-ink bg-vintage-paper/80">
           <div className="flex items-center justify-between text-vintage-ink/60 mb-2">
             <span className="text-[10px] font-bold uppercase tracking-widest">Worker Invocations</span>
             <Globe size={16} className="text-vintage-ink" />
@@ -234,7 +232,7 @@ const WebAnalytics: React.FC = () => {
       {/* DETAIL BREAKDOWNS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* DAILY LOG TABLE */}
-        <div className="border border-vintage-ink bg-vintage-paper p-6 shadow-[3px_3px_0px_0px_rgba(40,30,20,0.15)]">
+        <div className="border border-vintage-ink bg-vintage-paper p-6">
           <h3 className="font-bold text-sm tracking-wider uppercase mb-4 pb-2 border-b border-vintage-ink/20">
             Aktivitas Harian
           </h3>
@@ -273,7 +271,7 @@ const WebAnalytics: React.FC = () => {
         </div>
 
         {/* TOP COUNTRIES */}
-        <div className="border border-vintage-ink bg-vintage-paper p-6 shadow-[3px_3px_0px_0px_rgba(40,30,20,0.15)]">
+        <div className="border border-vintage-ink bg-vintage-paper p-6">
           <h3 className="font-bold text-sm tracking-wider uppercase mb-4 pb-2 border-b border-vintage-ink/20">
             Top Visitor Berdasarkan Negara
           </h3>

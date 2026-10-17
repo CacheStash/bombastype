@@ -65,11 +65,7 @@ export const PhoneDialCombobox: React.FC<PhoneDialComboboxProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between gap-1 px-3 py-3 font-mono text-xs font-bold outline-none cursor-pointer h-full border-r ${
-          isVintage 
-            ? 'bg-vintage-ink/5 border-vintage-ink text-vintage-ink hover:bg-vintage-ink/10' 
-            : 'bg-gray-100 border-2 border-r-2 border-black text-black hover:bg-gray-200'
-        } min-w-[100px]`}
+        className={`flex items-center justify-between gap-1 px-3 py-3 font-mono text-xs font-bold outline-none cursor-pointer h-full border-r ${ isVintage ? 'bg-vintage-ink/5 border-vintage-ink text-vintage-ink hover:bg-vintage-ink/10' : 'bg-gray-100 border-2 border-r-2 border-black text-black hover:bg-gray-200' } min-w-[100px]`}
       >
         <span className="truncate">{value || '+Code'}</span>
         <ChevronDown size={13} className={`opacity-60 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -77,11 +73,7 @@ export const PhoneDialCombobox: React.FC<PhoneDialComboboxProps> = ({
 
       {isOpen && (
         <div 
-          className={`absolute left-0 top-full mt-1 z-50 w-72 max-h-64 overflow-hidden border shadow-xl flex flex-col ${
-            isVintage 
-              ? 'border-vintage-ink bg-vintage-paper text-vintage-ink' 
-              : 'border-2 border-black bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
-          }`}
+          className={`absolute left-0 top-full mt-1 z-50 w-72 max-h-64 overflow-hidden border shadow-xl flex flex-col ${ isVintage ? 'border-vintage-ink bg-vintage-paper text-vintage-ink' : 'border-2 border-black bg-white text-black' }`}
         >
           {/* SEARCH BOX IN POPOVER */}
           <div className="p-2 border-b border-current/20 flex items-center gap-1.5 bg-black/5">
@@ -113,9 +105,7 @@ export const PhoneDialCombobox: React.FC<PhoneDialComboboxProps> = ({
                           onChange(c.dial);
                           setIsOpen(false);
                         }}
-                        className={`w-full px-3 py-2 flex items-center justify-between text-left hover:bg-black/5 transition-colors cursor-pointer ${
-                          isSelected ? (isVintage ? 'bg-vintage-ink text-vintage-paper font-bold' : 'bg-black text-white font-bold') : ''
-                        }`}
+                        className={`w-full px-3 py-2 flex items-center justify-between text-left hover:bg-black/5 transition-colors cursor-pointer ${ isSelected ? (isVintage ? 'bg-vintage-ink text-vintage-paper font-bold' : 'bg-black text-white font-bold') : '' }`}
                       >
                         <div className="flex items-center gap-2 truncate">
                           <span className="font-bold w-12 shrink-0">{c.dial}</span>

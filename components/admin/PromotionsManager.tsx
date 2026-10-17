@@ -495,33 +495,21 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
             <button 
               type="button"
               onClick={() => setActiveTab('campaigns')}
-              className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-vintage-ink transition-all duration-300 ${
-                activeTab === 'campaigns' 
-                  ? 'bg-vintage-ink text-vintage-paper shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' 
-                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5'
-              }`}
+              className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-vintage-ink transition-all duration-300 ${ activeTab === 'campaigns' ? 'bg-vintage-ink text-vintage-paper' : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5' }`}
             >
               Store Campaigns
             </button>
             <button 
               type="button"
               onClick={() => setActiveTab('coupons')}
-              className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-vintage-ink transition-all duration-300 ${
-                activeTab === 'coupons' 
-                  ? 'bg-vintage-ink text-vintage-paper shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' 
-                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5'
-              }`}
+              className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-vintage-ink transition-all duration-300 ${ activeTab === 'coupons' ? 'bg-vintage-ink text-vintage-paper' : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5' }`}
             >
               Store Coupons ({coupons.filter(c => !c.affiliate_id).length})
             </button>
             <button 
               type="button"
               onClick={() => setActiveTab('affiliate_coupons')}
-              className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-vintage-ink transition-all duration-300 ${
-                activeTab === 'affiliate_coupons' 
-                  ? 'bg-vintage-ink text-vintage-paper shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' 
-                  : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5'
-              }`}
+              className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-vintage-ink transition-all duration-300 ${ activeTab === 'affiliate_coupons' ? 'bg-vintage-ink text-vintage-paper' : 'bg-transparent text-vintage-ink/60 hover:text-vintage-ink hover:bg-vintage-ink/5' }`}
             >
               Partner Coupons ({affiliateCoupons.length})
             </button>
@@ -753,11 +741,7 @@ const PromotionsManager: React.FC<PromotionsManagerProps> = ({ onNavigateTab }) 
                         {c.end_date || 'Ongoing'}
                       </td>
                       <td className="p-3 text-center">
-                        <span className={`px-2 py-0.5 border text-[9px] font-bold uppercase ${
-                          c.is_active 
-                            ? 'border-emerald-300 bg-emerald-50 text-emerald-950' 
-                            : 'border-vintage-ink/20 bg-vintage-ink/5 text-vintage-ink/60'
-                        }`}>
+                        <span className={`px-2 py-0.5 border text-[9px] font-bold uppercase ${ c.is_active ? 'border-emerald-300 bg-emerald-50 text-emerald-950' : 'border-vintage-ink/20 bg-vintage-ink/5 text-vintage-ink/60' }`}>
                           {c.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>

@@ -1242,33 +1242,21 @@ export default function BroadcastStudio() {
       <div className="flex border-b border-vintage-ink text-xs font-bold uppercase tracking-wider gap-2">
         <button
           onClick={() => setActiveTab('compose')}
-          className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'compose' 
-              ? 'border-vintage-ink text-vintage-ink bg-vintage-ink/5' 
-              : 'border-transparent text-vintage-ink/50 hover:text-vintage-ink'
-          }`}
+          className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${ activeTab === 'compose' ? 'border-vintage-ink text-vintage-ink bg-vintage-ink/5' : 'border-transparent text-vintage-ink/50 hover:text-vintage-ink' }`}
         >
           <Send size={14} />
           Compose Broadcast
         </button>
         <button
           onClick={() => setActiveTab('campaigns')}
-          className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'campaigns' 
-              ? 'border-vintage-ink text-vintage-ink bg-vintage-ink/5' 
-              : 'border-transparent text-vintage-ink/50 hover:text-vintage-ink'
-          }`}
+          className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${ activeTab === 'campaigns' ? 'border-vintage-ink text-vintage-ink bg-vintage-ink/5' : 'border-transparent text-vintage-ink/50 hover:text-vintage-ink' }`}
         >
           <Layers size={14} />
           Campaigns &amp; Multi-Day Queue ({data.campaigns.length})
         </button>
         <button
           onClick={() => setActiveTab('logs')}
-          className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'logs' 
-              ? 'border-vintage-ink text-vintage-ink bg-vintage-ink/5' 
-              : 'border-transparent text-vintage-ink/50 hover:text-vintage-ink'
-          }`}
+          className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${ activeTab === 'logs' ? 'border-vintage-ink text-vintage-ink bg-vintage-ink/5' : 'border-transparent text-vintage-ink/50 hover:text-vintage-ink' }`}
         >
           <History size={14} />
           Sent Delivery Audit ({allLogs.length})
@@ -1323,11 +1311,7 @@ export default function BroadcastStudio() {
                 <button
                   type="button"
                   onClick={() => setAudience('all')}
-                  className={`p-3 border text-left transition-all cursor-pointer ${
-                    audience === 'all' 
-                      ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
-                      : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
-                  }`}
+                  className={`p-3 border text-left transition-all cursor-pointer ${ audience === 'all' ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a]' : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5' }`}
                 >
                   <div className="font-bold">ALL AUDIENCE</div>
                   <div className="text-[10px] opacity-70 mt-1">{data.audience.totalUniqueCount} Unique Emails</div>
@@ -1335,11 +1319,7 @@ export default function BroadcastStudio() {
                 <button
                   type="button"
                   onClick={() => setAudience('buyers')}
-                  className={`p-3 border text-left transition-all cursor-pointer ${
-                    audience === 'buyers' 
-                      ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
-                      : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
-                  }`}
+                  className={`p-3 border text-left transition-all cursor-pointer ${ audience === 'buyers' ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a]' : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5' }`}
                 >
                   <div className="font-bold">BUYERS ONLY</div>
                   <div className="text-[10px] opacity-70 mt-1">{data.audience.buyersCount} Verified Patrons</div>
@@ -1347,11 +1327,7 @@ export default function BroadcastStudio() {
                 <button
                   type="button"
                   onClick={() => setAudience('subscribers')}
-                  className={`p-3 border text-left transition-all cursor-pointer ${
-                    audience === 'subscribers' 
-                      ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
-                      : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
-                  }`}
+                  className={`p-3 border text-left transition-all cursor-pointer ${ audience === 'subscribers' ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a]' : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5' }`}
                 >
                   <div className="font-bold">SUBSCRIBERS</div>
                   <div className="text-[10px] opacity-70 mt-1">{data.audience.subscribersCount} Active Readers</div>
@@ -1359,11 +1335,7 @@ export default function BroadcastStudio() {
                 <button
                   type="button"
                   onClick={() => setAudience('affiliates')}
-                  className={`p-3 border text-left transition-all cursor-pointer ${
-                    audience === 'affiliates' 
-                      ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]' 
-                      : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5'
-                  }`}
+                  className={`p-3 border text-left transition-all cursor-pointer ${ audience === 'affiliates' ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a]' : 'bg-white/80 text-[#2c241a] border-[#2c241a]/30 hover:border-[#2c241a] hover:bg-[#2c241a]/5' }`}
                 >
                   <div className="font-bold">AFFILIATES</div>
                   <div className="text-[10px] opacity-70 mt-1">{data.audience.affiliatesCount || 0} {(data.audience.affiliatesCount || 0) === 1 ? 'Partner' : 'Partners'} (Excl. Buyers)</div>
@@ -1806,11 +1778,7 @@ export default function BroadcastStudio() {
                       key={evt}
                       type="button"
                       onClick={() => handleSelectEvent(evt)}
-                      className={`px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider border transition-all cursor-pointer ${
-                        selectedEventName === evt && !selectedPromoId
-                          ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a] shadow-[2px_2px_0px_#8b6b4a]'
-                          : 'bg-white text-[#2c241a] border-vintage-ink/40 hover:bg-[#2c241a]/5'
-                      }`}
+                      className={`px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider border transition-all cursor-pointer ${ selectedEventName === evt && !selectedPromoId ? 'bg-[#2c241a] text-[#fdf6e3] border-[#2c241a]' : 'bg-white text-[#2c241a] border-vintage-ink/40 hover:bg-[#2c241a]/5' }`}
                     >
                       {evt}
                     </button>
@@ -1942,7 +1910,7 @@ export default function BroadcastStudio() {
                             {pName}
                           </div>
                           <div>
-                            <div className="inline-block bg-[#2c241a] text-[#fdf6e3] border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] px-6 py-2.5 font-serif font-black text-3xl sm:text-4xl tracking-tight leading-none">
+                            <div className="inline-block bg-[#2c241a] text-[#fdf6e3] border-2 border-[#2c241a] px-6 py-2.5 font-serif font-black text-3xl sm:text-4xl tracking-tight leading-none">
                               {pDiscount}
                             </div>
                           </div>
@@ -2547,7 +2515,7 @@ export default function BroadcastStudio() {
             </div>
 
             {/* LAUNCH BUTTON */}
-            <div className="border-2 border-[#2c241a] shadow-[4px_4px_0px_#2c241a] p-5 bg-[#fdf6e3] flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="border-2 border-[#2c241a] p-5 bg-[#fdf6e3] flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="text-xs font-mono">
                 {selectedPreset === 'new_coupon' && targetMode === 'single' ? (
                   <div>
@@ -2584,7 +2552,7 @@ export default function BroadcastStudio() {
                     ? (!selectedBuyerEmail || !selectedBuyerEmail.includes('@')) 
                     : getTargetAudienceCount() === 0)
                 }
-                className="w-full md:w-auto px-8 py-3 bg-[#2c241a] text-[#fdf6e3] text-xs uppercase font-bold tracking-widest border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] hover:bg-[#8b6b4a] hover:text-[#fdf6e3] hover:border-[#8b6b4a] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#2c241a] disabled:hover:text-[#fdf6e3] disabled:hover:border-[#2c241a] disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:shadow-[3px_3px_0px_#8b6b4a] flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full md:w-auto px-8 py-3 bg-[#2c241a] text-[#fdf6e3] text-xs uppercase font-bold tracking-widest border-2 border-[#2c241a] hover:bg-[#8b6b4a] hover:text-[#fdf6e3] hover:border-[#8b6b4a] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#2c241a] disabled:hover:text-[#fdf6e3] disabled:hover:border-[#2c241a] disabled:active: disabled: flex items-center justify-center gap-2 cursor-pointer"
               >
                 {sending ? (
                   <>
@@ -2638,11 +2606,7 @@ export default function BroadcastStudio() {
                       <div>
                         <div className="flex items-center gap-3">
                           <h3 className="font-bold text-lg font-serif">{camp.title || camp.subject}</h3>
-                          <span className={`text-[9px] px-2 py-0.5 font-mono uppercase font-black border ${
-                            camp.status === 'completed'
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-400'
-                              : 'bg-amber-100 text-amber-900 border-amber-400'
-                          }`}>
+                          <span className={`text-[9px] px-2 py-0.5 font-mono uppercase font-black border ${ camp.status === 'completed' ? 'bg-emerald-100 text-emerald-800 border-emerald-400' : 'bg-amber-100 text-amber-900 border-amber-400' }`}>
                             {camp.status === 'completed' ? 'Completed' : 'In Progress (Queued)'}
                           </span>
                         </div>
@@ -2655,7 +2619,7 @@ export default function BroadcastStudio() {
                         <button
                           onClick={() => handleSendBroadcast(camp.id)}
                           disabled={sending || !canContinue}
-                          className="px-5 py-2.5 bg-[#2c241a] text-[#fdf6e3] text-xs uppercase font-bold tracking-wider border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] hover:bg-[#8b6b4a] hover:text-[#fdf6e3] hover:border-[#8b6b4a] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#2c241a] disabled:hover:text-[#fdf6e3] disabled:hover:border-[#2c241a] disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:shadow-[3px_3px_0px_#8b6b4a] flex items-center gap-2 cursor-pointer self-start md:self-auto"
+                          className="px-5 py-2.5 bg-[#2c241a] text-[#fdf6e3] text-xs uppercase font-bold tracking-wider border-2 border-[#2c241a] hover:bg-[#8b6b4a] hover:text-[#fdf6e3] hover:border-[#8b6b4a] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#2c241a] disabled:hover:text-[#fdf6e3] disabled:hover:border-[#2c241a] disabled:active: disabled: flex items-center gap-2 cursor-pointer self-start md:self-auto"
                         >
                           <Send size={12} />
                           Continue Next Batch ({Math.min(remaining, data.gas.allowedToday)} emails)
@@ -2814,22 +2778,14 @@ export default function BroadcastStudio() {
                     <button
                       type="button"
                       onClick={() => setLogPreviewDevice('desktop')}
-                      className={`px-2.5 py-1 text-[10px] uppercase font-bold transition-all cursor-pointer ${
-                        logPreviewDevice === 'desktop'
-                          ? 'bg-vintage-paper text-vintage-ink'
-                          : 'text-vintage-paper/70 hover:text-vintage-paper'
-                      }`}
+                      className={`px-2.5 py-1 text-[10px] uppercase font-bold transition-all cursor-pointer ${ logPreviewDevice === 'desktop' ? 'bg-vintage-paper text-vintage-ink' : 'text-vintage-paper/70 hover:text-vintage-paper' }`}
                     >
                       Desktop
                     </button>
                     <button
                       type="button"
                       onClick={() => setLogPreviewDevice('mobile')}
-                      className={`px-2.5 py-1 text-[10px] uppercase font-bold transition-all cursor-pointer ${
-                        logPreviewDevice === 'mobile'
-                          ? 'bg-vintage-paper text-vintage-ink'
-                          : 'text-vintage-paper/70 hover:text-vintage-paper'
-                      }`}
+                      className={`px-2.5 py-1 text-[10px] uppercase font-bold transition-all cursor-pointer ${ logPreviewDevice === 'mobile' ? 'bg-vintage-paper text-vintage-ink' : 'text-vintage-paper/70 hover:text-vintage-paper' }`}
                     >
                       Mobile
                     </button>
@@ -2848,9 +2804,7 @@ export default function BroadcastStudio() {
               {/* Modal Body: Authentic Rendered Broadcast Container */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-white/20 flex justify-center min-h-[500px]">
                 <div 
-                  className={`transition-all duration-300 shadow-xl border border-vintage-ink/30 bg-[#fdf6e3] p-6 sm:p-8 font-serif text-[#2c241a] ${
-                    logPreviewDevice === 'desktop' ? 'w-full max-w-[620px]' : 'w-[375px]'
-                  }`}
+                  className={`transition-all duration-300 shadow-xl border border-vintage-ink/30 bg-[#fdf6e3] p-6 sm:p-8 font-serif text-[#2c241a] ${ logPreviewDevice === 'desktop' ? 'w-full max-w-[620px]' : 'w-[375px]' }`}
                 >
                   {/* Header Branding */}
                   <div className="text-center pb-5 mb-5 border-b-2 border-[#2c241a]">
@@ -2928,7 +2882,7 @@ export default function BroadcastStudio() {
                               {pName}
                             </div>
                             <div>
-                              <div className="inline-block bg-[#2c241a] text-[#fdf6e3] border-2 border-[#2c241a] shadow-[3px_3px_0px_#8b6b4a] px-6 py-2.5 font-serif font-black text-3xl sm:text-4xl tracking-tight leading-none">
+                              <div className="inline-block bg-[#2c241a] text-[#fdf6e3] border-2 border-[#2c241a] px-6 py-2.5 font-serif font-black text-3xl sm:text-4xl tracking-tight leading-none">
                                 {pDiscount}
                               </div>
                             </div>
