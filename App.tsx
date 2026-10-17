@@ -294,9 +294,7 @@ const App: React.FC = () => {
 
               {!isNavActive && <BackToTop />}
               
-              <div className="relative z-10 mt-auto w-full">
-                <Footer />
-              </div>
+              <Footer />
             </div>
           </div>
         )}
