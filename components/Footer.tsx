@@ -1,38 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { openFontopsyWithAuth } from '../lib/fontopsySession';
-import { Instagram, Facebook, Globe, ChevronDown } from "lucide-react";
-
-// Icon Behance Custom SVG
-const BehanceIcon = ({ size = 18, className = "" }: { size?: number, className?: string }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M3 9h5a2.5 2.5 0 0 1 0 5H3z" />
-    <path d="M3 14h5.5a2.5 2.5 0 0 1 0 5H3z" />
-    <path d="M3 4v16" />
-    <path d="M14 13h7a3.5 3.5 0 0 0-7 0v2a3.5 3.5 0 0 0 7 0" />
-    <path d="M15 7h5" />
-  </svg>
-);
 
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAffiliateVisible, setIsAffiliateVisible] = useState(false);
-  const toolsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -44,16 +20,6 @@ export default function Footer() {
         setIsAffiliateVisible(admin || isTrainer);
       }
     });
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) {
-        setIsToolsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const footerLinks = [
@@ -87,7 +53,7 @@ export default function Footer() {
         .from('fontsubscribers')
         .insert([{ 
           email: email.toLowerCase().trim(), 
-          source: 'bombastype_footer',
+          source: 'bombastype_footer', 
           status: 'active' 
         }]);
 
@@ -110,186 +76,137 @@ export default function Footer() {
   };
 
   return (
-    <footer className="-mx-6 md:-mx-12 lg:-mx-20 -mb-6 md:-mb-12 lg:-mb-20 bg-vintage-ink text-vintage-paper py-12 md:py-16 mt-16 md:mt-24 border-t border-vintage-ink selection:bg-vintage-paper selection:text-vintage-ink relative z-10 mt-auto">
-      <div className="w-full px-10 md:px-20 lg:px-32">
+    <footer className="-mx-6 md:-mx-12 lg:-mx-20 -mb-6 md:-mb-12 lg:-mb-20 bg-vintage-ink text-vintage-paper mt-16 md:mt-24 border-t border-vintage-ink selection:bg-vintage-paper selection:text-vintage-ink relative z-10 mt-auto">
+      
+      {/* BARIS ATAS: Subscribe Form (Full Width between container edges, padding matches navbar) */}
+      <div className="w-full py-8 md:py-10 px-4 md:px-8 lg:px-12 border-b border-vintage-paper/10">
+        <form onSubmit={handleSubscribe} className="flex border border-vintage-paper/20 rounded-none overflow-hidden bg-vintage-paper/5 w-full relative">
+          {/* Honeypot field for bot spam prevention */}
+          <input 
+            type="text" 
+            name="b_nickname" 
+            value={honeypot} 
+            onChange={(e) => setHoneypot(e.target.value)} 
+            tabIndex={-1} 
+            autoComplete="off" 
+            aria-hidden="true"
+            style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', height: 0, width: 0, zIndex: -1 }} 
+          />
+          <input 
+            type="email" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={status === 'success' ? "THANK YOU FOR SUBSCRIBING!" : "ENTER YOUR EMAIL TO RECEIVE ARCHIVAL RELEASES & EXCLUSIVE UPDATES"}
+            className="flex-1 bg-transparent px-4 md:px-6 py-4 text-xs md:text-sm tracking-wider outline-none placeholder:text-vintage-paper/30 placeholder:uppercase font-mono disabled:opacity-50"
+            disabled={status === 'loading' || status === 'success'}
+            required
+          />
+          <button 
+            type="submit"
+            disabled={status === 'loading'}
+            className="btn-reverse-footer px-8 md:px-12 py-4 text-xs md:text-sm uppercase tracking-[0.2em] font-bold whitespace-nowrap disabled:opacity-50 transition-all cursor-pointer border-l border-vintage-paper/20"
+          >
+            {status === 'loading' ? 'Joining...' : status === 'success' ? 'Joined!' : 'Subscribe'}
+          </button>
+        </form>
+      </div>
+
+      {/* BARIS KEDUA: 4 TEXT-ONLY COLUMNS (Matching Subqi Layout with Bombastype Heritage Styling) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 px-4 md:px-8 lg:px-12 py-10 md:py-14 text-xs font-mono">
         
-        {/* BARIS ATAS: Subscribe Form (Full Width) */}
-        <div className="mb-16">
-          <form onSubmit={handleSubscribe} className="flex border border-vintage-paper/10 rounded-sm overflow-hidden bg-vintage-paper/5 w-full relative">
-            {/* Honeypot field for bot spam prevention */}
-            <input 
-              type="text" 
-              name="b_nickname" 
-              value={honeypot} 
-              onChange={(e) => setHoneypot(e.target.value)} 
-              tabIndex={-1} 
-              autoComplete="off" 
-              aria-hidden="true"
-              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', height: 0, width: 0, zIndex: -1 }} 
-            />
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={status === 'success' ? "THANK YOU FOR SUBSCRIBING!" : "Stay updated with new historic font releases and insights."}
-              className="flex-1 bg-transparent px-5 py-4 text-xs tracking-wider outline-none placeholder:text-vintage-paper/30 placeholder:uppercase disabled:opacity-50"
-              disabled={status === 'loading' || status === 'success'}
-              required
-            />
-            <button 
-              type="submit"
-              disabled={status === 'loading'}
-              className="btn-reverse-footer px-9 py-4 text-[11px] uppercase tracking-[0.2em] font-bold whitespace-nowrap disabled:opacity-50 transition-all cursor-pointer"
-            >
-              {status === 'loading' ? 'Joining...' : status === 'success' ? 'Joined!' : 'Join'}
-            </button>
-          </form>
-        </div>
-
-        {/* BARIS BAWAH: Info & Directory */}
-        <div className="flex flex-col md:flex-row justify-between items-start gap-12">
-          
-          {/* Kolom Kiri: Logo & Sosial Media */}
-          <div className="text-center md:text-left flex flex-col items-center md:items-start">
-            <div className="mb-4">
-              <img 
-                src="/LOGO2.png" 
-                alt="Bombastype" 
-                className="h-8 md:h-10 w-auto object-contain" 
-              />
-            </div>
-            
-            <div className="flex gap-4 justify-center md:justify-start opacity-70">
-              <a 
-                href="https://www.instagram.com/bombastypedotcom/" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                aria-label="Instagram"
-                className="hover:text-white transition-colors"
-              >
-                <Instagram size={18} />
-              </a>
-              <a 
-                href="https://www.facebook.com/bombastype/" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                aria-label="Facebook"
-                className="hover:text-white transition-colors"
-              >
-                <Facebook size={18} />
-              </a>
-              <a 
-                href="https://www.behance.net/Bombastype" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                aria-label="Behance"
-                className="hover:text-white transition-colors"
-              >
-                <BehanceIcon size={18} />
-              </a>
-              <a 
-                href="https://font.bombastype.workers.dev" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                aria-label="Website"
-                className="hover:text-white transition-colors"
-              >
-                <Globe size={18} />
-              </a>
-            </div>
-          </div>
-
-          {/* Kolom Tengah: Menu Direktori */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-12 gap-y-8 text-[10px] uppercase tracking-widest font-bold opacity-70">
-            <div className="flex flex-col gap-3">
-              {footerLinks.slice(0, 2).map((link) => (
-                <Link key={link.name} to={link.href} className="hover:text-white transition-colors w-fit">
+        {/* KOLOM 1: DIRECTORY */}
+        <div className="flex flex-col gap-3">
+          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px]">DIRECTORY</span>
+          <div className="flex gap-12 sm:gap-16">
+            <div className="flex flex-col gap-2.5">
+              {footerLinks.slice(0, 3).map((link) => (
+                <Link key={link.name} to={link.href} className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
                   {link.name}
                 </Link>
               ))}
             </div>
-            <div className="flex flex-col gap-3">
-              {footerLinks.slice(2, 4).map((link) => (
-                <Link key={link.name} to={link.href} className="hover:text-white transition-colors w-fit">
+            <div className="flex flex-col gap-2.5">
+              {footerLinks.slice(3).map((link) => (
+                <Link key={link.name} to={link.href} className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
                   {link.name}
                 </Link>
               ))}
             </div>
-            <div className="flex flex-col gap-3">
-              {footerLinks.slice(4, 6).map((link) => (
-                <Link key={link.name} to={link.href} className="hover:text-white transition-colors w-fit">
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-            <div className="flex flex-col gap-3">
-              {footerLinks.slice(6, 7).map((link) => (
-                <Link key={link.name} to={link.href} className="hover:text-white transition-colors w-fit">
-                  {link.name}
-                </Link>
-              ))}
-              {/* TOOLS DROPDOWN */}
-              <div className="relative" ref={toolsRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsToolsOpen(!isToolsOpen)}
-                  className="hover:text-white transition-colors w-fit flex items-center gap-1 cursor-pointer select-none"
-                  aria-expanded={isToolsOpen}
-                >
-                  <span>TOOLS</span>
-                  <ChevronDown 
-                    size={11} 
-                    className={`transition-transform duration-200 ${isToolsOpen ? 'rotate-180 text-white' : 'opacity-70'}`} 
-                  />
-                </button>
-
-                {isToolsOpen && (
-                  <div className="absolute bottom-full left-0 mb-2 w-48 bg-[#201D1B] border border-vintage-paper/20 rounded shadow-2xl py-2 px-1 z-50 flex flex-col gap-1 backdrop-blur-md">
-                    <a 
-                      href="https://canvas.bombastype.com" 
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setIsToolsOpen(false)}
-                      className="px-2.5 py-1.5 hover:bg-vintage-paper/10 text-vintage-paper/90 hover:text-white rounded transition-colors flex items-center justify-between tracking-widest text-[9px]"
-                    >
-                      <span>CANVAS STUDIO</span>
-                      <span className="bg-vintage-paper text-vintage-ink text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px]">BETA</span>
-                    </a>
-                    <a 
-                      href="https://fontshift.bombastype.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      onClick={() => setIsToolsOpen(false)}
-                      className="px-2.5 py-1.5 hover:bg-vintage-paper/10 text-vintage-paper/90 hover:text-white rounded transition-colors flex items-center justify-between tracking-widest text-[9px]"
-                    >
-                      <span>FONTSHIFT</span>
-                      <span className="bg-[#D4A373] text-[#1E1B18] text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px]">FREE</span>
-                    </a>
-                    <a 
-                      href="https://fontopsy.bombastype.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        await openFontopsyWithAuth('https://fontopsy.bombastype.com');
-                        setIsToolsOpen(false);
-                      }}
-                      className="px-2.5 py-1.5 hover:bg-vintage-paper/10 text-vintage-paper/90 hover:text-white rounded transition-colors flex items-center justify-between tracking-widest text-[9px]"
-                    >
-                      <span>FONTOPSY</span>
-                      <span className="bg-[#D4A373] text-[#1E1B18] text-[6px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px]">FREE</span>
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Kolom Kanan: Copyright */}
-          <div className="text-[10px] uppercase tracking-widest opacity-40 text-center md:text-right">
-            Copyright © 2026 Bombastype.<br />All rights reserved.
           </div>
         </div>
+
+        {/* KOLOM 2: TOOLS & LAB (No dropdown, direct clean text links) */}
+        <div className="flex flex-col gap-2.5">
+          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px]">TOOLS & LAB</span>
+          <a 
+            href="https://canvas.bombastype.com" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:underline hover:text-white transition-colors tracking-widest w-fit flex items-center gap-1.5"
+          >
+            <span>FONTCANVAS STUDIO</span>
+            <span className="bg-vintage-paper text-vintage-ink text-[7px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start -mt-0.5">BETA</span>
+          </a>
+          <a 
+            href="https://fontshift.bombastype.com" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:underline hover:text-white transition-colors tracking-widest w-fit flex items-center gap-1.5"
+          >
+            <span>FONTSHIFT CONVERTER</span>
+            <span className="bg-vintage-accent text-vintage-paper text-[7px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start -mt-0.5">FREE</span>
+          </a>
+          <a 
+            href="https://fontopsy.bombastype.com" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            onClick={async (e) => {
+              e.preventDefault();
+              await openFontopsyWithAuth('https://fontopsy.bombastype.com');
+            }}
+            className="hover:underline hover:text-white transition-colors tracking-widest w-fit flex items-center gap-1.5"
+          >
+            <span>FONTOPSY</span>
+            <span className="bg-vintage-accent text-vintage-paper text-[7px] px-1 py-0 h-3 leading-none flex items-center font-bold tracking-wider rounded-[2px] self-start -mt-0.5">FREE</span>
+          </a>
+        </div>
+
+        {/* KOLOM 3: SOCIAL CHANNELS (Text-only, no icons) */}
+        <div className="flex flex-col gap-2.5">
+          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px]">SOCIAL CHANNELS</span>
+          <a href="https://www.behance.net/Bombastype" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+            BEHANCE
+          </a>
+          <a href="https://www.instagram.com/bombastypedotcom/" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+            INSTAGRAM
+          </a>
+          <a href="https://www.facebook.com/bombastype/" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+            FACEBOOK
+          </a>
+          <a href="mailto:bombastype@gmail.com" className="hover:underline hover:text-white transition-colors tracking-widest w-fit">
+            EMAIL INQUIRY
+          </a>
+        </div>
+
+        {/* KOLOM 4: LEGAL & ARCHIVE */}
+        <div className="flex flex-col gap-1 lg:text-right">
+          <span className="opacity-40 tracking-[0.2em] mb-1 italic font-serif uppercase text-[11px]">LEGAL & ARCHIVE</span>
+          <span className="tracking-widest text-sm font-serif italic text-vintage-paper font-normal">
+            © BOMBASTYPE 2026
+          </span>
+          <span className="opacity-75 tracking-widest uppercase text-[11px]">
+            SLEMAN, YOGYAKARTA
+          </span>
+          <span className="opacity-75 tracking-widest uppercase text-[11px]">
+            INDONESIA
+          </span>
+          <div className="mt-4 flex lg:justify-end gap-2 opacity-30 text-[9px] tracking-wider">
+            <span className="border border-vintage-paper/40 px-1 py-0.5">VISA</span>
+            <span className="border border-vintage-paper/40 px-1 py-0.5">MC</span>
+            <span className="border border-vintage-paper/40 px-1 py-0.5">PAYPAL</span>
+          </div>
+        </div>
+
       </div>
     </footer>
   );

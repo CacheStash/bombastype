@@ -129,11 +129,44 @@ const FontDetail: React.FC = () => {
         </motion.p>
       </section>
 
-      {/* 2. TOP SLIDER SECTION (Main Preview with Vertical Thumbnail Rail on the Right) */}
-      <section className="relative w-full max-w-[1720px] mx-auto px-4 md:px-8 group mb-20">
-        <div className="flex flex-col lg:flex-row gap-4 items-stretch w-full">
-          {/* Main Preview Container */}
-          <div className="flex-1 min-w-0 relative overflow-hidden border border-vintage-ink/20 aspect-1160/772 bg-vintage-paper/50 shadow-sm">
+      {/* 2. COMPACT SPECIMEN & PURCHASE SECTION (Col 1: Rail, Col 2: Main Preview, Col 3: Price + Actions + Description) */}
+      <section className="relative w-full max-w-[1720px] mx-auto px-4 md:px-8 group mb-16">
+        <div className="flex flex-col lg:flex-row gap-4 xl:gap-6 items-stretch w-full">
+          
+          {/* COL 1: VERTICAL THUMBNAIL PICKER (FAR LEFT, Scrolling Up/Down) */}
+          {totalSlides > 1 && (
+            <div className="w-full lg:w-24 xl:w-28 shrink-0 relative order-2 lg:order-1">
+              <div className="flex flex-row lg:flex-col gap-2.5 overflow-x-auto lg:overflow-x-hidden lg:overflow-y-auto custom-scrollbar max-h-24 lg:max-h-none lg:absolute lg:inset-0 py-1 pr-1">
+                {displayImages.map((img, i) => {
+                  const imgUrl = resolvePreviewUrl(img);
+                  if (!imgUrl) return null;
+                  const isActive = currentSlide === i;
+
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setCurrentSlide(i)}
+                      className={`relative shrink-0 w-24 lg:w-full aspect-1160/772 overflow-hidden border transition-all duration-300 cursor-pointer ${
+                        isActive 
+                          ? 'border-vintage-accent ring-2 ring-vintage-accent/40 opacity-100 shadow-md' 
+                          : 'border-vintage-ink/20 opacity-40 hover:opacity-80 hover:border-vintage-ink/50'
+                      }`}
+                    >
+                      <img 
+                        src={imgUrl} 
+                        alt={`Thumbnail ${i + 1}`} 
+                        className="w-full h-full object-cover object-top" 
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* COL 2: MAIN PREVIEW IMAGE CONTAINER (CENTER - ANCHOR HEIGHT) */}
+          <div className="flex-1 min-w-0 relative overflow-hidden border border-vintage-ink/20 aspect-1160/772 bg-vintage-paper/50 shadow-sm order-1 lg:order-2">
             <AnimatePresence mode="wait">
               <motion.div 
                 key={currentSlide}
@@ -200,37 +233,93 @@ const FontDetail: React.FC = () => {
             )}
           </div>
 
-          {/* VERTICAL THUMBNAIL PICKER (Right Side on Desktop, Scrolling Up/Down) */}
-          {totalSlides > 1 && (
-            <div className="w-full lg:w-36 xl:w-44 shrink-0 relative">
-              <div className="flex flex-row lg:flex-col gap-2.5 overflow-x-auto lg:overflow-x-hidden lg:overflow-y-auto custom-scrollbar max-h-24 lg:max-h-none lg:absolute lg:inset-0 py-1 pr-1">
-                {displayImages.map((img, i) => {
-                  const imgUrl = resolvePreviewUrl(img);
-                  if (!imgUrl) return null;
-                  const isActive = currentSlide === i;
+          {/* COL 3: PRICE, ACTION BUTTONS & COMPACT DESCRIPTION (RIGHT - HEIGHT CAPPED TO PREVIEW) */}
+          <div className="w-full lg:w-[360px] xl:w-[410px] shrink-0 border border-vintage-ink/20 bg-vintage-paper/40 p-5 xl:p-6 flex flex-col justify-between order-3 lg:self-stretch overflow-hidden">
+            
+            {/* Top Block: Pricing + Actions */}
+            <div className="shrink-0 flex flex-col">
+              {/* Pricing Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-vintage-ink/15 mb-5">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-bold uppercase tracking-widest opacity-50 mb-0.5">Starting at</span>
+                  <div className="flex items-baseline text-vintage-ink">
+                    <span className="text-sm font-bold text-vintage-accent mr-1">$</span>
+                    <span className="text-4xl xl:text-5xl font-display tracking-tight leading-none">
+                      {Number(discountPrice).toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                </div>
 
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setCurrentSlide(i)}
-                      className={`relative shrink-0 w-24 lg:w-full aspect-1160/772 overflow-hidden border transition-all duration-300 cursor-pointer ${
-                        isActive 
-                          ? 'border-vintage-accent ring-2 ring-vintage-accent/40 opacity-100 shadow-md' 
-                          : 'border-vintage-ink/20 opacity-40 hover:opacity-80 hover:border-vintage-ink/50'
-                      }`}
-                    >
-                      <img 
-                        src={imgUrl} 
-                        alt={`Thumbnail ${i + 1}`} 
-                        className="w-full h-full object-cover object-top" 
-                      />
-                    </button>
-                  );
-                })}
+                {activePromo && (
+                  <div className="flex flex-col items-end">
+                    <span className="text-[9px] font-bold text-orange-600 uppercase tracking-widest mb-0.5">Promo Active</span>
+                    <div className="flex items-center text-vintage-ink line-through opacity-40 text-lg font-display">
+                      <span>${Number(basePrice).toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2.5 mb-5">
+                <button 
+                  onClick={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url, activeDiscount: activePromo?.discount_percent || 0, directCheckout: true })}
+                  className="vintage-btn btn-reverse py-3.5 px-6 text-xs tracking-[0.25em] w-full flex items-center justify-center gap-3 group font-bold"
+                >
+                  BUY FULL LICENSE <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+                
+                <button 
+                  onClick={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url, initialOption: 'trial' })}
+                  className="vintage-btn py-3 px-6 text-[10px] tracking-[0.25em] w-full border-vintage-ink/20 flex items-center justify-center gap-2.5 group"
+                >
+                  <Download size={13} className="group-hover:translate-y-0.5 transition-transform" /> DOWNLOAD FREE TRIAL
+                </button>
+              </div>
+
+              {/* Stealth Affiliate Quick Share Bar */}
+              {Boolean(affiliateCode) && (
+                <div className="mb-4 p-2.5 border border-vintage-ink/20 bg-vintage-background/80 flex items-center justify-between gap-2 text-[10px]">
+                  <span className="font-bold uppercase tracking-wider text-vintage-accent shrink-0">Partner Link:</span>
+                  <code className="font-mono text-[9px] truncate max-w-[170px] opacity-70">
+                    {`${window.location.origin}/c/${affiliateCode}/${font.id}`}
+                  </code>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/c/${affiliateCode}/${font.id}`);
+                      setAffiliateCopied(true);
+                      setTimeout(() => setAffiliateCopied(false), 2000);
+                    }}
+                    className="vintage-btn py-1 px-2 text-[9px] tracking-wider uppercase font-bold shrink-0"
+                  >
+                    {affiliateCopied ? 'COPIED!' : 'COPY'}
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Scrollable Description Container (Flex-1 + Overflow Scrollbar, cannot exceed main preview height) */}
+            <div className="grow min-h-0 pt-4 border-t border-vintage-ink/15 overflow-y-auto custom-scrollbar pr-1 flex flex-col justify-between">
+              <div>
+                <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-vintage-accent mb-2">
+                  Background & Characteristics
+                </h4>
+                <p className="text-xs xl:text-sm text-vintage-ink/80 leading-relaxed font-serif italic mb-4">
+                  {font.description}
+                </p>
+              </div>
+
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {tags.map((tag: string) => (
+                    <span key={tag} className="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 border border-vintage-ink/15 rounded-full opacity-60">
+                      #{tag.trim()}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -302,8 +391,8 @@ const FontDetail: React.FC = () => {
       </AnimatePresence>
 
       {/* 3. TYPE TESTER SECTION */}
-      <section className="w-full mt-24 border-y border-vintage-ink/10 bg-transparent relative z-40">
-      <div className="max-w-full">
+      <section className="w-full mt-16 border-y border-vintage-ink/10 bg-transparent relative z-40">
+        <div className="max-w-full">
           <TypeTester 
             config={{
               ...font,
@@ -312,101 +401,6 @@ const FontDetail: React.FC = () => {
               randomText: font.random_text
             }} 
           />
-        </div>
-      </section>
-
-      {/* 4. DESCRIPTION & TAGS SECTION */}
-      <section className="w-full max-w-6xl mx-auto px-6 py-24 text-center relative z-10">
-        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-10">Background & Characteristics</h4>
-        <p className="text-lg md:text-xl text-vintage-ink/80 leading-relaxed italic font-serif mb-12">
-          {font.description}
-        </p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {tags.map((tag: string) => (
-            <span key={tag} className="text-[10px] font-bold uppercase tracking-widest px-4 py-2 border border-vintage-ink/10 rounded-full opacity-60">
-              #{tag.trim()}
-            </span>
-          ))}
-        </div>
-      </section>
-
-      {/* STEALTH AFFILIATE QUICK SHARE BAR (Active Affiliate Session) */}
-      {Boolean(affiliateCode) && (
-        <section className="w-full max-w-[1720px] mx-auto px-6 mb-8">
-          <div className="border border-vintage-ink bg-vintage-background p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <span className="font-bold text-xs uppercase tracking-widest text-vintage-accent shrink-0">
-                Partner Quick Share:
-              </span>
-              <code className="font-mono text-xs font-bold text-vintage-ink bg-vintage-ink/10 px-2 py-1 border border-vintage-ink">
-                {`${window.location.origin}/c/${affiliateCode}/${font.id}`}
-              </code>
-            </div>
-            <button 
-              onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/c/${affiliateCode}/${font.id}`);
-                setAffiliateCopied(true);
-                setTimeout(() => setAffiliateCopied(false), 2000);
-              }}
-              className="vintage-btn py-2 px-4 text-xs tracking-widest shrink-0 uppercase font-bold"
-            >
-              {affiliateCopied ? 'COPIED!' : 'COPY LINK'}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* 5. INVESTMENT & ACTION SECTION */}
-      <section className="w-full max-w-[1720px] mx-auto px-6 py-20 border-t border-vintage-ink/10 flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
-        <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-vintage-accent mb-4 italic">Pricing Information</span>
-          <div className="flex items-end gap-8">
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-1">Starting at</span>
-              <div className="flex items-start text-vintage-ink justify-center lg:justify-start">
-                <DollarSign size={45} className="mt-7 md:mt-9 text-vintage-accent shrink-0" strokeWidth={2.5} />
-                <span className="text-7xl md:text-9xl font-display tracking-tighter leading-none">
-                  {Number(discountPrice).toFixed(2).replace('.', ',')}
-                </span>
-              </div>
-            </div>
-            {activePromo && (
-              <div className="flex flex-col pb-2">
-                <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">Promo Active</span>
-                <div className="flex items-start text-vintage-ink line-through opacity-30 decoration-vintage-accent decoration-2">
-                  <DollarSign size={20} className="mt-2 md:mt-1.5 text-vintage-accent shrink-0" strokeWidth={2.5} />
-                  <span className="text-3xl md:text-4xl font-display leading-none">
-                    {Number(basePrice).toFixed(2).replace('.', ',')}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4 w-full md:w-auto">
-          <button 
-            onClick={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url, activeDiscount: activePromo?.discount_percent || 0, directCheckout: true })}
-            className="vintage-btn btn-reverse px-16 py-7 text-sm tracking-[0.3em] w-full md:w-96 flex items-center justify-center gap-4 group"
-          >
-            BUY FULL LICENSE <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </button>
-          
-          <button 
-            onClick={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url, initialOption: 'trial' })}
-            className="vintage-btn px-16 py-5 text-[10px] tracking-[0.3em] w-full md:w-96 border-vintage-ink/20 flex items-center justify-center gap-3 group"
-          >
-            <Download size={14} className="group-hover:translate-y-0.5 transition-transform" /> DOWNLOAD FREE TRIAL
-          </button>
-          
-          <div className="flex justify-center lg:justify-end mt-4">
-            <button 
-              onClick={() => navigate('/fonts')}
-              className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-30 hover:opacity-100 hover:text-vintage-accent transition-all"
-            >
-              ← RETURN TO ARCHIVE
-            </button>
-          </div>
         </div>
       </section>
     </div>
