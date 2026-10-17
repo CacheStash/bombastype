@@ -375,10 +375,10 @@ const AffiliateLanding: React.FC = () => {
   const cityOptions = getCitiesForState(country, stateProvince);
 
   return (
-    <div className="min-h-screen bg-vintage-paper py-12 px-6 md:px-12 flex flex-col items-center text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper">
+    <div className="min-h-screen bg-vintage-paper py-8 md:py-12 px-4 md:px-8 lg:px-12 flex flex-col items-center text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper w-full">
       
       {/* HEADER TOOLS */}
-      <div className="w-full max-w-5xl mb-8 flex justify-between items-center text-xs font-bold">
+      <div className="w-full max-w-[1720px] mb-8 flex justify-between items-center text-xs font-bold">
         <Link to="/" className="flex items-center gap-2 hover:text-vintage-accent transition-colors tracking-widest uppercase text-vintage-ink">
           <ArrowLeft size={16} /> Back to Catalog
         </Link>
@@ -388,7 +388,7 @@ const AffiliateLanding: React.FC = () => {
       </div>
 
       {/* MAIN CONTAINER */}
-      <div className="w-full max-w-5xl border border-vintage-ink bg-vintage-paper relative flex flex-col items-center overflow-hidden">
+      <div className="w-full max-w-[1720px] border border-vintage-ink bg-vintage-paper relative flex flex-col items-center overflow-hidden">
         
         {/* HERO SECTION */}
         <div className="w-full p-8 md:p-16 text-center border-b border-vintage-ink">

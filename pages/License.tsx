@@ -95,26 +95,26 @@ const License: React.FC = () => {
     }).toUpperCase();
   };
 
-  useEffect(() => {
-    const fetchLicenses = async () => {
-      try {
-        const { data } = await supabase
-          .from('site_content')
-          .select('*')
-          .eq('category', 'license')
-          .order('sort_order', { ascending: true });
+  const fetchLicenses = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_content')
+        .select('*')
+        .eq('category', 'license')
+        .order('sort_order', { ascending: true });
 
-        if (data) {
-          setLicenses(data);
-          setLastUpdated(formatLastUpdated(data));
-        }
-      } catch (err) {
-        console.error('Failed to fetch license content:', err);
-      } finally {
-        setLoading(false);
+      if (data) {
+        setLicenses(data);
+        setLastUpdated(formatLastUpdated(data));
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch license content:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchLicenses();
   }, []);
 

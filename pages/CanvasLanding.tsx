@@ -75,7 +75,7 @@ const CanvasLanding: React.FC = () => {
   return (
     <div className="pb-16 relative z-10 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper font-serif">
       {/* 1. HERO SECTION */}
-      <section className="text-center mb-16 md:mb-24 max-w-4xl mx-auto relative z-10 px-4 pt-10 md:pt-16">
+      <section className="text-center mb-16 md:mb-24 max-w-5xl mx-auto relative z-10 px-4 md:px-8 pt-10 md:pt-16">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -136,7 +136,7 @@ const CanvasLanding: React.FC = () => {
       </section>
 
       {/* 2. STUDIO WORKSHOP MOCKUP SHOWCASE */}
-      <section className="mb-20 md:mb-28 px-4 max-w-6xl mx-auto">
+      <section className="mb-20 md:mb-28 px-4 md:px-8 lg:px-12 max-w-[1720px] mx-auto">
         <div className="border border-vintage-ink bg-vintage-paper/80 p-4 md:p-8 relative shadow-lg">
           {/* Header Bar */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-vintage-ink/30 pb-3 sm:pb-4 mb-4 sm:mb-6 text-[10px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-vintage-ink/70">
@@ -222,7 +222,7 @@ const CanvasLanding: React.FC = () => {
       </section>
 
       {/* 3. STUDIO CAPABILITIES & PILLARS */}
-      <section className="mb-20 md:mb-28 px-4 max-w-6xl mx-auto">
+      <section className="mb-20 md:mb-28 px-4 md:px-8 lg:px-12 max-w-[1720px] mx-auto">
         <div className="text-center mb-16">
           <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] font-bold text-vintage-accent mb-3">
             Studio Highlights
@@ -368,7 +368,7 @@ const CanvasLanding: React.FC = () => {
       </section>
 
       {/* 4. LICENSING & STUDIO POLICY */}
-      <section className="mb-20 px-4 max-w-6xl mx-auto">
+      <section className="mb-20 px-4 md:px-8 lg:px-12 max-w-[1720px] mx-auto">
         {/* Card 7 (Policy) */}
         {(() => {
           const p7 = getItem('CV07', 'Complimentary Lettering & Crucial Pro Workflows', '<p class="mb-3">FontCanvas Studio is free for designers and typographers to prototype custom lettering, test chromatic layer stacking, and compose layouts directly in your browser.</p><p>To unlock crucial production capabilities—including clean unwatermarked vector SVG & high-res PNG exports, chromatic layer stacking, and full access to all accompanying ornament fonts and SVG assets—simply purchase at least one paid font from our collection. Please note that FontCanvas specifically unlocks and loads your purchased fonts.</p>');
@@ -447,7 +447,7 @@ const CanvasLanding: React.FC = () => {
       </section>
 
       {/* 5. BOTTOM INVITATION BANNER */}
-      <section className="px-4 max-w-6xl mx-auto">
+      <section className="px-4 md:px-8 lg:px-12 max-w-[1720px] mx-auto">
         <div className="border border-vintage-ink bg-vintage-ink text-vintage-paper p-10 md:p-20 text-center relative overflow-hidden">
           <div className="relative z-10 max-w-2xl mx-auto">
             <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] font-bold text-vintage-accent block mb-4">
