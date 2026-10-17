@@ -463,12 +463,12 @@ const AffiliateLanding: React.FC = () => {
 
         {/* RECURRING MILESTONE DISCOUNT CYCLES */}
         <div className="w-full p-8 md:p-14 border-b border-vintage-ink bg-vintage-background/40">
-          <div className="max-w-4xl mx-auto">
+          <div className="w-full max-w-7xl mx-auto">
             {(() => {
               const a5 = getItem('AF05', 'Milestone Discount Cycles', 'In addition to your standard <strong>20% Net Commission</strong>, unlock steep personal discounts to expand your private foundry library. Every $1,000 in gross referral sales, the reward cycle automatically resets so you can earn them repeatedly.');
               return (
                 <InContextCardWrapper item={a5} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
-                  <div className="text-center max-w-2xl mx-auto mb-10">
+                  <div className="text-center max-w-3xl mx-auto mb-10">
                     <span className="text-xs uppercase tracking-[0.25em] font-bold text-vintage-accent block mb-2">
                       Creator Reward Engine · Infinite Cycles
                     </span>
@@ -586,12 +586,12 @@ const AffiliateLanding: React.FC = () => {
 
         {/* CREATOR PRESTIGE LEVEL BADGES */}
         <div className="w-full p-8 md:p-14 border-b border-vintage-ink bg-vintage-paper">
-          <div className="max-w-4xl mx-auto">
+          <div className="w-full max-w-7xl mx-auto">
             {(() => {
               const a7 = getItem('AF07', 'Creator Level Badges', 'Progress through 10 official partner tiers based on gross referral volume. Display your prestige badge across your partner profile, specimen credits, and design channels.');
               return (
                 <InContextCardWrapper item={a7} category="affiliate" pagePath="/affiliate" onRefresh={fetchAffiliateContent}>
-                  <div className="text-center max-w-2xl mx-auto mb-10">
+                  <div className="text-center max-w-3xl mx-auto mb-10">
                     <span className="text-xs uppercase tracking-[0.25em] font-bold text-vintage-accent block mb-2">
                       Prestige & Industry Standing
                     </span>
@@ -648,8 +648,8 @@ const AffiliateLanding: React.FC = () => {
 
         {/* DUAL CAMPAIGN CONVERSION ARSENAL */}
         <div className="w-full p-8 md:p-14 border-b border-vintage-ink bg-vintage-background/30">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center max-w-2xl mx-auto mb-10">
+          <div className="w-full max-w-7xl mx-auto">
+            <div className="text-center max-w-3xl mx-auto mb-10">
               <span className="text-xs uppercase tracking-[0.25em] font-bold text-vintage-accent block mb-2">
                 Conversion Arsenal
               </span>
@@ -774,7 +774,7 @@ const AffiliateLanding: React.FC = () => {
         </div>
 
         {/* ONBOARDING FORM / STATUS SECTION */}
-        <div className="w-full p-8 md:p-14 max-w-3xl mx-auto">
+        <div className="w-full p-8 md:p-14 max-w-4xl mx-auto">
           {existingAffiliate ? (
             /* ACTIVE AFFILIATE CARD */
             <div className="border border-vintage-ink/20 p-8 bg-vintage-background space-y-6">
