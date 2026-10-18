@@ -215,13 +215,35 @@ const Checkout: React.FC = () => {
         throw new Error("COUPON_USAGE_LIMIT_REACHED");
       }
 
+      // Proactive Self-Referral Prevention: Block affiliate from applying their own audience coupon
+      if (coupon.affiliate_id) {
+        const { data: linkedAff } = await supabase
+          .from('affiliates')
+          .select('user_id, paypal_email')
+          .eq('id', coupon.affiliate_id)
+          .maybeSingle();
+
+        if (linkedAff) {
+          const isOwnUser = Boolean(user?.id && linkedAff.user_id === user.id);
+          const isOwnEmail = Boolean(email && (
+            (linkedAff.paypal_email && linkedAff.paypal_email.toLowerCase() === email.trim().toLowerCase()) ||
+            (user?.email && user.email.toLowerCase() === email.trim().toLowerCase())
+          ));
+
+          if (isOwnUser || isOwnEmail) {
+            throw new Error("SELF_COUPON_NOT_ALLOWED");
+          }
+        }
+      }
+
       setAppliedCoupon(coupon);
       setCouponMessage({ type: 'success', text: `TOKEN APPLIED: ${coupon.discount_type === 'percentage' ? coupon.discount_value + '% OFF' : '$' + coupon.discount_value + ' OFF'}` });
     } catch (err: any) {
       setAppliedCoupon(null);
       let msg = "INVALID COUPON CODE";
-      if (err.message === "COUPON_EXPIRED") msg = "THIS COUPON HAS EXPIRED OR IS NOT YET ACTIVE";
-      if (err.message === "COUPON_USAGE_LIMIT_REACHED") msg = "COUPON USAGE LIMIT HAS BEEN REACHED";
+      if (err.message === "SELF_COUPON_NOT_ALLOWED") msg = "YOU CANNOT USE YOUR OWN AFFILIATE PROMO CODE";
+      else if (err.message === "COUPON_EXPIRED") msg = "THIS COUPON HAS EXPIRED OR IS NOT YET ACTIVE";
+      else if (err.message === "COUPON_USAGE_LIMIT_REACHED") msg = "COUPON USAGE LIMIT HAS BEEN REACHED";
       setCouponMessage({ type: 'error', text: msg });
     } finally {
       setIsApplyingCoupon(false);
