@@ -319,20 +319,15 @@ export default function Home() {
       <section className="mb-14 md:mb-20 w-full max-w-[1720px] mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-6 sm:pt-8 lg:pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-12 items-center">
           
-          {/* 1/3 Left Column: Text (Tagline, Headline, Small Desc, Action Button) */}
+          {/* 1/3 Left Column: Text (Headline, Small Desc, Action Button) */}
           <div className="lg:col-span-4 xl:col-span-4 flex flex-col justify-center items-start text-left">
-            {/* Tagline */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 border border-vintage-ink/20 text-vintage-accent text-[11px] sm:text-xs uppercase tracking-[0.25em] font-sans font-bold bg-vintage-ink/3 mb-4 sm:mb-5">
-              <span>Authentic Vintage Foundry</span>
-            </div>
-
             {/* Headline */}
-            <h1 className="font-serif text-3xl sm:text-4xl lg:text-3xl xl:text-4xl 2xl:text-5xl text-vintage-ink tracking-tight leading-[1.14] font-bold mb-4 sm:mb-5">
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-4xl xl:text-5xl 2xl:text-6xl text-vintage-ink tracking-tight leading-[1.08] font-bold mb-5 sm:mb-6">
               Retro Refinement: Authentic Vintage & Victorian Typefaces
             </h1>
 
             {/* Small Desc */}
-            <p className="text-sm sm:text-base text-vintage-ink/80 font-serif italic leading-relaxed mb-6 sm:mb-8 max-w-xl">
+            <p className="text-base sm:text-lg text-vintage-ink/80 font-serif italic leading-relaxed mb-8 sm:mb-10 max-w-xl">
               Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, badges, labels, & authentic letterpress design.
             </p>
 
@@ -340,7 +335,7 @@ export default function Home() {
             <div className="flex flex-wrap items-center gap-3.5 w-full sm:w-auto relative z-30">
               <button 
                 onClick={() => navigate('/fonts')} 
-                className="vintage-btn btn-reverse px-8 py-3.5 text-xs tracking-[0.25em] font-bold"
+                className="vintage-btn btn-reverse px-10 py-4 text-xs sm:text-sm tracking-[0.25em] font-bold"
               >
                 EXPLORE OUR FONTS
               </button>
