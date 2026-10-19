@@ -315,36 +315,56 @@ export default function Home() {
 
   return (
      <div className="pb-12 text-vintage-ink selection:bg-vintage-ink selection:text-vintage-paper bg-transparent overflow-x-hidden">
-      {/* Hero Section */}
-      <section className="text-center mb-16 w-full max-w-[1720px] mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-12 flex flex-col items-center">
-        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-85 max-w-4xl md:max-w-5xl mx-auto mb-6 sm:mb-8 leading-relaxed font-serif">
-          Retro Refinement: Authentic Vintage & Victorian Typefaces
-        </motion.p>
+      {/* Hero Section (1/3 Text Left, 2/3 Animated Images Right) */}
+      <section className="mb-14 md:mb-20 w-full max-w-[1720px] mx-auto relative z-10 px-4 sm:px-6 md:px-8 pt-6 sm:pt-8 lg:pt-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-12 items-center">
+          
+          {/* 1/3 Left Column: Text (Tagline, Headline, Small Desc, Action Button) */}
+          <div className="lg:col-span-4 xl:col-span-4 flex flex-col justify-center items-start text-left">
+            {/* Tagline */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 border border-vintage-ink/20 text-vintage-accent text-[11px] sm:text-xs uppercase tracking-[0.25em] font-sans font-bold bg-vintage-ink/3 mb-4 sm:mb-5">
+              <span>Authentic Vintage Foundry</span>
+            </div>
 
-        {/* HERO IMAGES (STANDAR PROPORSI IMAGE TERLEBAR 2434x1844 / 1.32 TANPA TERPOTONG) */}
+            {/* Headline */}
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-3xl xl:text-4xl 2xl:text-5xl text-vintage-ink tracking-tight leading-[1.14] font-bold mb-4 sm:mb-5">
+              Retro Refinement: Authentic Vintage & Victorian Typefaces
+            </h1>
 
-        <div className="my-6 sm:my-8 md:my-10 w-full flex justify-center pointer-events-none select-none relative aspect-[2434/1844] max-w-6xl xl:max-w-[1440px] 2xl:max-w-[1560px] overflow-visible">
-          <AnimatePresence mode="popLayout">
-            <motion.img
-              key={currentHeaderIdx}
-              src={HEADER_IMAGES[currentHeaderIdx]}
-              alt="Authentic Vintage Typefaces"
-              initial={{ opacity: 0, x: slideDirection }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -slideDirection }}
-              transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="absolute inset-0 w-full h-full object-contain"
-            />
-          </AnimatePresence>
-        </div>
+            {/* Small Desc */}
+            <p className="text-sm sm:text-base text-vintage-ink/80 font-serif italic leading-relaxed mb-6 sm:mb-8 max-w-xl">
+              Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, badges, labels, & authentic letterpress design.
+            </p>
 
-        <motion.p className="text-base md:text-lg lg:text-xl italic opacity-85 max-w-4xl md:max-w-5xl mx-auto mt-6 sm:mt-8 md:mt-10 mb-8 leading-relaxed font-serif">
-          Original display typefaces inspired by classic eras, meticulously crafted for timeless branding, packaging, & letterpress design.
-        </motion.p>
-        <div className="flex justify-center mt-8 w-full max-w-xl mx-auto relative z-30">
-          <button onClick={() => navigate('/fonts')} className="vintage-btn btn-reverse px-16 py-4 text-sm tracking-[0.3em]">
-            EXPLORE OUR FONTS
-          </button>
+            {/* Action Button */}
+            <div className="flex flex-wrap items-center gap-3.5 w-full sm:w-auto relative z-30">
+              <button 
+                onClick={() => navigate('/fonts')} 
+                className="vintage-btn btn-reverse px-8 py-3.5 text-xs tracking-[0.25em] font-bold"
+              >
+                EXPLORE OUR FONTS
+              </button>
+            </div>
+          </div>
+
+          {/* 2/3 Right Column: Animated Header Images (Max Bounds: 2434w x 1844h, Zero Cropping) */}
+          <div className="lg:col-span-8 xl:col-span-8 w-full flex items-center justify-center">
+            <div className="w-full relative aspect-[2434/1844] max-h-[460px] sm:max-h-[520px] lg:max-h-[540px] xl:max-h-[600px] 2xl:max-h-[660px] flex items-center justify-center pointer-events-none select-none">
+              <AnimatePresence mode="popLayout">
+                <motion.img
+                  key={currentHeaderIdx}
+                  src={HEADER_IMAGES[currentHeaderIdx]}
+                  alt="Authentic Vintage Typefaces"
+                  initial={{ opacity: 0, x: slideDirection }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -slideDirection }}
+                  transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="w-full h-full object-contain"
+                />
+              </AnimatePresence>
+            </div>
+          </div>
+
         </div>
       </section>
 
