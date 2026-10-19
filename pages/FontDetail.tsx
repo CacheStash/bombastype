@@ -8,6 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import TypeTester from '../components/TypeTester';
 import { useCart } from '../context/CartContext';
+import { getCachedFontByIdOrSlug, getCachedPromos } from '../utils/fontCache';
 import { ChevronLeft, ChevronRight, ArrowRight, Download, DollarSign, X, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,11 +20,12 @@ const resolvePreviewUrl = (filename: string) => {
 
 const FontDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [font, setFont] = useState<any>(null);
+  const initialCachedFont = useMemo(() => getCachedFontByIdOrSlug(id || ''), [id]);
+  const [font, setFont] = useState<any>(initialCachedFont);
   const navigate = useNavigate();
   const { openConfigurator } = useCart(); 
-  const [promos, setPromos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [promos, setPromos] = useState<any[]>(() => getCachedPromos());
+  const [loading, setLoading] = useState(!initialCachedFont);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const [isLongImage, setIsLongImage] = useState(false);
@@ -31,10 +33,18 @@ const FontDetail: React.FC = () => {
   const [affiliateCode, setAffiliateCode] = useState('');
   const [affiliateCopied, setAffiliateCopied] = useState(false);
 
-  useEffect(() => { fetchData(); }, [id]);
+  useEffect(() => { 
+    if (initialCachedFont && !font) {
+      setFont(initialCachedFont);
+      setLoading(false);
+    }
+    fetchData(); 
+  }, [id]);
 
   const fetchData = async () => {
-    setLoading(true);
+    if (!initialCachedFont && !font) {
+      setLoading(true);
+    }
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '');
     let fontQuery = supabase.from('fonts').select('*');
     if (isUuid) {

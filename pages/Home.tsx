@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import TypeTester from '../components/TypeTester';
 import { loadProtectedFontFace } from '../utils/secureFontLoader';
+import { setCachedFonts } from '../utils/fontCache';
 
 // --- SUB-COMPONENTS: STYLING ELEMENTS ---
 const SlantedSpacer = () => (
@@ -211,6 +212,7 @@ export default function Home() {
         .order('display_order', { ascending: true });
       
       if (all && all.length > 0) {
+        setCachedFonts(all);
         try {
           sessionStorage.setItem('bombastype_collection_cache', JSON.stringify({ all }));
         } catch (_) {}

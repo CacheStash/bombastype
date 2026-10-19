@@ -41,11 +41,16 @@ interface PayoutItem {
   notes?: string;
 }
 
-const AffiliatePortal: React.FC = () => {
+interface AffiliatePortalProps {
+  isActive?: boolean;
+}
+
+const AffiliatePortal: React.FC<AffiliatePortalProps> = ({ isActive = true }) => {
   const [affiliate, setAffiliate] = useState<any>(null);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [payoutHistory, setPayoutHistory] = useState<PayoutItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const isFirstMount = React.useRef(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCoupon, setCopiedCoupon] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'payouts' | 'settings'>('overview');
@@ -96,11 +101,17 @@ const AffiliatePortal: React.FC = () => {
   const nextPayoutInfo = getNextMonthlyPayoutDate();
 
   useEffect(() => {
-    fetchAffiliateData();
-  }, []);
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      fetchAffiliateData(false);
+    } else if (isActive) {
+      // Re-activated via tab switch: do a silent background sync!
+      fetchAffiliateData(true);
+    }
+  }, [isActive]);
 
-  const fetchAffiliateData = async () => {
-    setLoading(true);
+  const fetchAffiliateData = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setUserEmail(user.email || '');

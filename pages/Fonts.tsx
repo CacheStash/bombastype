@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { loadProtectedFontFace } from '../utils/secureFontLoader';
+import { setCachedFonts, setCachedPromos } from '../utils/fontCache';
 
 // --- HELPERS & CONSTANTS ---
 const resolvePreviewUrl = (filename: string) => {
@@ -264,8 +265,14 @@ const Fonts: React.FC = () => {
       supabase.from('promotions').select('*').eq('is_active', true),
       supabase.auth.getSession()
     ]);
-    if (fontsRes.data) setFonts(fontsRes.data);
-    if (promosRes.data) setPromos(promosRes.data);
+    if (fontsRes.data) {
+      setFonts(fontsRes.data);
+      setCachedFonts(fontsRes.data);
+    }
+    if (promosRes.data) {
+      setPromos(promosRes.data);
+      setCachedPromos(promosRes.data);
+    }
     if (sessionRes.data.session?.user) {
       const { data: affData } = await supabase
         .from('affiliates')
