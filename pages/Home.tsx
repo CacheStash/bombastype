@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import TypeTester from '../components/TypeTester';
 import { loadProtectedFontFace } from '../utils/secureFontLoader';
-import { setCachedFonts } from '../utils/fontCache';
+import { setCachedFonts, getFontSlug } from '../utils/fontCache';
 
 // --- SUB-COMPONENTS: STYLING ELEMENTS ---
 const SlantedSpacer = () => (
@@ -377,7 +377,7 @@ export default function Home() {
                 key={font.id}
                 whileHover={{ scale: 1.02 }}
                 className="vintage-card flex flex-col p-0 overflow-hidden h-full cursor-pointer group/card"
-                onClick={() => navigate(`/font/${font.id}`)}
+                onClick={() => navigate(`/font/${getFontSlug(font)}`)}
               >
                 <div className="aspect-3/2 w-full bg-vintage-ink/5 border-b border-vintage-ink relative overflow-hidden">
                   {font.preview_images?.[0] && (
@@ -532,7 +532,7 @@ export default function Home() {
                   <span>ADD TO CART</span>
                 </button>
                 <button 
-                  onClick={() => navigate(`/font/${activeTesterFont.id}`)}
+                  onClick={() => navigate(`/font/${getFontSlug(activeTesterFont)}`)}
                   className="vintage-btn btn-reverse py-3 px-6 text-xs whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-2 group/btn"
                 >
                   <Eye size={15} className="transition-transform duration-500 group-hover/btn:rotate-90 opacity-40 group-hover/btn:opacity-100 shrink-0" />
@@ -566,7 +566,7 @@ export default function Home() {
               price={font.price} 
               primaryIndex={font.metadata?.primary_font_index || 0}
               onAdd={() => openConfigurator({ ...font, trialFileUrl: font.trial_file_url })}
-              onClick={() => navigate(`/font/${font.id}`)}
+              onClick={() => navigate(`/font/${getFontSlug(font)}`)}
               affiliateCode={affiliateCode}
               isCopied={copiedFontId === font.id}
               onCopyAffiliate={() => {

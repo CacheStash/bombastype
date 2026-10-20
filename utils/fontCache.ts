@@ -59,6 +59,13 @@ export const getCachedFontByIdOrSlug = (idOrSlug: string): any | null => {
   return list.find(f => (f.name || '').toLowerCase() === clean) || null;
 };
 
+export const getFontSlug = (font: { id?: string; name?: string }): string => {
+  if (font?.name) {
+    return font.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+  return font?.id || '';
+};
+
 export const getCachedPromos = (): any[] => {
   if (cachedPromosList.length > 0) return cachedPromosList;
   try {

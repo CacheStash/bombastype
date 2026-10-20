@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { loadProtectedFontFace } from '../utils/secureFontLoader';
-import { setCachedFonts, setCachedPromos } from '../utils/fontCache';
+import { setCachedFonts, setCachedPromos, getFontSlug } from '../utils/fontCache';
 
 // --- HELPERS & CONSTANTS ---
 const resolvePreviewUrl = (filename: string) => {
@@ -403,7 +403,7 @@ const Fonts: React.FC = () => {
                     font,
                     promo,
                     onAdd: () => openConfigurator({ ...font, trialFileUrl: font.trial_file_url, activeDiscount: promo?.discount_percent || 0 }),
-                    onView: () => navigate(`/font/${font.id}`),
+                    onView: () => navigate(`/font/${getFontSlug(font)}`),
                     affiliateCode,
                     copiedFontId,
                     onCopyAffiliate: handleCopyAffiliate

@@ -484,27 +484,27 @@ const FontDetail: React.FC = () => {
       </section>
 
       {/* 4. SPECIFICATIONS & TECHNICAL DETAILS (Crawlable DOM Section for Search Engines & Buyers) */}
-      <section className="max-w-7xl mx-auto px-6 py-16 border-b border-vintage-ink/10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+      <section className="w-full px-6 sm:px-10 md:px-14 py-16 border-b border-vintage-ink/15 bg-vintage-paper/50">
+        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
           <div>
             <h3 className="text-xs font-black uppercase tracking-[0.25em] text-vintage-accent mb-4">
               DELIVERABLE ASSETS
             </h3>
-            <ul className="text-xs font-mono space-y-2 text-vintage-ink/80">
+            <ul className="text-xs font-mono space-y-2.5 text-vintage-ink/80">
               <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
                 <span>OpenType (.OTF) Desktop Font Files</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
                 <span>TrueType (.TTF) High-compatibility Files</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
                 <span>Web Open Font (.WOFF2 / .WOFF) Webfont Assets</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
                 <span>Perpetual Commercial EULA License PDF</span>
               </li>
             </ul>
@@ -521,7 +521,7 @@ const FontDetail: React.FC = () => {
                 </span>
               ))}
             </div>
-            <p className="text-[11px] text-vintage-ink/70 leading-relaxed font-serif italic">
+            <p className="text-xs text-vintage-ink/80 leading-relaxed font-serif italic">
               Fully accessible via Adobe Illustrator, Photoshop, InDesign, CorelDraw, Figma, and Glyphs Panel.
             </p>
           </div>
@@ -533,7 +533,7 @@ const FontDetail: React.FC = () => {
             <p className="text-xs leading-relaxed text-vintage-ink/80 mb-2">
               Designed &amp; engineered with precision by type designers <strong>Amir Subqi Setiaji</strong> &amp; <strong>Bangkit Tri Setiadi</strong> under <strong>Bombastype Type Foundry</strong>.
             </p>
-            <p className="text-[11px] text-vintage-ink/60 font-serif italic">
+            <p className="text-xs text-vintage-ink/80 font-serif italic">
               Multilingual Latin Support covering Western, Central, and South Eastern European languages.
             </p>
           </div>
