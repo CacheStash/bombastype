@@ -1588,6 +1588,109 @@ export default {
       );
     }
 
+    // --- 2.1. SEO: ROBOTS.TXT ---
+    if (url.pathname === '/robots.txt') {
+      const robotsTxt = `User-agent: *
+Allow: /
+Allow: /fonts
+Allow: /font/*
+Allow: /canvas
+Allow: /license
+Allow: /faq
+Allow: /policy
+Allow: /contact
+
+# Protect private application & admin routes from burning crawl budget
+Disallow: /backstage
+Disallow: /backstage/*
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /user/*
+Disallow: /api/*
+
+Sitemap: ${url.origin}/sitemap.xml
+`;
+      return new Response(robotsTxt, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'public, max-age=86400, s-maxage=86400'
+        }
+      });
+    }
+
+    // --- 2.1.1. SEO: DYNAMIC SITEMAP.XML ---
+    if (url.pathname === '/sitemap.xml') {
+      try {
+        let fontUrls = '';
+        if (env.VITE_SUPABASE_URL && env.VITE_SUPABASE_ANON_KEY) {
+          const res = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/fonts?select=id,name,created_at`, {
+            headers: {
+              'apikey': env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${env.VITE_SUPABASE_ANON_KEY}`
+            }
+          });
+          if (res.ok) {
+            const fonts = await res.json();
+            if (Array.isArray(fonts)) {
+              fontUrls = fonts.map(f => {
+                const slug = f.name 
+                  ? f.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') 
+                  : f.id;
+                const date = f.created_at ? f.created_at.split('T')[0] : '2026-10-20';
+                return `  <url>
+    <loc>${url.origin}/font/${slug}</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+              }).join('\n');
+            }
+          }
+        }
+
+        const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${url.origin}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${url.origin}/fonts</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${url.origin}/canvas</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${url.origin}/license</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${url.origin}/faq</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+${fontUrls}
+</urlset>`;
+
+        return new Response(sitemapXml, {
+          headers: {
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Cache-Control': 'public, max-age=3600, s-maxage=14400'
+          }
+        });
+      } catch (err) {
+        return new Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>' + url.origin + '/</loc></url></urlset>', {
+          headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+        });
+      }
+    }
+
     // --- 2.2. STEALTH AFFILIATE VANITY ROUTING (/c/:code or /c/:code/:fontId) ---
     if (url.pathname.startsWith('/c/')) {
       const parts = url.pathname.slice(3).split('/').filter(Boolean);
