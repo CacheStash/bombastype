@@ -118,6 +118,77 @@ const FontDetail: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreenOpen, totalSlides]);
 
+  // Dynamic SEO Title & Schema.org Product Structured Data injection
+  useEffect(() => {
+    if (!font?.name) return;
+
+    // Dynamic Title
+    const originalTitle = document.title;
+    document.title = `${font.name} Font — Bombastype Type Foundry`;
+
+    // Inject Product JSON-LD
+    const scriptId = 'font-product-jsonld';
+    let scriptTag = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (!scriptTag) {
+      scriptTag = document.createElement('script');
+      scriptTag.id = scriptId;
+      scriptTag.type = 'application/ld+json';
+      document.head.appendChild(scriptTag);
+    }
+
+    const currentUrl = window.location.href.split('?')[0];
+    const primaryImage = fontPreviews.length > 0 ? resolvePreviewUrl(fontPreviews[0]) : null;
+    const absoluteImage = primaryImage?.startsWith('http') 
+      ? primaryImage 
+      : (primaryImage ? `${window.location.origin}${primaryImage}` : undefined);
+
+    const productSchema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": `${font.name} Typeface`,
+      "description": font.description || `${font.name} digital font family designed by Amir Subqi Setiaji & Bangkit Tri Setiadi.`,
+      "image": absoluteImage,
+      "brand": {
+        "@type": "Brand",
+        "name": "Bombastype"
+      },
+      "creator": [
+        {
+          "@type": "Person",
+          "name": "Amir Subqi Setiaji",
+          "url": "https://subqi.com"
+        },
+        {
+          "@type": "Person",
+          "name": "Bangkit Tri Setiadi",
+          "url": "https://bombastype.com"
+        }
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": discountPrice || basePrice,
+        "priceCurrency": "USD",
+        "priceValidUntil": "2027-12-31",
+        "availability": "https://schema.org/InStock",
+        "url": currentUrl,
+        "seller": {
+          "@type": "Organization",
+          "name": "Bombastype Type Foundry",
+          "url": "https://bombastype.com"
+        }
+      },
+      "category": "Digital Typography / Desktop & Web Font"
+    };
+
+    scriptTag.textContent = JSON.stringify(productSchema);
+
+    return () => {
+      document.title = originalTitle;
+      const el = document.getElementById(scriptId);
+      if (el) el.remove();
+    };
+  }, [font, basePrice, discountPrice, fontPreviews]);
+
   if (loading) return <div className="p-20 text-center uppercase font-bold animate-pulse tracking-widest text-vintage-ink">LOADING_SPECIMEN_DATA...</div>;
   if (!font) return <div className="p-20 text-center uppercase font-bold text-vintage-ink">Font not found.</div>;
 
@@ -409,6 +480,63 @@ const FontDetail: React.FC = () => {
               randomText: font.random_text
             }} 
           />
+        </div>
+      </section>
+
+      {/* 4. SPECIFICATIONS & TECHNICAL DETAILS (Crawlable DOM Section for Search Engines & Buyers) */}
+      <section className="max-w-7xl mx-auto px-6 py-16 border-b border-vintage-ink/10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-[0.25em] text-vintage-accent mb-4">
+              DELIVERABLE ASSETS
+            </h3>
+            <ul className="text-xs font-mono space-y-2 text-vintage-ink/80">
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent"></span>
+                <span>OpenType (.OTF) Desktop Font Files</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent"></span>
+                <span>TrueType (.TTF) High-compatibility Files</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent"></span>
+                <span>Web Open Font (.WOFF2 / .WOFF) Webfont Assets</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent"></span>
+                <span>Perpetual Commercial EULA License PDF</span>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-[0.25em] text-vintage-accent mb-4">
+              OPENTYPE FEATURES &amp; ENCODING
+            </h3>
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {['Standard Ligatures (liga)', 'Contextual Alternates (calt)', 'Stylistic Sets (ss01–ss20)', 'Discretionary Ligatures (dlig)', 'Swashes (swsh)', 'PUA Encoded'].map((feat) => (
+                <span key={feat} className="text-[10px] font-mono border border-vintage-ink/20 px-2 py-0.5 bg-vintage-background/40">
+                  {feat}
+                </span>
+              ))}
+            </div>
+            <p className="text-[11px] text-vintage-ink/70 leading-relaxed font-serif italic">
+              Fully accessible via Adobe Illustrator, Photoshop, InDesign, CorelDraw, Figma, and Glyphs Panel.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-[0.25em] text-vintage-accent mb-4">
+              FOUNDRY &amp; CREATORS
+            </h3>
+            <p className="text-xs leading-relaxed text-vintage-ink/80 mb-2">
+              Designed &amp; engineered with precision by type designers <strong>Amir Subqi Setiaji</strong> &amp; <strong>Bangkit Tri Setiadi</strong> under <strong>Bombastype Type Foundry</strong>.
+            </p>
+            <p className="text-[11px] text-vintage-ink/60 font-serif italic">
+              Multilingual Latin Support covering Western, Central, and South Eastern European languages.
+            </p>
+          </div>
         </div>
       </section>
     </div>
