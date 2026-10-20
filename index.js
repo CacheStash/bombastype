@@ -1579,6 +1579,19 @@ export default {
       });
     }
 
+    // --- 1.1. CANONICAL REDIRECT: ENFORCE NON-WWW (Eliminates Google Search Console Duplicate Canonical Issue) ---
+    if (url.hostname.toLowerCase().startsWith('www.')) {
+      const canonicalHostname = url.hostname.replace(/^www\./i, '');
+      const redirectUrl = new URL(url.pathname + url.search, `https://${canonicalHostname}`);
+      return new Response(null, {
+        status: 301,
+        headers: {
+          'Location': redirectUrl.toString(),
+          'Cache-Control': 'public, max-age=86400'
+        }
+      });
+    }
+
     // --- 2. DIAGNOSTIC CHECK ---
     if (!env.ASSETS) {
       const availableBindings = JSON.stringify(Object.keys(env), null, 2);
