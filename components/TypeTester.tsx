@@ -1092,7 +1092,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
           -webkit-text-fill-color: transparent !important;
         }
       `}</style>
-      <div className="overflow-visible relative z-40 bg-transparent">
+      <div className="w-full min-w-0 max-w-full overflow-visible relative z-40 bg-transparent">
         
         {/* TOP TOOLBAR */}
         <div className="flex flex-col lg:flex-row items-stretch border-b border-vintage-ink/20 bg-vintage-paper/50 backdrop-blur-md relative z-50">
@@ -1661,22 +1661,22 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
           )}
 
           <div className={`grid grid-cols-1 md:grid-cols-2 ${(hasAxes || hasFeatures) ? 'border-b border-vintage-ink/10' : ''}`}>
-          <div className="px-8 py-6 flex items-center gap-6 border-b md:border-b-0 md:border-r border-vintage-ink/10">
-              <label className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent w-20 shrink-0">Leading</label>
-              <input type="range" min="0.8" max="2.0" step="0.1" value={lineHeight} onChange={(e) => setLineHeight(parseFloat(e.target.value))} className="grow accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer" />
-              <span className="text-[10px] font-bold w-10 text-right">{lineHeight.toFixed(1)}</span>
+            <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 flex items-center gap-3 sm:gap-4 md:gap-6 border-b md:border-b-0 md:border-r border-vintage-ink/10">
+              <label className="text-[9px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-vintage-accent w-16 sm:w-20 shrink-0">Leading</label>
+              <input type="range" min="0.8" max="2.0" step="0.1" value={lineHeight} onChange={(e) => setLineHeight(parseFloat(e.target.value))} className="grow min-w-0 accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer" />
+              <span className="text-[10px] font-bold w-8 sm:w-10 text-right shrink-0">{lineHeight.toFixed(1)}</span>
             </div>
-            <div className="px-8 py-6 flex items-center gap-6">
-              <label className="text-[9px] font-bold uppercase tracking-[0.3em] text-vintage-accent w-20 shrink-0">Tracking</label>
-              <input type="range" min="-0.1" max="0.5" step="0.01" value={letterSpacing} onChange={(e) => setLetterSpacing(parseFloat(e.target.value))} className="grow accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer" />
-              <span className="text-[11px] font-bold w-10 text-right">{letterSpacing.toFixed(2)}</span>
+            <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 flex items-center gap-3 sm:gap-4 md:gap-6">
+              <label className="text-[9px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-vintage-accent w-16 sm:w-20 shrink-0">Tracking</label>
+              <input type="range" min="-0.1" max="0.5" step="0.01" value={letterSpacing} onChange={(e) => setLetterSpacing(parseFloat(e.target.value))} className="grow min-w-0 accent-vintage-ink h-1 bg-vintage-ink/10 rounded-full appearance-none cursor-pointer" />
+              <span className="text-[11px] font-bold w-8 sm:w-10 text-right shrink-0">{letterSpacing.toFixed(2)}</span>
             </div>
           </div>
 
           {(hasAxes || hasFeatures) && (
             <div className="grid grid-cols-1 lg:grid-cols-12">
               {hasAxes && (
-                <div className="lg:col-span-8 p-8 border-b lg:border-b-0 lg:border-r border-vintage-ink/10">
+                <div className="lg:col-span-8 p-4 sm:p-6 md:p-8 border-b lg:border-b-0 lg:border-r border-vintage-ink/10">
                   <h4 className="text-[9px] font-bold uppercase tracking-[0.4em] text-vintage-accent mb-8 border-b border-vintage-ink/5 pb-2">Variation Axes</h4>
                   <div className="grid grid-cols-1 gap-y-8">
                     {detectedAxes.map((axis: any) => (
@@ -1689,7 +1689,7 @@ const [cursorPos, setCursorPos] = useState<number | null>(null);
                 </div>
               )}
               {hasFeatures && (
-                <div className={`${hasAxes ? 'lg:col-span-4' : 'lg:col-span-12'} p-8`}>
+                <div className={`${hasAxes ? 'lg:col-span-4' : 'lg:col-span-12'} p-4 sm:p-6 md:p-8`}>
                   <h4 className="text-[9px] font-bold uppercase tracking-[0.4em] text-vintage-accent mb-8 border-b border-vintage-ink/5 pb-2">OT Features</h4>
                   <div className="flex flex-wrap gap-2 max-h-75 overflow-y-auto custom-scrollbar pr-4">
                     {dynamicFeatures.map((feat) => {

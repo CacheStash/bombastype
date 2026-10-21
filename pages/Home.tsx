@@ -514,7 +514,7 @@ export default function Home() {
             />
 
             {/* Action Footer: Price + Add to Cart + View Detail */}
-            <div className="p-6 md:p-8 bg-vintage-ink/3 border-t border-vintage-ink/20 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="p-4 sm:p-6 md:p-8 bg-vintage-ink/3 border-t border-vintage-ink/20 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase font-bold tracking-widest opacity-60">Starting at</span>
                 <div className="flex items-center text-vintage-ink font-display text-3xl md:text-4xl">
