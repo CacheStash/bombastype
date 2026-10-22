@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Plus, Edit2, Trash2, Copy, Star, Sparkles, Download, 
   DollarSign, CheckSquare, Square, X, Check, RefreshCw, AlertCircle 
@@ -24,6 +25,27 @@ const ProductManager = () => {
   const [adjustmentSign, setAdjustmentSign] = useState<'+' | '-'>('+');
   const [adjustmentAmount, setAdjustmentAmount] = useState<string>('3.00');
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+
+  // Lock background scroll & handle ESC key when Batch Price modal is active
+  useEffect(() => {
+    if (!showBatchPriceModal) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isUpdatingPrices) {
+        setShowBatchPriceModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showBatchPriceModal, isUpdatingPrices]);
 
   // --- LOGIC: DATA FETCHING ---
   useEffect(() => {
@@ -602,10 +624,20 @@ const ProductManager = () => {
         </div>
       )}
 
-      {/* BATCH PRICE ADJUSTMENT MODAL */}
-      {showBatchPriceModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-vintage-paper border border-vintage-ink/30 max-w-xl w-full p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200 my-8 shadow-2xl">
+      {/* BATCH PRICE ADJUSTMENT MODAL (Rendered via Portal at body root with top z-index & focus lock) */}
+      {showBatchPriceModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[999999] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isUpdatingPrices) {
+              setShowBatchPriceModal(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-vintage-paper border border-vintage-ink/40 max-w-xl w-full p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200 my-auto shadow-2xl relative z-[1000000]"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             {/* Header */}
             <div className="flex items-start justify-between border-b border-vintage-ink pb-4">
@@ -809,7 +841,8 @@ const ProductManager = () => {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
