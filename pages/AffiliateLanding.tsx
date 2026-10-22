@@ -697,9 +697,9 @@ const AffiliateLanding: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="mt-6 pt-4 border-t border-vintage-ink/15 font-mono text-[11px] bg-vintage-paper p-3 border border-vintage-ink/20 flex items-center justify-between">
-                        <span className="text-vintage-ink/60 uppercase">Share URL:</span>
-                        <span className="font-bold text-vintage-ink">bombastype.com/c/YOUR_CODE</span>
+                      <div className="mt-6 pt-4 border-t border-vintage-ink/15 font-mono text-[11px] bg-vintage-paper p-3 border border-vintage-ink/20 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
+                        <span className="text-vintage-ink/60 uppercase tracking-wider text-[10px] shrink-0">Share URL:</span>
+                        <span className="font-bold text-vintage-ink break-all text-xs sm:text-[11px]">bombastype.com/c/YOUR_CODE</span>
                       </div>
                     </div>
                   </InContextCardWrapper>
@@ -741,9 +741,9 @@ const AffiliateLanding: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="mt-6 pt-4 border-t border-vintage-ink/15 font-mono text-[11px] bg-vintage-paper p-3 border border-vintage-ink/20 flex items-center justify-between">
-                        <span className="text-vintage-ink/60 uppercase">Coupon Format:</span>
-                        <span className="font-bold text-vintage-ink">YOUR_CODE10</span>
+                      <div className="mt-6 pt-4 border-t border-vintage-ink/15 font-mono text-[11px] bg-vintage-paper p-3 border border-vintage-ink/20 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
+                        <span className="text-vintage-ink/60 uppercase tracking-wider text-[10px] shrink-0">Coupon Format:</span>
+                        <span className="font-bold text-vintage-ink break-all text-xs sm:text-[11px]">YOUR_CODE10</span>
                       </div>
                     </div>
                   </InContextCardWrapper>
