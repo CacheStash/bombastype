@@ -124,7 +124,7 @@ const FontDetail: React.FC = () => {
 
     // Dynamic Title
     const originalTitle = document.title;
-    document.title = `${font.name} Font — Bombastype Type Foundry`;
+    document.title = `${font.name} Font Family — Official Commercial Typeface | Bombastype`;
 
     // Inject Product JSON-LD
     const scriptId = 'font-product-jsonld';

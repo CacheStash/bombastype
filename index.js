@@ -5566,7 +5566,7 @@ ${fontUrls}
       }
     }
 
-    // --- 8. Serve Frontend (SPA Handler With Edge Cache Shield) ---
+    // --- 8. Serve Frontend (SPA Handler With Edge Cache Shield & Prerender SEO Injection) ---
     try {
       let response = await env.ASSETS.fetch(request);
       if (response.status === 404 && !url.pathname.startsWith('/api/')) {
@@ -5574,10 +5574,75 @@ ${fontUrls}
         response = await env.ASSETS.fetch(new Request(indexUrl));
       }
 
-      // Layer 2: Edge CDN Cache Shield for HTML documents (Protects Worker CPU from bot crawls)
-      // Browser caches for 60s, Cloudflare Edge caches for 1 hour (s-maxage=3600), with background revalidation
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('text/html') || url.pathname === '/' || !url.pathname.includes('.')) {
+        // --- 8.1. Edge Dynamic Meta Injection for /font/:slug (Eliminates SPA indexing delay for Googlebot) ---
+        if (url.pathname.startsWith('/font/')) {
+          const fontSlug = url.pathname.slice(6).split('/')[0].trim();
+          if (fontSlug && env.VITE_SUPABASE_URL && env.VITE_SUPABASE_ANON_KEY) {
+            try {
+              const cleanName = decodeURIComponent(fontSlug).replace(/-/g, ' ');
+              const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fontSlug);
+              const filterQuery = isUuid ? `id=eq.${fontSlug}` : `name=ilike.${encodeURIComponent(cleanName)}`;
+              
+              const fontRes = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/fonts?${filterQuery}&select=id,name,description,preview_images,price&limit=1`, {
+                headers: {
+                  'apikey': env.VITE_SUPABASE_ANON_KEY,
+                  'Authorization': `Bearer ${env.VITE_SUPABASE_ANON_KEY}`
+                }
+              });
+
+              if (fontRes.ok) {
+                const fontDataList = await fontRes.json();
+                if (Array.isArray(fontDataList) && fontDataList.length > 0) {
+                  const font = fontDataList[0];
+                  let html = await response.text();
+
+                  const fontTitle = `${font.name} Font Family — Official Commercial Typeface | Bombastype`;
+                  const fontDesc = (font.description || `${font.name} font family by Amir Subqi Setiaji & Bangkit Tri Setiadi. High-character vintage display typeface with precision OpenType features.`).slice(0, 280);
+                  const fontCanonical = `${url.origin}/font/${fontSlug}`;
+                  const primaryImg = Array.isArray(font.preview_images) && font.preview_images[0] 
+                    ? (font.preview_images[0].startsWith('http') ? font.preview_images[0] : `${url.origin}/api/images/${font.preview_images[0]}`)
+                    : `${url.origin}/LogoBombastype.png`;
+
+                  // Replace Title & Description in static HTML before delivery
+                  html = html.replace(/<title>.*?<\/title>/i, `<title>${fontTitle}</title>`);
+                  html = html.replace(/<meta name="description" content=".*?" \/>/i, `<meta name="description" content="${fontDesc.replace(/"/g, '&quot;')}" />`);
+                  html = html.replace(/<link rel="canonical" href=".*?" \/>/i, `<link rel="canonical" href="${fontCanonical}" />`);
+
+                  // Inject Rich OpenGraph & Twitter Cards into Head
+                  const openGraphTags = `
+    <!-- Edge SEO Injected Tags for ${font.name} -->
+    <meta property="og:type" content="product" />
+    <meta property="og:title" content="${fontTitle.replace(/"/g, '&quot;')}" />
+    <meta property="og:description" content="${fontDesc.replace(/"/g, '&quot;')}" />
+    <meta property="og:url" content="${fontCanonical}" />
+    <meta property="og:image" content="${primaryImg}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${fontTitle.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:description" content="${fontDesc.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:image" content="${primaryImg}" />
+  </head>`;
+                  html = html.replace('</head>', openGraphTags);
+
+                  const injectedHeaders = new Headers(response.headers);
+                  injectedHeaders.set('Content-Type', 'text/html; charset=utf-8');
+                  injectedHeaders.set('Cache-Control', 'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400');
+                  injectedHeaders.set('X-Edge-Prerender-SEO', 'Injected');
+
+                  return new Response(html, {
+                    status: 200,
+                    headers: injectedHeaders
+                  });
+                }
+              }
+            } catch (err) {
+              // Fallback gracefully to default SPA HTML if database lookup fails
+            }
+          }
+        }
+
+        // Layer 2: Edge CDN Cache Shield for HTML documents
         const newHeaders = new Headers(response.headers);
         newHeaders.set('Cache-Control', 'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400');
         newHeaders.set('X-Edge-Cache-Shield', 'Active');
