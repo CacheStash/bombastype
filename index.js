@@ -1579,17 +1579,20 @@ export default {
       });
     }
 
-    // --- 1.1. CANONICAL REDIRECT: ENFORCE NON-WWW (Eliminates Google Search Console Duplicate Canonical Issue) ---
+    // --- 1.1. CANONICAL REDIRECT: ENFORCE NON-WWW (Only for page/document navigation) ---
     if (url.hostname.toLowerCase().startsWith('www.')) {
-      const canonicalHostname = url.hostname.replace(/^www\./i, '');
-      const redirectUrl = new URL(url.pathname + url.search, `https://${canonicalHostname}`);
-      return new Response(null, {
-        status: 301,
-        headers: {
-          'Location': redirectUrl.toString(),
-          'Cache-Control': 'public, max-age=86400'
-        }
-      });
+      // Do NOT redirect API routes or static assets so that browser fetch calls never strip custom headers (CORS/X-FT/X-Requested-With)
+      if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/assets/')) {
+        const canonicalHostname = url.hostname.replace(/^www\./i, '');
+        const redirectUrl = new URL(url.pathname + url.search, `https://${canonicalHostname}`);
+        return new Response(null, {
+          status: 301,
+          headers: {
+            'Location': redirectUrl.toString(),
+            'Cache-Control': 'public, max-age=86400'
+          }
+        });
+      }
     }
 
     // --- 2. DIAGNOSTIC CHECK ---
