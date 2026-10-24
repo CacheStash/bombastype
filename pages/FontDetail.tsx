@@ -401,16 +401,6 @@ const FontDetail: React.FC = () => {
                   {font.description}
                 </p>
               </div>
-
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-2">
-                  {tags.map((tag: string) => (
-                    <span key={tag} className="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 border border-vintage-ink/15 rounded-full opacity-60">
-                      #{tag.trim()}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -511,17 +501,20 @@ const FontDetail: React.FC = () => {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
-                <span>TrueType (.TTF) High-compatibility Files</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
-                <span>Web Open Font (.WOFF2 / .WOFF) Webfont Assets</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
                 <span>Perpetual Commercial EULA License PDF</span>
               </li>
             </ul>
+            <p className="mt-3 text-[11px] font-mono text-vintage-ink/70 leading-relaxed">
+              Need TTF or Webfonts (.WOFF / .WOFF2)? Convert instantly for free with our official converter at{' '}
+              <a 
+                href="https://fontshift.bombastype.com" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="underline hover:text-vintage-accent font-bold"
+              >
+                fontshift.bombastype.com
+              </a>.
+            </p>
           </div>
 
           <div>
@@ -552,6 +545,22 @@ const FontDetail: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Dedicated Full-Width Typographic Tags & Classification Row */}
+        {tags.length > 0 && (
+          <div className="mt-10 pt-8 border-t border-vintage-ink/15">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-vintage-accent mb-3">
+              TYPOGRAPHIC TAGS &amp; CLASSIFICATION
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag: string) => (
+                <span key={tag} className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 border border-vintage-ink/20 rounded-full bg-vintage-background/40 hover:border-vintage-accent hover:text-vintage-accent transition-colors">
+                  #{tag.trim()}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );
