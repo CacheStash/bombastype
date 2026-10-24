@@ -71,6 +71,14 @@ const PageLoader: React.FC = () => (
   </div>
 );
 
+// Graceful 301/SPA redirect for legacy product URLs indexed by Googlebot or external backlinks
+const ProductRedirect: React.FC = () => {
+  const location = useLocation();
+  const slug = location.pathname.replace(/^\/(product|products)\/?/i, '').replace(/\/+$/, '');
+  const target = slug ? `/font/${slug}${location.search}` : `/fonts${location.search}`;
+  return <Navigate to={target} replace />;
+};
+
 const CartConfiguratorModal = () => {
   const { isModalOpen, selectedFont, closeConfigurator } = useCart();
   if (!isModalOpen || !selectedFont) return null;
@@ -256,6 +264,12 @@ const App: React.FC = () => {
                     <Route path="/cart" element={<CartPage />} />
                     <Route path="/checkout" element={<Checkout />} />
                     <Route path="/font/:id" element={<FontDetail />} />
+
+                    {/* Graceful Redirects for legacy product paths (e.g., /product/sacred-bridge/ from old WordPress/external links) */}
+                    <Route path="/product" element={<Navigate to="/fonts" replace />} />
+                    <Route path="/products" element={<Navigate to="/fonts" replace />} />
+                    <Route path="/product/*" element={<ProductRedirect />} />
+                    <Route path="/products/*" element={<ProductRedirect />} />
 
                     {/* Auth & User Routes */}
                     <Route 

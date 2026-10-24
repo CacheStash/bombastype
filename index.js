@@ -1595,6 +1595,24 @@ export default {
       }
     }
 
+    // --- 1.2. SEO: 301 PERMANENT REDIRECT FOR LEGACY /product/ & /products/ URLS ---
+    // Googlebot or external backlinks often hold legacy /product/:slug (e.g. from WooCommerce/DaFont/Behance)
+    if (url.pathname.startsWith('/product/') || url.pathname.startsWith('/products/') || url.pathname === '/product' || url.pathname === '/products') {
+      const slug = url.pathname
+        .replace(/^\/(product|products)\/?/i, '')
+        .replace(/\/+$/, '');
+      const redirectUrl = slug 
+        ? new URL(`/font/${slug}${url.search}`, url.origin)
+        : new URL(`/fonts${url.search}`, url.origin);
+      return new Response(null, {
+        status: 301,
+        headers: {
+          'Location': redirectUrl.toString(),
+          'Cache-Control': 'public, max-age=86400, s-maxage=604800'
+        }
+      });
+    }
+
     // --- 2. DIAGNOSTIC CHECK ---
     if (!env.ASSETS) {
       const availableBindings = JSON.stringify(Object.keys(env), null, 2);
