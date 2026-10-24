@@ -5617,6 +5617,21 @@ ${fontUrls}
                 const fontDataList = await fontRes.json();
                 if (Array.isArray(fontDataList) && fontDataList.length > 0) {
                   const font = fontDataList[0];
+
+                  // 301 Permanent Redirect if accessed via raw UUID instead of clean SEO slug
+                  if (isUuid && font.name) {
+                    const properSlug = font.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                    if (properSlug && properSlug !== fontSlug) {
+                      return new Response(null, {
+                        status: 301,
+                        headers: {
+                          'Location': `${url.origin}/font/${properSlug}${url.search}`,
+                          'Cache-Control': 'public, max-age=86400, s-maxage=604800'
+                        }
+                      });
+                    }
+                  }
+
                   let html = await response.text();
 
                   const fontTitle = `${font.name} Font Family — Official Commercial Typeface | Bombastype`;

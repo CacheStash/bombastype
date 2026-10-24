@@ -4,11 +4,11 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import TypeTester from '../components/TypeTester';
 import { useCart } from '../context/CartContext';
-import { getCachedFontByIdOrSlug, getCachedPromos } from '../utils/fontCache';
+import { getCachedFontByIdOrSlug, getCachedPromos, getFontSlug } from '../utils/fontCache';
 import { ChevronLeft, ChevronRight, ArrowRight, Download, DollarSign, X, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -23,6 +23,7 @@ const FontDetail: React.FC = () => {
   const initialCachedFont = useMemo(() => getCachedFontByIdOrSlug(id || ''), [id]);
   const [font, setFont] = useState<any>(initialCachedFont);
   const navigate = useNavigate();
+  const location = useLocation();
   const { openConfigurator } = useCart(); 
   const [promos, setPromos] = useState<any[]>(() => getCachedPromos());
   const [loading, setLoading] = useState(!initialCachedFont);
@@ -40,6 +41,19 @@ const FontDetail: React.FC = () => {
     }
     fetchData(); 
   }, [id]);
+
+  // Canonical URL Enforcer: Automatically upgrade /font/[uuid] to SEO-friendly /font/[slug] in address bar
+  useEffect(() => {
+    if (font && font.name) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '');
+      if (isUuid) {
+        const slug = getFontSlug(font);
+        if (slug) {
+          navigate(`/font/${slug}${location.search}`, { replace: true });
+        }
+      }
+    }
+  }, [font, id, navigate, location.search]);
 
   const fetchData = async () => {
     if (!initialCachedFont && !font) {
