@@ -501,10 +501,15 @@ const FontDetail: React.FC = () => {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
-                <span>Perpetual Commercial EULA License PDF</span>
+                <span>Official Commercial License Document (LICENSE.txt)</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
+                <span>VIP Creator Account &amp; Access on canvas.bombastype.com</span>
               </li>
             </ul>
             <p className="mt-3 text-[11px] font-mono text-vintage-ink/70 leading-relaxed">
+              *License is included in your ZIP and also viewable online in your Buyer Dashboard.<br />
               Need TTF or Webfonts (.WOFF / .WOFF2)? Convert instantly for free with our official converter at{' '}
               <a 
                 href="https://fontshift.bombastype.com" 
