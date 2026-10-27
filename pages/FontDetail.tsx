@@ -505,7 +505,17 @@ const FontDetail: React.FC = () => {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-vintage-accent shrink-0"></span>
-                <span>VIP Creator Account &amp; Access on canvas.bombastype.com</span>
+                <span>
+                  VIP Creator Account &amp; Access on{' '}
+                  <a 
+                    href="https://canvas.bombastype.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="underline hover:text-vintage-accent font-bold"
+                  >
+                    canvas.bombastype.com
+                  </a>
+                </span>
               </li>
             </ul>
             <p className="mt-3 text-[11px] font-mono text-vintage-ink/70 leading-relaxed">
