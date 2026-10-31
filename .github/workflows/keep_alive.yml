@@ -11,10 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Eksekusi Ping Database
+        env:
+          URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          # Kita definisikan variabel lokal di sini biar gampang
-          URL="https://zuvlxospyjtypwijrxvd.supabase.co"
-          KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1dmx4b3NweWp0eXB3aWpyeHZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NTc5NjIsImV4cCI6MjA4OTUzMzk2Mn0.rsRt2muxqc55tqQK8rcyzMXcoPXgdPXpuP6U2SyIHT8"
+          if [ -z "$KEY" ] || [ -z "$URL" ]; then
+            echo "Secrets SUPABASE_URL / SUPABASE_ANON_KEY not set. Skipping."
+            exit 0
+          fi
 
           echo "--- MEMULAI PROSES KEEP ALIVE ---"
 
