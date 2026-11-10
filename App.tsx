@@ -93,7 +93,7 @@ const CartConfiguratorModal = () => {
             prices={selectedFont.license_prices} 
             initialOption={selectedFont.initialOption}
             font_files={selectedFont.font_files}
-            trialFileUrl={selectedFont.trial_file_url}
+            trialFileUrl={selectedFont.trial_file_url || selectedFont.trialFileUrl}
             discount={selectedFont.activeDiscount || 0}
             directCheckout={selectedFont.directCheckout} 
           />

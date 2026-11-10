@@ -801,7 +801,7 @@ const Checkout: React.FC = () => {
                   {purchasedItems.map((item) => (
                     <button 
                       key={item.cartId} 
-                      onClick={() => handleSecureDownload(item.price === 0 ? item.trialFileUrl : item.font_files?.[0], item.price === 0 ? 'trial' : 'full')}
+                      onClick={() => handleSecureDownload(Number(item.price) === 0 ? (item.trialFileUrl || item.trial_file_url || item.name) : item.font_files?.[0], Number(item.price) === 0 ? 'trial' : 'full')}
                       className="vintage-btn bg-vintage-ink! text-vintage-background! py-5 text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:opacity-90"
                     >
                       <Download size={16} /> DOWNLOAD_{item.name.replace(/\s+/g, '_').toUpperCase()}{Number(item.price) === 0 ? '_TRIAL' : ''}_ZIP

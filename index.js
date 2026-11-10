@@ -5268,40 +5268,112 @@ ${fontUrls}
         // 2. Ekstrak dan Bersihkan Nama File (AGAR TIDAK REFERENCE ERROR)
         const fontFile = decodeURIComponent(rawFile).split('/').pop();
         const cleanFontName = fontFile.replace(/^\d+-/, ''); 
-        // FIXED 1: Pindahkan pengambilan data DB ke sini agar isTrial tidak Reference Error
         let txData = {};
-        let fontFilesToFetch = [fontFile];
-        try {
-          // 1. Identifikasi font_id berdasarkan file yang diminta agar item tidak tertukar
-          const fontLookupRes = await fetch(
-            `${supabaseUrl}/rest/v1/fonts?or=(font_files.cs.{${fontFile}},trial_file_url.eq.${fontFile})&select=id,name,font_files`,
-            { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
-          );
-          const foundFonts = await fontLookupRes.json();
-          const targetFont = foundFonts?.[0];
+        let targetFont = null;
 
-          if (targetFont) {
-            txData.actual_name = targetFont.name;
-            // 2. Ambil detail transaksi KHUSUS untuk font_id ini dalam Order ID tersebut
+        try {
+          // 1. Strategi Utama: Jika ada transactionId, prioritaskan font_history dari database
+          if (transactionId) {
             const txRes = await fetch(
-              `${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(transactionId)}&font_id=eq.${targetFont.id}&select=tier,usages,download_type,metadata`,
+              `${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(transactionId)}&select=id,font_id,tier,usages,download_type,metadata`,
               { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
             );
             const txRows = txRes.ok ? await txRes.json() : [];
-            txData = { ...txData, ...(txRows[0] || {}) };
+            if (txRows.length > 0) {
+              let matchedTx = txRows[0];
+              const fontIds = txRows.map(r => r.font_id).filter(Boolean);
+              
+              if (fontIds.length > 0) {
+                const multiFontRes = await fetch(
+                  `${supabaseUrl}/rest/v1/fonts?id=in.(${fontIds.join(',')})&select=id,name,font_files,trial_file_url`,
+                  { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+                );
+                const multiFonts = multiFontRes.ok ? await multiFontRes.json() : [];
+                
+                // Cari font yang paling cocok dengan fontFile (jika multi-item order)
+                if (fontFile) {
+                  const found = multiFonts.find(f => 
+                    (f.font_files && f.font_files.some(ff => ff.toLowerCase().includes(fontFile.toLowerCase()))) ||
+                    (f.trial_file_url && f.trial_file_url.toLowerCase().includes(fontFile.toLowerCase())) ||
+                    (f.name && f.name.toLowerCase() === cleanFontName.toLowerCase().replace(/\.[^/.]+$/, ''))
+                  );
+                  if (found) {
+                    targetFont = found;
+                    matchedTx = txRows.find(r => r.font_id === found.id) || matchedTx;
+                  }
+                }
+                if (!targetFont && multiFonts.length > 0) {
+                  targetFont = multiFonts[0];
+                }
+              }
+              txData = { ...(matchedTx || {}) };
+              if (targetFont) txData.actual_name = targetFont.name;
+            }
+          }
 
-            const typeStr = (injectedType || txData.download_type || '').toLowerCase();
-            const isTrial = typeStr.includes('trial') || typeStr.includes('demo') || fontFile.toLowerCase().includes('trial');
-
-            if (!isTrial && targetFont.font_files?.length > 0) {
-              fontFilesToFetch = targetFont.font_files;
+          // 2. Strategi Cadangan: Cari font langsung dari tabel fonts berdasarkan file / nama
+          if (!targetFont && fontFile) {
+            const fontLookupRes = await fetch(
+              `${supabaseUrl}/rest/v1/fonts?or=(font_files.cs.{${fontFile}},trial_file_url.ilike.${fontFile},name.ilike.${cleanFontName.replace(/\.[^/.]+$/, '')})&select=id,name,font_files,trial_file_url`,
+              { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+            );
+            const foundFonts = fontLookupRes.ok ? await fontLookupRes.json() : [];
+            targetFont = foundFonts?.[0] || null;
+            if (targetFont) {
+              txData.actual_name = targetFont.name;
+              if (transactionId && !txData.id) {
+                const txRes = await fetch(
+                  `${supabaseUrl}/rest/v1/font_history?transaction_id=eq.${encodeURIComponent(transactionId)}&font_id=eq.${targetFont.id}&select=id,tier,usages,download_type,metadata`,
+                  { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
+                );
+                const txRows = txRes.ok ? await txRes.json() : [];
+                txData = { ...txData, ...(txRows[0] || {}) };
+              }
             }
           }
         } catch (e) { console.log("DB_LOOKUP_ERROR", e.message); }
 
-        // FIXED 2: Tentukan status trial sebelum membuat zipName
+        // 3. TENTUKAN STATUS TRIAL SECARA KETAT & ANTI-TAMPER
         const typeStr = (injectedType || txData.download_type || '').toLowerCase();
-        const isTrial = typeStr.includes('trial') || typeStr.includes('demo') || fontFile.toLowerCase().includes('trial');
+        const tierStr = (txData.tier || '').toLowerCase();
+        const isTrial = typeStr.includes('trial') || 
+                        typeStr.includes('demo') || 
+                        tierStr.includes('demo') ||
+                        fontFile.toLowerCase().includes('trial') ||
+                        fontFile.toLowerCase().includes('demo') ||
+                        (targetFont?.trial_file_url && fontFile.toLowerCase() === targetFont.trial_file_url.toLowerCase());
+
+        // 4. SELEKSI FILE: PROTEKSI KETAT ANTI-LEAK FULL VERSION PADA TRIAL
+        let fontFilesToFetch = [];
+        if (isTrial) {
+          // WAJIB & MUTLAK: Trial HANYA boleh mengambil targetFont.trial_file_url!
+          // DILARANG KERAS mengambil targetFont.font_files dalam kondisi apapun!
+          let trialFile = targetFont?.trial_file_url;
+          if (!trialFile && (fontFile.toLowerCase().includes('trial') || fontFile.toLowerCase().includes('demo'))) {
+            trialFile = fontFile;
+          }
+
+          if (!trialFile) {
+            return new Response(JSON.stringify({
+              error: "TRIAL_FILE_NOT_FOUND",
+              message: "Dedicated trial font file is not configured for this typeface. Commercial files are protected."
+            }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+          }
+
+          fontFilesToFetch = [trialFile];
+        } else {
+          // Lisensi Komersial Resmi: Ambil seluruh font_files family
+          if (targetFont?.font_files && targetFont.font_files.length > 0) {
+            fontFilesToFetch = targetFont.font_files;
+          } else if (fontFile) {
+            fontFilesToFetch = [fontFile];
+          } else {
+            return new Response(JSON.stringify({
+              error: "FONT_FILES_NOT_FOUND",
+              message: "Commercial font files not found for this license."
+            }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+          }
+        }
 
         // FIXED 3: Naming ZIP Murni - Pertahankan Huruf Besar/Kecil dari Database
         const rawSource = txData.actual_name || cleanFontName.split('.')[0];
@@ -5442,10 +5514,12 @@ ${fontUrls}
           if (finalFileName.endsWith('.otf') || finalFileName.endsWith('.ttf')) {
             finalContent = stampFontMetadata(fileData.body, {
               uniqueId: `1.000;BT;${cleanBase};${licenseKey}`,
-              licenseDescription: `Commercial Typeface Software. Build Ref: ${licenseKey}. BombasType Foundry.`,
+              licenseDescription: isTrial 
+                ? `Evaluation / Demo Font Software. Personal Non-Commercial Use Only. BombasType Foundry.`
+                : `Commercial Typeface Software. Build Ref: ${licenseKey}. BombasType Foundry.`,
               trademark: `BombasType is a trademark of BombasType Foundry.`,
               vendorUrl: `https://bombastype.com`,
-              licenseUrl: `https://bombastype.com/licenses`
+              licenseUrl: isTrial ? `https://bombastype.com/licenses` : `https://bombastype.com/licenses`
             });
           }
 

@@ -546,7 +546,8 @@ export default function EmailStudio() {
     const orderId = order.transaction_id || 'ORD-000000';
     const fontName = order.fonts?.name || order.font_name || 'Archival Typeface';
     const tier = order.tier ? (MASTER_TIER_LABELS[order.tier.toLowerCase()]?.solo || order.tier.toUpperCase()) : 'COMMERCIAL LICENSE';
-    const downloadUrl = `${window.location.origin}/api/download-zip?file=${encodeURIComponent(fontName)}&order=${encodeURIComponent(orderId)}&email=${encodeURIComponent(buyerEmail)}`;
+    const downloadType = order.download_type || (order.tier?.toLowerCase().includes('demo') ? 'trial' : 'commercial');
+    const downloadUrl = `${window.location.origin}/api/download-zip?file=${encodeURIComponent(fontName)}&order=${encodeURIComponent(orderId)}&type=${downloadType}&email=${encodeURIComponent(buyerEmail)}`;
 
     const heading = (orderConfig.heading || DEFAULT_ORDER_CONFIG.heading)
       .replace(/\[BUYER_NAME\]/g, buyerName)

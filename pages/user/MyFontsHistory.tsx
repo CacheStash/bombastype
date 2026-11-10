@@ -142,7 +142,7 @@ const MyFontsHistory = () => {
               <div className="bg-vintage-ink/5 border-t md:border-t-0 md:border-l border-vintage-ink/20 p-6 md:w-80 flex flex-col justify-center gap-3">
                 <button 
                   onClick={() => handleSecureDownload(
-                    item.download_type === 'trial' ? item.fonts.trial_file_url : item.fonts.font_files[0],
+                    item.download_type === 'trial' ? (item.fonts?.trial_file_url || item.fonts?.name) : item.fonts?.font_files?.[0],
                     item.transaction_id,
                     item.download_type
                   )}
