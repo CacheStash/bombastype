@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useReducer } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Info, ArrowRight, Check, X, ShoppingCart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { configuratorReducer, createInitialConfiguratorState } from '../lib/machines/configuratorMachine';
 
 interface TierPrices { solo: number; team: number; studio: number; enterprise: number; }
 interface WebTierPrices { small_50k: number; medium_500k: number; large_5m: number; enterprise_unlimited: number; }
@@ -28,20 +29,27 @@ const CartCard: React.FC<CartCardProps> = ({
 }) => {
   const { addToCart, closeConfigurator } = useCart();
   const navigate = useNavigate();
-  
-  const [selectedUsages, setSelectedUsages] = useState<string[]>([]);
-  const [selectedTiers, setSelectedTiers] = useState<Record<string, string>>({
-    desktop: 'solo', social_web: 'small_50k', logo_branding: 'personal', app: 'solo', server: 'solo', broadcast: 'solo'
-  });
 
-  const [isCorporate, setIsCorporate] = useState(initialOption === 'corporate');
-  const [isTrial, setIsTrial] = useState(initialOption === 'trial');
-  const [isAdded, setIsAdded] = useState(false);
+  // Explicit Deterministic State Machine
+  const [machineState, dispatch] = useReducer(
+    configuratorReducer,
+    createInitialConfiguratorState(initialOption, discount)
+  );
+
+  // Backward-compatible projections (100% preserves existing JSX and handlers)
+  const isTrial = machineState.mode === 'trial';
+  const isCorporate = machineState.mode === 'corporate';
+  const isAdded = machineState.status === 'added';
+  const selectedUsages = machineState.selectedUsages;
+  const selectedTiers = machineState.selectedTiers;
 
   // --- LOGIC BLOCKS ---
   useEffect(() => {
-    if (initialOption === 'trial') { setIsTrial(true); setIsCorporate(false); setSelectedUsages([]); } 
-    else if (initialOption === 'corporate') { setIsCorporate(true); setIsTrial(false); setSelectedUsages([]); }
+    if (initialOption === 'trial') {
+      dispatch({ type: 'SWITCH_MODE', mode: 'trial' });
+    } else if (initialOption === 'corporate') {
+      dispatch({ type: 'SWITCH_MODE', mode: 'corporate' });
+    }
   }, [initialOption, fontId]);
 
   useEffect(() => {
@@ -74,8 +82,8 @@ const CartCard: React.FC<CartCardProps> = ({
     });
     let bundleDiscount = selectedUsages.length === 3 ? 0.15 : selectedUsages.length === 4 ? 0.20 : selectedUsages.length >= 5 ? 0.25 : 0;
     const afterBundle = currentSum * (1 - bundleDiscount);
-    if (prices.corporate_full_suite > 0 && afterBundle >= prices.corporate_full_suite) {
-      setIsCorporate(true); setIsTrial(false); setSelectedUsages([]); 
+    if (prices.corporate_full_suite > 0 && afterBundle >= prices.corporate_full_suite && !isCorporate) {
+      dispatch({ type: 'SWITCH_MODE', mode: 'corporate' });
     }
   }, [selectedUsages, selectedTiers, prices, isTrial, isCorporate]);
 
@@ -136,25 +144,24 @@ const CartCard: React.FC<CartCardProps> = ({
       webTierLabel: selectedUsages.includes('social_web') && !isCorporate && !isTrial ? currentWebTier : undefined,
       metadata: { mpv: selectedUsages.includes('social_web') && !isCorporate && !isTrial ? webTierDetails[currentWebTier] : undefined }
     });
-    if (redirect) { navigate('/checkout'); closeConfigurator(); } else { setIsAdded(true); }
+    if (redirect) { navigate('/checkout'); closeConfigurator(); } else { dispatch({ type: 'FINISH_ADD' }); }
   };
 
   const toggleUsage = (id: string) => {
     if (isCorporate) return;
-    setIsTrial(false); 
-    setSelectedUsages(prev => prev.includes(id) ? prev.filter(u => u !== id) : [...prev, id]);
+    dispatch({ type: 'TOGGLE_USAGE', usage: id });
   };
 
   const handleCorporateToggle = () => {
-    const becomingCorporate = !isCorporate;
-    setIsCorporate(becomingCorporate); setIsTrial(false);
-    if (becomingCorporate) setSelectedUsages([]);
+    dispatch({ type: 'SWITCH_MODE', mode: isCorporate ? 'commercial' : 'corporate' });
   };
 
   const handleTrialToggle = () => {
-    const becomingTrial = !isTrial;
-    setIsTrial(becomingTrial);
-    if (becomingTrial) { setIsCorporate(false); setSelectedUsages([]); }
+    dispatch({ type: 'SWITCH_MODE', mode: isTrial ? 'commercial' : 'trial' });
+  };
+
+  const handleTierSelect = (usageId: string, tierKey: string) => {
+    dispatch({ type: 'SET_TIER', usage: usageId, tier: tierKey });
   };
 
   return (
@@ -220,7 +227,7 @@ const CartCard: React.FC<CartCardProps> = ({
                             className="flex flex-wrap gap-1 pl-4 border-l border-vintage-ink/10 overflow-hidden"
                           >
                             {tierMap[u.id].map((t) => (
-                              <button key={t.key} onClick={() => setSelectedTiers(prev => ({...prev, [u.id]: t.key}))}
+                              <button key={t.key} onClick={() => handleTierSelect(u.id, t.key)}
                                 className={`vintage-btn font-sans! flex-1 min-w-35 py-3 px-2 text-[10px] font-bold tracking-wider transition-all duration-300 ${
                                   selectedTiers[u.id] === t.key 
                                   ? 'bg-vintage-ink! text-vintage-background! border-vintage-ink!' 

@@ -3,14 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useReducer } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Link } from 'react-router-dom';
-import { Download, FileText, History, ShieldCheck, Clock, ShoppingBag } from 'lucide-react';
+import { Download, FileText, History, ShieldCheck, Clock, ShoppingBag, Loader2 } from 'lucide-react';
+import { downloadMachineReducer, initialDownloadMachineState } from '../../lib/machines/downloadMachine';
 
 const MyFontsHistory = () => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadMachine, dispatchDownload] = useReducer(downloadMachineReducer, initialDownloadMachineState);
 
   useEffect(() => {
     fetchHistory();
@@ -44,6 +46,7 @@ const MyFontsHistory = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return alert("Session expired. Please login again.");
 
+    dispatchDownload({ type: 'START_DOWNLOAD', target: orderId });
     try {
       const res = await fetch(`/api/download-zip?file=${encodeURIComponent(fileName)}&order=${orderId}&type=${downloadType}`, {
         headers: {
@@ -69,7 +72,9 @@ const MyFontsHistory = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
+      dispatchDownload({ type: 'DOWNLOAD_SUCCESS' });
     } catch (err: any) {
+      dispatchDownload({ type: 'DOWNLOAD_ERROR', message: err.message });
       alert("DOWNLOAD_ERROR: " + err.message);
     }
   };
@@ -146,10 +151,20 @@ const MyFontsHistory = () => {
                     item.transaction_id,
                     item.download_type
                   )}
-                  className="vintage-btn btn-reverse w-full py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-3 group/btn"
+                  disabled={downloadMachine.status === 'preparing' && downloadMachine.activeTarget === item.transaction_id}
+                  className="vintage-btn btn-reverse w-full py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-3 group/btn disabled:opacity-50"
                 >
-                  <Download size={16} className="group-hover/btn:translate-y-0.5 transition-transform" />
-                  DOWNLOAD FILES
+                  {downloadMachine.status === 'preparing' && downloadMachine.activeTarget === item.transaction_id ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      PACKAGING...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} className="group-hover/btn:translate-y-0.5 transition-transform" />
+                      DOWNLOAD FILES
+                    </>
+                  )}
                 </button>
 
                 <Link 
